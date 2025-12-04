@@ -39,6 +39,17 @@ import PlansManagement from "./pages/admin/PlansManagement";
 import SubscriptionsManagement from "./pages/admin/SubscriptionsManagement";
 import NotFound from "./pages/NotFound";
 import PWAInstallPrompt from "./components/PWAInstallPrompt";
+// New dashboard pages
+import WaiterApp from "./pages/dashboard/WaiterApp";
+import KitchenDisplay from "./pages/dashboard/KitchenDisplay";
+import CashbackManagement from "./pages/dashboard/CashbackManagement";
+import AbandonedCartsManagement from "./pages/dashboard/AbandonedCartsManagement";
+import ScheduledOrdersManagement from "./pages/dashboard/ScheduledOrdersManagement";
+import DeliveryDriversManagement from "./pages/dashboard/DeliveryDriversManagement";
+import AnalyticsPixelsManagement from "./pages/dashboard/AnalyticsPixelsManagement";
+import InventoryManagement from "./pages/dashboard/InventoryManagement";
+import AdvancedFinanceManagement from "./pages/dashboard/AdvancedFinanceManagement";
+import SuppliersManagement from "./pages/dashboard/SuppliersManagement";
 
 const queryClient = new QueryClient();
 
@@ -75,6 +86,17 @@ const App = () => (
             <Route path="/painel/integracoes" element={<IntegrationsManagement />} />
             <Route path="/painel/area-atendimento" element={<ServiceAreaManagement />} />
             <Route path="/painel/mercadopago" element={<MercadoPagoManagement />} />
+            {/* New dashboard routes */}
+            <Route path="/painel/comanda" element={<WaiterApp />} />
+            <Route path="/painel/cozinha" element={<KitchenDisplay />} />
+            <Route path="/painel/cashback" element={<CashbackManagement />} />
+            <Route path="/painel/carrinhos-abandonados" element={<AbandonedCartsManagement />} />
+            <Route path="/painel/agendados" element={<ScheduledOrdersManagement />} />
+            <Route path="/painel/entregadores" element={<DeliveryDriversManagement />} />
+            <Route path="/painel/pixels" element={<AnalyticsPixelsManagement />} />
+            <Route path="/painel/estoque" element={<InventoryManagement />} />
+            <Route path="/painel/financeiro" element={<AdvancedFinanceManagement />} />
+            <Route path="/painel/fornecedores" element={<SuppliersManagement />} />
             <Route path="/dashboard/mercadopago" element={<MercadoPagoManagement />} />
             <Route path="/dashboard/mercadopago/callback" element={<MercadoPagoCallback />} />
             <Route path="/admin" element={<ProtectedAdminRoute><AdminDashboard /></ProtectedAdminRoute>} />
