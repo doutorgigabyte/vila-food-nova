@@ -74,6 +74,44 @@ export type Database = {
           },
         ]
       }
+      admin_access_logs: {
+        Row: {
+          action: string
+          admin_user_id: string
+          ended_at: string | null
+          establishment_id: string
+          id: string
+          metadata: Json | null
+          started_at: string | null
+        }
+        Insert: {
+          action?: string
+          admin_user_id: string
+          ended_at?: string | null
+          establishment_id: string
+          id?: string
+          metadata?: Json | null
+          started_at?: string | null
+        }
+        Update: {
+          action?: string
+          admin_user_id?: string
+          ended_at?: string | null
+          establishment_id?: string
+          id?: string
+          metadata?: Json | null
+          started_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_access_logs_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       affiliate_payouts: {
         Row: {
           affiliate_id: string
@@ -243,6 +281,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      audit_logs: {
+        Row: {
+          action: string
+          created_at: string | null
+          entity_id: string | null
+          entity_type: string
+          id: string
+          ip_address: string | null
+          metadata: Json | null
+          new_data: Json | null
+          old_data: Json | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          new_data?: Json | null
+          old_data?: Json | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          new_data?: Json | null
+          old_data?: Json | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
       }
       banners: {
         Row: {
@@ -747,6 +827,44 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "delivery_zones_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      establishment_users: {
+        Row: {
+          created_at: string | null
+          establishment_id: string
+          id: string
+          is_active: boolean | null
+          role: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          establishment_id: string
+          id?: string
+          is_active?: boolean | null
+          role?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          establishment_id?: string
+          id?: string
+          is_active?: boolean | null
+          role?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "establishment_users_establishment_id_fkey"
             columns: ["establishment_id"]
             isOneToOne: false
             referencedRelation: "establishments"
@@ -2127,6 +2245,9 @@ export type Database = {
         | "affiliate"
         | "establishment"
         | "customer"
+        | "manager"
+        | "cashier"
+        | "attendant"
       delivery_type: "delivery" | "pickup" | "table" | "other"
       establishment_status: "active" | "inactive" | "suspended" | "pending"
       order_status:
@@ -2271,6 +2392,9 @@ export const Constants = {
         "affiliate",
         "establishment",
         "customer",
+        "manager",
+        "cashier",
+        "attendant",
       ],
       delivery_type: ["delivery", "pickup", "table", "other"],
       establishment_status: ["active", "inactive", "suspended", "pending"],
