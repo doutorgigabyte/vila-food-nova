@@ -2,3 +2,6 @@ project_id = "gyagfsjbdaacgmmofqip"
 
 [functions.product-feeds]
 verify_jwt = false
+
+[functions.calculate-delivery]
+verify_jwt = false

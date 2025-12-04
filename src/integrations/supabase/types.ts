@@ -391,6 +391,62 @@ export type Database = {
           },
         ]
       }
+      delivery_zones: {
+        Row: {
+          coordinates: Json | null
+          created_at: string | null
+          establishment_id: string
+          fee: number
+          id: string
+          is_active: boolean | null
+          max_time: number | null
+          min_time: number | null
+          name: string
+          neighborhoods: string[] | null
+          radius_km: number | null
+          type: string | null
+          zip_codes: string[] | null
+        }
+        Insert: {
+          coordinates?: Json | null
+          created_at?: string | null
+          establishment_id: string
+          fee?: number
+          id?: string
+          is_active?: boolean | null
+          max_time?: number | null
+          min_time?: number | null
+          name: string
+          neighborhoods?: string[] | null
+          radius_km?: number | null
+          type?: string | null
+          zip_codes?: string[] | null
+        }
+        Update: {
+          coordinates?: Json | null
+          created_at?: string | null
+          establishment_id?: string
+          fee?: number
+          id?: string
+          is_active?: boolean | null
+          max_time?: number | null
+          min_time?: number | null
+          name?: string
+          neighborhoods?: string[] | null
+          radius_km?: number | null
+          type?: string | null
+          zip_codes?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_zones_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       establishments: {
         Row: {
           accepts_delivery: boolean | null
@@ -402,6 +458,8 @@ export type Database = {
           banner_url: string | null
           city_id: string | null
           created_at: string | null
+          delivery_base_fee: number | null
+          delivery_fee_per_km: number | null
           description: string | null
           email: string | null
           id: string
@@ -409,6 +467,7 @@ export type Database = {
           latitude: number | null
           logo_url: string | null
           longitude: number | null
+          max_delivery_radius_km: number | null
           mercado_pago_token: string | null
           min_order_value: number | null
           name: string
@@ -422,6 +481,7 @@ export type Database = {
           primary_color: string | null
           secondary_color: string | null
           segment_id: string | null
+          service_area: Json | null
           slug: string
           status: Database["public"]["Enums"]["establishment_status"] | null
           updated_at: string | null
@@ -439,6 +499,8 @@ export type Database = {
           banner_url?: string | null
           city_id?: string | null
           created_at?: string | null
+          delivery_base_fee?: number | null
+          delivery_fee_per_km?: number | null
           description?: string | null
           email?: string | null
           id?: string
@@ -446,6 +508,7 @@ export type Database = {
           latitude?: number | null
           logo_url?: string | null
           longitude?: number | null
+          max_delivery_radius_km?: number | null
           mercado_pago_token?: string | null
           min_order_value?: number | null
           name: string
@@ -459,6 +522,7 @@ export type Database = {
           primary_color?: string | null
           secondary_color?: string | null
           segment_id?: string | null
+          service_area?: Json | null
           slug: string
           status?: Database["public"]["Enums"]["establishment_status"] | null
           updated_at?: string | null
@@ -476,6 +540,8 @@ export type Database = {
           banner_url?: string | null
           city_id?: string | null
           created_at?: string | null
+          delivery_base_fee?: number | null
+          delivery_fee_per_km?: number | null
           description?: string | null
           email?: string | null
           id?: string
@@ -483,6 +549,7 @@ export type Database = {
           latitude?: number | null
           logo_url?: string | null
           longitude?: number | null
+          max_delivery_radius_km?: number | null
           mercado_pago_token?: string | null
           min_order_value?: number | null
           name?: string
@@ -496,6 +563,7 @@ export type Database = {
           primary_color?: string | null
           secondary_color?: string | null
           segment_id?: string | null
+          service_area?: Json | null
           slug?: string
           status?: Database["public"]["Enums"]["establishment_status"] | null
           updated_at?: string | null

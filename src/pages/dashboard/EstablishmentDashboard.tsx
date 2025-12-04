@@ -83,7 +83,7 @@ const menuItems = [
   { icon: ShoppingBag, label: "Pedidos", href: "/painel/pedidos", badge: "3" },
   { icon: Package, label: "Produtos", href: "/painel/produtos" },
   { icon: Tag, label: "Categorias", href: "/painel/categorias" },
-  { icon: Truck, label: "Frete", href: "/painel/frete" },
+  { icon: Truck, label: "Área de Atendimento", href: "/painel/area-atendimento" },
   { icon: DollarSign, label: "Cupons", href: "/painel/cupons" },
   { icon: TrendingUp, label: "Fluxo de Caixa", href: "/painel/fluxo" },
   { icon: MessageSquare, label: "WhatsApp IA", href: "/painel/whatsapp" },
