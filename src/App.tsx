@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./hooks/useAuth";
+import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import RecoverPassword from "./pages/RecoverPassword";
@@ -48,11 +49,11 @@ const App = () => (
             <Route path="/painel/categorias" element={<CategoriesManagement />} />
             <Route path="/painel/pedidos" element={<OrdersManagement />} />
             <Route path="/painel/pdv" element={<PDV />} />
-            <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/admin/usuarios" element={<UsersManagement />} />
-            <Route path="/admin/estabelecimentos" element={<EstablishmentsManagement />} />
-            <Route path="/admin/planos" element={<PlansManagement />} />
-            <Route path="/admin/assinaturas" element={<SubscriptionsManagement />} />
+            <Route path="/admin" element={<ProtectedAdminRoute><AdminDashboard /></ProtectedAdminRoute>} />
+            <Route path="/admin/usuarios" element={<ProtectedAdminRoute><UsersManagement /></ProtectedAdminRoute>} />
+            <Route path="/admin/estabelecimentos" element={<ProtectedAdminRoute><EstablishmentsManagement /></ProtectedAdminRoute>} />
+            <Route path="/admin/planos" element={<ProtectedAdminRoute><PlansManagement /></ProtectedAdminRoute>} />
+            <Route path="/admin/assinaturas" element={<ProtectedAdminRoute><SubscriptionsManagement /></ProtectedAdminRoute>} />
             <Route path="/afiliado" element={<AffiliateDashboard />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
