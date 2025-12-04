@@ -14,16 +14,939 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      affiliate_referrals: {
+        Row: {
+          affiliate_id: string
+          commission_earned: number | null
+          created_at: string | null
+          establishment_id: string
+          id: string
+          status: string | null
+        }
+        Insert: {
+          affiliate_id: string
+          commission_earned?: number | null
+          created_at?: string | null
+          establishment_id: string
+          id?: string
+          status?: string | null
+        }
+        Update: {
+          affiliate_id?: string
+          commission_earned?: number | null
+          created_at?: string | null
+          establishment_id?: string
+          id?: string
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "affiliate_referrals_affiliate_id_fkey"
+            columns: ["affiliate_id"]
+            isOneToOne: false
+            referencedRelation: "affiliates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_referrals_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      affiliates: {
+        Row: {
+          code: string
+          commission_rate: number | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          total_earnings: number | null
+          user_id: string
+        }
+        Insert: {
+          code: string
+          commission_rate?: number | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          total_earnings?: number | null
+          user_id: string
+        }
+        Update: {
+          code?: string
+          commission_rate?: number | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          total_earnings?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      categories: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          establishment_id: string
+          id: string
+          image_url: string | null
+          is_active: boolean | null
+          name: string
+          sort_order: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          establishment_id: string
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          name: string
+          sort_order?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          establishment_id?: string
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          name?: string
+          sort_order?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "categories_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cities: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          slug: string | null
+          state_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          slug?: string | null
+          state_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          slug?: string | null
+          state_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cities_state_id_fkey"
+            columns: ["state_id"]
+            isOneToOne: false
+            referencedRelation: "states"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coupons: {
+        Row: {
+          code: string
+          created_at: string | null
+          description: string | null
+          discount_type: string | null
+          discount_value: number
+          establishment_id: string
+          id: string
+          is_active: boolean | null
+          max_uses: number | null
+          min_order_value: number | null
+          uses_count: number | null
+          valid_from: string | null
+          valid_until: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          description?: string | null
+          discount_type?: string | null
+          discount_value: number
+          establishment_id: string
+          id?: string
+          is_active?: boolean | null
+          max_uses?: number | null
+          min_order_value?: number | null
+          uses_count?: number | null
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          description?: string | null
+          discount_type?: string | null
+          discount_value?: number
+          establishment_id?: string
+          id?: string
+          is_active?: boolean | null
+          max_uses?: number | null
+          min_order_value?: number | null
+          uses_count?: number | null
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coupons_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customers: {
+        Row: {
+          addresses: Json | null
+          created_at: string | null
+          email: string | null
+          establishment_id: string | null
+          id: string
+          name: string
+          phone: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          addresses?: Json | null
+          created_at?: string | null
+          email?: string | null
+          establishment_id?: string | null
+          id?: string
+          name: string
+          phone?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          addresses?: Json | null
+          created_at?: string | null
+          email?: string | null
+          establishment_id?: string | null
+          id?: string
+          name?: string
+          phone?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customers_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      delivery_fees: {
+        Row: {
+          city: string | null
+          created_at: string | null
+          establishment_id: string
+          fee: number
+          id: string
+          is_active: boolean | null
+          max_time: number | null
+          min_time: number | null
+          neighborhood: string
+        }
+        Insert: {
+          city?: string | null
+          created_at?: string | null
+          establishment_id: string
+          fee?: number
+          id?: string
+          is_active?: boolean | null
+          max_time?: number | null
+          min_time?: number | null
+          neighborhood: string
+        }
+        Update: {
+          city?: string | null
+          created_at?: string | null
+          establishment_id?: string
+          fee?: number
+          id?: string
+          is_active?: boolean | null
+          max_time?: number | null
+          min_time?: number | null
+          neighborhood?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_fees_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      establishments: {
+        Row: {
+          accepts_delivery: boolean | null
+          accepts_pickup: boolean | null
+          accepts_table: boolean | null
+          address: string | null
+          address_number: string | null
+          avg_delivery_time: number | null
+          banner_url: string | null
+          city_id: string | null
+          created_at: string | null
+          description: string | null
+          email: string | null
+          id: string
+          is_open: boolean | null
+          latitude: number | null
+          logo_url: string | null
+          longitude: number | null
+          mercado_pago_token: string | null
+          min_order_value: number | null
+          name: string
+          neighborhood: string | null
+          operating_hours: Json | null
+          owner_id: string | null
+          pagseguro_token: string | null
+          phone: string | null
+          pix_key: string | null
+          plan_id: string | null
+          primary_color: string | null
+          secondary_color: string | null
+          segment_id: string | null
+          slug: string
+          status: Database["public"]["Enums"]["establishment_status"] | null
+          updated_at: string | null
+          whatsapp: string | null
+          zip_code: string | null
+        }
+        Insert: {
+          accepts_delivery?: boolean | null
+          accepts_pickup?: boolean | null
+          accepts_table?: boolean | null
+          address?: string | null
+          address_number?: string | null
+          avg_delivery_time?: number | null
+          banner_url?: string | null
+          city_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          email?: string | null
+          id?: string
+          is_open?: boolean | null
+          latitude?: number | null
+          logo_url?: string | null
+          longitude?: number | null
+          mercado_pago_token?: string | null
+          min_order_value?: number | null
+          name: string
+          neighborhood?: string | null
+          operating_hours?: Json | null
+          owner_id?: string | null
+          pagseguro_token?: string | null
+          phone?: string | null
+          pix_key?: string | null
+          plan_id?: string | null
+          primary_color?: string | null
+          secondary_color?: string | null
+          segment_id?: string | null
+          slug: string
+          status?: Database["public"]["Enums"]["establishment_status"] | null
+          updated_at?: string | null
+          whatsapp?: string | null
+          zip_code?: string | null
+        }
+        Update: {
+          accepts_delivery?: boolean | null
+          accepts_pickup?: boolean | null
+          accepts_table?: boolean | null
+          address?: string | null
+          address_number?: string | null
+          avg_delivery_time?: number | null
+          banner_url?: string | null
+          city_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          email?: string | null
+          id?: string
+          is_open?: boolean | null
+          latitude?: number | null
+          logo_url?: string | null
+          longitude?: number | null
+          mercado_pago_token?: string | null
+          min_order_value?: number | null
+          name?: string
+          neighborhood?: string | null
+          operating_hours?: Json | null
+          owner_id?: string | null
+          pagseguro_token?: string | null
+          phone?: string | null
+          pix_key?: string | null
+          plan_id?: string | null
+          primary_color?: string | null
+          secondary_color?: string | null
+          segment_id?: string | null
+          slug?: string
+          status?: Database["public"]["Enums"]["establishment_status"] | null
+          updated_at?: string | null
+          whatsapp?: string | null
+          zip_code?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "establishments_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "cities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "establishments_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "establishments_segment_id_fkey"
+            columns: ["segment_id"]
+            isOneToOne: false
+            referencedRelation: "segments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          change_for: number | null
+          created_at: string | null
+          customer_id: string | null
+          delivered_at: string | null
+          delivery_address: Json | null
+          delivery_fee: number | null
+          delivery_type: Database["public"]["Enums"]["delivery_type"] | null
+          discount: number | null
+          establishment_id: string
+          estimated_time: number | null
+          id: string
+          items: Json
+          observations: string | null
+          order_number: number
+          payment_method: Database["public"]["Enums"]["payment_method"] | null
+          status: Database["public"]["Enums"]["order_status"] | null
+          subtotal: number
+          table_number: string | null
+          total: number
+          updated_at: string | null
+        }
+        Insert: {
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          change_for?: number | null
+          created_at?: string | null
+          customer_id?: string | null
+          delivered_at?: string | null
+          delivery_address?: Json | null
+          delivery_fee?: number | null
+          delivery_type?: Database["public"]["Enums"]["delivery_type"] | null
+          discount?: number | null
+          establishment_id: string
+          estimated_time?: number | null
+          id?: string
+          items?: Json
+          observations?: string | null
+          order_number?: number
+          payment_method?: Database["public"]["Enums"]["payment_method"] | null
+          status?: Database["public"]["Enums"]["order_status"] | null
+          subtotal?: number
+          table_number?: string | null
+          total?: number
+          updated_at?: string | null
+        }
+        Update: {
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          change_for?: number | null
+          created_at?: string | null
+          customer_id?: string | null
+          delivered_at?: string | null
+          delivery_address?: Json | null
+          delivery_fee?: number | null
+          delivery_type?: Database["public"]["Enums"]["delivery_type"] | null
+          discount?: number | null
+          establishment_id?: string
+          estimated_time?: number | null
+          id?: string
+          items?: Json
+          observations?: string | null
+          order_number?: number
+          payment_method?: Database["public"]["Enums"]["payment_method"] | null
+          status?: Database["public"]["Enums"]["order_status"] | null
+          subtotal?: number
+          table_number?: string | null
+          total?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      plans: {
+        Row: {
+          billing_period: string | null
+          created_at: string | null
+          description: string | null
+          features: Json | null
+          id: string
+          is_active: boolean | null
+          max_orders: number | null
+          max_products: number | null
+          name: string
+          price: number
+          updated_at: string | null
+        }
+        Insert: {
+          billing_period?: string | null
+          created_at?: string | null
+          description?: string | null
+          features?: Json | null
+          id?: string
+          is_active?: boolean | null
+          max_orders?: number | null
+          max_products?: number | null
+          name: string
+          price?: number
+          updated_at?: string | null
+        }
+        Update: {
+          billing_period?: string | null
+          created_at?: string | null
+          description?: string | null
+          features?: Json | null
+          id?: string
+          is_active?: boolean | null
+          max_orders?: number | null
+          max_products?: number | null
+          name?: string
+          price?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      products: {
+        Row: {
+          additionals: Json | null
+          category_id: string | null
+          created_at: string | null
+          description: string | null
+          establishment_id: string
+          id: string
+          image_url: string | null
+          is_active: boolean | null
+          is_featured: boolean | null
+          name: string
+          preparation_time: number | null
+          price: number
+          promotional_price: number | null
+          stock_quantity: number | null
+          updated_at: string | null
+          variations: Json | null
+        }
+        Insert: {
+          additionals?: Json | null
+          category_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          establishment_id: string
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          is_featured?: boolean | null
+          name: string
+          preparation_time?: number | null
+          price: number
+          promotional_price?: number | null
+          stock_quantity?: number | null
+          updated_at?: string | null
+          variations?: Json | null
+        }
+        Update: {
+          additionals?: Json | null
+          category_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          establishment_id?: string
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          is_featured?: boolean | null
+          name?: string
+          preparation_time?: number | null
+          price?: number
+          promotional_price?: number | null
+          stock_quantity?: number | null
+          updated_at?: string | null
+          variations?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string | null
+          full_name: string | null
+          id: string
+          phone: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string | null
+          full_name?: string | null
+          id: string
+          phone?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string | null
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      segments: {
+        Row: {
+          created_at: string | null
+          icon: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+        }
+        Relationships: []
+      }
+      states: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+          uf: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+          uf: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+          uf?: string
+        }
+        Relationships: []
+      }
+      subscriptions: {
+        Row: {
+          created_at: string | null
+          establishment_id: string
+          expires_at: string | null
+          id: string
+          plan_id: string
+          starts_at: string | null
+          status: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          establishment_id: string
+          expires_at?: string | null
+          id?: string
+          plan_id: string
+          starts_at?: string | null
+          status?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          establishment_id?: string
+          expires_at?: string | null
+          id?: string
+          plan_id?: string
+          starts_at?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      whatsapp_instances: {
+        Row: {
+          ai_enabled: boolean | null
+          ai_prompt: string | null
+          api_key: string | null
+          created_at: string | null
+          establishment_id: string
+          id: string
+          instance_id: string | null
+          instance_name: string | null
+          qr_code: string | null
+          status: string | null
+          updated_at: string | null
+          webhook_url: string | null
+        }
+        Insert: {
+          ai_enabled?: boolean | null
+          ai_prompt?: string | null
+          api_key?: string | null
+          created_at?: string | null
+          establishment_id: string
+          id?: string
+          instance_id?: string | null
+          instance_name?: string | null
+          qr_code?: string | null
+          status?: string | null
+          updated_at?: string | null
+          webhook_url?: string | null
+        }
+        Update: {
+          ai_enabled?: boolean | null
+          ai_prompt?: string | null
+          api_key?: string | null
+          created_at?: string | null
+          establishment_id?: string
+          id?: string
+          instance_id?: string | null
+          instance_name?: string | null
+          qr_code?: string | null
+          status?: string | null
+          updated_at?: string | null
+          webhook_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_instances_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_messages: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          is_from_bot: boolean | null
+          message_type: string | null
+          sender: string
+          session_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          is_from_bot?: boolean | null
+          message_type?: string | null
+          sender: string
+          session_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          is_from_bot?: boolean | null
+          message_type?: string | null
+          sender?: string
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_messages_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_sessions: {
+        Row: {
+          cart: Json | null
+          context: Json | null
+          created_at: string | null
+          customer_name: string | null
+          customer_phone: string
+          establishment_id: string
+          id: string
+          last_message_at: string | null
+          status: string | null
+        }
+        Insert: {
+          cart?: Json | null
+          context?: Json | null
+          created_at?: string | null
+          customer_name?: string | null
+          customer_phone: string
+          establishment_id: string
+          id?: string
+          last_message_at?: string | null
+          status?: string | null
+        }
+        Update: {
+          cart?: Json | null
+          context?: Json | null
+          created_at?: string | null
+          customer_name?: string | null
+          customer_phone?: string
+          establishment_id?: string
+          id?: string
+          last_message_at?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_sessions_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role:
+        | "super_admin"
+        | "admin"
+        | "affiliate"
+        | "establishment"
+        | "customer"
+      delivery_type: "delivery" | "pickup" | "table" | "other"
+      establishment_status: "active" | "inactive" | "suspended" | "pending"
+      order_status:
+        | "pending"
+        | "confirmed"
+        | "preparing"
+        | "ready"
+        | "delivering"
+        | "delivered"
+        | "cancelled"
+      payment_method: "cash" | "pix" | "credit_card" | "debit_card" | "online"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +1073,26 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: [
+        "super_admin",
+        "admin",
+        "affiliate",
+        "establishment",
+        "customer",
+      ],
+      delivery_type: ["delivery", "pickup", "table", "other"],
+      establishment_status: ["active", "inactive", "suspended", "pending"],
+      order_status: [
+        "pending",
+        "confirmed",
+        "preparing",
+        "ready",
+        "delivering",
+        "delivered",
+        "cancelled",
+      ],
+      payment_method: ["cash", "pix", "credit_card", "debit_card", "online"],
+    },
   },
 } as const
