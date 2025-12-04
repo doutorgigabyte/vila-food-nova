@@ -14,6 +14,60 @@ export type Database = {
   }
   public: {
     Tables: {
+      affiliate_payouts: {
+        Row: {
+          affiliate_id: string
+          amount: number
+          created_at: string | null
+          error_message: string | null
+          id: string
+          mp_payment_id: string | null
+          paid_at: string | null
+          pix_key: string
+          referral_id: string | null
+          status: string | null
+        }
+        Insert: {
+          affiliate_id: string
+          amount: number
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          mp_payment_id?: string | null
+          paid_at?: string | null
+          pix_key: string
+          referral_id?: string | null
+          status?: string | null
+        }
+        Update: {
+          affiliate_id?: string
+          amount?: number
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          mp_payment_id?: string | null
+          paid_at?: string | null
+          pix_key?: string
+          referral_id?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "affiliate_payouts_affiliate_id_fkey"
+            columns: ["affiliate_id"]
+            isOneToOne: false
+            referencedRelation: "affiliates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_payouts_referral_id_fkey"
+            columns: ["referral_id"]
+            isOneToOne: false
+            referencedRelation: "affiliate_referrals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       affiliate_referrals: {
         Row: {
           affiliate_id: string
@@ -470,6 +524,10 @@ export type Database = {
           max_delivery_radius_km: number | null
           mercado_pago_token: string | null
           min_order_value: number | null
+          mp_public_key: string | null
+          mp_refresh_token: string | null
+          mp_token_expires_at: string | null
+          mp_user_id: string | null
           name: string
           neighborhood: string | null
           operating_hours: Json | null
@@ -511,6 +569,10 @@ export type Database = {
           max_delivery_radius_km?: number | null
           mercado_pago_token?: string | null
           min_order_value?: number | null
+          mp_public_key?: string | null
+          mp_refresh_token?: string | null
+          mp_token_expires_at?: string | null
+          mp_user_id?: string | null
           name: string
           neighborhood?: string | null
           operating_hours?: Json | null
@@ -552,6 +614,10 @@ export type Database = {
           max_delivery_radius_km?: number | null
           mercado_pago_token?: string | null
           min_order_value?: number | null
+          mp_public_key?: string | null
+          mp_refresh_token?: string | null
+          mp_token_expires_at?: string | null
+          mp_user_id?: string | null
           name?: string
           neighborhood?: string | null
           operating_hours?: Json | null
@@ -598,6 +664,112 @@ export type Database = {
             columns: ["vila_id"]
             isOneToOne: false
             referencedRelation: "vilas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mp_subscription_plans: {
+        Row: {
+          created_at: string | null
+          currency_id: string | null
+          frequency: number | null
+          frequency_type: string | null
+          id: string
+          is_active: boolean | null
+          mp_preapproval_plan_id: string | null
+          plan_id: string | null
+          reason: string
+          transaction_amount: number
+        }
+        Insert: {
+          created_at?: string | null
+          currency_id?: string | null
+          frequency?: number | null
+          frequency_type?: string | null
+          id?: string
+          is_active?: boolean | null
+          mp_preapproval_plan_id?: string | null
+          plan_id?: string | null
+          reason: string
+          transaction_amount: number
+        }
+        Update: {
+          created_at?: string | null
+          currency_id?: string | null
+          frequency?: number | null
+          frequency_type?: string | null
+          id?: string
+          is_active?: boolean | null
+          mp_preapproval_plan_id?: string | null
+          plan_id?: string | null
+          reason?: string
+          transaction_amount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mp_subscription_plans_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mp_transactions: {
+        Row: {
+          amount: number
+          created_at: string | null
+          establishment_id: string | null
+          id: string
+          metadata: Json | null
+          mp_payment_id: string | null
+          mp_preapproval_id: string | null
+          net_amount: number | null
+          payer_email: string | null
+          payer_name: string | null
+          platform_fee: number | null
+          status: string
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          amount?: number
+          created_at?: string | null
+          establishment_id?: string | null
+          id?: string
+          metadata?: Json | null
+          mp_payment_id?: string | null
+          mp_preapproval_id?: string | null
+          net_amount?: number | null
+          payer_email?: string | null
+          payer_name?: string | null
+          platform_fee?: number | null
+          status?: string
+          type: string
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          establishment_id?: string | null
+          id?: string
+          metadata?: Json | null
+          mp_payment_id?: string | null
+          mp_preapproval_id?: string | null
+          net_amount?: number | null
+          payer_email?: string | null
+          payer_name?: string | null
+          platform_fee?: number | null
+          status?: string
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mp_transactions_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
             referencedColumns: ["id"]
           },
         ]
