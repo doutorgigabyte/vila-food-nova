@@ -79,6 +79,7 @@ const recentOrders = [
 
 const menuItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/painel", active: true },
+  { icon: Store, label: "PDV", href: "/painel/pdv" },
   { icon: ShoppingBag, label: "Pedidos", href: "/painel/pedidos", badge: "3" },
   { icon: Package, label: "Produtos", href: "/painel/produtos" },
   { icon: Tag, label: "Categorias", href: "/painel/categorias" },
