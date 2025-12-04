@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./hooks/useAuth";
+import { AdminAccessProvider } from "./contexts/AdminAccessContext";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
 import Vila from "./pages/Vila";
 import VilasManagement from "./pages/admin/VilasManagement";
@@ -31,7 +32,7 @@ import IntegrationsManagement from "./pages/dashboard/IntegrationsManagement";
 import ServiceAreaManagement from "./pages/dashboard/ServiceAreaManagement";
 import MercadoPagoManagement from "./pages/dashboard/MercadoPagoManagement";
 import MercadoPagoCallback from "./pages/dashboard/MercadoPagoCallback";
-import AdminDashboard from "./pages/dashboard/AdminDashboard";
+import AdminDashboard from "./pages/admin/AdminDashboard";
 import AffiliateDashboard from "./pages/dashboard/AffiliateDashboard";
 import UsersManagement from "./pages/admin/UsersManagement";
 import EstablishmentsManagement from "./pages/admin/EstablishmentsManagement";
@@ -56,61 +57,66 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <PWAInstallPrompt />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/recuperar-senha" element={<RecoverPassword />} />
-            <Route path="/cadastro-estabelecimento" element={<RegisterEstablishment />} />
-            <Route path="/marketplace" element={<Marketplace />} />
-            <Route path="/loja/:slug" element={<Store />} />
-            <Route path="/vila/:slug" element={<Vila />} />
-            <Route path="/checkout" element={<Checkout />} />
-            <Route path="/pedidos" element={<Orders />} />
-            <Route path="/painel" element={<EstablishmentDashboard />} />
-            <Route path="/painel/produtos" element={<ProductsManagement />} />
-            <Route path="/painel/categorias" element={<CategoriesManagement />} />
-            <Route path="/painel/pedidos" element={<OrdersManagement />} />
-            <Route path="/painel/pdv" element={<PDV />} />
-            <Route path="/painel/banners" element={<BannersManagement />} />
-            <Route path="/painel/cupons" element={<CouponsManagement />} />
-            <Route path="/painel/frete" element={<DeliveryFeesManagement />} />
-            <Route path="/painel/fluxo" element={<CashFlowManagement />} />
-            <Route path="/painel/qrcode" element={<QRCodeManagement />} />
-            <Route path="/painel/relatorios" element={<ReportsManagement />} />
-            <Route path="/painel/whatsapp" element={<WhatsAppManagement />} />
-            <Route path="/painel/integracoes" element={<IntegrationsManagement />} />
-            <Route path="/painel/area-atendimento" element={<ServiceAreaManagement />} />
-            <Route path="/painel/mercadopago" element={<MercadoPagoManagement />} />
-            {/* New dashboard routes */}
-            <Route path="/painel/comanda" element={<WaiterApp />} />
-            <Route path="/painel/cozinha" element={<KitchenDisplay />} />
-            <Route path="/painel/cashback" element={<CashbackManagement />} />
-            <Route path="/painel/carrinhos-abandonados" element={<AbandonedCartsManagement />} />
-            <Route path="/painel/agendados" element={<ScheduledOrdersManagement />} />
-            <Route path="/painel/entregadores" element={<DeliveryDriversManagement />} />
-            <Route path="/painel/pixels" element={<AnalyticsPixelsManagement />} />
-            <Route path="/painel/estoque" element={<InventoryManagement />} />
-            <Route path="/painel/financeiro" element={<AdvancedFinanceManagement />} />
-            <Route path="/painel/fornecedores" element={<SuppliersManagement />} />
-            <Route path="/dashboard/mercadopago" element={<MercadoPagoManagement />} />
-            <Route path="/dashboard/mercadopago/callback" element={<MercadoPagoCallback />} />
-            <Route path="/admin" element={<ProtectedAdminRoute><AdminDashboard /></ProtectedAdminRoute>} />
-            <Route path="/admin/usuarios" element={<ProtectedAdminRoute><UsersManagement /></ProtectedAdminRoute>} />
-            <Route path="/admin/estabelecimentos" element={<ProtectedAdminRoute><EstablishmentsManagement /></ProtectedAdminRoute>} />
-            <Route path="/admin/vilas" element={<ProtectedAdminRoute><VilasManagement /></ProtectedAdminRoute>} />
-            <Route path="/admin/planos" element={<ProtectedAdminRoute><PlansManagement /></ProtectedAdminRoute>} />
-            <Route path="/admin/assinaturas" element={<ProtectedAdminRoute><SubscriptionsManagement /></ProtectedAdminRoute>} />
-            <Route path="/afiliado" element={<AffiliateDashboard />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
+      <AdminAccessProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <PWAInstallPrompt />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/recuperar-senha" element={<RecoverPassword />} />
+              <Route path="/cadastro-estabelecimento" element={<RegisterEstablishment />} />
+              <Route path="/marketplace" element={<Marketplace />} />
+              <Route path="/loja/:slug" element={<Store />} />
+              <Route path="/vila/:slug" element={<Vila />} />
+              <Route path="/checkout" element={<Checkout />} />
+              <Route path="/pedidos" element={<Orders />} />
+              {/* Dashboard routes with slug parameter for admin access */}
+              <Route path="/painel" element={<EstablishmentDashboard />} />
+              <Route path="/painel/:slug" element={<EstablishmentDashboard />} />
+              <Route path="/painel/produtos" element={<ProductsManagement />} />
+              <Route path="/painel/categorias" element={<CategoriesManagement />} />
+              <Route path="/painel/pedidos" element={<OrdersManagement />} />
+              <Route path="/painel/pdv" element={<PDV />} />
+              <Route path="/painel/banners" element={<BannersManagement />} />
+              <Route path="/painel/cupons" element={<CouponsManagement />} />
+              <Route path="/painel/frete" element={<DeliveryFeesManagement />} />
+              <Route path="/painel/fluxo" element={<CashFlowManagement />} />
+              <Route path="/painel/qrcode" element={<QRCodeManagement />} />
+              <Route path="/painel/relatorios" element={<ReportsManagement />} />
+              <Route path="/painel/whatsapp" element={<WhatsAppManagement />} />
+              <Route path="/painel/integracoes" element={<IntegrationsManagement />} />
+              <Route path="/painel/area-atendimento" element={<ServiceAreaManagement />} />
+              <Route path="/painel/mercadopago" element={<MercadoPagoManagement />} />
+              {/* New dashboard routes */}
+              <Route path="/painel/comanda" element={<WaiterApp />} />
+              <Route path="/painel/cozinha" element={<KitchenDisplay />} />
+              <Route path="/painel/cashback" element={<CashbackManagement />} />
+              <Route path="/painel/carrinhos-abandonados" element={<AbandonedCartsManagement />} />
+              <Route path="/painel/agendados" element={<ScheduledOrdersManagement />} />
+              <Route path="/painel/entregadores" element={<DeliveryDriversManagement />} />
+              <Route path="/painel/pixels" element={<AnalyticsPixelsManagement />} />
+              <Route path="/painel/estoque" element={<InventoryManagement />} />
+              <Route path="/painel/financeiro" element={<AdvancedFinanceManagement />} />
+              <Route path="/painel/fornecedores" element={<SuppliersManagement />} />
+              <Route path="/dashboard/mercadopago" element={<MercadoPagoManagement />} />
+              <Route path="/dashboard/mercadopago/callback" element={<MercadoPagoCallback />} />
+              {/* Admin routes */}
+              <Route path="/admin" element={<ProtectedAdminRoute><AdminDashboard /></ProtectedAdminRoute>} />
+              <Route path="/admin/usuarios" element={<ProtectedAdminRoute><UsersManagement /></ProtectedAdminRoute>} />
+              <Route path="/admin/estabelecimentos" element={<ProtectedAdminRoute><EstablishmentsManagement /></ProtectedAdminRoute>} />
+              <Route path="/admin/vilas" element={<ProtectedAdminRoute><VilasManagement /></ProtectedAdminRoute>} />
+              <Route path="/admin/planos" element={<ProtectedAdminRoute><PlansManagement /></ProtectedAdminRoute>} />
+              <Route path="/admin/assinaturas" element={<ProtectedAdminRoute><SubscriptionsManagement /></ProtectedAdminRoute>} />
+              <Route path="/afiliado" element={<AffiliateDashboard />} />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </AdminAccessProvider>
     </AuthProvider>
   </QueryClientProvider>
 );
