@@ -5,8 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Utensils, Mail, Lock, User, Phone, Building2, MapPin, ArrowLeft, Eye, EyeOff, Store, FileText } from "lucide-react";
 import { toast } from "sonner";
+import { useVilas } from "@/hooks/useVilas";
 
 const segments = [
   { value: "pizzaria", label: "Pizzaria" },
@@ -29,6 +31,7 @@ const segments = [
 ];
 
 const RegisterEstablishment = () => {
+  const { vilas } = useVilas();
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -44,6 +47,8 @@ const RegisterEstablishment = () => {
   const [segment, setSegment] = useState("");
   const [cnpj, setCnpj] = useState("");
   const [subdomain, setSubdomain] = useState("");
+  const [belongsToVila, setBelongsToVila] = useState(false);
+  const [vilaId, setVilaId] = useState("");
   
   // Step 3 - Address
   const [cep, setCep] = useState("");
@@ -309,6 +314,48 @@ const RegisterEstablishment = () => {
                       Este será o link da sua loja: <strong>{subdomain || "sualoja"}.vilafood.com</strong>
                     </p>
                   </div>
+
+                  {/* Vila Selection */}
+                  {vilas.length > 0 && (
+                    <div className="space-y-4 p-4 rounded-lg bg-primary/5 border border-primary/20">
+                      <div className="flex items-center space-x-3">
+                        <Checkbox
+                          id="belongs-to-vila"
+                          checked={belongsToVila}
+                          onCheckedChange={(checked) => {
+                            setBelongsToVila(checked as boolean);
+                            if (!checked) setVilaId("");
+                          }}
+                        />
+                        <div className="space-y-1">
+                          <Label htmlFor="belongs-to-vila" className="cursor-pointer font-medium">
+                            Faz parte de uma Vila Gastronômica?
+                          </Label>
+                          <p className="text-xs text-muted-foreground">
+                            Vilas são locais com múltiplos estabelecimentos (galerias, praças de alimentação)
+                          </p>
+                        </div>
+                      </div>
+
+                      {belongsToVila && (
+                        <div className="space-y-2 mt-3">
+                          <Label htmlFor="vila">Selecione a Vila *</Label>
+                          <Select value={vilaId} onValueChange={setVilaId}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Escolha a vila" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {vilas.map((vila) => (
+                                <SelectItem key={vila.id} value={vila.id}>
+                                  {vila.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   <div className="flex gap-3">
                     <Button type="button" variant="outline" onClick={() => setStep(1)} className="flex-1">

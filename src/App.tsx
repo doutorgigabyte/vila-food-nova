@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./hooks/useAuth";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
+import Vila from "./pages/Vila";
+import VilasManagement from "./pages/admin/VilasManagement";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import RecoverPassword from "./pages/RecoverPassword";
@@ -42,6 +44,7 @@ const App = () => (
             <Route path="/cadastro-estabelecimento" element={<RegisterEstablishment />} />
             <Route path="/marketplace" element={<Marketplace />} />
             <Route path="/loja/:slug" element={<Store />} />
+            <Route path="/vila/:slug" element={<Vila />} />
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/pedidos" element={<Orders />} />
             <Route path="/painel" element={<EstablishmentDashboard />} />
@@ -52,6 +55,7 @@ const App = () => (
             <Route path="/admin" element={<ProtectedAdminRoute><AdminDashboard /></ProtectedAdminRoute>} />
             <Route path="/admin/usuarios" element={<ProtectedAdminRoute><UsersManagement /></ProtectedAdminRoute>} />
             <Route path="/admin/estabelecimentos" element={<ProtectedAdminRoute><EstablishmentsManagement /></ProtectedAdminRoute>} />
+            <Route path="/admin/vilas" element={<ProtectedAdminRoute><VilasManagement /></ProtectedAdminRoute>} />
             <Route path="/admin/planos" element={<ProtectedAdminRoute><PlansManagement /></ProtectedAdminRoute>} />
             <Route path="/admin/assinaturas" element={<ProtectedAdminRoute><SubscriptionsManagement /></ProtectedAdminRoute>} />
             <Route path="/afiliado" element={<AffiliateDashboard />} />

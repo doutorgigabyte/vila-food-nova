@@ -340,6 +340,7 @@ export type Database = {
           slug: string
           status: Database["public"]["Enums"]["establishment_status"] | null
           updated_at: string | null
+          vila_id: string | null
           whatsapp: string | null
           zip_code: string | null
         }
@@ -376,6 +377,7 @@ export type Database = {
           slug: string
           status?: Database["public"]["Enums"]["establishment_status"] | null
           updated_at?: string | null
+          vila_id?: string | null
           whatsapp?: string | null
           zip_code?: string | null
         }
@@ -412,6 +414,7 @@ export type Database = {
           slug?: string
           status?: Database["public"]["Enums"]["establishment_status"] | null
           updated_at?: string | null
+          vila_id?: string | null
           whatsapp?: string | null
           zip_code?: string | null
         }
@@ -435,6 +438,13 @@ export type Database = {
             columns: ["segment_id"]
             isOneToOne: false
             referencedRelation: "segments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "establishments_vila_id_fkey"
+            columns: ["vila_id"]
+            isOneToOne: false
+            referencedRelation: "vilas"
             referencedColumns: ["id"]
           },
         ]
@@ -780,6 +790,62 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      vilas: {
+        Row: {
+          address: string | null
+          city_id: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean | null
+          latitude: number | null
+          longitude: number | null
+          name: string
+          neighborhood: string | null
+          slug: string
+          updated_at: string | null
+        }
+        Insert: {
+          address?: string | null
+          city_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          latitude?: number | null
+          longitude?: number | null
+          name: string
+          neighborhood?: string | null
+          slug: string
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string | null
+          city_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          latitude?: number | null
+          longitude?: number | null
+          name?: string
+          neighborhood?: string | null
+          slug?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vilas_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "cities"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       whatsapp_instances: {
         Row: {
