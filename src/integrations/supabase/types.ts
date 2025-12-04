@@ -14,6 +14,66 @@ export type Database = {
   }
   public: {
     Tables: {
+      abandoned_carts: {
+        Row: {
+          created_at: string | null
+          customer_name: string | null
+          customer_phone: string
+          establishment_id: string
+          id: string
+          items: Json
+          last_recovery_at: string | null
+          recovered: boolean | null
+          recovered_order_id: string | null
+          recovery_attempts: number | null
+          total: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          customer_name?: string | null
+          customer_phone: string
+          establishment_id: string
+          id?: string
+          items?: Json
+          last_recovery_at?: string | null
+          recovered?: boolean | null
+          recovered_order_id?: string | null
+          recovery_attempts?: number | null
+          total?: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          customer_name?: string | null
+          customer_phone?: string
+          establishment_id?: string
+          id?: string
+          items?: Json
+          last_recovery_at?: string | null
+          recovered?: boolean | null
+          recovered_order_id?: string | null
+          recovery_attempts?: number | null
+          total?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "abandoned_carts_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "abandoned_carts_recovered_order_id_fkey"
+            columns: ["recovered_order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       affiliate_payouts: {
         Row: {
           affiliate_id: string
@@ -140,6 +200,50 @@ export type Database = {
         }
         Relationships: []
       }
+      analytics_pixels: {
+        Row: {
+          created_at: string | null
+          establishment_id: string
+          facebook_pixel_id: string | null
+          google_ads_id: string | null
+          google_analytics_id: string | null
+          id: string
+          is_active: boolean | null
+          tiktok_pixel_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          establishment_id: string
+          facebook_pixel_id?: string | null
+          google_ads_id?: string | null
+          google_analytics_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          tiktok_pixel_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          establishment_id?: string
+          facebook_pixel_id?: string | null
+          google_ads_id?: string | null
+          google_analytics_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          tiktok_pixel_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analytics_pixels_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: true
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       banners: {
         Row: {
           created_at: string | null
@@ -221,6 +325,105 @@ export type Database = {
             columns: ["establishment_id"]
             isOneToOne: false
             referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cashback_config: {
+        Row: {
+          created_at: string | null
+          establishment_id: string
+          expiration_days: number | null
+          id: string
+          is_active: boolean | null
+          max_cashback_value: number | null
+          min_order_value: number | null
+          percentage: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          establishment_id: string
+          expiration_days?: number | null
+          id?: string
+          is_active?: boolean | null
+          max_cashback_value?: number | null
+          min_order_value?: number | null
+          percentage?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          establishment_id?: string
+          expiration_days?: number | null
+          id?: string
+          is_active?: boolean | null
+          max_cashback_value?: number | null
+          min_order_value?: number | null
+          percentage?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cashback_config_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: true
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cashback_transactions: {
+        Row: {
+          amount: number
+          balance_after: number
+          created_at: string | null
+          customer_id: string
+          establishment_id: string
+          expires_at: string | null
+          id: string
+          order_id: string | null
+          type: string
+        }
+        Insert: {
+          amount: number
+          balance_after?: number
+          created_at?: string | null
+          customer_id: string
+          establishment_id: string
+          expires_at?: string | null
+          id?: string
+          order_id?: string | null
+          type: string
+        }
+        Update: {
+          amount?: number
+          balance_after?: number
+          created_at?: string | null
+          customer_id?: string
+          establishment_id?: string
+          expires_at?: string | null
+          id?: string
+          order_id?: string | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cashback_transactions_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cashback_transactions_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cashback_transactions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
             referencedColumns: ["id"]
           },
         ]
@@ -394,6 +597,56 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "customers_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      delivery_drivers: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          establishment_id: string
+          id: string
+          is_active: boolean | null
+          is_available: boolean | null
+          license_plate: string | null
+          name: string
+          phone: string
+          updated_at: string | null
+          vehicle_type: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          establishment_id: string
+          id?: string
+          is_active?: boolean | null
+          is_available?: boolean | null
+          license_plate?: string | null
+          name: string
+          phone: string
+          updated_at?: string | null
+          vehicle_type?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          establishment_id?: string
+          id?: string
+          is_active?: boolean | null
+          is_available?: boolean | null
+          license_plate?: string | null
+          name?: string
+          phone?: string
+          updated_at?: string | null
+          vehicle_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_drivers_establishment_id_fkey"
             columns: ["establishment_id"]
             isOneToOne: false
             referencedRelation: "establishments"
@@ -668,6 +921,170 @@ export type Database = {
           },
         ]
       }
+      financial_accounts: {
+        Row: {
+          balance: number | null
+          created_at: string | null
+          establishment_id: string
+          id: string
+          is_active: boolean | null
+          name: string
+          type: string
+        }
+        Insert: {
+          balance?: number | null
+          created_at?: string | null
+          establishment_id: string
+          id?: string
+          is_active?: boolean | null
+          name: string
+          type: string
+        }
+        Update: {
+          balance?: number | null
+          created_at?: string | null
+          establishment_id?: string
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_accounts_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      financial_transactions: {
+        Row: {
+          account_id: string | null
+          amount: number
+          category: string
+          created_at: string | null
+          description: string | null
+          due_date: string | null
+          establishment_id: string
+          id: string
+          paid_at: string | null
+          recurrence: string | null
+          reference_id: string | null
+          reference_type: string | null
+          status: string | null
+          type: string
+        }
+        Insert: {
+          account_id?: string | null
+          amount: number
+          category: string
+          created_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          establishment_id: string
+          id?: string
+          paid_at?: string | null
+          recurrence?: string | null
+          reference_id?: string | null
+          reference_type?: string | null
+          status?: string | null
+          type: string
+        }
+        Update: {
+          account_id?: string | null
+          amount?: number
+          category?: string
+          created_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          establishment_id?: string
+          id?: string
+          paid_at?: string | null
+          recurrence?: string | null
+          reference_id?: string | null
+          reference_type?: string | null
+          status?: string | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_transactions_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "financial_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_transactions_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inventory_movements: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          establishment_id: string
+          id: string
+          notes: string | null
+          product_id: string | null
+          quantity: number
+          reference_id: string | null
+          reference_type: string | null
+          total_cost: number | null
+          type: string
+          unit_cost: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          establishment_id: string
+          id?: string
+          notes?: string | null
+          product_id?: string | null
+          quantity: number
+          reference_id?: string | null
+          reference_type?: string | null
+          total_cost?: number | null
+          type: string
+          unit_cost?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          establishment_id?: string
+          id?: string
+          notes?: string | null
+          product_id?: string | null
+          quantity?: number
+          reference_id?: string | null
+          reference_type?: string | null
+          total_cost?: number | null
+          type?: string
+          unit_cost?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_movements_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_movements_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mp_subscription_plans: {
         Row: {
           created_at: string | null
@@ -910,6 +1327,7 @@ export type Database = {
         Row: {
           additionals: Json | null
           category_id: string | null
+          cost_price: number | null
           created_at: string | null
           description: string | null
           establishment_id: string
@@ -917,6 +1335,8 @@ export type Database = {
           image_url: string | null
           is_active: boolean | null
           is_featured: boolean | null
+          max_stock: number | null
+          min_stock: number | null
           name: string
           preparation_time: number | null
           price: number
@@ -928,6 +1348,7 @@ export type Database = {
         Insert: {
           additionals?: Json | null
           category_id?: string | null
+          cost_price?: number | null
           created_at?: string | null
           description?: string | null
           establishment_id: string
@@ -935,6 +1356,8 @@ export type Database = {
           image_url?: string | null
           is_active?: boolean | null
           is_featured?: boolean | null
+          max_stock?: number | null
+          min_stock?: number | null
           name: string
           preparation_time?: number | null
           price: number
@@ -946,6 +1369,7 @@ export type Database = {
         Update: {
           additionals?: Json | null
           category_id?: string | null
+          cost_price?: number | null
           created_at?: string | null
           description?: string | null
           establishment_id?: string
@@ -953,6 +1377,8 @@ export type Database = {
           image_url?: string | null
           is_active?: boolean | null
           is_featured?: boolean | null
+          max_stock?: number | null
+          min_stock?: number | null
           name?: string
           preparation_time?: number | null
           price?: number
@@ -1036,6 +1462,72 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "qr_codes_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scheduled_orders: {
+        Row: {
+          created_at: string | null
+          customer_id: string | null
+          delivery_address: Json | null
+          delivery_fee: number | null
+          delivery_type: string | null
+          establishment_id: string
+          id: string
+          items: Json
+          notes: string | null
+          payment_method: string | null
+          scheduled_for: string
+          status: string | null
+          subtotal: number
+          total: number
+        }
+        Insert: {
+          created_at?: string | null
+          customer_id?: string | null
+          delivery_address?: Json | null
+          delivery_fee?: number | null
+          delivery_type?: string | null
+          establishment_id: string
+          id?: string
+          items?: Json
+          notes?: string | null
+          payment_method?: string | null
+          scheduled_for: string
+          status?: string | null
+          subtotal?: number
+          total?: number
+        }
+        Update: {
+          created_at?: string | null
+          customer_id?: string | null
+          delivery_address?: Json | null
+          delivery_fee?: number | null
+          delivery_type?: string | null
+          establishment_id?: string
+          id?: string
+          items?: Json
+          notes?: string | null
+          payment_method?: string | null
+          scheduled_for?: string
+          status?: string | null
+          subtotal?: number
+          total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scheduled_orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scheduled_orders_establishment_id_fkey"
             columns: ["establishment_id"]
             isOneToOne: false
             referencedRelation: "establishments"
@@ -1133,6 +1625,122 @@ export type Database = {
           },
         ]
       }
+      supplier_purchases: {
+        Row: {
+          created_at: string | null
+          due_date: string | null
+          establishment_id: string
+          id: string
+          invoice_number: string | null
+          items: Json
+          notes: string | null
+          payment_method: string | null
+          payment_status: string | null
+          shipping: number | null
+          subtotal: number
+          supplier_id: string | null
+          taxes: number | null
+          total: number
+        }
+        Insert: {
+          created_at?: string | null
+          due_date?: string | null
+          establishment_id: string
+          id?: string
+          invoice_number?: string | null
+          items?: Json
+          notes?: string | null
+          payment_method?: string | null
+          payment_status?: string | null
+          shipping?: number | null
+          subtotal?: number
+          supplier_id?: string | null
+          taxes?: number | null
+          total?: number
+        }
+        Update: {
+          created_at?: string | null
+          due_date?: string | null
+          establishment_id?: string
+          id?: string
+          invoice_number?: string | null
+          items?: Json
+          notes?: string | null
+          payment_method?: string | null
+          payment_status?: string | null
+          shipping?: number | null
+          subtotal?: number
+          supplier_id?: string | null
+          taxes?: number | null
+          total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_purchases_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_purchases_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      suppliers: {
+        Row: {
+          address: string | null
+          cnpj: string | null
+          contact_person: string | null
+          created_at: string | null
+          email: string | null
+          establishment_id: string
+          id: string
+          is_active: boolean | null
+          name: string
+          notes: string | null
+          phone: string | null
+        }
+        Insert: {
+          address?: string | null
+          cnpj?: string | null
+          contact_person?: string | null
+          created_at?: string | null
+          email?: string | null
+          establishment_id: string
+          id?: string
+          is_active?: boolean | null
+          name: string
+          notes?: string | null
+          phone?: string | null
+        }
+        Update: {
+          address?: string | null
+          cnpj?: string | null
+          contact_person?: string | null
+          created_at?: string | null
+          email?: string | null
+          establishment_id?: string
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          notes?: string | null
+          phone?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "suppliers_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -1206,6 +1814,62 @@ export type Database = {
             columns: ["city_id"]
             isOneToOne: false
             referencedRelation: "cities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      waiter_tabs: {
+        Row: {
+          closed_at: string | null
+          customer_name: string | null
+          discount: number | null
+          establishment_id: string
+          id: string
+          items: Json
+          notes: string | null
+          opened_at: string | null
+          status: string | null
+          subtotal: number | null
+          table_number: string
+          total: number | null
+          waiter_name: string | null
+        }
+        Insert: {
+          closed_at?: string | null
+          customer_name?: string | null
+          discount?: number | null
+          establishment_id: string
+          id?: string
+          items?: Json
+          notes?: string | null
+          opened_at?: string | null
+          status?: string | null
+          subtotal?: number | null
+          table_number: string
+          total?: number | null
+          waiter_name?: string | null
+        }
+        Update: {
+          closed_at?: string | null
+          customer_name?: string | null
+          discount?: number | null
+          establishment_id?: string
+          id?: string
+          items?: Json
+          notes?: string | null
+          opened_at?: string | null
+          status?: string | null
+          subtotal?: number | null
+          table_number?: string
+          total?: number | null
+          waiter_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "waiter_tabs_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
             referencedColumns: ["id"]
           },
         ]
