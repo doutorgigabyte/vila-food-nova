@@ -1,0 +1,163 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+interface PixRequest {
+  establishment_id: string;
+  order_id?: string;
+  amount: number;
+  description: string;
+  payer_email?: string;
+  payer_name?: string;
+  external_reference?: string;
+}
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    );
+
+    const body: PixRequest = await req.json();
+    const { establishment_id, order_id, amount, description, payer_email, payer_name, external_reference } = body;
+
+    console.log('PIX request:', JSON.stringify(body, null, 2));
+
+    // Get establishment's Mercado Pago token
+    const { data: establishment, error: estError } = await supabase
+      .from('establishments')
+      .select('mercado_pago_token, name, pix_key')
+      .eq('id', establishment_id)
+      .single();
+
+    if (estError || !establishment) {
+      return new Response(JSON.stringify({ error: 'Establishment not found' }), {
+        status: 404,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Check if establishment has Mercado Pago configured
+    if (!establishment.mercado_pago_token) {
+      // If no MP token, check for PIX key and return static PIX
+      if (establishment.pix_key) {
+        return new Response(JSON.stringify({
+          success: true,
+          type: 'static_pix',
+          pix_key: establishment.pix_key,
+          amount,
+          description,
+          message: `💰 *Pagamento via PIX*\n\nValor: R$ ${amount.toFixed(2)}\n\nChave PIX: ${establishment.pix_key}\n\nApós o pagamento, envie o comprovante para confirmarmos seu pedido! 📸`,
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Pagamento PIX não configurado',
+        message: 'Este estabelecimento ainda não configurou o pagamento via PIX. Por favor, escolha outra forma de pagamento.',
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Create PIX payment via Mercado Pago
+    const mpPayload = {
+      transaction_amount: amount,
+      description: description || `Pedido ${establishment.name}`,
+      payment_method_id: 'pix',
+      payer: {
+        email: payer_email || 'cliente@email.com',
+        first_name: payer_name || 'Cliente',
+      },
+      external_reference: external_reference || order_id,
+    };
+
+    const mpResponse = await fetch('https://api.mercadopago.com/v1/payments', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${establishment.mercado_pago_token}`,
+        'Content-Type': 'application/json',
+        'X-Idempotency-Key': `${establishment_id}-${order_id || Date.now()}`,
+      },
+      body: JSON.stringify(mpPayload),
+    });
+
+    if (!mpResponse.ok) {
+      const errorData = await mpResponse.json();
+      console.error('Mercado Pago error:', errorData);
+      
+      // Fallback to static PIX if available
+      if (establishment.pix_key) {
+        return new Response(JSON.stringify({
+          success: true,
+          type: 'static_pix',
+          pix_key: establishment.pix_key,
+          amount,
+          description,
+          message: `💰 *Pagamento via PIX*\n\nValor: R$ ${amount.toFixed(2)}\n\nChave PIX: ${establishment.pix_key}\n\nApós o pagamento, envie o comprovante para confirmarmos seu pedido! 📸`,
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      throw new Error(errorData.message || 'Erro ao criar pagamento PIX');
+    }
+
+    const paymentData = await mpResponse.json();
+    console.log('Mercado Pago response:', JSON.stringify(paymentData, null, 2));
+
+    const pixData = paymentData.point_of_interaction?.transaction_data;
+
+    // Log analytics
+    await supabase.from('whatsapp_analytics').insert({
+      establishment_id,
+      event_type: 'pix_generated',
+      event_data: {
+        payment_id: paymentData.id,
+        order_id,
+        amount,
+        status: paymentData.status,
+      },
+    });
+
+    const qrCodeBase64 = pixData?.qr_code_base64;
+    const qrCode = pixData?.qr_code;
+
+    return new Response(JSON.stringify({
+      success: true,
+      type: 'dynamic_pix',
+      payment_id: paymentData.id,
+      status: paymentData.status,
+      qr_code: qrCode,
+      qr_code_base64: qrCodeBase64,
+      qr_code_url: qrCodeBase64 ? `data:image/png;base64,${qrCodeBase64}` : null,
+      amount,
+      expiration: paymentData.date_of_expiration,
+      message: `💰 *Pagamento via PIX*\n\nValor: R$ ${amount.toFixed(2)}\n\n📱 Escaneie o QR Code ou copie o código abaixo:\n\n\`\`\`${qrCode}\`\`\`\n\n⏰ Válido por 30 minutos\n\nO pedido será confirmado automaticamente após o pagamento!`,
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+
+  } catch (error) {
+    console.error('PIX error:', error);
+    return new Response(JSON.stringify({ 
+      error: error instanceof Error ? error.message : 'Unknown error',
+      message: '❌ Erro ao gerar PIX. Por favor, tente novamente ou escolha outra forma de pagamento.',
+    }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+});

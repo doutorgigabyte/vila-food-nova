@@ -1038,16 +1038,63 @@ export type Database = {
           },
         ]
       }
+      whatsapp_analytics: {
+        Row: {
+          created_at: string | null
+          establishment_id: string
+          event_data: Json | null
+          event_type: string
+          id: string
+          session_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          establishment_id: string
+          event_data?: Json | null
+          event_type: string
+          id?: string
+          session_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          establishment_id?: string
+          event_data?: Json | null
+          event_type?: string
+          id?: string
+          session_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_analytics_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_analytics_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       whatsapp_instances: {
         Row: {
           ai_enabled: boolean | null
           ai_prompt: string | null
           api_key: string | null
+          audio_enabled: boolean | null
+          auto_response_enabled: boolean | null
           created_at: string | null
           establishment_id: string
+          evolution_api_key: string | null
+          evolution_api_url: string | null
           id: string
           instance_id: string | null
           instance_name: string | null
+          pix_enabled: boolean | null
           qr_code: string | null
           status: string | null
           updated_at: string | null
@@ -1057,11 +1104,16 @@ export type Database = {
           ai_enabled?: boolean | null
           ai_prompt?: string | null
           api_key?: string | null
+          audio_enabled?: boolean | null
+          auto_response_enabled?: boolean | null
           created_at?: string | null
           establishment_id: string
+          evolution_api_key?: string | null
+          evolution_api_url?: string | null
           id?: string
           instance_id?: string | null
           instance_name?: string | null
+          pix_enabled?: boolean | null
           qr_code?: string | null
           status?: string | null
           updated_at?: string | null
@@ -1071,11 +1123,16 @@ export type Database = {
           ai_enabled?: boolean | null
           ai_prompt?: string | null
           api_key?: string | null
+          audio_enabled?: boolean | null
+          auto_response_enabled?: boolean | null
           created_at?: string | null
           establishment_id?: string
+          evolution_api_key?: string | null
+          evolution_api_url?: string | null
           id?: string
           instance_id?: string | null
           instance_name?: string | null
+          pix_enabled?: boolean | null
           qr_code?: string | null
           status?: string | null
           updated_at?: string | null
@@ -1125,6 +1182,47 @@ export type Database = {
             columns: ["session_id"]
             isOneToOne: false
             referencedRelation: "whatsapp_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_quick_replies: {
+        Row: {
+          created_at: string | null
+          establishment_id: string
+          id: string
+          is_active: boolean | null
+          response_media_url: string | null
+          response_text: string
+          sort_order: number | null
+          trigger_words: string[] | null
+        }
+        Insert: {
+          created_at?: string | null
+          establishment_id: string
+          id?: string
+          is_active?: boolean | null
+          response_media_url?: string | null
+          response_text: string
+          sort_order?: number | null
+          trigger_words?: string[] | null
+        }
+        Update: {
+          created_at?: string | null
+          establishment_id?: string
+          id?: string
+          is_active?: boolean | null
+          response_media_url?: string | null
+          response_text?: string
+          sort_order?: number | null
+          trigger_words?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_quick_replies_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
             referencedColumns: ["id"]
           },
         ]

@@ -5,3 +5,18 @@ verify_jwt = false
 
 [functions.calculate-delivery]
 verify_jwt = false
+
+[functions.whatsapp-webhook]
+verify_jwt = false
+
+[functions.whatsapp-ai-response]
+verify_jwt = false
+
+[functions.whatsapp-cart]
+verify_jwt = false
+
+[functions.whatsapp-checkout]
+verify_jwt = false
+
+[functions.mercadopago-pix]
+verify_jwt = false
