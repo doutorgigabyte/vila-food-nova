@@ -334,6 +334,46 @@ async function processPayout(
       })
       .eq('id', payoutId);
 
+    // Enviar notificação WhatsApp se pagamento aprovado
+    if (payment.status === 'approved') {
+      try {
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('phone')
+          .eq('id', affiliate.user_id)
+          .single();
+
+        if (profileData?.phone) {
+          const evolutionApiUrl = Deno.env.get('EVOLUTION_API_URL');
+          const evolutionApiKey = Deno.env.get('EVOLUTION_API_KEY');
+
+          if (evolutionApiUrl && evolutionApiKey) {
+            let formattedPhone = profileData.phone.replace(/\D/g, '');
+            if (!formattedPhone.startsWith('55')) {
+              formattedPhone = '55' + formattedPhone;
+            }
+
+            await fetch(`${evolutionApiUrl}/message/sendText/vilafood`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'apikey': evolutionApiKey,
+              },
+              body: JSON.stringify({
+                number: formattedPhone,
+                text: `🎉 *Comissão Paga!*\n\nOlá! Sua comissão de *R$ ${Number(payout.amount).toFixed(2)}* foi depositada via PIX.\n\nObrigado por fazer parte do VilaFood! 💚`,
+              }),
+            });
+
+            console.log('WhatsApp notification sent to affiliate:', formattedPhone);
+          }
+        }
+      } catch (notifError) {
+        console.error('Failed to send WhatsApp notification:', notifError);
+        // Não falha o payout se a notificação falhar
+      }
+    }
+
     return {
       success: true,
       mp_payment_id: payment.id.toString(),
