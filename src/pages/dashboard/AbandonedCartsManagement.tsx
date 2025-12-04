@@ -1,0 +1,284 @@
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ShoppingCart, MessageSquare, Phone, DollarSign, TrendingUp, Check, RefreshCw } from "lucide-react";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import DashboardLayout from "@/components/dashboard/DashboardLayout";
+import { format, formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
+
+interface CartItem {
+  name: string;
+  quantity: number;
+  price: number;
+}
+
+interface AbandonedCart {
+  id: string;
+  customer_phone: string;
+  customer_name: string | null;
+  items: CartItem[];
+  total: number;
+  recovery_attempts: number;
+  last_recovery_at: string | null;
+  recovered: boolean;
+  created_at: string;
+}
+
+const AbandonedCartsManagement = () => {
+  const [carts, setCarts] = useState<AbandonedCart[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchCarts();
+  }, []);
+
+  const fetchCarts = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: establishment } = await supabase
+        .from("establishments")
+        .select("id")
+        .eq("owner_id", user.id)
+        .single();
+
+      if (!establishment) return;
+
+      const { data } = await supabase
+        .from("abandoned_carts")
+        .select("*")
+        .eq("establishment_id", establishment.id)
+        .eq("recovered", false)
+        .order("created_at", { ascending: false });
+
+      if (data) {
+        setCarts(data.map(c => ({
+          ...c,
+          items: (c.items as unknown as CartItem[]) || []
+        })));
+      }
+    } catch (error) {
+      console.error("Error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const sendRecoveryMessage = async (cart: AbandonedCart) => {
+    setSending(cart.id);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: establishment } = await supabase
+        .from("establishments")
+        .select("id, name, slug")
+        .eq("owner_id", user.id)
+        .single();
+
+      if (!establishment) return;
+
+      // Call WhatsApp notification function
+      const itemsList = cart.items.map(i => `${i.quantity}x ${i.name}`).join("\n");
+      const message = `Olá ${cart.customer_name || ""}! 👋\n\nVimos que você deixou alguns itens no carrinho:\n\n${itemsList}\n\nTotal: R$ ${cart.total.toFixed(2)}\n\nQue tal finalizar seu pedido? Estamos com tudo preparado para você! 🛒\n\nAcesse: ${window.location.origin}/loja/${establishment.slug}`;
+
+      const { error } = await supabase.functions.invoke("whatsapp-notification", {
+        body: {
+          phone: cart.customer_phone,
+          message,
+          establishment_id: establishment.id
+        }
+      });
+
+      if (error) throw error;
+
+      // Update recovery attempts
+      await supabase
+        .from("abandoned_carts")
+        .update({
+          recovery_attempts: cart.recovery_attempts + 1,
+          last_recovery_at: new Date().toISOString()
+        })
+        .eq("id", cart.id);
+
+      toast.success("Mensagem de recuperação enviada!");
+      fetchCarts();
+    } catch (error) {
+      toast.error("Erro ao enviar mensagem");
+    } finally {
+      setSending(null);
+    }
+  };
+
+  const markAsRecovered = async (cartId: string) => {
+    try {
+      await supabase
+        .from("abandoned_carts")
+        .update({ recovered: true })
+        .eq("id", cartId);
+
+      toast.success("Carrinho marcado como recuperado!");
+      fetchCarts();
+    } catch (error) {
+      toast.error("Erro ao atualizar");
+    }
+  };
+
+  const totalValue = carts.reduce((acc, c) => acc + c.total, 0);
+  const recentCarts = carts.filter(c => {
+    const hoursDiff = (Date.now() - new Date(c.created_at).getTime()) / (1000 * 60 * 60);
+    return hoursDiff <= 24;
+  });
+
+  return (
+    <DashboardLayout title="Recuperador de Vendas">
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
+                <ShoppingCart className="w-5 h-5 text-yellow-600" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Carrinhos Abandonados</p>
+                <p className="text-xl font-bold">{carts.length}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
+                <DollarSign className="w-5 h-5 text-red-600" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Valor Total Perdido</p>
+                <p className="text-xl font-bold">R$ {totalValue.toFixed(2)}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                <TrendingUp className="w-5 h-5 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Últimas 24h</p>
+                <p className="text-xl font-bold">{recentCarts.length}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Table */}
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <ShoppingCart className="w-5 h-5" />
+            Carrinhos Abandonados
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <p className="text-muted-foreground text-center py-8">Carregando...</p>
+          ) : carts.length === 0 ? (
+            <p className="text-muted-foreground text-center py-8">
+              Nenhum carrinho abandonado 🎉
+            </p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Cliente</TableHead>
+                  <TableHead>Itens</TableHead>
+                  <TableHead className="text-right">Valor</TableHead>
+                  <TableHead>Tempo</TableHead>
+                  <TableHead>Tentativas</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {carts.map((cart) => (
+                  <TableRow key={cart.id}>
+                    <TableCell>
+                      <div>
+                        <p className="font-medium">{cart.customer_name || "Cliente"}</p>
+                        <p className="text-sm text-muted-foreground flex items-center gap-1">
+                          <Phone className="w-3 h-3" />
+                          {cart.customer_phone}
+                        </p>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm">
+                        {cart.items.slice(0, 2).map((item, i) => (
+                          <span key={i} className="block">
+                            {item.quantity}x {item.name}
+                          </span>
+                        ))}
+                        {cart.items.length > 2 && (
+                          <span className="text-muted-foreground">
+                            +{cart.items.length - 2} mais
+                          </span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right font-bold">
+                      R$ {cart.total.toFixed(2)}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">
+                        {formatDistanceToNow(new Date(cart.created_at), { addSuffix: true, locale: ptBR })}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={cart.recovery_attempts > 0 ? "secondary" : "outline"}>
+                        {cart.recovery_attempts}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => sendRecoveryMessage(cart)}
+                          disabled={sending === cart.id}
+                        >
+                          {sending === cart.id ? (
+                            <RefreshCw className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <MessageSquare className="w-4 h-4" />
+                          )}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => markAsRecovered(cart.id)}
+                        >
+                          <Check className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+    </DashboardLayout>
+  );
+};
+
+export default AbandonedCartsManagement;
