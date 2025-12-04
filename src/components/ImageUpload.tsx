@@ -1,17 +1,18 @@
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Upload, X, Loader2, Image as ImageIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { uploadToS3, validateFile, UploadType } from "@/lib/s3";
 
 interface ImageUploadProps {
-  bucket: "establishments" | "products" | "avatars";
+  bucket: UploadType;
   currentImage?: string | null;
   onUpload: (url: string) => void;
   onRemove?: () => void;
   className?: string;
   aspectRatio?: "square" | "banner" | "auto";
+  establishmentId?: string;
 }
 
 export const ImageUpload = ({
@@ -21,6 +22,7 @@ export const ImageUpload = ({
   onRemove,
   className,
   aspectRatio = "square",
+  establishmentId,
 }: ImageUploadProps) => {
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState<string | null>(currentImage || null);
@@ -36,17 +38,12 @@ export const ImageUpload = ({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
-    const validTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-    if (!validTypes.includes(file.type)) {
-      toast.error("Formato inválido. Use JPEG, PNG, WebP ou GIF.");
-      return;
-    }
-
-    // Validate file size (5MB for establishments/products, 2MB for avatars)
+    // Validate file
     const maxSize = bucket === "avatars" ? 2 * 1024 * 1024 : 5 * 1024 * 1024;
-    if (file.size > maxSize) {
-      toast.error(`Arquivo muito grande. Máximo: ${bucket === "avatars" ? "2MB" : "5MB"}`);
+    const validation = validateFile(file, { maxSize });
+    
+    if (!validation.valid) {
+      toast.error(validation.error);
       return;
     }
 
@@ -57,30 +54,14 @@ export const ImageUpload = ({
       const objectUrl = URL.createObjectURL(file);
       setPreview(objectUrl);
 
-      // Generate unique filename
-      const fileExt = file.name.split(".").pop();
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-      const filePath = `${fileName}`;
+      // Upload to S3
+      const result = await uploadToS3(file, bucket, establishmentId);
 
-      // Upload to Supabase Storage
-      const { error: uploadError } = await supabase.storage
-        .from(bucket)
-        .upload(filePath, file, {
-          cacheControl: "3600",
-          upsert: false,
-        });
-
-      if (uploadError) throw uploadError;
-
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from(bucket)
-        .getPublicUrl(filePath);
-
-      onUpload(publicUrl);
+      onUpload(result.url);
       toast.success("Imagem enviada com sucesso!");
-    } catch (error: any) {
-      console.error("Upload error:", error);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+      console.error("Upload error:", errorMessage);
       toast.error("Erro ao enviar imagem. Tente novamente.");
       setPreview(currentImage || null);
     } finally {
