@@ -26,6 +26,8 @@ import DeliveryFeesManagement from "./pages/dashboard/DeliveryFeesManagement";
 import CashFlowManagement from "./pages/dashboard/CashFlowManagement";
 import QRCodeManagement from "./pages/dashboard/QRCodeManagement";
 import ReportsManagement from "./pages/dashboard/ReportsManagement";
+import WhatsAppManagement from "./pages/dashboard/WhatsAppManagement";
+import IntegrationsManagement from "./pages/dashboard/IntegrationsManagement";
 import AdminDashboard from "./pages/dashboard/AdminDashboard";
 import AffiliateDashboard from "./pages/dashboard/AffiliateDashboard";
 import UsersManagement from "./pages/admin/UsersManagement";
@@ -33,6 +35,7 @@ import EstablishmentsManagement from "./pages/admin/EstablishmentsManagement";
 import PlansManagement from "./pages/admin/PlansManagement";
 import SubscriptionsManagement from "./pages/admin/SubscriptionsManagement";
 import NotFound from "./pages/NotFound";
+import PWAInstallPrompt from "./components/PWAInstallPrompt";
 
 const queryClient = new QueryClient();
 
@@ -42,6 +45,7 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
+        <PWAInstallPrompt />
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
@@ -64,6 +68,8 @@ const App = () => (
             <Route path="/painel/fluxo" element={<CashFlowManagement />} />
             <Route path="/painel/qrcode" element={<QRCodeManagement />} />
             <Route path="/painel/relatorios" element={<ReportsManagement />} />
+            <Route path="/painel/whatsapp" element={<WhatsAppManagement />} />
+            <Route path="/painel/integracoes" element={<IntegrationsManagement />} />
             <Route path="/admin" element={<ProtectedAdminRoute><AdminDashboard /></ProtectedAdminRoute>} />
             <Route path="/admin/usuarios" element={<ProtectedAdminRoute><UsersManagement /></ProtectedAdminRoute>} />
             <Route path="/admin/estabelecimentos" element={<ProtectedAdminRoute><EstablishmentsManagement /></ProtectedAdminRoute>} />
