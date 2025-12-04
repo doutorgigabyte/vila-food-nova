@@ -29,6 +29,8 @@ import ReportsManagement from "./pages/dashboard/ReportsManagement";
 import WhatsAppManagement from "./pages/dashboard/WhatsAppManagement";
 import IntegrationsManagement from "./pages/dashboard/IntegrationsManagement";
 import ServiceAreaManagement from "./pages/dashboard/ServiceAreaManagement";
+import MercadoPagoManagement from "./pages/dashboard/MercadoPagoManagement";
+import MercadoPagoCallback from "./pages/dashboard/MercadoPagoCallback";
 import AdminDashboard from "./pages/dashboard/AdminDashboard";
 import AffiliateDashboard from "./pages/dashboard/AffiliateDashboard";
 import UsersManagement from "./pages/admin/UsersManagement";
@@ -72,6 +74,9 @@ const App = () => (
             <Route path="/painel/whatsapp" element={<WhatsAppManagement />} />
             <Route path="/painel/integracoes" element={<IntegrationsManagement />} />
             <Route path="/painel/area-atendimento" element={<ServiceAreaManagement />} />
+            <Route path="/painel/mercadopago" element={<MercadoPagoManagement />} />
+            <Route path="/dashboard/mercadopago" element={<MercadoPagoManagement />} />
+            <Route path="/dashboard/mercadopago/callback" element={<MercadoPagoCallback />} />
             <Route path="/admin" element={<ProtectedAdminRoute><AdminDashboard /></ProtectedAdminRoute>} />
             <Route path="/admin/usuarios" element={<ProtectedAdminRoute><UsersManagement /></ProtectedAdminRoute>} />
             <Route path="/admin/estabelecimentos" element={<ProtectedAdminRoute><EstablishmentsManagement /></ProtectedAdminRoute>} />
