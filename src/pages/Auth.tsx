@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,8 +7,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Utensils, Mail, Lock, User, Phone, ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
 
 const Auth = () => {
+  const navigate = useNavigate();
+  const { user, signIn, signUp, loading } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [activeTab, setActiveTab] = useState("login");
@@ -24,18 +27,35 @@ const Auth = () => {
   const [registerPassword, setRegisterPassword] = useState("");
   const [registerConfirmPassword, setRegisterConfirmPassword] = useState("");
 
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user && !loading) {
+      navigate('/marketplace');
+    }
+  }, [user, loading, navigate]);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!loginEmail || !loginPassword) {
       toast.error("Preencha todos os campos");
       return;
     }
+    
     setIsLoading(true);
-    // Simulate login
-    setTimeout(() => {
-      setIsLoading(false);
-      toast.success("Login realizado com sucesso!");
-    }, 1500);
+    const { error } = await signIn(loginEmail, loginPassword);
+    setIsLoading(false);
+    
+    if (error) {
+      if (error.message.includes('Invalid login credentials')) {
+        toast.error("E-mail ou senha incorretos");
+      } else {
+        toast.error(error.message || "Erro ao fazer login");
+      }
+      return;
+    }
+    
+    toast.success("Login realizado com sucesso!");
+    navigate('/marketplace');
   };
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -52,12 +72,31 @@ const Auth = () => {
       toast.error("A senha deve ter pelo menos 6 caracteres");
       return;
     }
+    
     setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      toast.success("Conta criada com sucesso!");
-    }, 1500);
+    const { error } = await signUp(registerEmail, registerPassword, registerName);
+    setIsLoading(false);
+    
+    if (error) {
+      if (error.message.includes('already registered')) {
+        toast.error("Este e-mail já está cadastrado");
+      } else {
+        toast.error(error.message || "Erro ao criar conta");
+      }
+      return;
+    }
+    
+    toast.success("Conta criada com sucesso!");
+    navigate('/marketplace');
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center p-4">
