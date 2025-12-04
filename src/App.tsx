@@ -28,6 +28,7 @@ import QRCodeManagement from "./pages/dashboard/QRCodeManagement";
 import ReportsManagement from "./pages/dashboard/ReportsManagement";
 import WhatsAppManagement from "./pages/dashboard/WhatsAppManagement";
 import IntegrationsManagement from "./pages/dashboard/IntegrationsManagement";
+import ServiceAreaManagement from "./pages/dashboard/ServiceAreaManagement";
 import AdminDashboard from "./pages/dashboard/AdminDashboard";
 import AffiliateDashboard from "./pages/dashboard/AffiliateDashboard";
 import UsersManagement from "./pages/admin/UsersManagement";
@@ -70,6 +71,7 @@ const App = () => (
             <Route path="/painel/relatorios" element={<ReportsManagement />} />
             <Route path="/painel/whatsapp" element={<WhatsAppManagement />} />
             <Route path="/painel/integracoes" element={<IntegrationsManagement />} />
+            <Route path="/painel/area-atendimento" element={<ServiceAreaManagement />} />
             <Route path="/admin" element={<ProtectedAdminRoute><AdminDashboard /></ProtectedAdminRoute>} />
             <Route path="/admin/usuarios" element={<ProtectedAdminRoute><UsersManagement /></ProtectedAdminRoute>} />
             <Route path="/admin/estabelecimentos" element={<ProtectedAdminRoute><EstablishmentsManagement /></ProtectedAdminRoute>} />
