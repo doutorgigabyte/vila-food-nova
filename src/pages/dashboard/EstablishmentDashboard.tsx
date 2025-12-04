@@ -84,10 +84,13 @@ const menuItems = [
   { icon: Package, label: "Produtos", href: "/painel/produtos" },
   { icon: Tag, label: "Categorias", href: "/painel/categorias" },
   { icon: Truck, label: "Frete", href: "/painel/frete" },
+  { icon: DollarSign, label: "Cupons", href: "/painel/cupons" },
+  { icon: TrendingUp, label: "Fluxo de Caixa", href: "/painel/fluxo" },
   { icon: MessageSquare, label: "WhatsApp IA", href: "/painel/whatsapp" },
   { icon: BarChart3, label: "Relatórios", href: "/painel/relatorios" },
   { icon: QrCode, label: "QR Code", href: "/painel/qrcode" },
-  { icon: Settings, label: "Configurações", href: "/painel/configuracoes" },
+  { icon: Eye, label: "Banners", href: "/painel/banners" },
+  { icon: Settings, label: "Integrações", href: "/painel/integracoes" },
 ];
 
 const EstablishmentDashboard = () => {

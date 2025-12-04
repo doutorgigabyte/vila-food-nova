@@ -20,6 +20,12 @@ import ProductsManagement from "./pages/dashboard/ProductsManagement";
 import CategoriesManagement from "./pages/dashboard/CategoriesManagement";
 import OrdersManagement from "./pages/dashboard/OrdersManagement";
 import PDV from "./pages/dashboard/PDV";
+import BannersManagement from "./pages/dashboard/BannersManagement";
+import CouponsManagement from "./pages/dashboard/CouponsManagement";
+import DeliveryFeesManagement from "./pages/dashboard/DeliveryFeesManagement";
+import CashFlowManagement from "./pages/dashboard/CashFlowManagement";
+import QRCodeManagement from "./pages/dashboard/QRCodeManagement";
+import ReportsManagement from "./pages/dashboard/ReportsManagement";
 import AdminDashboard from "./pages/dashboard/AdminDashboard";
 import AffiliateDashboard from "./pages/dashboard/AffiliateDashboard";
 import UsersManagement from "./pages/admin/UsersManagement";
@@ -52,6 +58,12 @@ const App = () => (
             <Route path="/painel/categorias" element={<CategoriesManagement />} />
             <Route path="/painel/pedidos" element={<OrdersManagement />} />
             <Route path="/painel/pdv" element={<PDV />} />
+            <Route path="/painel/banners" element={<BannersManagement />} />
+            <Route path="/painel/cupons" element={<CouponsManagement />} />
+            <Route path="/painel/frete" element={<DeliveryFeesManagement />} />
+            <Route path="/painel/fluxo" element={<CashFlowManagement />} />
+            <Route path="/painel/qrcode" element={<QRCodeManagement />} />
+            <Route path="/painel/relatorios" element={<ReportsManagement />} />
             <Route path="/admin" element={<ProtectedAdminRoute><AdminDashboard /></ProtectedAdminRoute>} />
             <Route path="/admin/usuarios" element={<ProtectedAdminRoute><UsersManagement /></ProtectedAdminRoute>} />
             <Route path="/admin/estabelecimentos" element={<ProtectedAdminRoute><EstablishmentsManagement /></ProtectedAdminRoute>} />
