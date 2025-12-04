@@ -19,6 +19,10 @@ import OrdersManagement from "./pages/dashboard/OrdersManagement";
 import PDV from "./pages/dashboard/PDV";
 import AdminDashboard from "./pages/dashboard/AdminDashboard";
 import AffiliateDashboard from "./pages/dashboard/AffiliateDashboard";
+import UsersManagement from "./pages/admin/UsersManagement";
+import EstablishmentsManagement from "./pages/admin/EstablishmentsManagement";
+import PlansManagement from "./pages/admin/PlansManagement";
+import SubscriptionsManagement from "./pages/admin/SubscriptionsManagement";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -45,6 +49,10 @@ const App = () => (
             <Route path="/painel/pedidos" element={<OrdersManagement />} />
             <Route path="/painel/pdv" element={<PDV />} />
             <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin/usuarios" element={<UsersManagement />} />
+            <Route path="/admin/estabelecimentos" element={<EstablishmentsManagement />} />
+            <Route path="/admin/planos" element={<PlansManagement />} />
+            <Route path="/admin/assinaturas" element={<SubscriptionsManagement />} />
             <Route path="/afiliado" element={<AffiliateDashboard />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
