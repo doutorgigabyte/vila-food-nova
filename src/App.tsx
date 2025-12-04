@@ -15,6 +15,8 @@ import Orders from "./pages/Orders";
 import EstablishmentDashboard from "./pages/dashboard/EstablishmentDashboard";
 import ProductsManagement from "./pages/dashboard/ProductsManagement";
 import CategoriesManagement from "./pages/dashboard/CategoriesManagement";
+import OrdersManagement from "./pages/dashboard/OrdersManagement";
+import PDV from "./pages/dashboard/PDV";
 import AdminDashboard from "./pages/dashboard/AdminDashboard";
 import AffiliateDashboard from "./pages/dashboard/AffiliateDashboard";
 import NotFound from "./pages/NotFound";
@@ -40,6 +42,8 @@ const App = () => (
             <Route path="/painel" element={<EstablishmentDashboard />} />
             <Route path="/painel/produtos" element={<ProductsManagement />} />
             <Route path="/painel/categorias" element={<CategoriesManagement />} />
+            <Route path="/painel/pedidos" element={<OrdersManagement />} />
+            <Route path="/painel/pdv" element={<PDV />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/afiliado" element={<AffiliateDashboard />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
