@@ -1,12 +1,18 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Minus, ClipboardList, Users, DollarSign, Trash2, Check } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { 
+  Plus, Minus, ClipboardList, Users, DollarSign, Trash2, Check, 
+  Search, Clock, CreditCard, QrCode, Banknote, Receipt, 
+  ChefHat, Grid3X3, LayoutGrid, X, Printer, Split, Send
+} from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
@@ -16,6 +22,8 @@ interface TabItem {
   product_name: string;
   quantity: number;
   price: number;
+  notes?: string;
+  sent_to_kitchen?: boolean;
 }
 
 interface Tab {
@@ -29,22 +37,46 @@ interface Tab {
   discount: number;
   total: number;
   opened_at: string;
+  notes?: string;
 }
 
 interface Product {
   id: string;
   name: string;
   price: number;
-  image_url: string;
+  image_url: string | null;
+  category_id: string | null;
 }
+
+interface Category {
+  id: string;
+  name: string;
+}
+
+// Configuração de mesas - pode ser personalizado pelo estabelecimento
+const TABLE_CONFIG = {
+  rows: 4,
+  cols: 5,
+  tables: Array.from({ length: 20 }, (_, i) => ({
+    number: (i + 1).toString(),
+    label: `Mesa ${i + 1}`
+  }))
+};
 
 const WaiterApp = () => {
   const [tabs, setTabs] = useState<Tab[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [selectedTab, setSelectedTab] = useState<Tab | null>(null);
   const [loading, setLoading] = useState(true);
   const [newTabDialog, setNewTabDialog] = useState(false);
+  const [closeTabDialog, setCloseTabDialog] = useState(false);
+  const [productSearch, setProductSearch] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [newTab, setNewTab] = useState({ table_number: "", waiter_name: "", customer_name: "" });
+  const [paymentMethod, setPaymentMethod] = useState<string>("cash");
+  const [splitCount, setSplitCount] = useState(1);
+  const [establishmentId, setEstablishmentId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -62,8 +94,9 @@ const WaiterApp = () => {
         .single();
 
       if (!establishment) return;
+      setEstablishmentId(establishment.id);
 
-      const [tabsRes, productsRes] = await Promise.all([
+      const [tabsRes, productsRes, categoriesRes] = await Promise.all([
         supabase
           .from("waiter_tabs")
           .select("*")
@@ -72,9 +105,15 @@ const WaiterApp = () => {
           .order("opened_at", { ascending: false }),
         supabase
           .from("products")
-          .select("id, name, price, image_url")
+          .select("id, name, price, image_url, category_id")
+          .eq("establishment_id", establishment.id)
+          .eq("is_active", true),
+        supabase
+          .from("categories")
+          .select("id, name")
           .eq("establishment_id", establishment.id)
           .eq("is_active", true)
+          .order("sort_order")
       ]);
 
       if (tabsRes.data) {
@@ -84,6 +123,7 @@ const WaiterApp = () => {
         })));
       }
       if (productsRes.data) setProducts(productsRes.data);
+      if (categoriesRes.data) setCategories(categoriesRes.data);
     } catch (error) {
       console.error("Error fetching data:", error);
     } finally {
@@ -91,23 +131,35 @@ const WaiterApp = () => {
     }
   };
 
+  const getTableStatus = (tableNumber: string) => {
+    const tab = tabs.find(t => t.table_number === tableNumber || t.table_number === `Mesa ${tableNumber}`);
+    if (!tab) return "free";
+    if (tab.items.some(i => !i.sent_to_kitchen)) return "pending";
+    return "occupied";
+  };
+
+  const getTableTab = (tableNumber: string) => {
+    return tabs.find(t => t.table_number === tableNumber || t.table_number === `Mesa ${tableNumber}`);
+  };
+
+  const selectTable = (tableNumber: string) => {
+    const existingTab = getTableTab(tableNumber);
+    if (existingTab) {
+      setSelectedTab(existingTab);
+    } else {
+      setNewTab({ table_number: `Mesa ${tableNumber}`, waiter_name: "", customer_name: "" });
+      setNewTabDialog(true);
+    }
+  };
+
   const createTab = async () => {
+    if (!establishmentId) return;
+
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: establishment } = await supabase
-        .from("establishments")
-        .select("id")
-        .eq("owner_id", user.id)
-        .single();
-
-      if (!establishment) return;
-
       const { data, error } = await supabase
         .from("waiter_tabs")
         .insert({
-          establishment_id: establishment.id,
+          establishment_id: establishmentId,
           ...newTab,
           items: [],
           subtotal: 0,
@@ -118,31 +170,37 @@ const WaiterApp = () => {
 
       if (error) throw error;
 
-      setTabs([{ ...data, items: [] }, ...tabs]);
+      const newTabData = { ...data, items: [] };
+      setTabs([newTabData, ...tabs]);
+      setSelectedTab(newTabData);
       setNewTabDialog(false);
       setNewTab({ table_number: "", waiter_name: "", customer_name: "" });
-      toast.success("Comanda aberta!");
+      toast.success("Comanda aberta com sucesso!");
     } catch (error) {
       toast.error("Erro ao criar comanda");
     }
   };
 
   const addToTab = async (product: Product) => {
-    if (!selectedTab) return;
+    if (!selectedTab) {
+      toast.error("Selecione uma mesa primeiro");
+      return;
+    }
 
-    const existingItem = selectedTab.items.find(i => i.product_id === product.id);
+    const existingItem = selectedTab.items.find(i => i.product_id === product.id && !i.sent_to_kitchen);
     let newItems: TabItem[];
 
     if (existingItem) {
       newItems = selectedTab.items.map(i =>
-        i.product_id === product.id ? { ...i, quantity: i.quantity + 1 } : i
+        i.product_id === product.id && !i.sent_to_kitchen ? { ...i, quantity: i.quantity + 1 } : i
       );
     } else {
       newItems = [...selectedTab.items, {
         product_id: product.id,
         product_name: product.name,
         quantity: 1,
-        price: product.price
+        price: product.price,
+        sent_to_kitchen: false
       }];
     }
 
@@ -158,14 +216,15 @@ const WaiterApp = () => {
       const updatedTab = { ...selectedTab, items: newItems, subtotal, total };
       setSelectedTab(updatedTab);
       setTabs(tabs.map(t => t.id === selectedTab.id ? updatedTab : t));
+      toast.success(`${product.name} adicionado`);
     }
   };
 
-  const updateQuantity = async (productId: string, delta: number) => {
+  const updateQuantity = async (productId: string, delta: number, sentToKitchen: boolean = false) => {
     if (!selectedTab) return;
 
     let newItems = selectedTab.items.map(i => {
-      if (i.product_id === productId) {
+      if (i.product_id === productId && i.sent_to_kitchen === sentToKitchen) {
         const newQty = i.quantity + delta;
         return newQty > 0 ? { ...i, quantity: newQty } : null;
       }
@@ -187,178 +246,321 @@ const WaiterApp = () => {
     }
   };
 
+  const sendToKitchen = async () => {
+    if (!selectedTab) return;
+
+    const newItems = selectedTab.items.map(i => ({
+      ...i,
+      sent_to_kitchen: true
+    }));
+
+    const { error } = await supabase
+      .from("waiter_tabs")
+      .update({ items: newItems as unknown as any })
+      .eq("id", selectedTab.id);
+
+    if (!error) {
+      const updatedTab = { ...selectedTab, items: newItems };
+      setSelectedTab(updatedTab);
+      setTabs(tabs.map(t => t.id === selectedTab.id ? updatedTab : t));
+      toast.success("Pedido enviado para a cozinha!");
+    }
+  };
+
   const closeTab = async () => {
     if (!selectedTab) return;
 
     const { error } = await supabase
       .from("waiter_tabs")
-      .update({ status: "closed", closed_at: new Date().toISOString() })
+      .update({ 
+        status: "closed", 
+        closed_at: new Date().toISOString(),
+        notes: `Pagamento: ${paymentMethod}${splitCount > 1 ? ` (dividido em ${splitCount})` : ''}`
+      })
       .eq("id", selectedTab.id);
 
     if (!error) {
       setTabs(tabs.filter(t => t.id !== selectedTab.id));
       setSelectedTab(null);
-      toast.success("Comanda fechada!");
+      setCloseTabDialog(false);
+      setSplitCount(1);
+      setPaymentMethod("cash");
+      toast.success("Comanda fechada com sucesso!");
     }
+  };
+
+  const filteredProducts = useMemo(() => {
+    return products.filter(p => {
+      const matchesSearch = p.name.toLowerCase().includes(productSearch.toLowerCase());
+      const matchesCategory = selectedCategory === "all" || p.category_id === selectedCategory;
+      return matchesSearch && matchesCategory;
+    });
+  }, [products, productSearch, selectedCategory]);
+
+  const pendingItems = selectedTab?.items.filter(i => !i.sent_to_kitchen) || [];
+  const sentItems = selectedTab?.items.filter(i => i.sent_to_kitchen) || [];
+
+  const getElapsedTime = (openedAt: string) => {
+    const diff = Date.now() - new Date(openedAt).getTime();
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(minutes / 60);
+    if (hours > 0) return `${hours}h ${minutes % 60}min`;
+    return `${minutes}min`;
   };
 
   return (
     <DashboardLayout title="Comanda Digital">
-      <div className="grid lg:grid-cols-3 gap-6">
-        {/* Comandas Abertas */}
-        <Card className="lg:col-span-1">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <ClipboardList className="w-5 h-5" />
-              Comandas Abertas
-            </CardTitle>
-            <Dialog open={newTabDialog} onOpenChange={setNewTabDialog}>
-              <DialogTrigger asChild>
-                <Button size="sm">
-                  <Plus className="w-4 h-4 mr-1" /> Nova
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Nova Comanda</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <Label>Mesa</Label>
-                    <Input 
-                      value={newTab.table_number}
-                      onChange={(e) => setNewTab({ ...newTab, table_number: e.target.value })}
-                      placeholder="Ex: Mesa 5"
-                    />
-                  </div>
-                  <div>
-                    <Label>Garçom</Label>
-                    <Input 
-                      value={newTab.waiter_name}
-                      onChange={(e) => setNewTab({ ...newTab, waiter_name: e.target.value })}
-                      placeholder="Nome do garçom"
-                    />
-                  </div>
-                  <div>
-                    <Label>Cliente (opcional)</Label>
-                    <Input 
-                      value={newTab.customer_name}
-                      onChange={(e) => setNewTab({ ...newTab, customer_name: e.target.value })}
-                      placeholder="Nome do cliente"
-                    />
-                  </div>
-                  <Button onClick={createTab} className="w-full">Abrir Comanda</Button>
-                </div>
-              </DialogContent>
-            </Dialog>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {loading ? (
-              <p className="text-muted-foreground text-sm">Carregando...</p>
-            ) : tabs.length === 0 ? (
-              <p className="text-muted-foreground text-sm">Nenhuma comanda aberta</p>
-            ) : (
-              tabs.map((tab) => (
-                <div
-                  key={tab.id}
-                  onClick={() => setSelectedTab(tab)}
-                  className={`p-3 rounded-lg cursor-pointer transition-colors ${
-                    selectedTab?.id === tab.id
-                      ? "bg-primary/10 border border-primary"
-                      : "bg-muted/50 hover:bg-muted"
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold">{tab.table_number}</span>
-                    <Badge variant="outline">
-                      {tab.items.length} itens
-                    </Badge>
-                  </div>
-                  {tab.waiter_name && (
-                    <p className="text-sm text-muted-foreground mt-1">
-                      <Users className="w-3 h-3 inline mr-1" />
-                      {tab.waiter_name}
-                    </p>
-                  )}
-                  <p className="text-sm font-medium mt-1">
-                    R$ {(tab.total || 0).toFixed(2)}
-                  </p>
-                </div>
-              ))
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Produtos */}
-        <Card className="lg:col-span-1">
+      <div className="grid lg:grid-cols-12 gap-4 h-[calc(100vh-180px)]">
+        {/* Grid de Mesas */}
+        <Card className="lg:col-span-3 flex flex-col">
           <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Produtos</CardTitle>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Grid3X3 className="w-4 h-4" />
+              Mesas
+            </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-2 max-h-[60vh] overflow-y-auto">
-              {products.map((product) => (
-                <button
-                  key={product.id}
-                  onClick={() => selectedTab && addToTab(product)}
-                  disabled={!selectedTab}
-                  className="p-3 bg-muted/50 hover:bg-muted rounded-lg text-left transition-colors disabled:opacity-50"
-                >
-                  <p className="font-medium text-sm truncate">{product.name}</p>
-                  <p className="text-primary text-sm font-bold">
-                    R$ {product.price.toFixed(2)}
-                  </p>
-                </button>
-              ))}
+          <CardContent className="flex-1 overflow-auto">
+            <div className="grid grid-cols-4 gap-2">
+              {TABLE_CONFIG.tables.map((table) => {
+                const status = getTableStatus(table.number);
+                const tab = getTableTab(table.number);
+                return (
+                  <button
+                    key={table.number}
+                    onClick={() => selectTable(table.number)}
+                    className={`
+                      aspect-square rounded-lg flex flex-col items-center justify-center text-xs font-bold transition-all
+                      ${selectedTab?.table_number === `Mesa ${table.number}` ? "ring-2 ring-primary ring-offset-2" : ""}
+                      ${status === "free" 
+                        ? "bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400" 
+                        : status === "pending"
+                        ? "bg-yellow-100 text-yellow-700 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 animate-pulse"
+                        : "bg-primary/20 text-primary hover:bg-primary/30"}
+                    `}
+                  >
+                    <span className="text-lg font-bold">{table.number}</span>
+                    {tab && (
+                      <span className="text-[10px] opacity-75">
+                        R${tab.total.toFixed(0)}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+            
+            {/* Legenda */}
+            <div className="flex gap-4 mt-4 text-xs">
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 rounded bg-green-500" />
+                <span>Livre</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 rounded bg-yellow-500" />
+                <span>Pendente</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 rounded bg-primary" />
+                <span>Ocupada</span>
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Comanda Selecionada */}
-        <Card className="lg:col-span-1">
+        {/* Produtos */}
+        <Card className="lg:col-span-5 flex flex-col">
           <CardHeader className="pb-2">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <DollarSign className="w-5 h-5" />
-              {selectedTab ? selectedTab.table_number : "Selecione uma comanda"}
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base">Cardápio</CardTitle>
+              {selectedTab && (
+                <Badge variant="secondary" className="gap-1">
+                  <Clock className="w-3 h-3" />
+                  {getElapsedTime(selectedTab.opened_at)}
+                </Badge>
+              )}
+            </div>
+            <div className="relative mt-2">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar produto..."
+                value={productSearch}
+                onChange={(e) => setProductSearch(e.target.value)}
+                className="pl-9"
+              />
+            </div>
           </CardHeader>
-          <CardContent>
-            {selectedTab ? (
-              <div className="space-y-4">
-                <div className="max-h-[40vh] overflow-y-auto space-y-2">
-                  {selectedTab.items.map((item) => (
-                    <div key={item.product_id} className="flex items-center justify-between p-2 bg-muted/30 rounded">
-                      <div className="flex-1">
-                        <p className="font-medium text-sm">{item.product_name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          R$ {item.price.toFixed(2)} x {item.quantity}
-                        </p>
+          <CardContent className="flex-1 overflow-hidden flex flex-col">
+            {/* Categorias */}
+            <ScrollArea className="w-full whitespace-nowrap mb-3">
+              <div className="flex gap-2 pb-2">
+                <Button
+                  size="sm"
+                  variant={selectedCategory === "all" ? "default" : "outline"}
+                  onClick={() => setSelectedCategory("all")}
+                  className="shrink-0"
+                >
+                  Todos
+                </Button>
+                {categories.map((cat) => (
+                  <Button
+                    key={cat.id}
+                    size="sm"
+                    variant={selectedCategory === cat.id ? "default" : "outline"}
+                    onClick={() => setSelectedCategory(cat.id)}
+                    className="shrink-0"
+                  >
+                    {cat.name}
+                  </Button>
+                ))}
+              </div>
+            </ScrollArea>
+
+            {/* Grid de Produtos */}
+            <ScrollArea className="flex-1">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {filteredProducts.map((product) => (
+                  <button
+                    key={product.id}
+                    onClick={() => addToTab(product)}
+                    disabled={!selectedTab}
+                    className="p-3 bg-muted/50 hover:bg-muted rounded-lg text-left transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
+                  >
+                    {product.image_url && (
+                      <div className="aspect-video bg-muted rounded mb-2 overflow-hidden">
+                        <img 
+                          src={product.image_url} 
+                          alt={product.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                        />
                       </div>
-                      <div className="flex items-center gap-1">
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-7 w-7"
-                          onClick={() => updateQuantity(item.product_id, -1)}
-                        >
-                          <Minus className="w-3 h-3" />
-                        </Button>
-                        <span className="w-6 text-center text-sm">{item.quantity}</span>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-7 w-7"
-                          onClick={() => updateQuantity(item.product_id, 1)}
-                        >
-                          <Plus className="w-3 h-3" />
-                        </Button>
+                    )}
+                    <p className="font-medium text-sm truncate">{product.name}</p>
+                    <p className="text-primary text-sm font-bold">
+                      R$ {product.price.toFixed(2)}
+                    </p>
+                  </button>
+                ))}
+              </div>
+            </ScrollArea>
+          </CardContent>
+        </Card>
+
+        {/* Comanda Selecionada */}
+        <Card className="lg:col-span-4 flex flex-col">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Receipt className="w-4 h-4" />
+                {selectedTab ? selectedTab.table_number : "Selecione uma mesa"}
+              </CardTitle>
+              {selectedTab && (
+                <Button size="icon" variant="ghost" onClick={() => setSelectedTab(null)}>
+                  <X className="w-4 h-4" />
+                </Button>
+              )}
+            </div>
+            {selectedTab?.waiter_name && (
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                <Users className="w-3 h-3" />
+                {selectedTab.waiter_name}
+                {selectedTab.customer_name && ` • ${selectedTab.customer_name}`}
+              </p>
+            )}
+          </CardHeader>
+          
+          <CardContent className="flex-1 overflow-hidden flex flex-col">
+            {selectedTab ? (
+              <>
+                <ScrollArea className="flex-1 -mx-4 px-4">
+                  {/* Itens pendentes (não enviados) */}
+                  {pendingItems.length > 0 && (
+                    <div className="mb-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="text-xs font-semibold text-yellow-600 dark:text-yellow-400 uppercase flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          Aguardando envio ({pendingItems.length})
+                        </h4>
+                      </div>
+                      <div className="space-y-2">
+                        {pendingItems.map((item, idx) => (
+                          <div key={`pending-${item.product_id}-${idx}`} className="flex items-center justify-between p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded border border-yellow-200 dark:border-yellow-800">
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-sm truncate">{item.product_name}</p>
+                              <p className="text-xs text-muted-foreground">
+                                R$ {item.price.toFixed(2)} × {item.quantity} = R$ {(item.price * item.quantity).toFixed(2)}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-7 w-7"
+                                onClick={() => updateQuantity(item.product_id, -1, false)}
+                              >
+                                <Minus className="w-3 h-3" />
+                              </Button>
+                              <span className="w-6 text-center text-sm font-bold">{item.quantity}</span>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-7 w-7"
+                                onClick={() => updateQuantity(item.product_id, 1, false)}
+                              >
+                                <Plus className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <Button 
+                        onClick={sendToKitchen} 
+                        className="w-full mt-3"
+                        variant="secondary"
+                      >
+                        <Send className="w-4 h-4 mr-2" />
+                        Enviar para Cozinha
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* Itens já enviados */}
+                  {sentItems.length > 0 && (
+                    <div>
+                      <h4 className="text-xs font-semibold text-green-600 dark:text-green-400 uppercase mb-2 flex items-center gap-1">
+                        <ChefHat className="w-3 h-3" />
+                        Enviado para cozinha ({sentItems.length})
+                      </h4>
+                      <div className="space-y-2">
+                        {sentItems.map((item, idx) => (
+                          <div key={`sent-${item.product_id}-${idx}`} className="flex items-center justify-between p-2 bg-muted/30 rounded">
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-sm truncate">{item.product_name}</p>
+                              <p className="text-xs text-muted-foreground">
+                                R$ {item.price.toFixed(2)} × {item.quantity}
+                              </p>
+                            </div>
+                            <span className="text-sm font-bold">
+                              R$ {(item.price * item.quantity).toFixed(2)}
+                            </span>
+                          </div>
+                        ))}
                       </div>
                     </div>
-                  ))}
-                </div>
+                  )}
 
-                <div className="border-t pt-4 space-y-2">
+                  {selectedTab.items.length === 0 && (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <ClipboardList className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">Comanda vazia</p>
+                      <p className="text-xs">Adicione produtos do cardápio</p>
+                    </div>
+                  )}
+                </ScrollArea>
+
+                {/* Totais e Ações */}
+                <div className="border-t pt-4 mt-4 space-y-3">
                   <div className="flex justify-between text-sm">
-                    <span>Subtotal</span>
+                    <span className="text-muted-foreground">Subtotal</span>
                     <span>R$ {(selectedTab.subtotal || 0).toFixed(2)}</span>
                   </div>
                   {selectedTab.discount > 0 && (
@@ -369,23 +571,170 @@ const WaiterApp = () => {
                   )}
                   <div className="flex justify-between font-bold text-lg">
                     <span>Total</span>
-                    <span>R$ {(selectedTab.total || 0).toFixed(2)}</span>
+                    <span className="text-primary">R$ {(selectedTab.total || 0).toFixed(2)}</span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button variant="outline" size="sm">
+                      <Printer className="w-4 h-4 mr-1" />
+                      Imprimir
+                    </Button>
+                    <Dialog open={closeTabDialog} onOpenChange={setCloseTabDialog}>
+                      <DialogTrigger asChild>
+                        <Button size="sm" disabled={selectedTab.items.length === 0}>
+                          <DollarSign className="w-4 h-4 mr-1" />
+                          Fechar Conta
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-md">
+                        <DialogHeader>
+                          <DialogTitle className="flex items-center gap-2">
+                            <Receipt className="w-5 h-5" />
+                            Fechar Conta - {selectedTab.table_number}
+                          </DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                          <div className="bg-muted/50 p-4 rounded-lg">
+                            <div className="flex justify-between text-lg font-bold">
+                              <span>Total</span>
+                              <span className="text-primary">R$ {(selectedTab.total || 0).toFixed(2)}</span>
+                            </div>
+                          </div>
+
+                          <div>
+                            <Label className="text-sm font-medium">Forma de Pagamento</Label>
+                            <div className="grid grid-cols-2 gap-2 mt-2">
+                              <Button
+                                type="button"
+                                variant={paymentMethod === "cash" ? "default" : "outline"}
+                                onClick={() => setPaymentMethod("cash")}
+                                className="justify-start"
+                              >
+                                <Banknote className="w-4 h-4 mr-2" />
+                                Dinheiro
+                              </Button>
+                              <Button
+                                type="button"
+                                variant={paymentMethod === "pix" ? "default" : "outline"}
+                                onClick={() => setPaymentMethod("pix")}
+                                className="justify-start"
+                              >
+                                <QrCode className="w-4 h-4 mr-2" />
+                                PIX
+                              </Button>
+                              <Button
+                                type="button"
+                                variant={paymentMethod === "credit" ? "default" : "outline"}
+                                onClick={() => setPaymentMethod("credit")}
+                                className="justify-start"
+                              >
+                                <CreditCard className="w-4 h-4 mr-2" />
+                                Crédito
+                              </Button>
+                              <Button
+                                type="button"
+                                variant={paymentMethod === "debit" ? "default" : "outline"}
+                                onClick={() => setPaymentMethod("debit")}
+                                className="justify-start"
+                              >
+                                <CreditCard className="w-4 h-4 mr-2" />
+                                Débito
+                              </Button>
+                            </div>
+                          </div>
+
+                          <div>
+                            <Label className="text-sm font-medium">Dividir Conta</Label>
+                            <div className="flex items-center gap-2 mt-2">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="icon"
+                                onClick={() => setSplitCount(Math.max(1, splitCount - 1))}
+                              >
+                                <Minus className="w-4 h-4" />
+                              </Button>
+                              <div className="flex-1 text-center">
+                                <span className="text-2xl font-bold">{splitCount}</span>
+                                <p className="text-xs text-muted-foreground">
+                                  {splitCount === 1 ? "Sem divisão" : `R$ ${(selectedTab.total / splitCount).toFixed(2)} por pessoa`}
+                                </p>
+                              </div>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="icon"
+                                onClick={() => setSplitCount(splitCount + 1)}
+                              >
+                                <Plus className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
+
+                          <Separator />
+
+                          <Button onClick={closeTab} className="w-full" size="lg">
+                            <Check className="w-4 h-4 mr-2" />
+                            Confirmar Pagamento
+                          </Button>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
                   </div>
                 </div>
-
-                <Button onClick={closeTab} className="w-full" variant="default">
-                  <Check className="w-4 h-4 mr-2" />
-                  Fechar Comanda
-                </Button>
-              </div>
+              </>
             ) : (
-              <p className="text-muted-foreground text-center py-8">
-                Selecione uma comanda para visualizar
-              </p>
+              <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground">
+                <LayoutGrid className="w-16 h-16 mb-4 opacity-30" />
+                <p className="font-medium">Nenhuma mesa selecionada</p>
+                <p className="text-sm">Clique em uma mesa para começar</p>
+              </div>
             )}
           </CardContent>
         </Card>
       </div>
+
+      {/* Dialog Nova Comanda */}
+      <Dialog open={newTabDialog} onOpenChange={setNewTabDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ClipboardList className="w-5 h-5" />
+              Abrir Nova Comanda
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Mesa</Label>
+              <Input 
+                value={newTab.table_number}
+                onChange={(e) => setNewTab({ ...newTab, table_number: e.target.value })}
+                placeholder="Ex: Mesa 5"
+              />
+            </div>
+            <div>
+              <Label>Nome do Garçom</Label>
+              <Input 
+                value={newTab.waiter_name}
+                onChange={(e) => setNewTab({ ...newTab, waiter_name: e.target.value })}
+                placeholder="Seu nome"
+              />
+            </div>
+            <div>
+              <Label>Nome do Cliente (opcional)</Label>
+              <Input 
+                value={newTab.customer_name}
+                onChange={(e) => setNewTab({ ...newTab, customer_name: e.target.value })}
+                placeholder="Nome do cliente"
+              />
+            </div>
+            <Button onClick={createTab} className="w-full" size="lg">
+              <Plus className="w-4 h-4 mr-2" />
+              Abrir Comanda
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 };
