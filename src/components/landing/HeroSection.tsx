@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Play, Store, ShoppingBag, Smartphone } from "lucide-react";
 
@@ -17,7 +18,7 @@ const HeroSection = () => {
           <div className="text-center lg:text-left">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary font-medium text-sm mb-6 animate-fade-up">
               <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-              Plataforma #1 de Delivery no Brasil
+              Plataforma #1 de Delivery em Tamandaré
             </div>
 
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground leading-tight mb-6 animate-fade-up">
@@ -32,21 +33,25 @@ const HeroSection = () => {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start animate-fade-up-delayed">
-              <Button variant="hero" size="xl">
-                Criar Minha Loja
-                <ArrowRight className="ml-2" />
-              </Button>
-              <Button variant="glass" size="xl">
-                <Play className="mr-2" size={18} />
-                Ver Demo
-              </Button>
+              <Link to="/cadastrar-estabelecimento">
+                <Button variant="hero" size="xl">
+                  Criar Minha Loja
+                  <ArrowRight className="ml-2" />
+                </Button>
+              </Link>
+              <Link to="/marketplace">
+                <Button variant="glass" size="xl">
+                  <Store className="mr-2" size={18} />
+                  Ver Lojas
+                </Button>
+              </Link>
             </div>
 
             {/* Stats */}
             <div className="grid grid-cols-3 gap-6 mt-12 pt-8 border-t border-border/50">
               {[
-                { value: "2.500+", label: "Estabelecimentos" },
-                { value: "150k+", label: "Pedidos/mês" },
+                { value: "20+", label: "Estabelecimentos" },
+                { value: "1k+", label: "Pedidos/mês" },
                 { value: "99.9%", label: "Uptime" },
               ].map((stat) => (
                 <div key={stat.label} className="text-center lg:text-left">

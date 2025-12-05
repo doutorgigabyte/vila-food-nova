@@ -10,7 +10,6 @@ import {
   Menu,
   User,
   ChevronDown,
-  X,
   Globe
 } from "lucide-react";
 import {
@@ -19,6 +18,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import logoHorizontal from "@/assets/logo-horizontal.png";
 
 interface MarketplaceHeaderProps {
   searchTerm: string;
@@ -26,7 +26,7 @@ interface MarketplaceHeaderProps {
 }
 
 const MarketplaceHeader = ({ searchTerm, onSearchChange }: MarketplaceHeaderProps) => {
-  const [location, setLocation] = useState("Selecione sua localização");
+  const [location, setLocation] = useState("Tamandaré, PE");
 
   return (
     <header className="sticky top-0 z-50 bg-card shadow-sm">
@@ -70,12 +70,7 @@ const MarketplaceHeader = ({ searchTerm, onSearchChange }: MarketplaceHeaderProp
         <div className="flex items-center justify-between gap-4">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2">
-            <div className="p-2 bg-primary rounded-lg">
-              <span className="text-primary-foreground font-bold text-lg">🍔</span>
-            </div>
-            <span className="text-xl font-bold hidden sm:inline">
-              Vila<span className="text-primary">Food</span>
-            </span>
+            <img src={logoHorizontal} alt="VilaFood" className="h-10" />
           </Link>
 
           {/* Navigation */}

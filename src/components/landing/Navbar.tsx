@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
+import logoHorizontal from "@/assets/logo-horizontal.png";
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -30,12 +32,9 @@ const Navbar = () => {
       }`}
     >
       <div className="container mx-auto px-4 flex items-center justify-between">
-        <a href="/" className="flex items-center gap-2">
-          <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-glow">
-            <span className="text-primary-foreground font-bold text-lg">V</span>
-          </div>
-          <span className="text-xl font-bold text-foreground">VilaFood</span>
-        </a>
+        <Link to="/" className="flex items-center gap-2">
+          <img src={logoHorizontal} alt="VilaFood" className="h-10" />
+        </Link>
 
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center gap-8">
@@ -51,12 +50,21 @@ const Navbar = () => {
         </div>
 
         <div className="hidden md:flex items-center gap-3">
-          <Button variant="ghost" size="sm">
-            Entrar
-          </Button>
-          <Button variant="hero" size="sm">
-            Começar Grátis
-          </Button>
+          <Link to="/marketplace">
+            <Button variant="ghost" size="sm">
+              Ver Lojas
+            </Button>
+          </Link>
+          <Link to="/auth">
+            <Button variant="ghost" size="sm">
+              Entrar
+            </Button>
+          </Link>
+          <Link to="/cadastrar-estabelecimento">
+            <Button variant="hero" size="sm">
+              Começar Grátis
+            </Button>
+          </Link>
         </div>
 
         {/* Mobile Menu Button */}
@@ -83,12 +91,21 @@ const Navbar = () => {
               </a>
             ))}
             <div className="flex flex-col gap-2 pt-4 border-t border-border">
-              <Button variant="ghost" className="w-full">
-                Entrar
-              </Button>
-              <Button variant="hero" className="w-full">
-                Começar Grátis
-              </Button>
+              <Link to="/marketplace" onClick={() => setIsMobileMenuOpen(false)}>
+                <Button variant="ghost" className="w-full">
+                  Ver Lojas
+                </Button>
+              </Link>
+              <Link to="/auth" onClick={() => setIsMobileMenuOpen(false)}>
+                <Button variant="ghost" className="w-full">
+                  Entrar
+                </Button>
+              </Link>
+              <Link to="/cadastrar-estabelecimento" onClick={() => setIsMobileMenuOpen(false)}>
+                <Button variant="hero" className="w-full">
+                  Começar Grátis
+                </Button>
+              </Link>
             </div>
           </div>
         </div>
