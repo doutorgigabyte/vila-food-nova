@@ -14,7 +14,9 @@ import {
   ChevronRight,
   TrendingUp,
   DollarSign,
-  Store
+  Store,
+  Map,
+  Database
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -31,6 +33,20 @@ interface DashboardCard {
 
 const dashboardCards: DashboardCard[] = [
   {
+    title: 'Roadmap',
+    description: 'Progresso do desenvolvimento',
+    icon: Map,
+    href: '/admin/roadmap',
+    color: 'bg-gradient-to-br from-violet-100 to-purple-100 text-violet-600'
+  },
+  {
+    title: 'Migração de Dados',
+    description: 'Importar sistema legado',
+    icon: Database,
+    href: '/admin/migracao',
+    color: 'bg-gradient-to-br from-teal-100 to-cyan-100 text-teal-600'
+  },
+  {
     title: 'Usuários',
     description: 'Gerenciar acessos ao sistema',
     icon: Users,
@@ -38,8 +54,8 @@ const dashboardCards: DashboardCard[] = [
     color: 'bg-red-100 text-red-600'
   },
   {
-    title: 'Subdomínios',
-    description: 'Configurar URLs do sistema',
+    title: 'Vilas Gastronômicas',
+    description: 'Configurar polos de alimentação',
     icon: Globe,
     href: '/admin/vilas',
     color: 'bg-blue-100 text-blue-600'

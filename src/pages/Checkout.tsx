@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useCart } from "@/hooks/useCart";
+import { useCreateOrder } from "@/hooks/useCreateOrder";
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -110,6 +111,8 @@ const Checkout = () => {
     setStep("payment");
   };
 
+  const { createOrder, loading: creatingOrder } = useCreateOrder();
+
   const handleSubmitPayment = async () => {
     setIsLoading(true);
     
@@ -119,16 +122,57 @@ const Checkout = () => {
       
       for (const estId of uniqueEstablishments) {
         const estInfo = establishments.get(estId);
-        // Simulate order creation - replace with actual API call
-        const orderNumber = `#${Math.floor(1000 + Math.random() * 9000)}`;
-        orderNumbers.push(`${estInfo?.name}: ${orderNumber}`);
+        const estItems = getEstablishmentItems(estId);
+        const estSubtotal = getEstablishmentSubtotal(estId);
+        const estDeliveryFee = deliveryType === 'delivery' ? (estInfo?.delivery_base_fee || 0) : 0;
+        
+        // Map payment method to database enum
+        const paymentMethodMap: Record<string, 'pix' | 'cash' | 'credit_card' | 'debit_card'> = {
+          'pix': 'pix',
+          'cash': 'cash',
+          'credit': 'credit_card',
+          'debit': 'debit_card',
+        };
+
+        const result = await createOrder({
+          establishment_id: estId,
+          delivery_type: deliveryType as 'delivery' | 'pickup',
+          payment_method: paymentMethodMap[paymentMethod] || 'pix',
+          items: estItems.map(item => ({
+            product_id: item.product.id,
+            name: item.product.name,
+            price: item.product.promotional_price || item.product.price,
+            quantity: item.quantity,
+            observation: item.observation,
+          })),
+          subtotal: estSubtotal,
+          delivery_fee: estDeliveryFee,
+          total: estSubtotal + estDeliveryFee,
+          delivery_address: deliveryType === 'delivery' ? {
+            cep,
+            address,
+            number,
+            complement,
+            neighborhood,
+            reference,
+          } : undefined,
+          change_for: paymentMethod === 'cash' && change ? parseFloat(change) : undefined,
+          observations: observations || undefined,
+        });
+
+        if (result.success && result.order) {
+          orderNumbers.push(`${estInfo?.name}: #${result.orderNumber}`);
+        } else {
+          throw new Error(`Falha ao criar pedido para ${estInfo?.name}`);
+        }
       }
       
       setCompletedOrders(orderNumbers);
       clearCart();
       setStep("success");
-    } catch (error) {
-      toast.error("Erro ao processar pedido. Tente novamente.");
+      toast.success("Pedido realizado com sucesso!");
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao processar pedido. Tente novamente.");
     } finally {
       setIsLoading(false);
     }
