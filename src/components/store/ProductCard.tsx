@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Package } from "lucide-react";
@@ -9,11 +10,20 @@ interface ProductCardProps {
 }
 
 export const ProductCard = ({ product, onClick }: ProductCardProps) => {
-  const hasPromo = product.promotional_price && product.promotional_price < product.price;
+  const [imageError, setImageError] = useState(false);
+  
+  // Safe discount calculation
+  const hasPromo = Boolean(
+    product.promotional_price && 
+    product.promotional_price > 0 && 
+    product.promotional_price < product.price
+  );
   const displayPrice = hasPromo ? product.promotional_price! : product.price;
   const discount = hasPromo 
     ? Math.round(((product.price - product.promotional_price!) / product.price) * 100) 
     : 0;
+
+  const showImage = product.image_url && !imageError;
 
   return (
     <Card 
@@ -26,7 +36,7 @@ export const ProductCard = ({ product, onClick }: ProductCardProps) => {
             <div>
               <div className="flex items-start gap-2 flex-wrap">
                 <h3 className="font-semibold text-sm leading-tight">{product.name}</h3>
-                {hasPromo && (
+                {hasPromo && discount > 0 && (
                   <Badge variant="destructive" className="text-[10px] px-1.5 py-0 shrink-0">
                     -{discount}%
                   </Badge>
@@ -55,20 +65,19 @@ export const ProductCard = ({ product, onClick }: ProductCardProps) => {
             </div>
           </div>
           <div className="w-20 h-20 rounded-lg overflow-hidden bg-muted shrink-0">
-            {product.image_url ? (
+            {showImage ? (
               <img
-                src={product.image_url}
+                src={product.image_url!}
                 alt={product.name}
                 className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                onError={(e) => {
-                  e.currentTarget.style.display = 'none';
-                  e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                }}
+                loading="lazy"
+                onError={() => setImageError(true)}
               />
-            ) : null}
-            <div className={`w-full h-full flex items-center justify-center ${product.image_url ? 'hidden' : ''}`}>
-              <Package className="w-8 h-8 text-muted-foreground/50" />
-            </div>
+            ) : (
+              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">
+                <Package className="w-8 h-8 text-muted-foreground/50" />
+              </div>
+            )}
           </div>
         </div>
       </CardContent>
