@@ -1,0 +1,77 @@
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Package } from "lucide-react";
+import type { StoreProduct } from "@/hooks/useStoreData";
+
+interface ProductCardProps {
+  product: StoreProduct;
+  onClick: () => void;
+}
+
+export const ProductCard = ({ product, onClick }: ProductCardProps) => {
+  const hasPromo = product.promotional_price && product.promotional_price < product.price;
+  const displayPrice = hasPromo ? product.promotional_price! : product.price;
+  const discount = hasPromo 
+    ? Math.round(((product.price - product.promotional_price!) / product.price) * 100) 
+    : 0;
+
+  return (
+    <Card 
+      className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:-translate-y-1 overflow-hidden group"
+      onClick={onClick}
+    >
+      <CardContent className="p-0">
+        <div className="flex gap-3 p-3">
+          <div className="flex-1 min-w-0 flex flex-col justify-between">
+            <div>
+              <div className="flex items-start gap-2 flex-wrap">
+                <h3 className="font-semibold text-sm leading-tight">{product.name}</h3>
+                {hasPromo && (
+                  <Badge variant="destructive" className="text-[10px] px-1.5 py-0 shrink-0">
+                    -{discount}%
+                  </Badge>
+                )}
+                {product.is_featured && !hasPromo && (
+                  <Badge className="text-[10px] px-1.5 py-0 bg-amber-500 shrink-0">
+                    Destaque
+                  </Badge>
+                )}
+              </div>
+              {product.description && (
+                <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
+                  {product.description}
+                </p>
+              )}
+            </div>
+            <div className="flex items-center gap-2 mt-2">
+              <span className="font-bold text-primary text-sm">
+                R$ {displayPrice.toFixed(2)}
+              </span>
+              {hasPromo && (
+                <span className="text-xs text-muted-foreground line-through">
+                  R$ {product.price.toFixed(2)}
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="w-20 h-20 rounded-lg overflow-hidden bg-muted shrink-0">
+            {product.image_url ? (
+              <img
+                src={product.image_url}
+                alt={product.name}
+                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                  e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                }}
+              />
+            ) : null}
+            <div className={`w-full h-full flex items-center justify-center ${product.image_url ? 'hidden' : ''}`}>
+              <Package className="w-8 h-8 text-muted-foreground/50" />
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
