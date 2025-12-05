@@ -1,6 +1,173 @@
 import { useRef } from "react";
-import { ChevronLeft, ChevronRight, Flame, Star, Grid3X3 } from "lucide-react";
+import { 
+  ChevronLeft, 
+  ChevronRight, 
+  Flame, 
+  Star, 
+  Grid3X3,
+  Cake,
+  Pizza,
+  Sandwich,
+  Beef,
+  Fish,
+  Salad,
+  IceCream,
+  Coffee,
+  Wine,
+  Beer,
+  GlassWater,
+  Cookie,
+  Croissant,
+  Soup,
+  Drumstick,
+  Apple,
+  Candy,
+  CakeSlice,
+  Utensils,
+  ShoppingBasket,
+  UtensilsCrossed,
+  type LucideIcon
+} from "lucide-react";
 import { cn } from "@/lib/utils";
+
+// Map category names to icons
+const categoryIconMap: Record<string, LucideIcon> = {
+  // Doces e Bolos
+  "bolo": Cake,
+  "bolos": Cake,
+  "torta": CakeSlice,
+  "tortas": CakeSlice,
+  "doce": Candy,
+  "doces": Candy,
+  "sobremesa": IceCream,
+  "sobremesas": IceCream,
+  "sorvete": IceCream,
+  "sorvetes": IceCream,
+  "cookie": Cookie,
+  "cookies": Cookie,
+  "biscoito": Cookie,
+  "biscoitos": Cookie,
+  "brigadeiro": Candy,
+  "brigadeiros": Candy,
+  "trufa": Candy,
+  "trufas": Candy,
+  "pudim": CakeSlice,
+  "pudins": CakeSlice,
+  
+  // Bebidas
+  "bebida": GlassWater,
+  "bebidas": GlassWater,
+  "refrigerante": GlassWater,
+  "refrigerantes": GlassWater,
+  "suco": GlassWater,
+  "sucos": GlassWater,
+  "café": Coffee,
+  "cafes": Coffee,
+  "coffee": Coffee,
+  "vinho": Wine,
+  "vinhos": Wine,
+  "cerveja": Beer,
+  "cervejas": Beer,
+  "drink": Wine,
+  "drinks": Wine,
+  "coquetel": Wine,
+  "coqueteis": Wine,
+  "agua": GlassWater,
+  "água": GlassWater,
+  "chá": Coffee,
+  "chas": Coffee,
+  
+  // Comidas
+  "pizza": Pizza,
+  "pizzas": Pizza,
+  "hamburguer": Sandwich,
+  "hamburguers": Sandwich,
+  "hambúrguer": Sandwich,
+  "hambúrgueres": Sandwich,
+  "burger": Sandwich,
+  "burgers": Sandwich,
+  "lanche": Sandwich,
+  "lanches": Sandwich,
+  "sanduiche": Sandwich,
+  "sanduíche": Sandwich,
+  "sanduiches": Sandwich,
+  "sanduíches": Sandwich,
+  "carne": Beef,
+  "carnes": Beef,
+  "churrasco": Beef,
+  "churrascos": Beef,
+  "peixe": Fish,
+  "peixes": Fish,
+  "frutos do mar": Fish,
+  "seafood": Fish,
+  "camarão": Fish,
+  "camarões": Fish,
+  "sushi": Fish,
+  "sashimi": Fish,
+  "japonesa": Fish,
+  "salada": Salad,
+  "saladas": Salad,
+  "vegetariano": Salad,
+  "vegano": Salad,
+  "fit": Salad,
+  "sopa": Soup,
+  "sopas": Soup,
+  "caldo": Soup,
+  "caldos": Soup,
+  "frango": Drumstick,
+  "frangos": Drumstick,
+  "galinha": Drumstick,
+  "aves": Drumstick,
+  "croissant": Croissant,
+  "padaria": Croissant,
+  "pães": Croissant,
+  "pao": Croissant,
+  "pão": Croissant,
+  "fruta": Apple,
+  "frutas": Apple,
+  "açaí": Apple,
+  "acai": Apple,
+  
+  // Genéricos
+  "entrada": Utensils,
+  "entradas": Utensils,
+  "petisco": Utensils,
+  "petiscos": Utensils,
+  "acompanhamento": UtensilsCrossed,
+  "acompanhamentos": UtensilsCrossed,
+  "prato": UtensilsCrossed,
+  "pratos": UtensilsCrossed,
+  "principal": UtensilsCrossed,
+  "principais": UtensilsCrossed,
+  "refeição": UtensilsCrossed,
+  "refeicao": UtensilsCrossed,
+  "combo": ShoppingBasket,
+  "combos": ShoppingBasket,
+  "kit": ShoppingBasket,
+  "kits": ShoppingBasket,
+  "promoção": Flame,
+  "promocao": Flame,
+  "oferta": Flame,
+  "ofertas": Flame,
+};
+
+const getCategoryIcon = (name: string): LucideIcon | null => {
+  const normalizedName = name.toLowerCase().trim();
+  
+  // Direct match
+  if (categoryIconMap[normalizedName]) {
+    return categoryIconMap[normalizedName];
+  }
+  
+  // Partial match
+  for (const [key, icon] of Object.entries(categoryIconMap)) {
+    if (normalizedName.includes(key) || key.includes(normalizedName)) {
+      return icon;
+    }
+  }
+  
+  return null;
+};
 
 interface Category {
   id: string;
@@ -44,7 +211,12 @@ export const StoreCategoryNav = ({
     { id: null, name: "TODAS", icon: Grid3X3, count: null },
     ...(hasPromotions ? [{ id: "promocoes", name: "PROMOÇÕES", icon: Flame, count: promoCount }] : []),
     ...(hasFeatured ? [{ id: "destaques", name: "DESTAQUES", icon: Star, count: featuredCount }] : []),
-    ...categories.map((cat) => ({ id: cat.id, name: cat.name.toUpperCase(), icon: null, count: cat.count })),
+    ...categories.map((cat) => ({ 
+      id: cat.id, 
+      name: cat.name.toUpperCase(), 
+      icon: getCategoryIcon(cat.name), 
+      count: cat.count 
+    })),
   ];
 
   return (
@@ -78,7 +250,7 @@ export const StoreCategoryNav = ({
               key={tab.id || "all"}
               onClick={() => onSelectCategory(tab.id)}
               className={cn(
-                "flex flex-col items-center gap-1.5 px-4 py-2 rounded-xl transition-all shrink-0 touch-manipulation active:scale-95",
+                "flex flex-col items-center gap-1.5 px-4 py-2.5 rounded-xl transition-all shrink-0 touch-manipulation active:scale-95",
                 "border min-w-[80px] scroll-snap-align-start",
                 isActive
                   ? "bg-primary text-primary-foreground border-primary shadow-lg"
@@ -86,8 +258,8 @@ export const StoreCategoryNav = ({
               )}
               style={{ scrollSnapAlign: "start" }}
             >
-              {IconComponent && <IconComponent className="w-5 h-5" />}
-              <span className="text-[10px] font-semibold whitespace-nowrap">{tab.name}</span>
+              {IconComponent && <IconComponent className="w-5 h-5" strokeWidth={isActive ? 2.5 : 2} />}
+              <span className="text-[10px] font-semibold whitespace-nowrap tracking-wide">{tab.name}</span>
             </button>
           );
         })}
