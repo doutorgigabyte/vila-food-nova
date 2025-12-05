@@ -18,16 +18,16 @@ const TrendingProducts = ({
   subtitle = "Aqui está o que você pode gostar de provar"
 }: TrendingProductsProps) => {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const { products, loading: productsLoading } = useProducts(10);
+  const { products, loading: productsLoading } = useProducts(12);
   const { establishments, loading: establishmentsLoading } = useEstablishments();
 
   const loading = productsLoading || establishmentsLoading;
   const hasProducts = products.length > 0;
-  const trending = hasProducts ? [] : establishments.slice(0, 6);
+  const trending = hasProducts ? [] : establishments.slice(0, 8);
 
   const scroll = (direction: "left" | "right") => {
     if (scrollRef.current) {
-      const scrollAmount = 300;
+      const scrollAmount = 280;
       scrollRef.current.scrollBy({
         left: direction === "left" ? -scrollAmount : scrollAmount,
         behavior: "smooth",
@@ -88,11 +88,11 @@ const TrendingProducts = ({
               <ChevronLeft className="w-5 h-5" />
             </Button>
 
-            <div
-              ref={scrollRef}
-              className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth pb-2"
-              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-            >
+          <div
+            ref={scrollRef}
+            className="flex gap-3 md:gap-4 overflow-x-auto scrollbar-hide scroll-smooth pb-2 snap-x snap-mandatory md:snap-none"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          >
               {products.map((product) => {
                 const discount = getDiscount(product.price, product.promotional_price);
                 const currentPrice = product.promotional_price || product.price;
@@ -101,9 +101,9 @@ const TrendingProducts = ({
                   <Link 
                     key={product.id} 
                     to={`/loja/${product.establishment?.slug || ''}`}
-                    className="flex-shrink-0"
+                    className="flex-shrink-0 snap-start"
                   >
-                    <Card className="w-48 overflow-hidden group/card hover:shadow-lg transition-all">
+                    <Card className="w-44 md:w-52 overflow-hidden group/card hover:shadow-lg transition-all">
                       <div className="relative h-36 overflow-hidden bg-muted">
                         {product.image_url && (
                           <img
@@ -211,16 +211,16 @@ const TrendingProducts = ({
 
           <div
             ref={scrollRef}
-            className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth pb-2"
+            className="flex gap-3 md:gap-4 overflow-x-auto scrollbar-hide scroll-smooth pb-2 snap-x snap-mandatory md:snap-none"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
             {trending.map((est) => (
               <Link 
                 key={est.id} 
                 to={`/loja/${est.slug}`}
-                className="flex-shrink-0"
+                className="flex-shrink-0 snap-start"
               >
-                <Card className="w-48 overflow-hidden group/card hover:shadow-lg transition-all">
+                <Card className="w-44 md:w-52 overflow-hidden group/card hover:shadow-lg transition-all">
                   <div className="relative h-36 overflow-hidden bg-muted">
                     {est.banner_url && (
                       <img
