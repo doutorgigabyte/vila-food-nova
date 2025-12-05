@@ -29,7 +29,8 @@ import {
   LineChart,
   Boxes,
   Wallet,
-  Users
+  Users,
+  CreditCard
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -55,6 +56,7 @@ const menuItems = [
   { icon: DollarSign, label: "Cupons", href: "/painel/cupons" },
   { icon: Gift, label: "Cashback", href: "/painel/cashback" },
   { icon: ShoppingCart, label: "Recuperador de Vendas", href: "/painel/carrinhos-abandonados" },
+  { icon: CreditCard, label: "Pagamentos", href: "/painel/pagamentos" },
   { icon: TrendingUp, label: "Fluxo de Caixa", href: "/painel/fluxo" },
   { icon: Wallet, label: "Gestão Financeira", href: "/painel/financeiro" },
   { icon: Users, label: "Fornecedores", href: "/painel/fornecedores" },
