@@ -20,9 +20,7 @@ serve(async (req) => {
 
     const { action, data } = await req.json();
 
-    // Migration actions
     if (action === 'migrate_segments') {
-      // Migrate segments from legacy "segmentos" concept
       const segments = [
         { name: 'Alimentação', icon: 'utensils', is_active: true },
         { name: 'Moda', icon: 'shirt', is_active: true },
@@ -31,21 +29,37 @@ serve(async (req) => {
         { name: 'Serviços', icon: 'wrench', is_active: true },
         { name: 'Beleza', icon: 'sparkles', is_active: true },
         { name: 'Outros', icon: 'box', is_active: true },
+        { name: 'Supermercados', icon: 'shopping-cart', is_active: true },
+        { name: 'Farmácia', icon: 'pill', is_active: true },
+        { name: 'Casa e Jardim', icon: 'home', is_active: true },
       ];
 
-      const { data: result, error } = await supabaseAdmin
+      // Check existing segments first
+      const { data: existing } = await supabaseAdmin
         .from('segments')
-        .upsert(segments, { onConflict: 'name' })
-        .select();
+        .select('name');
+      
+      const existingNames = new Set((existing || []).map(s => s.name));
+      const newSegments = segments.filter(s => !existingNames.has(s.name));
 
-      if (error) throw error;
-      return new Response(JSON.stringify({ success: true, data: result }), {
+      if (newSegments.length > 0) {
+        const { data: result, error } = await supabaseAdmin
+          .from('segments')
+          .insert(newSegments)
+          .select();
+
+        if (error) throw error;
+        return new Response(JSON.stringify({ success: true, data: result, inserted: newSegments.length }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      return new Response(JSON.stringify({ success: true, data: [], message: 'All segments already exist' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
     if (action === 'migrate_plans') {
-      // Migrate plans from legacy data
       const plans = [
         {
           name: 'Plano Gratuito',
@@ -89,19 +103,32 @@ serve(async (req) => {
         }
       ];
 
-      const { data: result, error } = await supabaseAdmin
+      // Check existing plans first
+      const { data: existing } = await supabaseAdmin
         .from('plans')
-        .upsert(plans, { onConflict: 'name' })
-        .select();
+        .select('name');
+      
+      const existingNames = new Set((existing || []).map(p => p.name));
+      const newPlans = plans.filter(p => !existingNames.has(p.name));
 
-      if (error) throw error;
-      return new Response(JSON.stringify({ success: true, data: result }), {
+      if (newPlans.length > 0) {
+        const { data: result, error } = await supabaseAdmin
+          .from('plans')
+          .insert(newPlans)
+          .select();
+
+        if (error) throw error;
+        return new Response(JSON.stringify({ success: true, data: result, inserted: newPlans.length }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      return new Response(JSON.stringify({ success: true, data: [], message: 'All plans already exist' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
     if (action === 'migrate_states') {
-      // Brazilian states
       const states = [
         { name: 'Acre', uf: 'AC' },
         { name: 'Alagoas', uf: 'AL' },
@@ -132,19 +159,34 @@ serve(async (req) => {
         { name: 'Tocantins', uf: 'TO' }
       ];
 
-      const { data: result, error } = await supabaseAdmin
+      // Check existing states first
+      const { data: existing } = await supabaseAdmin
         .from('states')
-        .upsert(states, { onConflict: 'uf' })
-        .select();
+        .select('uf');
+      
+      const existingUfs = new Set((existing || []).map(s => s.uf));
+      const newStates = states.filter(s => !existingUfs.has(s.uf));
 
-      if (error) throw error;
-      return new Response(JSON.stringify({ success: true, data: result }), {
+      if (newStates.length > 0) {
+        const { data: result, error } = await supabaseAdmin
+          .from('states')
+          .insert(newStates)
+          .select();
+
+        if (error) throw error;
+        return new Response(JSON.stringify({ success: true, data: result, inserted: newStates.length }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      // Return existing data if all states exist
+      const { data: allStates } = await supabaseAdmin.from('states').select();
+      return new Response(JSON.stringify({ success: true, data: allStates, message: 'All states already exist' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
     if (action === 'migrate_establishment') {
-      // Migrate a single establishment from legacy data
       const legacyEst = data;
       
       // Get segment ID
@@ -152,14 +194,21 @@ serve(async (req) => {
         .from('segments')
         .select('id')
         .eq('name', mapLegacySegment(legacyEst.segmento))
-        .single();
+        .maybeSingle();
 
       // Get plan ID
       const { data: plan } = await supabaseAdmin
         .from('plans')
         .select('id')
         .eq('name', 'Plano Gratuito')
-        .single();
+        .maybeSingle();
+
+      // Check if establishment with this slug already exists
+      const { data: existingEst } = await supabaseAdmin
+        .from('establishments')
+        .select('id')
+        .eq('slug', legacyEst.subdominio || `est-${Date.now()}`)
+        .maybeSingle();
 
       const establishment = {
         name: legacyEst.nome || 'Estabelecimento',
@@ -186,13 +235,28 @@ serve(async (req) => {
         pix_key: legacyEst.chave_pix || null,
       };
 
-      const { data: result, error } = await supabaseAdmin
-        .from('establishments')
-        .upsert(establishment, { onConflict: 'slug' })
-        .select()
-        .single();
+      let result;
+      if (existingEst) {
+        // Update existing
+        const { data: updated, error } = await supabaseAdmin
+          .from('establishments')
+          .update(establishment)
+          .eq('id', existingEst.id)
+          .select()
+          .single();
+        if (error) throw error;
+        result = updated;
+      } else {
+        // Insert new
+        const { data: inserted, error } = await supabaseAdmin
+          .from('establishments')
+          .insert(establishment)
+          .select()
+          .single();
+        if (error) throw error;
+        result = inserted;
+      }
 
-      if (error) throw error;
       return new Response(JSON.stringify({ success: true, data: result }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
@@ -201,6 +265,20 @@ serve(async (req) => {
     if (action === 'migrate_category') {
       const { establishment_id, legacy_category } = data;
       
+      // Check if category already exists
+      const { data: existingCat } = await supabaseAdmin
+        .from('categories')
+        .select('id')
+        .eq('establishment_id', establishment_id)
+        .eq('name', legacy_category.nome)
+        .maybeSingle();
+
+      if (existingCat) {
+        return new Response(JSON.stringify({ success: true, data: existingCat, message: 'Category already exists' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
       const category = {
         establishment_id,
         name: legacy_category.nome,
@@ -224,6 +302,20 @@ serve(async (req) => {
     if (action === 'migrate_product') {
       const { establishment_id, category_id, legacy_product } = data;
       
+      // Check if product already exists
+      const { data: existingProd } = await supabaseAdmin
+        .from('products')
+        .select('id')
+        .eq('establishment_id', establishment_id)
+        .eq('name', legacy_product.nome)
+        .maybeSingle();
+
+      if (existingProd) {
+        return new Response(JSON.stringify({ success: true, data: existingProd, message: 'Product already exists' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
       const product = {
         establishment_id,
         category_id,
@@ -250,8 +342,35 @@ serve(async (req) => {
     }
 
     if (action === 'create_admin_user') {
-      // Create admin user
       const { email, password, full_name } = data;
+      
+      // Check if user already exists
+      const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
+      const existingUser = existingUsers?.users?.find(u => u.email === email);
+      
+      if (existingUser) {
+        // Just ensure they have super_admin role
+        const { data: existingRole } = await supabaseAdmin
+          .from('user_roles')
+          .select('id')
+          .eq('user_id', existingUser.id)
+          .eq('role', 'super_admin')
+          .maybeSingle();
+
+        if (!existingRole) {
+          await supabaseAdmin
+            .from('user_roles')
+            .insert({ user_id: existingUser.id, role: 'super_admin' });
+        }
+
+        return new Response(JSON.stringify({ 
+          success: true, 
+          message: 'User already exists, role verified',
+          user_id: existingUser.id 
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
       
       // Create user in auth
       const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
@@ -283,7 +402,6 @@ serve(async (req) => {
     }
 
     if (action === 'get_migration_status') {
-      // Check current data counts
       const [segments, plans, states, establishments, categories, products] = await Promise.all([
         supabaseAdmin.from('segments').select('id', { count: 'exact', head: true }),
         supabaseAdmin.from('plans').select('id', { count: 'exact', head: true }),
