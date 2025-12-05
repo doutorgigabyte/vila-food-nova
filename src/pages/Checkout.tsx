@@ -19,12 +19,17 @@ import {
   Clock,
   CheckCircle,
   ShoppingBag,
-  AlertTriangle
+  AlertTriangle,
+  Bookmark
 } from "lucide-react";
 import { toast } from "sonner";
 import { useCart } from "@/hooks/useCart";
 import { useCreateOrder } from "@/hooks/useCreateOrder";
+import { useAuth } from "@/hooks/useAuth";
+import { useSavedAddresses, SavedAddress } from "@/hooks/useSavedAddresses";
 import AddressAutocomplete from "@/components/checkout/AddressAutocomplete";
+import { SavedAddressSelector } from "@/components/checkout/SavedAddressSelector";
+import { SaveAddressDialog } from "@/components/checkout/SaveAddressDialog";
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -79,6 +84,72 @@ const Checkout = () => {
   // Payment
   const [change, setChange] = useState("");
   const [observations, setObservations] = useState("");
+  
+  // Saved addresses
+  const { user } = useAuth();
+  const { addresses: savedAddresses, isAuthenticated, getDefaultAddress } = useSavedAddresses();
+  const [selectedSavedAddressId, setSelectedSavedAddressId] = useState<string | undefined>();
+  const [showAddressForm, setShowAddressForm] = useState(false);
+  const [saveAddressDialogOpen, setSaveAddressDialogOpen] = useState(false);
+
+  // Auto-select default address when available
+  useEffect(() => {
+    if (savedAddresses.length > 0 && !selectedSavedAddressId && !showAddressForm) {
+      const defaultAddr = getDefaultAddress();
+      if (defaultAddr) {
+        setSelectedSavedAddressId(defaultAddr.id);
+        setAddressData({
+          cep: defaultAddr.cep,
+          address: defaultAddr.address,
+          number: defaultAddr.number,
+          complement: defaultAddr.complement || "",
+          neighborhood: defaultAddr.neighborhood,
+          city: defaultAddr.city,
+          state: defaultAddr.state,
+          reference: defaultAddr.reference || "",
+          lat: defaultAddr.lat,
+          lng: defaultAddr.lng,
+          formatted_address: defaultAddr.formatted_address || "",
+        });
+      }
+    }
+  }, [savedAddresses, selectedSavedAddressId, showAddressForm, getDefaultAddress]);
+
+  const handleSelectSavedAddress = (address: SavedAddress) => {
+    setSelectedSavedAddressId(address.id);
+    setShowAddressForm(false);
+    setAddressData({
+      cep: address.cep,
+      address: address.address,
+      number: address.number,
+      complement: address.complement || "",
+      neighborhood: address.neighborhood,
+      city: address.city,
+      state: address.state,
+      reference: address.reference || "",
+      lat: address.lat,
+      lng: address.lng,
+      formatted_address: address.formatted_address || "",
+    });
+  };
+
+  const handleAddNewAddress = () => {
+    setSelectedSavedAddressId(undefined);
+    setShowAddressForm(true);
+    setAddressData({
+      cep: "",
+      address: "",
+      number: "",
+      complement: "",
+      neighborhood: "",
+      city: "",
+      state: "",
+      reference: "",
+      lat: undefined,
+      lng: undefined,
+      formatted_address: "",
+    });
+  };
 
   const uniqueEstablishments = getUniqueEstablishments();
   const isMultiStore = isMultiEstablishment();
@@ -395,14 +466,70 @@ const Checkout = () => {
                     Endereço de entrega
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <AddressAutocomplete
-                    value={addressData}
-                    onChange={setAddressData}
-                  />
+                <CardContent className="space-y-4">
+                  {/* Saved Addresses - only show if user has saved addresses and not showing form */}
+                  {isAuthenticated && savedAddresses.length > 0 && !showAddressForm && (
+                    <SavedAddressSelector
+                      selectedId={selectedSavedAddressId}
+                      onSelect={handleSelectSavedAddress}
+                      onAddNew={handleAddNewAddress}
+                    />
+                  )}
+
+                  {/* Address Autocomplete - show if no saved addresses OR user clicked "add new" */}
+                  {(!isAuthenticated || savedAddresses.length === 0 || showAddressForm) && (
+                    <>
+                      <AddressAutocomplete
+                        value={addressData}
+                        onChange={setAddressData}
+                      />
+                      
+                      {/* Option to save address for authenticated users */}
+                      {isAuthenticated && addressData.address && addressData.number && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="w-full"
+                          onClick={() => setSaveAddressDialogOpen(true)}
+                        >
+                          <Bookmark className="w-4 h-4 mr-2" />
+                          Salvar este endereço
+                        </Button>
+                      )}
+
+                      {/* Option to use saved address if user has some */}
+                      {isAuthenticated && savedAddresses.length > 0 && showAddressForm && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          className="w-full"
+                          onClick={() => setShowAddressForm(false)}
+                        >
+                          Usar endereço salvo
+                        </Button>
+                      )}
+
+                      {/* Prompt to create account for guest users */}
+                      {!isAuthenticated && addressData.address && (
+                        <p className="text-sm text-muted-foreground text-center">
+                          <a href="/auth" className="text-primary hover:underline">Crie uma conta</a> para salvar seus endereços
+                        </p>
+                      )}
+                    </>
+                  )}
                 </CardContent>
               </Card>
             )}
+
+            {/* Save Address Dialog */}
+            <SaveAddressDialog
+              open={saveAddressDialogOpen}
+              onOpenChange={setSaveAddressDialogOpen}
+              addressData={addressData}
+              onSaved={() => {
+                setShowAddressForm(false);
+              }}
+            />
 
             {/* Pickup locations for multi-establishment */}
             {deliveryType === "pickup" && isMultiStore && (
