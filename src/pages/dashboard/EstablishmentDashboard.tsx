@@ -44,31 +44,34 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
-const menuItems = [
-  { icon: LayoutDashboard, label: "Dashboard", href: "/painel", active: true },
-  { icon: Store, label: "PDV", href: "/painel/pdv" },
-  { icon: ShoppingBag, label: "Pedidos", href: "/painel/pedidos", badgeKey: "pendingOrders" },
-  { icon: Package, label: "Produtos", href: "/painel/produtos" },
-  { icon: Tag, label: "Categorias", href: "/painel/categorias" },
-  { icon: ChefHat, label: "Cozinha (KDS)", href: "/painel/cozinha" },
-  { icon: Users, label: "Garçom", href: "/painel/garcom" },
-  { icon: Truck, label: "Área de Entrega", href: "/painel/area-atendimento" },
-  { icon: DollarSign, label: "Cupons", href: "/painel/cupons" },
-  { icon: Wallet, label: "Financeiro", href: "/painel/financeiro" },
-  { icon: TrendingUp, label: "Fluxo de Caixa", href: "/painel/fluxo" },
-  { icon: PackageSearch, label: "Estoque", href: "/painel/estoque" },
-  { icon: Calendar, label: "Agendamentos", href: "/painel/agendamentos" },
-  { icon: MessageSquare, label: "WhatsApp IA", href: "/painel/whatsapp" },
-  { icon: BarChart3, label: "Relatórios", href: "/painel/relatorios" },
-  { icon: QrCode, label: "QR Code", href: "/painel/qrcode" },
-  { icon: Image, label: "Banners", href: "/painel/banners" },
-  { icon: Settings, label: "Integrações", href: "/painel/integracoes" },
-];
+const getMenuItems = (slug?: string) => {
+  const baseUrl = slug ? `/painel/${slug}` : '/painel';
+  return [
+    { icon: LayoutDashboard, label: "Dashboard", href: baseUrl, active: true },
+    { icon: Store, label: "PDV", href: `${baseUrl}/pdv` },
+    { icon: ShoppingBag, label: "Pedidos", href: `${baseUrl}/pedidos`, badgeKey: "pendingOrders" },
+    { icon: Package, label: "Produtos", href: `${baseUrl}/produtos` },
+    { icon: Tag, label: "Categorias", href: `${baseUrl}/categorias` },
+    { icon: ChefHat, label: "Cozinha (KDS)", href: `${baseUrl}/cozinha` },
+    { icon: Users, label: "Garçom", href: `${baseUrl}/comanda` },
+    { icon: Truck, label: "Área de Entrega", href: `${baseUrl}/area-atendimento` },
+    { icon: DollarSign, label: "Cupons", href: `${baseUrl}/cupons` },
+    { icon: Wallet, label: "Financeiro", href: `${baseUrl}/financeiro` },
+    { icon: TrendingUp, label: "Fluxo de Caixa", href: `${baseUrl}/fluxo` },
+    { icon: PackageSearch, label: "Estoque", href: `${baseUrl}/estoque` },
+    { icon: Calendar, label: "Agendamentos", href: `${baseUrl}/agendados` },
+    { icon: MessageSquare, label: "WhatsApp IA", href: `${baseUrl}/whatsapp` },
+    { icon: BarChart3, label: "Relatórios", href: `${baseUrl}/relatorios` },
+    { icon: QrCode, label: "QR Code", href: `${baseUrl}/qrcode` },
+    { icon: Image, label: "Banners", href: `${baseUrl}/banners` },
+    { icon: Settings, label: "Integrações", href: `${baseUrl}/integracoes` },
+  ];
+};
 
 const EstablishmentDashboard = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
-  const { establishmentId, establishment, loading: estLoading } = useUserEstablishment();
+  const { establishmentId, establishment, loading: estLoading, isSuperAdmin } = useUserEstablishment();
   const { stats, pendingOrders, recentOrders, loading, refetch } = useDashboardData(establishmentId);
   
   const [isOpen, setIsOpen] = useState(establishment?.is_open ?? false);
@@ -233,7 +236,7 @@ const EstablishmentDashboard = () => {
 
           {/* Navigation */}
           <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-            {menuItems.map((item) => {
+            {getMenuItems(isSuperAdmin ? establishment?.slug : undefined).map((item) => {
               const Icon = item.icon;
               const badgeValue = item.badgeKey ? stats[item.badgeKey as keyof typeof stats] : null;
               return (

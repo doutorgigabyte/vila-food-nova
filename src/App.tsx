@@ -83,6 +83,31 @@ const App = () => (
               {/* Dashboard routes with slug parameter for admin access */}
               <Route path="/painel" element={<EstablishmentDashboard />} />
               <Route path="/painel/:slug" element={<EstablishmentDashboard />} />
+              <Route path="/painel/:slug/produtos" element={<ProductsManagement />} />
+              <Route path="/painel/:slug/categorias" element={<CategoriesManagement />} />
+              <Route path="/painel/:slug/pedidos" element={<OrdersManagement />} />
+              <Route path="/painel/:slug/pdv" element={<PDV />} />
+              <Route path="/painel/:slug/banners" element={<BannersManagement />} />
+              <Route path="/painel/:slug/cupons" element={<CouponsManagement />} />
+              <Route path="/painel/:slug/frete" element={<DeliveryFeesManagement />} />
+              <Route path="/painel/:slug/fluxo" element={<CashFlowManagement />} />
+              <Route path="/painel/:slug/qrcode" element={<QRCodeManagement />} />
+              <Route path="/painel/:slug/relatorios" element={<ReportsManagement />} />
+              <Route path="/painel/:slug/whatsapp" element={<WhatsAppManagement />} />
+              <Route path="/painel/:slug/integracoes" element={<IntegrationsManagement />} />
+              <Route path="/painel/:slug/area-atendimento" element={<ServiceAreaManagement />} />
+              <Route path="/painel/:slug/mercadopago" element={<MercadoPagoManagement />} />
+              <Route path="/painel/:slug/comanda" element={<WaiterApp />} />
+              <Route path="/painel/:slug/cozinha" element={<KitchenDisplay />} />
+              <Route path="/painel/:slug/cashback" element={<CashbackManagement />} />
+              <Route path="/painel/:slug/carrinhos-abandonados" element={<AbandonedCartsManagement />} />
+              <Route path="/painel/:slug/agendados" element={<ScheduledOrdersManagement />} />
+              <Route path="/painel/:slug/entregadores" element={<DeliveryDriversManagement />} />
+              <Route path="/painel/:slug/pixels" element={<AnalyticsPixelsManagement />} />
+              <Route path="/painel/:slug/estoque" element={<InventoryManagement />} />
+              <Route path="/painel/:slug/financeiro" element={<AdvancedFinanceManagement />} />
+              <Route path="/painel/:slug/fornecedores" element={<SuppliersManagement />} />
+              {/* Routes without slug for establishment owners */}
               <Route path="/painel/produtos" element={<ProductsManagement />} />
               <Route path="/painel/categorias" element={<CategoriesManagement />} />
               <Route path="/painel/pedidos" element={<OrdersManagement />} />
@@ -97,7 +122,6 @@ const App = () => (
               <Route path="/painel/integracoes" element={<IntegrationsManagement />} />
               <Route path="/painel/area-atendimento" element={<ServiceAreaManagement />} />
               <Route path="/painel/mercadopago" element={<MercadoPagoManagement />} />
-              {/* New dashboard routes */}
               <Route path="/painel/comanda" element={<WaiterApp />} />
               <Route path="/painel/cozinha" element={<KitchenDisplay />} />
               <Route path="/painel/cashback" element={<CashbackManagement />} />
@@ -120,8 +144,6 @@ const App = () => (
               <Route path="/admin/migracao" element={<DataMigration />} />
               <Route path="/admin/roadmap" element={<ProtectedAdminRoute><Roadmap /></ProtectedAdminRoute>} />
               <Route path="/admin/health" element={<ProtectedAdminRoute><SystemHealthCheck /></ProtectedAdminRoute>} />
-              <Route path="/painel/garcom" element={<WaiterApp />} />
-              <Route path="/painel/agendamentos" element={<ScheduledOrdersManagement />} />
               <Route path="/afiliado" element={<AffiliateDashboard />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
