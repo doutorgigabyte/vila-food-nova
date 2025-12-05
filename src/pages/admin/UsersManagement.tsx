@@ -27,14 +27,20 @@ import {
   Plus,
   Edit,
   Trash2,
-  Phone,
-  Calendar,
-  Filter
+  Filter,
+  Store
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { useAuditLog } from "@/hooks/useAuditLog";
+
+interface EstablishmentInfo {
+  id: string;
+  name: string;
+  slug: string;
+  role?: string;
+}
 
 interface User {
   id: string;
@@ -43,6 +49,8 @@ interface User {
   avatar_url: string | null;
   created_at: string;
   role?: string;
+  email?: string;
+  establishments: EstablishmentInfo[];
 }
 
 const UsersManagement = () => {
@@ -58,6 +66,7 @@ const UsersManagement = () => {
 
   const fetchUsers = async () => {
     try {
+      // Buscar profiles
       const { data: profiles, error: profilesError } = await supabase
         .from("profiles")
         .select("*")
@@ -65,18 +74,79 @@ const UsersManagement = () => {
 
       if (profilesError) throw profilesError;
 
+      // Buscar roles
       const { data: roles, error: rolesError } = await supabase
         .from("user_roles")
         .select("user_id, role");
 
       if (rolesError) throw rolesError;
 
-      const usersWithRoles = profiles?.map(profile => ({
-        ...profile,
-        role: roles?.find(r => r.user_id === profile.id)?.role || "customer"
-      })) || [];
+      // Buscar establishment_users com dados do estabelecimento
+      const { data: establishmentUsers, error: euError } = await supabase
+        .from("establishment_users")
+        .select(`
+          user_id,
+          role,
+          establishment_id,
+          establishments (
+            id,
+            name,
+            slug
+          )
+        `);
 
-      setUsers(usersWithRoles);
+      if (euError) throw euError;
+
+      // Buscar estabelecimentos onde o usuário é owner
+      const { data: ownedEstablishments, error: oeError } = await supabase
+        .from("establishments")
+        .select("id, name, slug, owner_id");
+
+      if (oeError) throw oeError;
+
+      // Combinar todos os dados
+      const usersWithRolesAndEstablishments = profiles?.map(profile => {
+        // Roles do usuário (pegar primeira role não-customer se existir)
+        const userRoles = roles?.filter(r => r.user_id === profile.id) || [];
+        const primaryRole = userRoles.find(r => r.role !== 'customer')?.role || 
+                           userRoles[0]?.role || 'customer';
+
+        // Estabelecimentos vinculados via establishment_users
+        const linkedEstablishments = establishmentUsers
+          ?.filter(eu => eu.user_id === profile.id && eu.establishments)
+          .map(eu => ({
+            id: (eu.establishments as any).id,
+            name: (eu.establishments as any).name,
+            slug: (eu.establishments as any).slug,
+            role: eu.role
+          })) || [];
+
+        // Estabelecimentos onde é owner
+        const owned = ownedEstablishments
+          ?.filter(e => e.owner_id === profile.id)
+          .map(e => ({
+            id: e.id,
+            name: e.name,
+            slug: e.slug,
+            role: 'owner'
+          })) || [];
+
+        // Combinar sem duplicatas
+        const allEstablishments = [...owned];
+        linkedEstablishments.forEach(le => {
+          if (!allEstablishments.find(e => e.id === le.id)) {
+            allEstablishments.push(le);
+          }
+        });
+
+        return {
+          ...profile,
+          role: primaryRole,
+          establishments: allEstablishments
+        };
+      }) || [];
+
+      setUsers(usersWithRolesAndEstablishments);
     } catch (error) {
       console.error("Error fetching users:", error);
       toast({ title: "Erro ao carregar usuários", variant: "destructive" });
@@ -122,7 +192,8 @@ const UsersManagement = () => {
 
   const filteredUsers = users.filter(user => {
     const matchesSearch = user.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          user.phone?.includes(searchTerm);
+                          user.phone?.includes(searchTerm) ||
+                          user.establishments.some(e => e.name.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesRole = roleFilter === "all" || user.role === roleFilter;
     return matchesSearch && matchesRole;
   });
@@ -145,7 +216,18 @@ const UsersManagement = () => {
       case "manager": return "Gestor";
       case "cashier": return "Caixa";
       case "attendant": return "Atendente";
+      case "owner": return "Dono";
       default: return "Cliente";
+    }
+  };
+
+  const getEstablishmentRoleBadge = (role?: string) => {
+    switch (role) {
+      case "owner": return <Badge variant="destructive" className="text-xs">Dono</Badge>;
+      case "manager": return <Badge variant="default" className="text-xs">Gestor</Badge>;
+      case "cashier": return <Badge variant="secondary" className="text-xs">Caixa</Badge>;
+      case "attendant": return <Badge variant="outline" className="text-xs">Atendente</Badge>;
+      default: return null;
     }
   };
 
@@ -163,7 +245,7 @@ const UsersManagement = () => {
               <div className="relative flex-1 md:max-w-sm">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input 
-                  placeholder="Buscar por nome ou telefone..." 
+                  placeholder="Buscar por nome, telefone ou loja..." 
                   className="pl-10 bg-background"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -268,7 +350,7 @@ const UsersManagement = () => {
                   <TableRow className="bg-muted/50">
                     <TableHead></TableHead>
                     <TableHead>NOME</TableHead>
-                    <TableHead>E-MAIL</TableHead>
+                    <TableHead>ESTABELECIMENTO</TableHead>
                     <TableHead>STATUS</TableHead>
                     <TableHead>LEVEL</TableHead>
                     <TableHead className="text-right">AÇÕES</TableHead>
@@ -288,9 +370,24 @@ const UsersManagement = () => {
                       </TableCell>
                       <TableCell>
                         <span className="font-medium">{user.full_name || "Sem nome"}</span>
+                        {user.phone && (
+                          <p className="text-xs text-muted-foreground">{user.phone}</p>
+                        )}
                       </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {user.phone || "—"}
+                      <TableCell>
+                        {user.establishments.length > 0 ? (
+                          <div className="flex flex-col gap-1">
+                            {user.establishments.map((est) => (
+                              <div key={est.id} className="flex items-center gap-2">
+                                <Store className="w-3 h-3 text-muted-foreground" />
+                                <span className="text-sm">{est.name}</span>
+                                {getEstablishmentRoleBadge(est.role)}
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
                       </TableCell>
                       <TableCell>
                         <Badge className="bg-green-500">Ativo</Badge>
