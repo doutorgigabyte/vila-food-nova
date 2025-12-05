@@ -22,6 +22,7 @@ export interface StoreEstablishment {
   operating_hours: any;
   primary_color: string | null;
   secondary_color: string | null;
+  vila_id: string | null;
   segment?: {
     name: string;
     icon: string | null;
@@ -37,6 +38,7 @@ export interface StoreProduct {
   image_url: string | null;
   is_featured: boolean;
   category_id: string | null;
+  establishment_id: string;
   additionals: any;
   variations: any;
   preparation_time: number | null;
@@ -94,7 +96,8 @@ export const useStoreData = (slug: string | undefined) => {
             operating_hours,
             primary_color,
             secondary_color,
-            segment_id
+            segment_id,
+            vila_id
           `)
           .eq("slug", slug)
           .maybeSingle();
@@ -144,6 +147,7 @@ export const useStoreData = (slug: string | undefined) => {
             image_url,
             is_featured,
             category_id,
+            establishment_id,
             additionals,
             variations,
             preparation_time,

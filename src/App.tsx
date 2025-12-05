@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./hooks/useAuth";
 import { AdminAccessProvider } from "./contexts/AdminAccessContext";
+import { CartProvider } from "./hooks/useCart";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
 import Vila from "./pages/Vila";
 import VilasManagement from "./pages/admin/VilasManagement";
@@ -59,10 +60,11 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <AdminAccessProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <PWAInstallPrompt />
+        <CartProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <PWAInstallPrompt />
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<Index />} />
@@ -117,7 +119,8 @@ const App = () => (
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
-        </TooltipProvider>
+          </TooltipProvider>
+        </CartProvider>
       </AdminAccessProvider>
     </AuthProvider>
   </QueryClientProvider>
