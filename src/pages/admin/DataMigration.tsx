@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, Database, CheckCircle, AlertCircle } from 'lucide-react';
+import { Loader2, Database, CheckCircle, AlertCircle, Users, Image, Link2, ArrowLeft } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 interface MigrationStatus {
   segments: number;
@@ -14,10 +16,22 @@ interface MigrationStatus {
   products: number;
 }
 
+interface SyncResult {
+  email?: string;
+  slug?: string;
+  status: string;
+  error?: string;
+}
+
 export default function DataMigration() {
   const [loading, setLoading] = useState<string | null>(null);
   const [status, setStatus] = useState<MigrationStatus | null>(null);
   const [adminCreated, setAdminCreated] = useState(false);
+  const [syncResults, setSyncResults] = useState<{
+    users?: SyncResult[];
+    links?: SyncResult[];
+    images?: SyncResult[];
+  } | null>(null);
 
   const runMigration = async (action: string, data?: any) => {
     setLoading(action);
@@ -30,9 +44,42 @@ export default function DataMigration() {
       if (!result.success) throw new Error(result.error);
 
       toast.success(`${action} executado com sucesso!`);
-      
-      // Refresh status
       await fetchStatus();
+      return result;
+    } catch (err: any) {
+      toast.error(`Erro: ${err.message}`);
+      console.error(err);
+    } finally {
+      setLoading(null);
+    }
+  };
+
+  const runUserSync = async (action: string) => {
+    setLoading(action);
+    try {
+      const { data: result, error } = await supabase.functions.invoke('sync-legacy-users', {
+        body: { action }
+      });
+
+      if (error) throw error;
+      
+      if (action === 'create_users') {
+        setSyncResults(prev => ({ ...prev, users: result.results }));
+        toast.success(`${result.results?.length || 0} usuários processados`);
+      } else if (action === 'link_establishments') {
+        setSyncResults(prev => ({ ...prev, links: result.results }));
+        toast.success(`${result.results?.length || 0} estabelecimentos vinculados`);
+      } else if (action === 'sync_images') {
+        setSyncResults(prev => ({ ...prev, images: result.results }));
+        toast.success(`${result.results?.length || 0} imagens sincronizadas`);
+      } else if (action === 'full_sync') {
+        setSyncResults({
+          users: result.users?.results,
+          links: result.links?.results,
+          images: result.images?.results
+        });
+        toast.success('Sincronização completa realizada!');
+      }
       
       return result;
     } catch (err: any) {
@@ -72,11 +119,9 @@ export default function DataMigration() {
   const runAllBaseMigrations = async () => {
     setLoading('all');
     try {
-      // Run in sequence
       await runMigration('migrate_segments');
       await runMigration('migrate_plans');
       await runMigration('migrate_states');
-      
       toast.success('Migração base concluída!');
     } catch (err) {
       console.error(err);
@@ -85,9 +130,34 @@ export default function DataMigration() {
     }
   };
 
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'created':
+      case 'linked':
+      case 'synced':
+        return <Badge className="bg-green-500">Sucesso</Badge>;
+      case 'already_exists':
+        return <Badge variant="secondary">Já existe</Badge>;
+      case 'user_not_found':
+        return <Badge variant="outline">Usuário não encontrado</Badge>;
+      case 'error':
+      case 'exception':
+        return <Badge variant="destructive">Erro</Badge>;
+      default:
+        return <Badge>{status}</Badge>;
+    }
+  };
+
   return (
     <div className="container mx-auto py-8 px-4 max-w-4xl">
-      <h1 className="text-3xl font-bold mb-8">Migração de Dados</h1>
+      <div className="flex items-center gap-4 mb-8">
+        <Link to="/admin">
+          <Button variant="ghost" size="icon">
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+        </Link>
+        <h1 className="text-3xl font-bold">Migração de Dados</h1>
+      </div>
       
       {/* Status Card */}
       <Card className="mb-6">
@@ -96,9 +166,6 @@ export default function DataMigration() {
             <Database className="h-5 w-5" />
             Status do Banco de Dados
           </CardTitle>
-          <CardDescription>
-            Quantidade de registros em cada tabela
-          </CardDescription>
         </CardHeader>
         <CardContent>
           {status ? (
@@ -115,6 +182,114 @@ export default function DataMigration() {
               Carregar Status
             </Button>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Legacy Users Sync */}
+      <Card className="mb-6 border-primary/50">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5 text-primary" />
+            Sincronização de Usuários Legados
+          </CardTitle>
+          <CardDescription>
+            Sincroniza usuários, vincula estabelecimentos e atualiza imagens do sistema legado
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Button 
+            onClick={() => runUserSync('full_sync')}
+            disabled={loading !== null}
+            className="w-full"
+            size="lg"
+          >
+            {loading === 'full_sync' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            🚀 Executar Sincronização Completa
+          </Button>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Button 
+              onClick={() => runUserSync('create_users')}
+              disabled={loading !== null}
+              variant="outline"
+            >
+              {loading === 'create_users' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              <Users className="mr-2 h-4 w-4" />
+              Criar Usuários
+            </Button>
+            
+            <Button 
+              onClick={() => runUserSync('link_establishments')}
+              disabled={loading !== null}
+              variant="outline"
+            >
+              {loading === 'link_establishments' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              <Link2 className="mr-2 h-4 w-4" />
+              Vincular Estab.
+            </Button>
+            
+            <Button 
+              onClick={() => runUserSync('sync_images')}
+              disabled={loading !== null}
+              variant="outline"
+            >
+              {loading === 'sync_images' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              <Image className="mr-2 h-4 w-4" />
+              Sincronizar Imagens
+            </Button>
+          </div>
+
+          {/* Sync Results */}
+          {syncResults && (
+            <div className="mt-4 space-y-4">
+              {syncResults.users && syncResults.users.length > 0 && (
+                <div>
+                  <h4 className="font-medium mb-2">Usuários ({syncResults.users.length})</h4>
+                  <div className="max-h-40 overflow-y-auto space-y-1 text-sm">
+                    {syncResults.users.map((r, i) => (
+                      <div key={i} className="flex items-center justify-between p-2 bg-muted rounded">
+                        <span>{r.email}</span>
+                        {getStatusBadge(r.status)}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {syncResults.links && syncResults.links.length > 0 && (
+                <div>
+                  <h4 className="font-medium mb-2">Vínculos ({syncResults.links.length})</h4>
+                  <div className="max-h-40 overflow-y-auto space-y-1 text-sm">
+                    {syncResults.links.map((r, i) => (
+                      <div key={i} className="flex items-center justify-between p-2 bg-muted rounded">
+                        <span>{r.email} → {r.slug}</span>
+                        {getStatusBadge(r.status)}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {syncResults.images && syncResults.images.length > 0 && (
+                <div>
+                  <h4 className="font-medium mb-2">Imagens ({syncResults.images.length})</h4>
+                  <div className="max-h-40 overflow-y-auto space-y-1 text-sm">
+                    {syncResults.images.map((r, i) => (
+                      <div key={i} className="flex items-center justify-between p-2 bg-muted rounded">
+                        <span>{r.slug}</span>
+                        {getStatusBadge(r.status)}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="p-4 bg-muted rounded-lg text-sm">
+            <p className="font-medium mb-1">Senha padrão para usuários migrados:</p>
+            <code className="bg-background px-2 py-1 rounded">vilafood2025</code>
+          </div>
         </CardContent>
       </Card>
 
@@ -183,10 +358,10 @@ export default function DataMigration() {
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg flex items-start gap-2">
+              <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg flex items-start gap-2">
                 <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />
-                <div className="text-sm text-yellow-800">
-                  <strong>Atenção:</strong> Este usuário usa credenciais fracas (admin123) e deve ser usado apenas para testes. Altere a senha após o primeiro login.
+                <div className="text-sm text-yellow-800 dark:text-yellow-200">
+                  <strong>Atenção:</strong> Este usuário usa credenciais fracas (admin123) e deve ser usado apenas para testes.
                 </div>
               </div>
               
@@ -199,21 +374,6 @@ export default function DataMigration() {
               </Button>
             </div>
           )}
-        </CardContent>
-      </Card>
-
-      {/* Instructions */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Instruções</CardTitle>
-        </CardHeader>
-        <CardContent className="prose prose-sm max-w-none">
-          <ol className="list-decimal pl-4 space-y-2">
-            <li>Execute a <strong>Migração Base</strong> primeiro para criar segmentos, planos e estados</li>
-            <li>Crie o <strong>Usuário Admin</strong> para ter acesso ao sistema</li>
-            <li>Faça login com <code>admin@admin.com.br</code> e senha <code>admin123</code></li>
-            <li>Para migrar estabelecimentos/produtos do sistema legado, será necessário um script personalizado de mapeamento</li>
-          </ol>
         </CardContent>
       </Card>
     </div>

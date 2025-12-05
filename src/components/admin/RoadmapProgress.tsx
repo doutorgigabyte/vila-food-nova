@@ -32,14 +32,14 @@ const phases: Phase[] = [
     name: "Dados e Migração",
     description: "Migração de dados do sistema legado",
     icon: Database,
-    status: 'in_progress',
-    progress: 80,
+    status: 'completed',
+    progress: 100,
     tasks: [
       { name: "Criação de Vilas", status: 'completed' },
       { name: "Vinculação de Estabelecimentos", status: 'completed' },
       { name: "useCreateOrder implementado", status: 'completed' },
-      { name: "Migração de Produtos", status: 'in_progress' },
-      { name: "Sincronização de Usuários", status: 'pending' },
+      { name: "Migração de Produtos", status: 'completed' },
+      { name: "Sincronização de Usuários (Edge Function)", status: 'completed' },
     ]
   },
   {
@@ -47,14 +47,14 @@ const phases: Phase[] = [
     name: "Correções Core",
     description: "Funcionalidades principais do sistema",
     icon: Settings,
-    status: 'in_progress',
-    progress: 75,
+    status: 'completed',
+    progress: 100,
     tasks: [
       { name: "Checkout funcional", status: 'completed' },
       { name: "Dashboard com dados reais", status: 'completed' },
       { name: "Sistema de pedidos completo", status: 'completed' },
       { name: "Multi-vila checkout", status: 'completed' },
-      { name: "Cálculo de frete real", status: 'in_progress' },
+      { name: "Cálculo de frete real (Edge Function)", status: 'completed' },
     ]
   },
   {
@@ -63,12 +63,12 @@ const phases: Phase[] = [
     description: "Mercado Pago PIX, Cartão e Assinaturas",
     icon: CreditCard,
     status: 'in_progress',
-    progress: 40,
+    progress: 60,
     tasks: [
-      { name: "PIX QR Code", status: 'in_progress' },
+      { name: "PIX QR Code (Edge Function)", status: 'completed' },
       { name: "Split Payment", status: 'in_progress' },
-      { name: "Assinaturas SaaS", status: 'pending' },
-      { name: "Webhooks", status: 'in_progress' },
+      { name: "Assinaturas SaaS", status: 'in_progress' },
+      { name: "Webhooks MP", status: 'completed' },
     ]
   },
   {
@@ -77,11 +77,12 @@ const phases: Phase[] = [
     description: "Bot IA com Evolution API + Gemini",
     icon: MessageSquare,
     status: 'in_progress',
-    progress: 50,
+    progress: 70,
     tasks: [
       { name: "Configuração por Estabelecimento", status: 'completed' },
-      { name: "Bot de Atendimento IA", status: 'in_progress' },
-      { name: "Notificações automáticas", status: 'pending' },
+      { name: "Bot de Atendimento IA", status: 'completed' },
+      { name: "Webhook WhatsApp", status: 'completed' },
+      { name: "Notificações automáticas", status: 'in_progress' },
     ]
   },
   {
@@ -89,15 +90,15 @@ const phases: Phase[] = [
     name: "Ajustes de Layout",
     description: "UX/UI mobile e desktop",
     icon: Palette,
-    status: 'in_progress',
-    progress: 80,
+    status: 'completed',
+    progress: 100,
     tasks: [
       { name: "Store Mobile", status: 'completed' },
       { name: "Marketplace", status: 'completed' },
       { name: "Checkout Flow", status: 'completed' },
       { name: "Comanda Digital", status: 'completed' },
       { name: "Página de Vilas", status: 'completed' },
-      { name: "Dashboard Responsivo", status: 'in_progress' },
+      { name: "Dashboard Responsivo", status: 'completed' },
     ]
   },
   {
@@ -105,8 +106,8 @@ const phases: Phase[] = [
     name: "Deploy e Go-Live",
     description: "Testes finais e produção",
     icon: Rocket,
-    status: 'pending',
-    progress: 10,
+    status: 'in_progress',
+    progress: 30,
     tasks: [
       { name: "Testes E2E", status: 'pending' },
       { name: "Preparação de produção", status: 'in_progress' },
