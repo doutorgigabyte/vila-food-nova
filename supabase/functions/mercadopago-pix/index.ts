@@ -1,3 +1,10 @@
+/**
+ * Mercado Pago PIX - Geração de QR Code PIX
+ * 
+ * Gera QR codes PIX dinâmicos para pagamento de pedidos.
+ * Suporta fallback para PIX estático se não houver token MP configurado.
+ */
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -30,9 +37,24 @@ serve(async (req) => {
     const body: PixRequest = await req.json();
     const { establishment_id, order_id, amount, description, payer_email, payer_name, external_reference } = body;
 
-    console.log('PIX request:', JSON.stringify(body, null, 2));
+    // Validate required fields
+    if (!establishment_id) {
+      return new Response(JSON.stringify({ error: 'establishment_id é obrigatório' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
-    // Get establishment's Mercado Pago token
+    if (!amount || amount <= 0) {
+      return new Response(JSON.stringify({ error: 'Valor do pagamento inválido' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    console.log('PIX request:', { establishment_id, order_id, amount });
+
+    // Get establishment's Mercado Pago token (excluding sensitive columns from log)
     const { data: establishment, error: estError } = await supabase
       .from('establishments')
       .select('mercado_pago_token, name, pix_key')
@@ -40,7 +62,7 @@ serve(async (req) => {
       .single();
 
     if (estError || !establishment) {
-      return new Response(JSON.stringify({ error: 'Establishment not found' }), {
+      return new Response(JSON.stringify({ error: 'Estabelecimento não encontrado' }), {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -116,7 +138,7 @@ serve(async (req) => {
     }
 
     const paymentData = await mpResponse.json();
-    console.log('Mercado Pago response:', JSON.stringify(paymentData, null, 2));
+    console.log('Mercado Pago payment created:', { id: paymentData.id, status: paymentData.status });
 
     const pixData = paymentData.point_of_interaction?.transaction_data;
 
@@ -153,7 +175,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('PIX error:', error);
     return new Response(JSON.stringify({ 
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: error instanceof Error ? error.message : 'Erro desconhecido',
       message: '❌ Erro ao gerar PIX. Por favor, tente novamente ou escolha outra forma de pagamento.',
     }), {
       status: 500,

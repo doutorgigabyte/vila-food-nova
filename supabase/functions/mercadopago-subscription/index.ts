@@ -3,11 +3,8 @@
  * 
  * Gerencia assinaturas mensais dos lojistas usando a API de Preapproval.
  * 
- * Fluxo:
- * 1. Admin cria plano de assinatura (preapproval_plan)
- * 2. Lojista se inscreve no plano (preapproval)
- * 3. MP cobra automaticamente todo mês
- * 4. Webhook atualiza status no banco
+ * SECURITY: create_plan requires super_admin role
+ * SECURITY: subscribe, cancel, get_status require ownership verification
  */
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
@@ -18,7 +15,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Token da plataforma (não do vendedor)
 const MP_ACCESS_TOKEN = Deno.env.get('MERCADOPAGO_ACCESS_TOKEN');
 
 interface SubscriptionRequest {
@@ -27,7 +23,6 @@ interface SubscriptionRequest {
   establishment_id?: string;
   payer_email?: string;
   back_url?: string;
-  // Para criar plano
   plan_data?: {
     reason: string;
     auto_recurring: {
@@ -39,13 +34,52 @@ interface SubscriptionRequest {
   };
 }
 
+// Helper to verify super_admin role
+async function verifySuperAdmin(supabaseAdmin: any, userId: string): Promise<boolean> {
+  const { data } = await supabaseAdmin
+    .from('user_roles')
+    .select('role')
+    .eq('user_id', userId)
+    .eq('role', 'super_admin')
+    .single();
+  return !!data;
+}
+
+// Helper to verify establishment ownership
+async function verifyEstablishmentOwnership(
+  supabaseAdmin: any,
+  userId: string,
+  establishmentId: string
+): Promise<{ authorized: boolean; error?: string }> {
+  const { data: establishment, error } = await supabaseAdmin
+    .from('establishments')
+    .select('owner_id')
+    .eq('id', establishmentId)
+    .single();
+
+  if (error || !establishment) {
+    return { authorized: false, error: 'Estabelecimento não encontrado' };
+  }
+
+  if (establishment.owner_id === userId) {
+    return { authorized: true };
+  }
+
+  const isSuperAdmin = await verifySuperAdmin(supabaseAdmin, userId);
+  if (isSuperAdmin) {
+    return { authorized: true };
+  }
+
+  return { authorized: false, error: 'Você não tem permissão para gerenciar este estabelecimento' };
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const supabase = createClient(
+    const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
@@ -59,17 +93,49 @@ serve(async (req) => {
 
     console.log('Subscription request:', { action, plan_id, establishment_id });
 
+    // Actions requiring authentication
+    const actionsRequiringAuth = ['create_plan', 'subscribe', 'cancel', 'get_status'];
+    
+    let user = null;
+    if (actionsRequiringAuth.includes(action)) {
+      const authHeader = req.headers.get('authorization');
+      if (!authHeader) {
+        return new Response(
+          JSON.stringify({ error: 'Autenticação necessária', success: false }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const supabase = createClient(
+        Deno.env.get('SUPABASE_URL')!,
+        Deno.env.get('SUPABASE_ANON_KEY')!,
+        { global: { headers: { Authorization: authHeader } } }
+      );
+
+      const { data: { user: authUser }, error: userError } = await supabase.auth.getUser();
+      if (userError || !authUser) {
+        return new Response(
+          JSON.stringify({ error: 'Usuário não autenticado', success: false }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      user = authUser;
+    }
+
     switch (action) {
-      /**
-       * Cria um plano de assinatura no Mercado Pago
-       * Use /preapproval_plan para criar o template do plano
-       */
       case 'create_plan': {
+        // SECURITY: Only super_admin can create plans
+        if (!user || !(await verifySuperAdmin(supabaseAdmin, user.id))) {
+          return new Response(
+            JSON.stringify({ error: 'Apenas administradores podem criar planos', success: false }),
+            { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
         if (!plan_data) {
           throw new Error('plan_data é obrigatório');
         }
 
-        // Criar plano no MP usando API de Preapproval Plan
         const planResponse = await fetch('https://api.mercadopago.com/preapproval_plan', {
           method: 'POST',
           headers: {
@@ -97,16 +163,8 @@ serve(async (req) => {
         const mpPlan = await planResponse.json();
         console.log('Plan created:', mpPlan);
 
-        /**
-         * Resposta do MP:
-         * - id: ID do plano no MP
-         * - init_point: URL para assinar (não usado em preapproval_plan)
-         * - application_id: ID da aplicação
-         */
-
-        // Salvar no banco vinculado ao plano interno
         if (plan_id) {
-          await supabase.from('mp_subscription_plans').insert({
+          await supabaseAdmin.from('mp_subscription_plans').insert({
             plan_id,
             mp_preapproval_plan_id: mpPlan.id,
             reason: plan_data.reason,
@@ -126,17 +184,21 @@ serve(async (req) => {
         });
       }
 
-      /**
-       * Inscreve um lojista em um plano
-       * Gera link de pagamento para primeira cobrança
-       */
       case 'subscribe': {
         if (!plan_id || !establishment_id || !payer_email) {
           throw new Error('plan_id, establishment_id e payer_email são obrigatórios');
         }
 
-        // Buscar plano no MP
-        const { data: mpPlan } = await supabase
+        // SECURITY: Verify ownership
+        const ownershipCheck = await verifyEstablishmentOwnership(supabaseAdmin, user!.id, establishment_id);
+        if (!ownershipCheck.authorized) {
+          return new Response(
+            JSON.stringify({ error: ownershipCheck.error, success: false }),
+            { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        const { data: mpPlan } = await supabaseAdmin
           .from('mp_subscription_plans')
           .select('*')
           .eq('plan_id', plan_id)
@@ -146,7 +208,6 @@ serve(async (req) => {
           throw new Error('Plano não encontrado no Mercado Pago');
         }
 
-        // Criar assinatura (preapproval)
         const subscriptionResponse = await fetch('https://api.mercadopago.com/preapproval', {
           method: 'POST',
           headers: {
@@ -156,9 +217,9 @@ serve(async (req) => {
           body: JSON.stringify({
             preapproval_plan_id: mpPlan.mp_preapproval_plan_id,
             payer_email,
-            external_reference: establishment_id, // Para identificar no webhook
+            external_reference: establishment_id,
             back_url: back_url || `${Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.lovable.app')}/painel`,
-            status: 'pending', // Aguardando primeiro pagamento
+            status: 'pending',
           }),
         });
 
@@ -171,15 +232,7 @@ serve(async (req) => {
         const subscription = await subscriptionResponse.json();
         console.log('Subscription created:', subscription);
 
-        /**
-         * Resposta do MP:
-         * - id: ID da assinatura
-         * - init_point: URL para o cliente pagar
-         * - status: pending, authorized, paused, cancelled
-         */
-
-        // Registrar transação
-        await supabase.from('mp_transactions').insert({
+        await supabaseAdmin.from('mp_transactions').insert({
           establishment_id,
           type: 'subscription',
           mp_preapproval_id: subscription.id,
@@ -189,8 +242,7 @@ serve(async (req) => {
           metadata: { plan_id, mp_plan_id: mpPlan.mp_preapproval_plan_id },
         });
 
-        // Atualizar assinatura do estabelecimento
-        await supabase.from('subscriptions').insert({
+        await supabaseAdmin.from('subscriptions').insert({
           establishment_id,
           plan_id,
           status: 'pending',
@@ -208,16 +260,21 @@ serve(async (req) => {
         });
       }
 
-      /**
-       * Cancela uma assinatura
-       */
       case 'cancel': {
         if (!establishment_id) {
           throw new Error('establishment_id é obrigatório');
         }
 
-        // Buscar assinatura ativa
-        const { data: transaction } = await supabase
+        // SECURITY: Verify ownership
+        const ownershipCheck = await verifyEstablishmentOwnership(supabaseAdmin, user!.id, establishment_id);
+        if (!ownershipCheck.authorized) {
+          return new Response(
+            JSON.stringify({ error: ownershipCheck.error, success: false }),
+            { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        const { data: transaction } = await supabaseAdmin
           .from('mp_transactions')
           .select('mp_preapproval_id')
           .eq('establishment_id', establishment_id)
@@ -229,7 +286,6 @@ serve(async (req) => {
           throw new Error('Nenhuma assinatura ativa encontrada');
         }
 
-        // Cancelar no MP
         const cancelResponse = await fetch(
           `https://api.mercadopago.com/preapproval/${transaction.mp_preapproval_id}`,
           {
@@ -247,13 +303,12 @@ serve(async (req) => {
           throw new Error(error.message || 'Erro ao cancelar');
         }
 
-        // Atualizar no banco
-        await supabase
+        await supabaseAdmin
           .from('mp_transactions')
           .update({ status: 'cancelled' })
           .eq('mp_preapproval_id', transaction.mp_preapproval_id);
 
-        await supabase
+        await supabaseAdmin
           .from('subscriptions')
           .update({ status: 'cancelled' })
           .eq('establishment_id', establishment_id);
@@ -266,15 +321,21 @@ serve(async (req) => {
         });
       }
 
-      /**
-       * Consulta status de uma assinatura
-       */
       case 'get_status': {
         if (!establishment_id) {
           throw new Error('establishment_id é obrigatório');
         }
 
-        const { data: transaction } = await supabase
+        // SECURITY: Verify ownership
+        const ownershipCheck = await verifyEstablishmentOwnership(supabaseAdmin, user!.id, establishment_id);
+        if (!ownershipCheck.authorized) {
+          return new Response(
+            JSON.stringify({ error: ownershipCheck.error, success: false }),
+            { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        const { data: transaction } = await supabaseAdmin
           .from('mp_transactions')
           .select('*')
           .eq('establishment_id', establishment_id)
@@ -293,7 +354,6 @@ serve(async (req) => {
           });
         }
 
-        // Consultar status atual no MP
         const statusResponse = await fetch(
           `https://api.mercadopago.com/preapproval/${transaction.mp_preapproval_id}`,
           {
@@ -313,11 +373,8 @@ serve(async (req) => {
         });
       }
 
-      /**
-       * Lista todos os planos disponíveis
-       */
       case 'list_plans': {
-        const { data: plans } = await supabase
+        const { data: plans } = await supabaseAdmin
           .from('mp_subscription_plans')
           .select('*, plans(*)')
           .eq('is_active', true);
@@ -348,39 +405,3 @@ serve(async (req) => {
     });
   }
 });
-
-/**
- * PAYLOADS DE EXEMPLO:
- * 
- * 1. Criar plano de assinatura:
- * POST /mercadopago-subscription
- * {
- *   "action": "create_plan",
- *   "plan_id": "uuid-do-plano-interno",
- *   "plan_data": {
- *     "reason": "Plano Pro VilaFood",
- *     "auto_recurring": {
- *       "frequency": 1,
- *       "frequency_type": "months",
- *       "transaction_amount": 99.90,
- *       "currency_id": "BRL"
- *     }
- *   }
- * }
- * 
- * 2. Inscrever lojista:
- * POST /mercadopago-subscription
- * {
- *   "action": "subscribe",
- *   "plan_id": "uuid-do-plano",
- *   "establishment_id": "uuid-do-estabelecimento",
- *   "payer_email": "lojista@email.com"
- * }
- * 
- * 3. Cancelar assinatura:
- * POST /mercadopago-subscription
- * {
- *   "action": "cancel",
- *   "establishment_id": "uuid-do-estabelecimento"
- * }
- */

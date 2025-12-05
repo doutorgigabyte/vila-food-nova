@@ -4,13 +4,7 @@
  * Este endpoint gerencia o fluxo OAuth2 para conectar a conta MP do lojista à plataforma.
  * Após autorização, salvamos o access_token e user_id para realizar splits de pagamento.
  * 
- * Fluxo:
- * 1. Lojista clica em "Conectar Mercado Pago"
- * 2. Redireciona para MP com client_id da plataforma
- * 3. Lojista autoriza
- * 4. MP redireciona de volta com code
- * 5. Trocamos code por access_token
- * 6. Salvamos credenciais no banco
+ * SECURITY: Requires authentication and ownership verification
  */
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
@@ -33,13 +27,71 @@ interface OAuthRequest {
   state?: string;
 }
 
+// Helper function to verify establishment ownership
+async function verifyEstablishmentOwnership(
+  supabaseAdmin: any,
+  userId: string,
+  establishmentId: string
+): Promise<{ authorized: boolean; error?: string }> {
+  const { data: establishment, error } = await supabaseAdmin
+    .from('establishments')
+    .select('owner_id')
+    .eq('id', establishmentId)
+    .single();
+
+  if (error || !establishment) {
+    return { authorized: false, error: 'Estabelecimento não encontrado' };
+  }
+
+  if (establishment.owner_id === userId) {
+    return { authorized: true };
+  }
+
+  // Check if user is super_admin
+  const { data: userRole } = await supabaseAdmin
+    .from('user_roles')
+    .select('role')
+    .eq('user_id', userId)
+    .eq('role', 'super_admin')
+    .single();
+
+  if (userRole) {
+    return { authorized: true };
+  }
+
+  return { authorized: false, error: 'Você não tem permissão para gerenciar este estabelecimento' };
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    // SECURITY: Verify authentication
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: 'Autenticação necessária', success: false }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const supabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_ANON_KEY')!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return new Response(
+        JSON.stringify({ error: 'Usuário não autenticado', success: false }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
@@ -47,29 +99,33 @@ serve(async (req) => {
     const body: OAuthRequest = await req.json();
     const { action, establishment_id, code, state } = body;
 
-    console.log('OAuth request:', { action, establishment_id });
+    console.log('OAuth request:', { action, establishment_id, user_id: user.id });
 
     switch (action) {
-      /**
-       * Gera URL de autorização para o lojista
-       * O state contém o establishment_id para identificar após callback
-       */
       case 'get_auth_url': {
         if (!establishment_id) {
           throw new Error('establishment_id é obrigatório');
+        }
+
+        // SECURITY: Verify ownership
+        const ownershipCheck = await verifyEstablishmentOwnership(supabaseAdmin, user.id, establishment_id);
+        if (!ownershipCheck.authorized) {
+          return new Response(
+            JSON.stringify({ error: ownershipCheck.error, success: false }),
+            { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
         }
 
         if (!MP_CLIENT_ID || !MP_REDIRECT_URI) {
           throw new Error('Credenciais do Mercado Pago não configuradas');
         }
 
-        // URL de autorização OAuth2 do Mercado Pago
         const authUrl = new URL('https://auth.mercadopago.com.br/authorization');
         authUrl.searchParams.set('client_id', MP_CLIENT_ID);
         authUrl.searchParams.set('response_type', 'code');
-        authUrl.searchParams.set('platform_id', 'mp'); // Marketplace
+        authUrl.searchParams.set('platform_id', 'mp');
         authUrl.searchParams.set('redirect_uri', MP_REDIRECT_URI);
-        authUrl.searchParams.set('state', establishment_id); // Para identificar após callback
+        authUrl.searchParams.set('state', establishment_id);
 
         return new Response(JSON.stringify({
           success: true,
@@ -80,20 +136,29 @@ serve(async (req) => {
         });
       }
 
-      /**
-       * Troca o código de autorização por access_token
-       * Este é o callback após o lojista autorizar no MP
-       */
       case 'exchange_code': {
         if (!code) {
           throw new Error('code é obrigatório');
+        }
+
+        const establishmentId = state || establishment_id;
+        if (!establishmentId) {
+          throw new Error('establishment_id ou state é obrigatório');
+        }
+
+        // SECURITY: Verify ownership
+        const ownershipCheck = await verifyEstablishmentOwnership(supabaseAdmin, user.id, establishmentId);
+        if (!ownershipCheck.authorized) {
+          return new Response(
+            JSON.stringify({ error: ownershipCheck.error, success: false }),
+            { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
         }
 
         if (!MP_CLIENT_ID || !MP_CLIENT_SECRET) {
           throw new Error('Credenciais do Mercado Pago não configuradas');
         }
 
-        // Trocar code por tokens
         const tokenResponse = await fetch('https://api.mercadopago.com/oauth/token', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -118,60 +183,51 @@ serve(async (req) => {
           expires_in: tokenData.expires_in 
         });
 
-        /**
-         * Resposta do MP inclui:
-         * - access_token: Token para fazer requests em nome do vendedor
-         * - refresh_token: Para renovar o access_token
-         * - user_id: ID do vendedor no MP (usado no split)
-         * - expires_in: Validade em segundos
-         * - public_key: Chave pública para Checkout Pro
-         */
+        const expiresAt = new Date();
+        expiresAt.setSeconds(expiresAt.getSeconds() + tokenData.expires_in);
 
-        // Salvar tokens no estabelecimento
-        const establishmentId = state || establishment_id;
-        if (establishmentId) {
-          const expiresAt = new Date();
-          expiresAt.setSeconds(expiresAt.getSeconds() + tokenData.expires_in);
+        const { error: updateError } = await supabaseAdmin
+          .from('establishments')
+          .update({
+            mercado_pago_token: tokenData.access_token,
+            mp_refresh_token: tokenData.refresh_token,
+            mp_user_id: tokenData.user_id.toString(),
+            mp_public_key: tokenData.public_key,
+            mp_token_expires_at: expiresAt.toISOString(),
+          })
+          .eq('id', establishmentId);
 
-          const { error: updateError } = await supabase
-            .from('establishments')
-            .update({
-              mercado_pago_token: tokenData.access_token,
-              mp_refresh_token: tokenData.refresh_token,
-              mp_user_id: tokenData.user_id.toString(),
-              mp_public_key: tokenData.public_key,
-              mp_token_expires_at: expiresAt.toISOString(),
-            })
-            .eq('id', establishmentId);
-
-          if (updateError) {
-            console.error('Error saving tokens:', updateError);
-            throw new Error('Erro ao salvar credenciais');
-          }
+        if (updateError) {
+          console.error('Error saving tokens:', updateError);
+          throw new Error('Erro ao salvar credenciais');
         }
 
         return new Response(JSON.stringify({
           success: true,
           user_id: tokenData.user_id,
           public_key: tokenData.public_key,
-          expires_at: new Date(Date.now() + tokenData.expires_in * 1000).toISOString(),
+          expires_at: expiresAt.toISOString(),
           message: 'Conta Mercado Pago conectada com sucesso!',
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
 
-      /**
-       * Renova o access_token usando refresh_token
-       * Deve ser chamado antes do token expirar
-       */
       case 'refresh_token': {
         if (!establishment_id) {
           throw new Error('establishment_id é obrigatório');
         }
 
-        // Buscar refresh_token do estabelecimento
-        const { data: establishment, error: fetchError } = await supabase
+        // SECURITY: Verify ownership
+        const ownershipCheck = await verifyEstablishmentOwnership(supabaseAdmin, user.id, establishment_id);
+        if (!ownershipCheck.authorized) {
+          return new Response(
+            JSON.stringify({ error: ownershipCheck.error, success: false }),
+            { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        const { data: establishment, error: fetchError } = await supabaseAdmin
           .from('establishments')
           .select('mp_refresh_token')
           .eq('id', establishment_id)
@@ -181,7 +237,6 @@ serve(async (req) => {
           throw new Error('Refresh token não encontrado');
         }
 
-        // Renovar token
         const refreshResponse = await fetch('https://api.mercadopago.com/oauth/token', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -200,11 +255,10 @@ serve(async (req) => {
 
         const newTokenData = await refreshResponse.json();
 
-        // Atualizar tokens no banco
         const expiresAt = new Date();
         expiresAt.setSeconds(expiresAt.getSeconds() + newTokenData.expires_in);
 
-        await supabase
+        await supabaseAdmin
           .from('establishments')
           .update({
             mercado_pago_token: newTokenData.access_token,
@@ -240,29 +294,3 @@ serve(async (req) => {
     });
   }
 });
-
-/**
- * PAYLOADS DE EXEMPLO:
- * 
- * 1. Obter URL de autorização:
- * POST /mercadopago-oauth
- * {
- *   "action": "get_auth_url",
- *   "establishment_id": "uuid-do-estabelecimento"
- * }
- * 
- * 2. Trocar código por token (callback):
- * POST /mercadopago-oauth
- * {
- *   "action": "exchange_code",
- *   "code": "TG-xxx",
- *   "state": "uuid-do-estabelecimento"
- * }
- * 
- * 3. Renovar token:
- * POST /mercadopago-oauth
- * {
- *   "action": "refresh_token",
- *   "establishment_id": "uuid-do-estabelecimento"
- * }
- */
