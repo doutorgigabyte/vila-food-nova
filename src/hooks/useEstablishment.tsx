@@ -62,23 +62,22 @@ export const useEstablishment = (slug: string) => {
       setError(null);
 
       try {
-        // Fetch establishment by slug
+        // Use secure RPC function to fetch establishment by slug
+        // This only exposes public data, no payment credentials
         const { data: estData, error: estError } = await supabase
-          .from('establishments')
-          .select('*')
-          .eq('slug', slug)
-          .single();
+          .rpc('get_public_establishment_by_slug', { p_slug: slug });
 
         if (estError) throw estError;
-        if (!estData) throw new Error('Estabelecimento não encontrado');
+        if (!estData || estData.length === 0) throw new Error('Estabelecimento não encontrado');
 
-        setEstablishment(estData as Establishment);
+        const establishment = estData[0];
+        setEstablishment(establishment as Establishment);
 
         // Fetch categories
         const { data: catData } = await supabase
           .from('categories')
           .select('*')
-          .eq('establishment_id', estData.id)
+          .eq('establishment_id', establishment.id)
           .eq('is_active', true)
           .order('sort_order');
 
@@ -88,7 +87,7 @@ export const useEstablishment = (slug: string) => {
         const { data: prodData } = await supabase
           .from('products')
           .select('*')
-          .eq('establishment_id', estData.id)
+          .eq('establishment_id', establishment.id)
           .eq('is_active', true);
 
         setProducts((prodData as Product[]) || []);
@@ -112,11 +111,10 @@ export const useEstablishments = () => {
 
   useEffect(() => {
     const fetchEstablishments = async () => {
+      // Use secure RPC function to fetch establishments
+      // This only exposes public data, no payment credentials
       const { data } = await supabase
-        .from('establishments')
-        .select('*')
-        .eq('status', 'active')
-        .order('name');
+        .rpc('get_public_establishments');
 
       setEstablishments((data as Establishment[]) || []);
       setLoading(false);
