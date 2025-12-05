@@ -3,6 +3,8 @@
  * 
  * Gera QR codes PIX dinâmicos para pagamento de pedidos.
  * Suporta fallback para PIX estático se não houver token MP configurado.
+ * 
+ * SECURITY: Requires valid order_id to generate PIX codes
  */
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
@@ -15,7 +17,7 @@ const corsHeaders = {
 
 interface PixRequest {
   establishment_id: string;
-  order_id?: string;
+  order_id: string; // Now required for security
   amount: number;
   description: string;
   payer_email?: string;
@@ -45,6 +47,14 @@ serve(async (req) => {
       });
     }
 
+    // SECURITY: Require order_id to prevent abuse
+    if (!order_id) {
+      return new Response(JSON.stringify({ error: 'order_id é obrigatório para gerar PIX' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     if (!amount || amount <= 0) {
       return new Response(JSON.stringify({ error: 'Valor do pagamento inválido' }), {
         status: 400,
@@ -53,6 +63,30 @@ serve(async (req) => {
     }
 
     console.log('PIX request:', { establishment_id, order_id, amount });
+
+    // SECURITY: Validate that the order exists and belongs to the establishment
+    const { data: order, error: orderError } = await supabase
+      .from('orders')
+      .select('id, establishment_id, total, status')
+      .eq('id', order_id)
+      .eq('establishment_id', establishment_id)
+      .single();
+
+    if (orderError || !order) {
+      console.error('Order validation failed:', orderError);
+      return new Response(JSON.stringify({ error: 'Pedido não encontrado ou não pertence ao estabelecimento' }), {
+        status: 404,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Validate order is in a valid state for payment
+    if (order.status === 'cancelled' || order.status === 'delivered') {
+      return new Response(JSON.stringify({ error: 'Pedido não pode receber pagamento neste status' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     // Get establishment's Mercado Pago token (excluding sensitive columns from log)
     const { data: establishment, error: estError } = await supabase
@@ -78,6 +112,7 @@ serve(async (req) => {
           pix_key: establishment.pix_key,
           amount,
           description,
+          order_id,
           message: `💰 *Pagamento via PIX*\n\nValor: R$ ${amount.toFixed(2)}\n\nChave PIX: ${establishment.pix_key}\n\nApós o pagamento, envie o comprovante para confirmarmos seu pedido! 📸`,
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -111,7 +146,7 @@ serve(async (req) => {
       headers: {
         'Authorization': `Bearer ${establishment.mercado_pago_token}`,
         'Content-Type': 'application/json',
-        'X-Idempotency-Key': `${establishment_id}-${order_id || Date.now()}`,
+        'X-Idempotency-Key': `${establishment_id}-${order_id}`,
       },
       body: JSON.stringify(mpPayload),
     });
@@ -128,6 +163,7 @@ serve(async (req) => {
           pix_key: establishment.pix_key,
           amount,
           description,
+          order_id,
           message: `💰 *Pagamento via PIX*\n\nValor: R$ ${amount.toFixed(2)}\n\nChave PIX: ${establishment.pix_key}\n\nApós o pagamento, envie o comprovante para confirmarmos seu pedido! 📸`,
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -166,6 +202,7 @@ serve(async (req) => {
       qr_code_base64: qrCodeBase64,
       qr_code_url: qrCodeBase64 ? `data:image/png;base64,${qrCodeBase64}` : null,
       amount,
+      order_id,
       expiration: paymentData.date_of_expiration,
       message: `💰 *Pagamento via PIX*\n\nValor: R$ ${amount.toFixed(2)}\n\n📱 Escaneie o QR Code ou copie o código abaixo:\n\n\`\`\`${qrCode}\`\`\`\n\n⏰ Válido por 30 minutos\n\nO pedido será confirmado automaticamente após o pagamento!`,
     }), {
