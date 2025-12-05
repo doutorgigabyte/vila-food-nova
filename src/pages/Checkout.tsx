@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 import { 
   ArrowLeft, 
   MapPin, 
@@ -17,35 +18,33 @@ import {
   Store,
   Clock,
   CheckCircle,
-  Utensils
+  ShoppingBag,
+  AlertTriangle
 } from "lucide-react";
 import { toast } from "sonner";
-
-// Mock cart data
-const cartItems = [
-  {
-    id: 1,
-    name: "Pizza Margherita",
-    quantity: 2,
-    price: 45.90,
-    observation: "Sem cebola",
-  },
-  {
-    id: 2,
-    name: "Refrigerante 2L",
-    quantity: 1,
-    price: 12.90,
-    observation: "",
-  },
-];
-
-const deliveryFee = 5.99;
+import { useCart } from "@/hooks/useCart";
 
 const Checkout = () => {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const storeSlug = searchParams.get("store");
+  
+  const { 
+    items, 
+    establishments, 
+    getUniqueEstablishments, 
+    getEstablishmentItems, 
+    getEstablishmentSubtotal,
+    isMultiEstablishment,
+    clearEstablishmentCart,
+    clearCart
+  } = useCart();
+
   const [step, setStep] = useState<"delivery" | "payment" | "success">("delivery");
-  const [deliveryType, setDeliveryType] = useState("delivery");
+  const [deliveryType, setDeliveryType] = useState("pickup");
   const [paymentMethod, setPaymentMethod] = useState("pix");
   const [isLoading, setIsLoading] = useState(false);
+  const [completedOrders, setCompletedOrders] = useState<string[]>([]);
   
   // Address form
   const [cep, setCep] = useState("");
@@ -59,8 +58,22 @@ const Checkout = () => {
   const [change, setChange] = useState("");
   const [observations, setObservations] = useState("");
 
-  const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const total = deliveryType === "delivery" ? subtotal + deliveryFee : subtotal;
+  const uniqueEstablishments = getUniqueEstablishments();
+  const isMultiStore = isMultiEstablishment();
+
+  // For multi-establishment orders, force pickup only
+  useEffect(() => {
+    if (isMultiStore) {
+      setDeliveryType("pickup");
+    }
+  }, [isMultiStore]);
+
+  // Redirect if cart is empty
+  useEffect(() => {
+    if (items.length === 0 && step !== "success") {
+      navigate(storeSlug ? `/loja/${storeSlug}` : "/marketplace");
+    }
+  }, [items.length, step, storeSlug, navigate]);
 
   const fetchCep = async (cepValue: string) => {
     if (cepValue.length === 8) {
@@ -89,12 +102,47 @@ const Checkout = () => {
 
   const handleSubmitPayment = async () => {
     setIsLoading(true);
-    // Simulate order submission
-    setTimeout(() => {
-      setIsLoading(false);
+    
+    try {
+      // Create orders for each establishment
+      const orderNumbers: string[] = [];
+      
+      for (const estId of uniqueEstablishments) {
+        const estInfo = establishments.get(estId);
+        // Simulate order creation - replace with actual API call
+        const orderNumber = `#${Math.floor(1000 + Math.random() * 9000)}`;
+        orderNumbers.push(`${estInfo?.name}: ${orderNumber}`);
+      }
+      
+      setCompletedOrders(orderNumbers);
+      clearCart();
       setStep("success");
-    }, 2000);
+    } catch (error) {
+      toast.error("Erro ao processar pedido. Tente novamente.");
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  // Calculate totals
+  const calculateTotals = () => {
+    let subtotal = 0;
+    let totalDeliveryFee = 0;
+
+    uniqueEstablishments.forEach((estId) => {
+      const estSubtotal = getEstablishmentSubtotal(estId);
+      subtotal += estSubtotal;
+      
+      if (deliveryType === "delivery") {
+        const estInfo = establishments.get(estId);
+        totalDeliveryFee += estInfo?.delivery_base_fee || 0;
+      }
+    });
+
+    return { subtotal, deliveryFee: totalDeliveryFee, total: subtotal + totalDeliveryFee };
+  };
+
+  const { subtotal, deliveryFee, total } = calculateTotals();
 
   if (step === "success") {
     return (
@@ -103,24 +151,38 @@ const Checkout = () => {
           <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
             <CheckCircle className="w-10 h-10 text-green-600 dark:text-green-400" />
           </div>
-          <h1 className="text-2xl font-bold mb-2">Pedido realizado!</h1>
+          <h1 className="text-2xl font-bold mb-2">
+            {completedOrders.length > 1 ? "Pedidos realizados!" : "Pedido realizado!"}
+          </h1>
           <p className="text-muted-foreground mb-6">
-            Seu pedido #1234 foi enviado para o estabelecimento
+            {completedOrders.length > 1 
+              ? "Seus pedidos foram enviados para os estabelecimentos"
+              : "Seu pedido foi enviado para o estabelecimento"
+            }
           </p>
           
           <Card className="mb-6 text-left">
             <CardContent className="p-4 space-y-3">
+              {completedOrders.map((order, idx) => (
+                <div key={idx} className="flex items-center gap-2 text-sm">
+                  <ShoppingBag className="w-4 h-4 text-primary" />
+                  <span>{order}</span>
+                </div>
+              ))}
+              <Separator />
               <div className="flex items-center gap-2 text-sm">
                 <Clock className="w-4 h-4 text-primary" />
-                <span>Previsão de entrega: 30-45 min</span>
+                <span>Previsão: 30-45 min</span>
               </div>
-              <div className="flex items-center gap-2 text-sm">
-                <MapPin className="w-4 h-4 text-primary" />
-                <span>{address}, {number} - {neighborhood}</span>
-              </div>
+              {deliveryType === "pickup" && (
+                <div className="flex items-center gap-2 text-sm">
+                  <Store className="w-4 h-4 text-primary" />
+                  <span>Retirada no local</span>
+                </div>
+              )}
               <Separator />
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Total pago</span>
+                <span className="text-muted-foreground">Total</span>
                 <span className="font-bold">R$ {total.toFixed(2)}</span>
               </div>
             </CardContent>
@@ -128,7 +190,7 @@ const Checkout = () => {
 
           <div className="space-y-3">
             <Button className="w-full" asChild>
-              <Link to="/pedidos">Acompanhar pedido</Link>
+              <Link to="/pedidos">Acompanhar pedidos</Link>
             </Button>
             <Button variant="outline" className="w-full" asChild>
               <Link to="/marketplace">Voltar ao início</Link>
@@ -145,24 +207,42 @@ const Checkout = () => {
       <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b border-border">
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center gap-4">
-            <Link 
-              to={step === "delivery" ? "/loja/pizza-do-bairro" : "#"}
-              onClick={(e) => {
+            <button
+              onClick={() => {
                 if (step === "payment") {
-                  e.preventDefault();
                   setStep("delivery");
+                } else {
+                  navigate(-1);
                 }
               }}
               className="p-2 hover:bg-muted rounded-full transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
-            </Link>
+            </button>
             <h1 className="text-lg font-semibold">Finalizar pedido</h1>
           </div>
         </div>
       </header>
 
       <main className="container mx-auto px-4 py-6 max-w-2xl">
+        {/* Multi-establishment warning */}
+        {isMultiStore && (
+          <Card className="mb-6 border-amber-500/50 bg-amber-50 dark:bg-amber-950/20">
+            <CardContent className="p-4 flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-medium text-amber-800 dark:text-amber-200">
+                  Pedido em múltiplos estabelecimentos
+                </p>
+                <p className="text-sm text-amber-700 dark:text-amber-300">
+                  Você tem produtos de {uniqueEstablishments.length} estabelecimentos diferentes. 
+                  Cada um processará seu pedido separadamente. Disponível apenas para retirada no local.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Progress */}
         <div className="flex items-center justify-center gap-2 mb-8">
           <div className={`flex items-center gap-2 ${step === "delivery" ? "text-primary" : "text-muted-foreground"}`}>
@@ -194,24 +274,31 @@ const Checkout = () => {
               </CardHeader>
               <CardContent>
                 <RadioGroup value={deliveryType} onValueChange={setDeliveryType}>
-                  <div className="flex items-center space-x-3 p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors cursor-pointer">
-                    <RadioGroupItem value="delivery" id="delivery" />
-                    <Label htmlFor="delivery" className="flex items-center gap-3 cursor-pointer flex-1">
-                      <Bike className="w-5 h-5 text-primary" />
-                      <div>
-                        <p className="font-medium">Delivery</p>
-                        <p className="text-sm text-muted-foreground">Receba no seu endereço</p>
-                      </div>
-                    </Label>
-                    <span className="text-sm text-muted-foreground">R$ {deliveryFee.toFixed(2)}</span>
-                  </div>
-                  <div className="flex items-center space-x-3 p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors cursor-pointer mt-2">
+                  {!isMultiStore && (
+                    <div className="flex items-center space-x-3 p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors cursor-pointer">
+                      <RadioGroupItem value="delivery" id="delivery" />
+                      <Label htmlFor="delivery" className="flex items-center gap-3 cursor-pointer flex-1">
+                        <Bike className="w-5 h-5 text-primary" />
+                        <div>
+                          <p className="font-medium">Delivery</p>
+                          <p className="text-sm text-muted-foreground">Receba no seu endereço</p>
+                        </div>
+                      </Label>
+                      <span className="text-sm text-muted-foreground">R$ {deliveryFee.toFixed(2)}</span>
+                    </div>
+                  )}
+                  <div className={`flex items-center space-x-3 p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors cursor-pointer ${!isMultiStore ? 'mt-2' : ''}`}>
                     <RadioGroupItem value="pickup" id="pickup" />
                     <Label htmlFor="pickup" className="flex items-center gap-3 cursor-pointer flex-1">
                       <Store className="w-5 h-5 text-primary" />
                       <div>
                         <p className="font-medium">Retirada no local</p>
-                        <p className="text-sm text-muted-foreground">Retire na loja</p>
+                        <p className="text-sm text-muted-foreground">
+                          {isMultiStore 
+                            ? `Retire em ${uniqueEstablishments.length} estabelecimentos`
+                            : "Retire na loja"
+                          }
+                        </p>
                       </div>
                     </Label>
                     <span className="text-sm text-green-600 font-medium">Grátis</span>
@@ -221,7 +308,7 @@ const Checkout = () => {
             </Card>
 
             {/* Address Form */}
-            {deliveryType === "delivery" && (
+            {deliveryType === "delivery" && !isMultiStore && (
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
@@ -295,6 +382,42 @@ const Checkout = () => {
               </Card>
             )}
 
+            {/* Pickup locations for multi-establishment */}
+            {deliveryType === "pickup" && isMultiStore && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Store className="w-5 h-5" />
+                    Locais de retirada
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {uniqueEstablishments.map((estId) => {
+                    const estInfo = establishments.get(estId);
+                    return (
+                      <div key={estId} className="p-3 bg-muted/50 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          {estInfo?.logo_url && (
+                            <img 
+                              src={estInfo.logo_url} 
+                              alt={estInfo.name}
+                              className="w-10 h-10 rounded-full object-cover"
+                            />
+                          )}
+                          <div>
+                            <p className="font-medium">{estInfo?.name}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {getEstablishmentItems(estId).length} itens • R$ {getEstablishmentSubtotal(estId).toFixed(2)}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </CardContent>
+              </Card>
+            )}
+
             <Button onClick={handleSubmitDelivery} className="w-full" size="lg">
               Continuar para pagamento
             </Button>
@@ -308,6 +431,11 @@ const Checkout = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">Forma de pagamento</CardTitle>
+                {isMultiStore && (
+                  <p className="text-sm text-muted-foreground">
+                    O pagamento será feito separadamente em cada estabelecimento na retirada
+                  </p>
+                )}
               </CardHeader>
               <CardContent>
                 <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod}>
@@ -317,37 +445,45 @@ const Checkout = () => {
                       <QrCode className="w-5 h-5 text-primary" />
                       <div>
                         <p className="font-medium">PIX</p>
-                        <p className="text-sm text-muted-foreground">Pagamento instantâneo</p>
+                        <p className="text-sm text-muted-foreground">
+                          {isMultiStore ? "Pague na retirada via PIX" : "Pagamento instantâneo"}
+                        </p>
                       </div>
                     </Label>
                   </div>
-                  <div className="flex items-center space-x-3 p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors cursor-pointer mt-2">
-                    <RadioGroupItem value="credit" id="credit" />
-                    <Label htmlFor="credit" className="flex items-center gap-3 cursor-pointer flex-1">
-                      <CreditCard className="w-5 h-5 text-primary" />
-                      <div>
-                        <p className="font-medium">Cartão de crédito</p>
-                        <p className="text-sm text-muted-foreground">Na entrega</p>
+                  {!isMultiStore && (
+                    <>
+                      <div className="flex items-center space-x-3 p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors cursor-pointer mt-2">
+                        <RadioGroupItem value="credit" id="credit" />
+                        <Label htmlFor="credit" className="flex items-center gap-3 cursor-pointer flex-1">
+                          <CreditCard className="w-5 h-5 text-primary" />
+                          <div>
+                            <p className="font-medium">Cartão de crédito</p>
+                            <p className="text-sm text-muted-foreground">Na entrega</p>
+                          </div>
+                        </Label>
                       </div>
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-3 p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors cursor-pointer mt-2">
-                    <RadioGroupItem value="debit" id="debit" />
-                    <Label htmlFor="debit" className="flex items-center gap-3 cursor-pointer flex-1">
-                      <CreditCard className="w-5 h-5 text-primary" />
-                      <div>
-                        <p className="font-medium">Cartão de débito</p>
-                        <p className="text-sm text-muted-foreground">Na entrega</p>
+                      <div className="flex items-center space-x-3 p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors cursor-pointer mt-2">
+                        <RadioGroupItem value="debit" id="debit" />
+                        <Label htmlFor="debit" className="flex items-center gap-3 cursor-pointer flex-1">
+                          <CreditCard className="w-5 h-5 text-primary" />
+                          <div>
+                            <p className="font-medium">Cartão de débito</p>
+                            <p className="text-sm text-muted-foreground">Na entrega</p>
+                          </div>
+                        </Label>
                       </div>
-                    </Label>
-                  </div>
+                    </>
+                  )}
                   <div className="flex items-center space-x-3 p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors cursor-pointer mt-2">
                     <RadioGroupItem value="cash" id="cash" />
                     <Label htmlFor="cash" className="flex items-center gap-3 cursor-pointer flex-1">
                       <Banknote className="w-5 h-5 text-primary" />
                       <div>
                         <p className="font-medium">Dinheiro</p>
-                        <p className="text-sm text-muted-foreground">Na entrega</p>
+                        <p className="text-sm text-muted-foreground">
+                          {isMultiStore ? "Pague na retirada" : "Na entrega"}
+                        </p>
                       </div>
                     </Label>
                   </div>
@@ -386,19 +522,52 @@ const Checkout = () => {
               <CardHeader>
                 <CardTitle className="text-lg">Resumo do pedido</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
-                {cartItems.map((item) => (
-                  <div key={item.id} className="flex justify-between text-sm">
-                    <span>{item.quantity}x {item.name}</span>
-                    <span>R$ {(item.price * item.quantity).toFixed(2)}</span>
-                  </div>
-                ))}
-                <Separator />
+              <CardContent className="space-y-4">
+                {uniqueEstablishments.map((estId) => {
+                  const estInfo = establishments.get(estId);
+                  const estItems = getEstablishmentItems(estId);
+                  const estSubtotal = getEstablishmentSubtotal(estId);
+                  
+                  return (
+                    <div key={estId} className="space-y-3">
+                      {isMultiStore && (
+                        <div className="flex items-center gap-2">
+                          {estInfo?.logo_url && (
+                            <img 
+                              src={estInfo.logo_url} 
+                              alt={estInfo.name}
+                              className="w-6 h-6 rounded-full object-cover"
+                            />
+                          )}
+                          <span className="font-medium">{estInfo?.name}</span>
+                        </div>
+                      )}
+                      {estItems.map((item) => (
+                        <div key={item.product.id} className="flex justify-between text-sm">
+                          <span>{item.quantity}x {item.product.name}</span>
+                          <span>R$ {((item.product.promotional_price || item.product.price) * item.quantity).toFixed(2)}</span>
+                        </div>
+                      ))}
+                      {isMultiStore && (
+                        <>
+                          <div className="flex justify-between text-sm font-medium">
+                            <span>Subtotal {estInfo?.name}</span>
+                            <span>R$ {estSubtotal.toFixed(2)}</span>
+                          </div>
+                          <Separator />
+                        </>
+                      )}
+                    </div>
+                  );
+                })}
+                
+                {!isMultiStore && <Separator />}
+                
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Subtotal</span>
                   <span>R$ {subtotal.toFixed(2)}</span>
                 </div>
-                {deliveryType === "delivery" && (
+                {deliveryType === "delivery" && deliveryFee > 0 && (
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Taxa de entrega</span>
                     <span>R$ {deliveryFee.toFixed(2)}</span>

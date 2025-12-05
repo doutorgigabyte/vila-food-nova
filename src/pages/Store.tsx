@@ -1,12 +1,13 @@
 import { useState, useMemo } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Search, Store as StoreIcon, Package, ArrowLeft } from "lucide-react";
 import { useStoreData, type StoreProduct } from "@/hooks/useStoreData";
+import { useCart, type CartProduct, type EstablishmentInfo } from "@/hooks/useCart";
 import { ProductModal } from "@/components/store/ProductModal";
-import { CartSheet, type CartItem } from "@/components/store/CartSheet";
+import { CartSheet } from "@/components/store/CartSheet";
 import { StoreHeader } from "@/components/store/StoreHeader";
 import { StoreHero } from "@/components/store/StoreHero";
 import { StoreBanners } from "@/components/store/StoreBanners";
@@ -14,9 +15,11 @@ import { StoreCategoryNav } from "@/components/store/StoreCategoryNav";
 import { StoreProductGrid } from "@/components/store/StoreProductGrid";
 import { StoreInfoTab } from "@/components/store/StoreInfoTab";
 import { StoreFloatingCart } from "@/components/store/StoreFloatingCart";
+import { toast } from "sonner";
 
 const Store = () => {
   const { slug } = useParams();
+  const navigate = useNavigate();
   const {
     establishment,
     products,
@@ -27,12 +30,43 @@ const Store = () => {
     error,
   } = useStoreData(slug);
 
+  const {
+    items,
+    establishments,
+    addToCart,
+    updateQuantity,
+    removeFromCart,
+    getEstablishmentItems,
+    getEstablishmentSubtotal,
+    getTotalItems,
+    getTotalPrice,
+  } = useCart();
+
   const [activeTab, setActiveTab] = useState("loja");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<StoreProduct | null>(null);
   const [isCartOpen, setIsCartOpen] = useState(false);
+
+  // Get current establishment info for cart
+  const currentEstablishmentInfo: EstablishmentInfo | null = establishment
+    ? {
+        id: establishment.id,
+        name: establishment.name,
+        slug: establishment.slug,
+        logo_url: establishment.logo_url,
+        vila_id: establishment.vila_id,
+        delivery_base_fee: establishment.delivery_base_fee || 5,
+        min_order_value: establishment.min_order_value || 0,
+        accepts_pickup: establishment.accepts_pickup ?? true,
+        accepts_delivery: establishment.accepts_delivery ?? true,
+      }
+    : null;
+
+  // Get cart items for current establishment
+  const currentEstablishmentItems = establishment
+    ? getEstablishmentItems(establishment.id)
+    : [];
 
   // Filter products based on search and category
   const filteredProducts = useMemo(() => {
@@ -86,44 +120,26 @@ const Store = () => {
   }, [products, categories, promotionalProducts, featuredProducts, filteredProducts, selectedCategory, searchTerm]);
 
   // Cart functions
-  const addToCart = (product: StoreProduct, quantity: number = 1, observation: string = "") => {
-    const existingItem = cart.find((item) => item.product.id === product.id);
-    if (existingItem) {
-      setCart(
-        cart.map((item) =>
-          item.product.id === product.id
-            ? { ...item, quantity: item.quantity + quantity, observation: observation || item.observation }
-            : item
-        )
-      );
-    } else {
-      setCart([...cart, { product, quantity, observation }]);
+  const handleAddToCart = async (product: StoreProduct, quantity: number = 1, observation: string = "") => {
+    if (!currentEstablishmentInfo) return;
+
+    const cartProduct: CartProduct = {
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      promotional_price: product.promotional_price,
+      image_url: product.image_url,
+      establishment_id: product.establishment_id,
+    };
+
+    const success = await addToCart(cartProduct, currentEstablishmentInfo, quantity, observation);
+    if (success) {
+      toast.success(`${product.name} adicionado ao carrinho`);
     }
   };
 
-  const updateCartQuantity = (productId: string, delta: number) => {
-    setCart(
-      cart
-        .map((item) => {
-          if (item.product.id === productId) {
-            const newQuantity = item.quantity + delta;
-            return newQuantity > 0 ? { ...item, quantity: newQuantity } : item;
-          }
-          return item;
-        })
-        .filter((item) => item.quantity > 0)
-    );
-  };
-
-  const removeFromCart = (productId: string) => {
-    setCart(cart.filter((item) => item.product.id !== productId));
-  };
-
-  const cartItemsCount = cart.reduce((sum, item) => sum + item.quantity, 0);
-  const cartTotal = cart.reduce((sum, item) => {
-    const price = item.product.promotional_price || item.product.price;
-    return sum + price * item.quantity;
-  }, 0);
+  const cartItemsCount = getTotalItems();
+  const cartTotal = getTotalPrice();
 
   // Category nav data
   const categoryNavData = useMemo(() => {
@@ -141,7 +157,7 @@ const Store = () => {
       setIsCartOpen(true);
     }
     if (tab === "inicio") {
-      window.location.href = "/marketplace";
+      navigate("/marketplace");
     }
   };
 
@@ -273,7 +289,7 @@ const Store = () => {
                     title={group.title}
                     products={group.products}
                     onProductClick={(product) => setSelectedProduct(product)}
-                    onQuickAdd={(product) => addToCart(product)}
+                    onQuickAdd={(product) => handleAddToCart(product)}
                     viewMode={selectedCategory || searchTerm ? "grid" : "scroll"}
                   />
                 )
@@ -295,7 +311,7 @@ const Store = () => {
         product={selectedProduct}
         onClose={() => setSelectedProduct(null)}
         onAddToCart={(product, quantity, observation) => {
-          addToCart(product, quantity, observation);
+          handleAddToCart(product, quantity, observation);
           setSelectedProduct(null);
         }}
       />
@@ -307,14 +323,8 @@ const Store = () => {
           setIsCartOpen(false);
           if (activeTab === "carrinho") setActiveTab("loja");
         }}
-        items={cart}
         establishmentId={establishment.id}
         establishmentSlug={establishment.slug}
-        deliveryFee={establishment.delivery_base_fee || 5}
-        minOrder={establishment.min_order_value || 0}
-        onUpdateQuantity={updateCartQuantity}
-        onRemove={removeFromCart}
-        onAddProduct={(product) => addToCart(product)}
       />
     </div>
   );
