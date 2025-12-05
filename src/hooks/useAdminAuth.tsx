@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 
@@ -8,6 +8,7 @@ export const useAdminAuth = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     const checkAdminRole = async () => {
@@ -15,11 +16,13 @@ export const useAdminAuth = () => {
       
       if (!user) {
         setLoading(false);
-        navigate('/auth');
+        // Salvar a página atual para redirecionar após login
+        navigate('/auth', { state: { from: location.pathname } });
         return;
       }
 
       try {
+        // Verificar se o usuário tem role de super_admin
         const { data, error } = await supabase.rpc('has_role', {
           _user_id: user.id,
           _role: 'super_admin'
@@ -28,27 +31,32 @@ export const useAdminAuth = () => {
         if (error) {
           console.error('Error checking admin role:', error);
           setIsAdmin(false);
-          navigate('/');
+          setLoading(false);
+          navigate('/marketplace');
           return;
         }
 
         if (!data) {
-          navigate('/');
+          console.log('User is not super_admin');
+          setIsAdmin(false);
+          setLoading(false);
+          navigate('/marketplace');
           return;
         }
 
+        console.log('User is super_admin');
         setIsAdmin(true);
+        setLoading(false);
       } catch (error) {
         console.error('Error checking admin role:', error);
         setIsAdmin(false);
-        navigate('/');
-      } finally {
         setLoading(false);
+        navigate('/marketplace');
       }
     };
 
     checkAdminRole();
-  }, [user, authLoading, navigate]);
+  }, [user, authLoading, navigate, location.pathname]);
 
-  return { isAdmin, loading: loading || authLoading };
+  return { isAdmin, loading: loading || authLoading, user };
 };
