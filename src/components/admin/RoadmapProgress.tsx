@@ -90,12 +90,13 @@ const phases: Phase[] = [
     description: "UX/UI mobile e desktop",
     icon: Palette,
     status: 'in_progress',
-    progress: 65,
+    progress: 80,
     tasks: [
       { name: "Store Mobile", status: 'completed' },
       { name: "Marketplace", status: 'completed' },
       { name: "Checkout Flow", status: 'completed' },
       { name: "Comanda Digital", status: 'completed' },
+      { name: "Página de Vilas", status: 'completed' },
       { name: "Dashboard Responsivo", status: 'in_progress' },
     ]
   },
