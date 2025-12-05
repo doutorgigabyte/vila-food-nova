@@ -44,3 +44,6 @@ verify_jwt = false
 
 [functions.migrate-legacy-data]
 verify_jwt = false
+
+[functions.sync-legacy-users]
+verify_jwt = false
