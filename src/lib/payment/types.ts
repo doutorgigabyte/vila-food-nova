@@ -78,7 +78,7 @@ export interface CreatePaymentResponse {
   payment_id?: string;
   status: PaymentStatus;
   status_detail?: string;
-  gateway: GatewayProvider;
+  gateway?: GatewayProvider;
   // Para PIX
   pix_qr_code?: string;
   pix_qr_code_base64?: string;
@@ -103,7 +103,7 @@ export interface GetPaymentResponse {
   payment_id: string;
   status: PaymentStatus;
   status_detail?: string;
-  amount: number;
+  amount?: number;
   paid_amount?: number;
   date_created?: string;
   date_approved?: string;
@@ -135,7 +135,7 @@ export interface RefundResponse {
   success: boolean;
   refund_id?: string;
   amount?: number;
-  status?: string;
+  status?: PaymentStatus;
   error?: string;
 }
 

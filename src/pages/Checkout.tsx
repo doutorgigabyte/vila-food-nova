@@ -30,6 +30,7 @@ import { useSavedAddresses, SavedAddress } from "@/hooks/useSavedAddresses";
 import AddressAutocomplete from "@/components/checkout/AddressAutocomplete";
 import { SavedAddressSelector } from "@/components/checkout/SavedAddressSelector";
 import { SaveAddressDialog } from "@/components/checkout/SaveAddressDialog";
+import { PaymentProcessor } from "@/components/checkout/PaymentProcessor";
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -50,9 +51,11 @@ const Checkout = () => {
 
   const { createOrder, loading: creatingOrder } = useCreateOrder();
 
-  const [step, setStep] = useState<"delivery" | "payment" | "success">("delivery");
+  const [step, setStep] = useState<"delivery" | "payment" | "processing" | "success">("delivery");
   const [deliveryType, setDeliveryType] = useState("pickup");
   const [paymentMethod, setPaymentMethod] = useState("pix");
+  const [createdOrderId, setCreatedOrderId] = useState<string | null>(null);
+  const [currentEstablishmentId, setCurrentEstablishmentId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [completedOrders, setCompletedOrders] = useState<string[]>([]);
   
@@ -213,65 +216,123 @@ const Checkout = () => {
     setIsLoading(true);
     
     try {
-      // Create orders for each establishment
-      const orderNumbers: string[] = [];
+      // For single establishment orders with online payment (PIX), create order first
+      const estId = uniqueEstablishments[0];
+      const estInfo = establishments.get(estId);
+      const estItems = getEstablishmentItems(estId);
+      const estSubtotal = getEstablishmentSubtotal(estId);
+      const estDeliveryFee = deliveryType === 'delivery' ? (estInfo?.delivery_base_fee || 0) : 0;
       
-      for (const estId of uniqueEstablishments) {
-        const estInfo = establishments.get(estId);
-        const estItems = getEstablishmentItems(estId);
-        const estSubtotal = getEstablishmentSubtotal(estId);
-        const estDeliveryFee = deliveryType === 'delivery' ? (estInfo?.delivery_base_fee || 0) : 0;
+      // Map payment method to database enum
+      const paymentMethodMap: Record<string, 'pix' | 'cash' | 'credit_card' | 'debit_card'> = {
+        'pix': 'pix',
+        'cash': 'cash',
+        'credit': 'credit_card',
+        'debit': 'debit_card',
+      };
+
+      // For multi-store or if PIX, create all orders
+      if (isMultiStore || paymentMethod !== 'pix') {
+        const orderNumbers: string[] = [];
         
-        // Map payment method to database enum
-        const paymentMethodMap: Record<string, 'pix' | 'cash' | 'credit_card' | 'debit_card'> = {
-          'pix': 'pix',
-          'cash': 'cash',
-          'credit': 'credit_card',
-          'debit': 'debit_card',
-        };
+        for (const estId of uniqueEstablishments) {
+          const estInfo = establishments.get(estId);
+          const estItems = getEstablishmentItems(estId);
+          const estSubtotal = getEstablishmentSubtotal(estId);
+          const estDeliveryFee = deliveryType === 'delivery' ? (estInfo?.delivery_base_fee || 0) : 0;
 
-        const result = await createOrder({
-          establishment_id: estId,
-          delivery_type: deliveryType as 'delivery' | 'pickup',
-          payment_method: paymentMethodMap[paymentMethod] || 'pix',
-          items: estItems.map(item => ({
-            product_id: item.product.id,
-            name: item.product.name,
-            price: item.product.promotional_price || item.product.price,
-            quantity: item.quantity,
-            observation: item.observation,
-          })),
-          subtotal: estSubtotal,
-          delivery_fee: estDeliveryFee,
-          total: estSubtotal + estDeliveryFee,
-          delivery_address: deliveryType === 'delivery' ? {
-            cep: addressData.cep,
-            address: addressData.address,
-            number: addressData.number,
-            complement: addressData.complement,
-            neighborhood: addressData.neighborhood,
-            reference: addressData.reference,
-          } : undefined,
-          change_for: paymentMethod === 'cash' && change ? parseFloat(change) : undefined,
-          observations: observations || undefined,
-        });
+          const result = await createOrder({
+            establishment_id: estId,
+            delivery_type: deliveryType as 'delivery' | 'pickup',
+            payment_method: paymentMethodMap[paymentMethod] || 'pix',
+            items: estItems.map(item => ({
+              product_id: item.product.id,
+              name: item.product.name,
+              price: item.product.promotional_price || item.product.price,
+              quantity: item.quantity,
+              observation: item.observation,
+            })),
+            subtotal: estSubtotal,
+            delivery_fee: estDeliveryFee,
+            total: estSubtotal + estDeliveryFee,
+            delivery_address: deliveryType === 'delivery' ? {
+              cep: addressData.cep,
+              address: addressData.address,
+              number: addressData.number,
+              complement: addressData.complement,
+              neighborhood: addressData.neighborhood,
+              reference: addressData.reference,
+            } : undefined,
+            change_for: paymentMethod === 'cash' && change ? parseFloat(change) : undefined,
+            observations: observations || undefined,
+          });
 
-        if (result.success && result.order) {
-          orderNumbers.push(`${estInfo?.name}: #${result.orderNumber}`);
-        } else {
-          throw new Error(`Falha ao criar pedido para ${estInfo?.name}`);
+          if (result.success && result.order) {
+            orderNumbers.push(`${estInfo?.name}: #${result.orderNumber}`);
+          } else {
+            throw new Error(`Falha ao criar pedido para ${estInfo?.name}`);
+          }
         }
+        
+        setCompletedOrders(orderNumbers);
+        clearCart();
+        setStep("success");
+        toast.success("Pedido realizado com sucesso!");
+        setIsLoading(false);
+        return;
       }
-      
-      setCompletedOrders(orderNumbers);
-      clearCart();
-      setStep("success");
-      toast.success("Pedido realizado com sucesso!");
+
+      // For single store with PIX, create order and show payment processor
+      const result = await createOrder({
+        establishment_id: estId,
+        delivery_type: deliveryType as 'delivery' | 'pickup',
+        payment_method: 'pix',
+        items: estItems.map(item => ({
+          product_id: item.product.id,
+          name: item.product.name,
+          price: item.product.promotional_price || item.product.price,
+          quantity: item.quantity,
+          observation: item.observation,
+        })),
+        subtotal: estSubtotal,
+        delivery_fee: estDeliveryFee,
+        total: estSubtotal + estDeliveryFee,
+        delivery_address: deliveryType === 'delivery' ? {
+          cep: addressData.cep,
+          address: addressData.address,
+          number: addressData.number,
+          complement: addressData.complement,
+          neighborhood: addressData.neighborhood,
+          reference: addressData.reference,
+        } : undefined,
+        observations: observations || undefined,
+      });
+
+      if (result.success && result.order) {
+        setCreatedOrderId(result.order.id);
+        setCurrentEstablishmentId(estId);
+        setStep("processing");
+      } else {
+        throw new Error('Falha ao criar pedido');
+      }
     } catch (error: any) {
       toast.error(error.message || "Erro ao processar pedido. Tente novamente.");
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handlePaymentComplete = () => {
+    clearCart();
+    const estInfo = currentEstablishmentId ? establishments.get(currentEstablishmentId) : null;
+    setCompletedOrders([`${estInfo?.name || 'Loja'}: Pedido confirmado`]);
+    setStep("success");
+    toast.success("Pagamento confirmado! Pedido realizado com sucesso!");
+  };
+
+  const handlePaymentFailed = (error: string) => {
+    toast.error(error || "Falha no pagamento. Tente novamente.");
+    setStep("payment");
   };
 
   // Calculate totals
@@ -293,6 +354,40 @@ const Checkout = () => {
   };
 
   const { subtotal, deliveryFee, total } = calculateTotals();
+
+  // Processing step - show payment processor
+  if (step === "processing" && createdOrderId && currentEstablishmentId) {
+    return (
+      <div className="min-h-screen bg-background">
+        <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b border-border">
+          <div className="container mx-auto px-4 py-3">
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => setStep("payment")}
+                className="p-2 hover:bg-muted rounded-full transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+              <h1 className="text-lg font-semibold">Pagamento</h1>
+            </div>
+          </div>
+        </header>
+        <main className="container mx-auto px-4 py-6 max-w-md">
+          <PaymentProcessor
+            orderId={createdOrderId}
+            establishmentId={currentEstablishmentId}
+            amount={total}
+            paymentMethod={paymentMethod as 'pix' | 'credit' | 'debit' | 'cash'}
+            payerEmail={user?.email}
+            payerName={user?.user_metadata?.full_name}
+            onPaymentComplete={handlePaymentComplete}
+            onPaymentFailed={handlePaymentFailed}
+            onCancel={() => setStep("payment")}
+          />
+        </main>
+      </div>
+    );
+  }
 
   if (step === "success") {
     return (
