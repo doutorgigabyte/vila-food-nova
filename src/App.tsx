@@ -59,6 +59,7 @@ import AnalyticsPixelsManagement from "./pages/dashboard/AnalyticsPixelsManageme
 import InventoryManagement from "./pages/dashboard/InventoryManagement";
 import AdvancedFinanceManagement from "./pages/dashboard/AdvancedFinanceManagement";
 import SuppliersManagement from "./pages/dashboard/SuppliersManagement";
+import PaymentsManagement from "./pages/dashboard/PaymentsManagement";
 import DataMigration from "./pages/admin/DataMigration";
 import Roadmap from "./pages/admin/Roadmap";
 import SystemHealthCheck from "./pages/admin/SystemHealthCheck";
@@ -113,6 +114,7 @@ const App = () => (
               <Route path="/painel/:slug/estoque" element={<InventoryManagement />} />
               <Route path="/painel/:slug/financeiro" element={<AdvancedFinanceManagement />} />
               <Route path="/painel/:slug/fornecedores" element={<SuppliersManagement />} />
+              <Route path="/painel/:slug/pagamentos" element={<PaymentsManagement />} />
               {/* Routes without slug for establishment owners */}
               <Route path="/painel/produtos" element={<ProductsManagement />} />
               <Route path="/painel/categorias" element={<CategoriesManagement />} />
@@ -138,6 +140,7 @@ const App = () => (
               <Route path="/painel/estoque" element={<InventoryManagement />} />
               <Route path="/painel/financeiro" element={<AdvancedFinanceManagement />} />
               <Route path="/painel/fornecedores" element={<SuppliersManagement />} />
+              <Route path="/painel/pagamentos" element={<PaymentsManagement />} />
               <Route path="/dashboard/mercadopago" element={<MercadoPagoManagement />} />
               <Route path="/dashboard/mercadopago/callback" element={<MercadoPagoCallback />} />
               {/* Admin routes */}
