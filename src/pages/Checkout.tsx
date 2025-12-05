@@ -48,6 +48,8 @@ const Checkout = () => {
     clearCart
   } = useCart();
 
+  const { createOrder, loading: creatingOrder } = useCreateOrder();
+
   const [step, setStep] = useState<"delivery" | "payment" | "success">("delivery");
   const [deliveryType, setDeliveryType] = useState("pickup");
   const [paymentMethod, setPaymentMethod] = useState("pix");
@@ -206,8 +208,6 @@ const Checkout = () => {
     }
     setStep("payment");
   };
-
-  const { createOrder, loading: creatingOrder } = useCreateOrder();
 
   const handleSubmitPayment = async () => {
     setIsLoading(true);
