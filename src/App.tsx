@@ -51,6 +51,7 @@ import AnalyticsPixelsManagement from "./pages/dashboard/AnalyticsPixelsManageme
 import InventoryManagement from "./pages/dashboard/InventoryManagement";
 import AdvancedFinanceManagement from "./pages/dashboard/AdvancedFinanceManagement";
 import SuppliersManagement from "./pages/dashboard/SuppliersManagement";
+import DataMigration from "./pages/admin/DataMigration";
 
 const queryClient = new QueryClient();
 
@@ -110,6 +111,7 @@ const App = () => (
               <Route path="/admin/vilas" element={<ProtectedAdminRoute><VilasManagement /></ProtectedAdminRoute>} />
               <Route path="/admin/planos" element={<ProtectedAdminRoute><PlansManagement /></ProtectedAdminRoute>} />
               <Route path="/admin/assinaturas" element={<ProtectedAdminRoute><SubscriptionsManagement /></ProtectedAdminRoute>} />
+              <Route path="/admin/migracao" element={<DataMigration />} />
               <Route path="/afiliado" element={<AffiliateDashboard />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
