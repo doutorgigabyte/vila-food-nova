@@ -66,13 +66,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "abandoned_carts_establishment_id_fkey"
-            columns: ["establishment_id"]
-            isOneToOne: false
-            referencedRelation: "public_establishments"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "abandoned_carts_recovered_order_id_fkey"
             columns: ["recovered_order_id"]
             isOneToOne: false
@@ -115,13 +108,6 @@ export type Database = {
             columns: ["establishment_id"]
             isOneToOne: false
             referencedRelation: "establishments"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "admin_access_logs_establishment_id_fkey"
-            columns: ["establishment_id"]
-            isOneToOne: false
-            referencedRelation: "public_establishments"
             referencedColumns: ["id"]
           },
         ]
@@ -220,13 +206,6 @@ export type Database = {
             referencedRelation: "establishments"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "affiliate_referrals_establishment_id_fkey"
-            columns: ["establishment_id"]
-            isOneToOne: false
-            referencedRelation: "public_establishments"
-            referencedColumns: ["id"]
-          },
         ]
       }
       affiliates: {
@@ -299,13 +278,6 @@ export type Database = {
             columns: ["establishment_id"]
             isOneToOne: true
             referencedRelation: "establishments"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "analytics_pixels_establishment_id_fkey"
-            columns: ["establishment_id"]
-            isOneToOne: true
-            referencedRelation: "public_establishments"
             referencedColumns: ["id"]
           },
         ]
@@ -391,13 +363,6 @@ export type Database = {
             referencedRelation: "establishments"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "banners_establishment_id_fkey"
-            columns: ["establishment_id"]
-            isOneToOne: false
-            referencedRelation: "public_establishments"
-            referencedColumns: ["id"]
-          },
         ]
       }
       cash_flow: {
@@ -442,13 +407,6 @@ export type Database = {
             referencedRelation: "establishments"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "cash_flow_establishment_id_fkey"
-            columns: ["establishment_id"]
-            isOneToOne: false
-            referencedRelation: "public_establishments"
-            referencedColumns: ["id"]
-          },
         ]
       }
       cashback_config: {
@@ -488,13 +446,6 @@ export type Database = {
             columns: ["establishment_id"]
             isOneToOne: true
             referencedRelation: "establishments"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "cashback_config_establishment_id_fkey"
-            columns: ["establishment_id"]
-            isOneToOne: true
-            referencedRelation: "public_establishments"
             referencedColumns: ["id"]
           },
         ]
@@ -549,13 +500,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "cashback_transactions_establishment_id_fkey"
-            columns: ["establishment_id"]
-            isOneToOne: false
-            referencedRelation: "public_establishments"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "cashback_transactions_order_id_fkey"
             columns: ["order_id"]
             isOneToOne: false
@@ -601,13 +545,6 @@ export type Database = {
             columns: ["establishment_id"]
             isOneToOne: false
             referencedRelation: "establishments"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "categories_establishment_id_fkey"
-            columns: ["establishment_id"]
-            isOneToOne: false
-            referencedRelation: "public_establishments"
             referencedColumns: ["id"]
           },
         ]
@@ -701,13 +638,6 @@ export type Database = {
             referencedRelation: "establishments"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "coupons_establishment_id_fkey"
-            columns: ["establishment_id"]
-            isOneToOne: false
-            referencedRelation: "public_establishments"
-            referencedColumns: ["id"]
-          },
         ]
       }
       customers: {
@@ -750,13 +680,6 @@ export type Database = {
             columns: ["establishment_id"]
             isOneToOne: false
             referencedRelation: "establishments"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "customers_establishment_id_fkey"
-            columns: ["establishment_id"]
-            isOneToOne: false
-            referencedRelation: "public_establishments"
             referencedColumns: ["id"]
           },
         ]
@@ -809,13 +732,6 @@ export type Database = {
             referencedRelation: "establishments"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "delivery_drivers_establishment_id_fkey"
-            columns: ["establishment_id"]
-            isOneToOne: false
-            referencedRelation: "public_establishments"
-            referencedColumns: ["id"]
-          },
         ]
       }
       delivery_fees: {
@@ -858,13 +774,6 @@ export type Database = {
             columns: ["establishment_id"]
             isOneToOne: false
             referencedRelation: "establishments"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "delivery_fees_establishment_id_fkey"
-            columns: ["establishment_id"]
-            isOneToOne: false
-            referencedRelation: "public_establishments"
             referencedColumns: ["id"]
           },
         ]
@@ -923,13 +832,6 @@ export type Database = {
             referencedRelation: "establishments"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "delivery_zones_establishment_id_fkey"
-            columns: ["establishment_id"]
-            isOneToOne: false
-            referencedRelation: "public_establishments"
-            referencedColumns: ["id"]
-          },
         ]
       }
       establishment_users: {
@@ -966,13 +868,6 @@ export type Database = {
             columns: ["establishment_id"]
             isOneToOne: false
             referencedRelation: "establishments"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "establishment_users_establishment_id_fkey"
-            columns: ["establishment_id"]
-            isOneToOne: false
-            referencedRelation: "public_establishments"
             referencedColumns: ["id"]
           },
         ]
@@ -1180,13 +1075,6 @@ export type Database = {
             referencedRelation: "establishments"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "financial_accounts_establishment_id_fkey"
-            columns: ["establishment_id"]
-            isOneToOne: false
-            referencedRelation: "public_establishments"
-            referencedColumns: ["id"]
-          },
         ]
       }
       financial_transactions: {
@@ -1253,13 +1141,6 @@ export type Database = {
             referencedRelation: "establishments"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "financial_transactions_establishment_id_fkey"
-            columns: ["establishment_id"]
-            isOneToOne: false
-            referencedRelation: "public_establishments"
-            referencedColumns: ["id"]
-          },
         ]
       }
       inventory_movements: {
@@ -1311,13 +1192,6 @@ export type Database = {
             columns: ["establishment_id"]
             isOneToOne: false
             referencedRelation: "establishments"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "inventory_movements_establishment_id_fkey"
-            columns: ["establishment_id"]
-            isOneToOne: false
-            referencedRelation: "public_establishments"
             referencedColumns: ["id"]
           },
           {
@@ -1433,13 +1307,6 @@ export type Database = {
             referencedRelation: "establishments"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "mp_transactions_establishment_id_fkey"
-            columns: ["establishment_id"]
-            isOneToOne: false
-            referencedRelation: "public_establishments"
-            referencedColumns: ["id"]
-          },
         ]
       }
       orders: {
@@ -1528,13 +1395,6 @@ export type Database = {
             columns: ["establishment_id"]
             isOneToOne: false
             referencedRelation: "establishments"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "orders_establishment_id_fkey"
-            columns: ["establishment_id"]
-            isOneToOne: false
-            referencedRelation: "public_establishments"
             referencedColumns: ["id"]
           },
         ]
@@ -1660,13 +1520,6 @@ export type Database = {
             referencedRelation: "establishments"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "products_establishment_id_fkey"
-            columns: ["establishment_id"]
-            isOneToOne: false
-            referencedRelation: "public_establishments"
-            referencedColumns: ["id"]
-          },
         ]
       }
       profiles: {
@@ -1730,13 +1583,6 @@ export type Database = {
             columns: ["establishment_id"]
             isOneToOne: false
             referencedRelation: "establishments"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "qr_codes_establishment_id_fkey"
-            columns: ["establishment_id"]
-            isOneToOne: false
-            referencedRelation: "public_establishments"
             referencedColumns: ["id"]
           },
         ]
@@ -1803,13 +1649,6 @@ export type Database = {
             columns: ["establishment_id"]
             isOneToOne: false
             referencedRelation: "establishments"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "scheduled_orders_establishment_id_fkey"
-            columns: ["establishment_id"]
-            isOneToOne: false
-            referencedRelation: "public_establishments"
             referencedColumns: ["id"]
           },
         ]
@@ -1896,13 +1735,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "subscriptions_establishment_id_fkey"
-            columns: ["establishment_id"]
-            isOneToOne: false
-            referencedRelation: "public_establishments"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "subscriptions_plan_id_fkey"
             columns: ["plan_id"]
             isOneToOne: false
@@ -1969,13 +1801,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "supplier_purchases_establishment_id_fkey"
-            columns: ["establishment_id"]
-            isOneToOne: false
-            referencedRelation: "public_establishments"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "supplier_purchases_supplier_id_fkey"
             columns: ["supplier_id"]
             isOneToOne: false
@@ -2030,13 +1855,6 @@ export type Database = {
             columns: ["establishment_id"]
             isOneToOne: false
             referencedRelation: "establishments"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "suppliers_establishment_id_fkey"
-            columns: ["establishment_id"]
-            isOneToOne: false
-            referencedRelation: "public_establishments"
             referencedColumns: ["id"]
           },
         ]
@@ -2172,13 +1990,6 @@ export type Database = {
             referencedRelation: "establishments"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "waiter_tabs_establishment_id_fkey"
-            columns: ["establishment_id"]
-            isOneToOne: false
-            referencedRelation: "public_establishments"
-            referencedColumns: ["id"]
-          },
         ]
       }
       whatsapp_analytics: {
@@ -2212,13 +2023,6 @@ export type Database = {
             columns: ["establishment_id"]
             isOneToOne: false
             referencedRelation: "establishments"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "whatsapp_analytics_establishment_id_fkey"
-            columns: ["establishment_id"]
-            isOneToOne: false
-            referencedRelation: "public_establishments"
             referencedColumns: ["id"]
           },
           {
@@ -2294,13 +2098,6 @@ export type Database = {
             columns: ["establishment_id"]
             isOneToOne: false
             referencedRelation: "establishments"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "whatsapp_instances_establishment_id_fkey"
-            columns: ["establishment_id"]
-            isOneToOne: false
-            referencedRelation: "public_establishments"
             referencedColumns: ["id"]
           },
         ]
@@ -2382,13 +2179,6 @@ export type Database = {
             referencedRelation: "establishments"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "whatsapp_quick_replies_establishment_id_fkey"
-            columns: ["establishment_id"]
-            isOneToOne: false
-            referencedRelation: "public_establishments"
-            referencedColumns: ["id"]
-          },
         ]
       }
       whatsapp_sessions: {
@@ -2433,160 +2223,11 @@ export type Database = {
             referencedRelation: "establishments"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "whatsapp_sessions_establishment_id_fkey"
-            columns: ["establishment_id"]
-            isOneToOne: false
-            referencedRelation: "public_establishments"
-            referencedColumns: ["id"]
-          },
         ]
       }
     }
     Views: {
-      public_establishments: {
-        Row: {
-          accepts_delivery: boolean | null
-          accepts_pickup: boolean | null
-          accepts_table: boolean | null
-          address: string | null
-          address_number: string | null
-          avg_delivery_time: number | null
-          banner_url: string | null
-          city_id: string | null
-          created_at: string | null
-          delivery_base_fee: number | null
-          delivery_fee_per_km: number | null
-          description: string | null
-          email: string | null
-          id: string | null
-          is_open: boolean | null
-          latitude: number | null
-          logo_url: string | null
-          longitude: number | null
-          max_delivery_radius_km: number | null
-          min_order_value: number | null
-          name: string | null
-          neighborhood: string | null
-          operating_hours: Json | null
-          phone: string | null
-          plan_id: string | null
-          primary_color: string | null
-          secondary_color: string | null
-          segment_id: string | null
-          service_area: Json | null
-          slug: string | null
-          status: Database["public"]["Enums"]["establishment_status"] | null
-          updated_at: string | null
-          vila_id: string | null
-          whatsapp: string | null
-          zip_code: string | null
-        }
-        Insert: {
-          accepts_delivery?: boolean | null
-          accepts_pickup?: boolean | null
-          accepts_table?: boolean | null
-          address?: string | null
-          address_number?: string | null
-          avg_delivery_time?: number | null
-          banner_url?: string | null
-          city_id?: string | null
-          created_at?: string | null
-          delivery_base_fee?: number | null
-          delivery_fee_per_km?: number | null
-          description?: string | null
-          email?: string | null
-          id?: string | null
-          is_open?: boolean | null
-          latitude?: number | null
-          logo_url?: string | null
-          longitude?: number | null
-          max_delivery_radius_km?: number | null
-          min_order_value?: number | null
-          name?: string | null
-          neighborhood?: string | null
-          operating_hours?: Json | null
-          phone?: string | null
-          plan_id?: string | null
-          primary_color?: string | null
-          secondary_color?: string | null
-          segment_id?: string | null
-          service_area?: Json | null
-          slug?: string | null
-          status?: Database["public"]["Enums"]["establishment_status"] | null
-          updated_at?: string | null
-          vila_id?: string | null
-          whatsapp?: string | null
-          zip_code?: string | null
-        }
-        Update: {
-          accepts_delivery?: boolean | null
-          accepts_pickup?: boolean | null
-          accepts_table?: boolean | null
-          address?: string | null
-          address_number?: string | null
-          avg_delivery_time?: number | null
-          banner_url?: string | null
-          city_id?: string | null
-          created_at?: string | null
-          delivery_base_fee?: number | null
-          delivery_fee_per_km?: number | null
-          description?: string | null
-          email?: string | null
-          id?: string | null
-          is_open?: boolean | null
-          latitude?: number | null
-          logo_url?: string | null
-          longitude?: number | null
-          max_delivery_radius_km?: number | null
-          min_order_value?: number | null
-          name?: string | null
-          neighborhood?: string | null
-          operating_hours?: Json | null
-          phone?: string | null
-          plan_id?: string | null
-          primary_color?: string | null
-          secondary_color?: string | null
-          segment_id?: string | null
-          service_area?: Json | null
-          slug?: string | null
-          status?: Database["public"]["Enums"]["establishment_status"] | null
-          updated_at?: string | null
-          vila_id?: string | null
-          whatsapp?: string | null
-          zip_code?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "establishments_city_id_fkey"
-            columns: ["city_id"]
-            isOneToOne: false
-            referencedRelation: "cities"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "establishments_plan_id_fkey"
-            columns: ["plan_id"]
-            isOneToOne: false
-            referencedRelation: "plans"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "establishments_segment_id_fkey"
-            columns: ["segment_id"]
-            isOneToOne: false
-            referencedRelation: "segments"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "establishments_vila_id_fkey"
-            columns: ["vila_id"]
-            isOneToOne: false
-            referencedRelation: "vilas"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+      [_ in never]: never
     }
     Functions: {
       has_role: {
