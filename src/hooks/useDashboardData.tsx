@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import type { Json } from '@/integrations/supabase/types';
@@ -152,9 +153,11 @@ export const useDashboardData = (establishmentId: string | null) => {
 
 export const useUserEstablishment = () => {
   const { user } = useAuth();
+  const { slug } = useParams<{ slug?: string }>();
   const [establishmentId, setEstablishmentId] = useState<string | null>(null);
   const [establishment, setEstablishment] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
 
   useEffect(() => {
     const fetchUserEstablishment = async () => {
@@ -164,6 +167,30 @@ export const useUserEstablishment = () => {
       }
 
       try {
+        // Check if user is super_admin
+        const { data: isAdmin } = await supabase.rpc('has_role', {
+          _user_id: user.id,
+          _role: 'super_admin'
+        });
+
+        setIsSuperAdmin(!!isAdmin);
+
+        // If super_admin and slug is provided, load that establishment
+        if (isAdmin && slug) {
+          const { data: estBySlug } = await supabase
+            .from('establishments')
+            .select('*')
+            .eq('slug', slug)
+            .single();
+
+          if (estBySlug) {
+            setEstablishment(estBySlug);
+            setEstablishmentId(estBySlug.id);
+            setLoading(false);
+            return;
+          }
+        }
+
         // First check if user owns an establishment
         const { data: owned } = await supabase
           .from('establishments')
@@ -204,7 +231,7 @@ export const useUserEstablishment = () => {
     };
 
     fetchUserEstablishment();
-  }, [user?.id]);
+  }, [user?.id, slug]);
 
-  return { establishmentId, establishment, loading };
+  return { establishmentId, establishment, loading, isSuperAdmin };
 };

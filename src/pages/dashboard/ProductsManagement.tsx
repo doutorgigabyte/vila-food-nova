@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { ImageUpload } from "@/components/ImageUpload";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
+import { useUserEstablishment } from "@/hooks/useDashboardData";
 import { toast } from "sonner";
 import {
   ArrowLeft,
@@ -43,7 +43,7 @@ interface Category {
 }
 
 const ProductsManagement = () => {
-  const { user } = useAuth();
+  const { establishmentId, loading: estLoading } = useUserEstablishment();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,7 +51,6 @@ const ProductsManagement = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [saving, setSaving] = useState(false);
-  const [establishmentId, setEstablishmentId] = useState<string | null>(null);
 
   // Form state
   const [form, setForm] = useState({
@@ -67,34 +66,11 @@ const ProductsManagement = () => {
   });
 
   useEffect(() => {
-    if (user) {
-      fetchEstablishment();
-    }
-  }, [user]);
-
-  useEffect(() => {
     if (establishmentId) {
       fetchProducts();
       fetchCategories();
     }
   }, [establishmentId]);
-
-  const fetchEstablishment = async () => {
-    const { data, error } = await supabase
-      .from("establishments")
-      .select("id")
-      .eq("owner_id", user?.id)
-      .maybeSingle();
-
-    if (error) {
-      toast.error("Erro ao carregar estabelecimento");
-      return;
-    }
-
-    if (data) {
-      setEstablishmentId(data.id);
-    }
-  };
 
   const fetchProducts = async () => {
     setLoading(true);
