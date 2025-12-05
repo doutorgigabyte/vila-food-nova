@@ -33,11 +33,12 @@ const phases: Phase[] = [
     description: "Migração de dados do sistema legado",
     icon: Database,
     status: 'in_progress',
-    progress: 70,
+    progress: 80,
     tasks: [
       { name: "Criação de Vilas", status: 'completed' },
       { name: "Vinculação de Estabelecimentos", status: 'completed' },
-      { name: "Migração de Produtos", status: 'pending' },
+      { name: "useCreateOrder implementado", status: 'completed' },
+      { name: "Migração de Produtos", status: 'in_progress' },
       { name: "Sincronização de Usuários", status: 'pending' },
     ]
   },
@@ -47,12 +48,13 @@ const phases: Phase[] = [
     description: "Funcionalidades principais do sistema",
     icon: Settings,
     status: 'in_progress',
-    progress: 60,
+    progress: 75,
     tasks: [
       { name: "Checkout funcional", status: 'completed' },
       { name: "Dashboard com dados reais", status: 'completed' },
-      { name: "Sistema de pedidos completo", status: 'in_progress' },
-      { name: "Cálculo de frete real", status: 'pending' },
+      { name: "Sistema de pedidos completo", status: 'completed' },
+      { name: "Multi-vila checkout", status: 'completed' },
+      { name: "Cálculo de frete real", status: 'in_progress' },
     ]
   },
   {
@@ -60,13 +62,13 @@ const phases: Phase[] = [
     name: "Integrações de Pagamento",
     description: "Mercado Pago PIX, Cartão e Assinaturas",
     icon: CreditCard,
-    status: 'pending',
-    progress: 30,
+    status: 'in_progress',
+    progress: 40,
     tasks: [
       { name: "PIX QR Code", status: 'in_progress' },
-      { name: "Split Payment", status: 'pending' },
+      { name: "Split Payment", status: 'in_progress' },
       { name: "Assinaturas SaaS", status: 'pending' },
-      { name: "Webhooks", status: 'pending' },
+      { name: "Webhooks", status: 'in_progress' },
     ]
   },
   {
@@ -74,11 +76,11 @@ const phases: Phase[] = [
     name: "Integração WhatsApp",
     description: "Bot IA com Evolution API + Gemini",
     icon: MessageSquare,
-    status: 'pending',
-    progress: 40,
+    status: 'in_progress',
+    progress: 50,
     tasks: [
-      { name: "Configuração por Estabelecimento", status: 'in_progress' },
-      { name: "Bot de Atendimento IA", status: 'pending' },
+      { name: "Configuração por Estabelecimento", status: 'completed' },
+      { name: "Bot de Atendimento IA", status: 'in_progress' },
       { name: "Notificações automáticas", status: 'pending' },
     ]
   },
@@ -87,12 +89,13 @@ const phases: Phase[] = [
     name: "Ajustes de Layout",
     description: "UX/UI mobile e desktop",
     icon: Palette,
-    status: 'pending',
-    progress: 50,
+    status: 'in_progress',
+    progress: 65,
     tasks: [
-      { name: "Store Mobile", status: 'in_progress' },
-      { name: "Marketplace", status: 'in_progress' },
+      { name: "Store Mobile", status: 'completed' },
+      { name: "Marketplace", status: 'completed' },
       { name: "Checkout Flow", status: 'completed' },
+      { name: "Comanda Digital", status: 'completed' },
       { name: "Dashboard Responsivo", status: 'in_progress' },
     ]
   },
@@ -102,10 +105,10 @@ const phases: Phase[] = [
     description: "Testes finais e produção",
     icon: Rocket,
     status: 'pending',
-    progress: 0,
+    progress: 10,
     tasks: [
       { name: "Testes E2E", status: 'pending' },
-      { name: "Preparação de produção", status: 'pending' },
+      { name: "Preparação de produção", status: 'in_progress' },
       { name: "Go-Live", status: 'pending' },
     ]
   },
