@@ -46,6 +46,7 @@ serve(async (req) => {
         description,
         price,
         promotional_price,
+        image_url,
         category_id,
         categories (name)
       `)
@@ -176,6 +177,7 @@ Retorne um JSON com até ${limit} recomendações no formato:
             description: product.description,
             price: product.price,
             promotional_price: product.promotional_price,
+            image_url: product.image_url,
             category: (product.categories as any)?.name
           },
           reason: rec.reason
