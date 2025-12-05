@@ -43,6 +43,9 @@ import SubscriptionsManagement from "./pages/admin/SubscriptionsManagement";
 import CitiesManagement from "./pages/admin/CitiesManagement";
 import StatesManagement from "./pages/admin/StatesManagement";
 import SegmentsManagement from "./pages/admin/SegmentsManagement";
+import AdminProductsManagement from "./pages/admin/AdminProductsManagement";
+import AdminCategoriesManagement from "./pages/admin/AdminCategoriesManagement";
+import AdminOrdersManagement from "./pages/admin/AdminOrdersManagement";
 import NotFound from "./pages/NotFound";
 import PWAInstallPrompt from "./components/PWAInstallPrompt";
 // New dashboard pages
@@ -147,6 +150,9 @@ const App = () => (
               <Route path="/admin/cidades" element={<ProtectedAdminRoute><CitiesManagement /></ProtectedAdminRoute>} />
               <Route path="/admin/estados" element={<ProtectedAdminRoute><StatesManagement /></ProtectedAdminRoute>} />
               <Route path="/admin/segmentos" element={<ProtectedAdminRoute><SegmentsManagement /></ProtectedAdminRoute>} />
+              <Route path="/admin/produtos" element={<ProtectedAdminRoute><AdminProductsManagement /></ProtectedAdminRoute>} />
+              <Route path="/admin/categorias" element={<ProtectedAdminRoute><AdminCategoriesManagement /></ProtectedAdminRoute>} />
+              <Route path="/admin/pedidos" element={<ProtectedAdminRoute><AdminOrdersManagement /></ProtectedAdminRoute>} />
               <Route path="/admin/migracao" element={<DataMigration />} />
               <Route path="/admin/roadmap" element={<ProtectedAdminRoute><Roadmap /></ProtectedAdminRoute>} />
               <Route path="/admin/health" element={<ProtectedAdminRoute><SystemHealthCheck /></ProtectedAdminRoute>} />

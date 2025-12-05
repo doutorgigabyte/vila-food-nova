@@ -69,25 +69,35 @@ const SegmentsManagement = () => {
     }
   });
 
-  // Count establishments per segment
-  const { data: establishmentCounts } = useQuery({
-    queryKey: ['admin-establishment-counts'],
+  // Fetch establishments with segment info
+  const { data: establishmentsData } = useQuery({
+    queryKey: ['admin-establishments-by-segment'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('establishments')
-        .select('segment_id');
+        .select('id, name, slug, segment_id, status, logo_url')
+        .order('name');
       
       if (error) throw error;
-      
-      const counts: Record<string, number> = {};
-      data.forEach(est => {
-        if (est.segment_id) {
-          counts[est.segment_id] = (counts[est.segment_id] || 0) + 1;
-        }
-      });
-      return counts;
+      return data;
     }
   });
+
+  // Group establishments by segment
+  const establishmentsBySegment = establishmentsData?.reduce((acc, est) => {
+    if (est.segment_id) {
+      if (!acc[est.segment_id]) acc[est.segment_id] = [];
+      acc[est.segment_id].push(est);
+    }
+    return acc;
+  }, {} as Record<string, typeof establishmentsData>);
+
+  const establishmentCounts = establishmentsData?.reduce((acc, est) => {
+    if (est.segment_id) {
+      acc[est.segment_id] = (acc[est.segment_id] || 0) + 1;
+    }
+    return acc;
+  }, {} as Record<string, number>);
 
   // Create segment mutation
   const createMutation = useMutation({
@@ -278,9 +288,21 @@ const SegmentsManagement = () => {
                       </TableCell>
                       <TableCell className="font-medium">{segment.name}</TableCell>
                       <TableCell>
-                        <Badge variant="secondary">
-                          {establishmentCounts?.[segment.id] || 0} lojas
-                        </Badge>
+                        <div className="flex flex-wrap gap-1">
+                          <Badge variant="secondary" className="cursor-pointer" title="Ver estabelecimentos">
+                            {establishmentCounts?.[segment.id] || 0} lojas
+                          </Badge>
+                          {establishmentsBySegment?.[segment.id]?.slice(0, 3).map(est => (
+                            <Badge key={est.id} variant="outline" className="text-xs">
+                              {est.name}
+                            </Badge>
+                          ))}
+                          {(establishmentsBySegment?.[segment.id]?.length || 0) > 3 && (
+                            <Badge variant="outline" className="text-xs">
+                              +{(establishmentsBySegment?.[segment.id]?.length || 0) - 3}
+                            </Badge>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <Switch
