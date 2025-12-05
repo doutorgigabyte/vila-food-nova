@@ -106,12 +106,12 @@ const phases: Phase[] = [
     name: "Deploy e Go-Live",
     description: "Testes finais e produção",
     icon: Rocket,
-    status: 'in_progress',
-    progress: 80,
+    status: 'completed',
+    progress: 100,
     tasks: [
       { name: "Health Check System", status: 'completed' },
       { name: "Preparação de produção", status: 'completed' },
-      { name: "Go-Live", status: 'in_progress' },
+      { name: "Go-Live", status: 'completed' },
     ]
   },
 ];
