@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { 
   Table,
   TableBody,
@@ -18,6 +19,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { 
   Users, 
   Search,
@@ -42,6 +59,12 @@ interface EstablishmentInfo {
   role?: string;
 }
 
+interface Establishment {
+  id: string;
+  name: string;
+  slug: string;
+}
+
 interface User {
   id: string;
   full_name: string | null;
@@ -60,9 +83,33 @@ const UsersManagement = () => {
   const [roleFilter, setRoleFilter] = useState("all");
   const { logAction } = useAuditLog();
 
+  // Dialog state
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  // Establishments for linking
+  const [establishments, setEstablishments] = useState<Establishment[]>([]);
+
+  // Form fields
+  const [formData, setFormData] = useState({
+    full_name: "",
+    phone: "",
+    role: "customer",
+    establishment_id: "",
+    establishment_role: "attendant",
+  });
+
   useEffect(() => {
     fetchUsers();
+    fetchEstablishments();
   }, []);
+
+  const fetchEstablishments = async () => {
+    const { data } = await supabase.from("establishments").select("id, name, slug");
+    if (data) setEstablishments(data);
+  };
 
   const fetchUsers = async () => {
     try {
@@ -152,6 +199,107 @@ const UsersManagement = () => {
       toast({ title: "Erro ao carregar usuários", variant: "destructive" });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      full_name: "",
+      phone: "",
+      role: "customer",
+      establishment_id: "",
+      establishment_role: "attendant",
+    });
+    setEditingUser(null);
+  };
+
+  const openEditDialog = (user: User) => {
+    setEditingUser(user);
+    setFormData({
+      full_name: user.full_name || "",
+      phone: user.phone || "",
+      role: user.role || "customer",
+      establishment_id: user.establishments[0]?.id || "",
+      establishment_role: user.establishments[0]?.role || "attendant",
+    });
+    setDialogOpen(true);
+  };
+
+  const handleSubmit = async () => {
+    if (!editingUser) {
+      toast({ title: "Criação de usuário não implementada (requer auth.users)", variant: "destructive" });
+      return;
+    }
+
+    try {
+      // Atualizar profile
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .update({
+          full_name: formData.full_name,
+          phone: formData.phone,
+        })
+        .eq("id", editingUser.id);
+
+      if (profileError) throw profileError;
+
+      // Atualizar role
+      await supabase.from("user_roles").delete().eq("user_id", editingUser.id);
+      await supabase.from("user_roles").insert({ user_id: editingUser.id, role: formData.role as any });
+
+      // Atualizar vínculo com estabelecimento se selecionado
+      if (formData.establishment_id) {
+        await supabase.from("establishment_users").delete().eq("user_id", editingUser.id);
+        await supabase.from("establishment_users").insert({
+          user_id: editingUser.id,
+          establishment_id: formData.establishment_id,
+          role: formData.establishment_role,
+        });
+      }
+
+      await logAction({
+        action: 'update_user',
+        entityType: 'user',
+        entityId: editingUser.id,
+        newData: formData as any
+      });
+
+      toast({ title: "Usuário atualizado!" });
+      setDialogOpen(false);
+      resetForm();
+      fetchUsers();
+    } catch (error) {
+      console.error("Error updating user:", error);
+      toast({ title: "Erro ao atualizar usuário", variant: "destructive" });
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deletingId) return;
+
+    try {
+      // Deletar registros relacionados primeiro
+      await supabase.from("user_roles").delete().eq("user_id", deletingId);
+      await supabase.from("establishment_users").delete().eq("user_id", deletingId);
+      
+      // Deletar profile
+      const { error } = await supabase.from("profiles").delete().eq("id", deletingId);
+
+      if (error) throw error;
+
+      await logAction({
+        action: 'delete_user',
+        entityType: 'user',
+        entityId: deletingId
+      });
+
+      toast({ title: "Usuário excluído!" });
+      setDeleteDialogOpen(false);
+      setDeletingId(null);
+      fetchUsers();
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      toast({ title: "Erro ao excluir usuário", variant: "destructive" });
     }
   };
 
@@ -331,7 +479,13 @@ const UsersManagement = () => {
             {filteredUsers.length} Registros
           </Badge>
         </div>
-        <Button variant="outline" className="gap-2">
+        <Button 
+          variant="outline" 
+          className="gap-2"
+          onClick={() => {
+            toast({ title: "Criar usuário requer cadastro via Auth", description: "Use o formulário de registro" });
+          }}
+        >
           Adicionar <Plus className="h-4 w-4" />
         </Button>
       </div>
@@ -416,10 +570,24 @@ const UsersManagement = () => {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center justify-end gap-1">
-                          <Button variant="ghost" size="icon" title="Editar">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            title="Editar"
+                            onClick={() => openEditDialog(user)}
+                          >
                             <Edit className="w-4 h-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" title="Excluir" className="text-destructive hover:text-destructive">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            title="Excluir" 
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => {
+                              setDeletingId(user.id);
+                              setDeleteDialogOpen(true);
+                            }}
+                          >
                             <Trash2 className="w-4 h-4" />
                           </Button>
                         </div>
@@ -432,6 +600,117 @@ const UsersManagement = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Edit Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={(open) => {
+        setDialogOpen(open);
+        if (!open) resetForm();
+      }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar Usuário</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <div className="space-y-2">
+              <Label>Nome completo</Label>
+              <Input
+                value={formData.full_name}
+                onChange={(e) => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
+                placeholder="Nome do usuário"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Telefone</Label>
+              <Input
+                value={formData.phone}
+                onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                placeholder="(81) 99999-9999"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Role do sistema</Label>
+              <Select 
+                value={formData.role} 
+                onValueChange={(value) => setFormData(prev => ({ ...prev, role: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="customer">Cliente</SelectItem>
+                  <SelectItem value="establishment">Loja</SelectItem>
+                  <SelectItem value="affiliate">Afiliado</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="super_admin">Super Admin</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Vincular a estabelecimento</Label>
+              <Select 
+                value={formData.establishment_id} 
+                onValueChange={(value) => setFormData(prev => ({ ...prev, establishment_id: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione (opcional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Nenhum</SelectItem>
+                  {establishments.map(est => (
+                    <SelectItem key={est.id} value={est.id}>{est.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {formData.establishment_id && (
+              <div className="space-y-2">
+                <Label>Cargo no estabelecimento</Label>
+                <Select 
+                  value={formData.establishment_role} 
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, establishment_role: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="manager">Gestor</SelectItem>
+                    <SelectItem value="cashier">Caixa</SelectItem>
+                    <SelectItem value="attendant">Atendente</SelectItem>
+                    <SelectItem value="waiter">Garçom</SelectItem>
+                    <SelectItem value="delivery">Entregador</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            <Button className="w-full" onClick={handleSubmit}>
+              Salvar Alterações
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir usuário?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação não pode ser desfeita. O perfil do usuário e todos os vínculos serão removidos.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDeletingId(null)}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AdminLayout>
   );
 };
