@@ -66,7 +66,7 @@ export const StoreCategoryNav = ({
       {/* Categories */}
       <div
         ref={scrollRef}
-        className="flex gap-2 overflow-x-auto scrollbar-hide py-1"
+        className="flex gap-2 overflow-x-auto scrollbar-hide py-1 touch-pan-x"
         style={{ scrollSnapType: "x mandatory" }}
       >
         {allTabs.map((tab) => {
@@ -78,7 +78,7 @@ export const StoreCategoryNav = ({
               key={tab.id || "all"}
               onClick={() => onSelectCategory(tab.id)}
               className={cn(
-                "flex flex-col items-center gap-1.5 px-4 py-2 rounded-xl transition-all shrink-0",
+                "flex flex-col items-center gap-1.5 px-4 py-2 rounded-xl transition-all shrink-0 touch-manipulation active:scale-95",
                 "border min-w-[80px] scroll-snap-align-start",
                 isActive
                   ? "bg-primary text-primary-foreground border-primary shadow-lg"
