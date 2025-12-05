@@ -107,9 +107,9 @@ const phases: Phase[] = [
     description: "Testes finais e produção",
     icon: Rocket,
     status: 'in_progress',
-    progress: 30,
+    progress: 60,
     tasks: [
-      { name: "Testes E2E", status: 'pending' },
+      { name: "Health Check System", status: 'completed' },
       { name: "Preparação de produção", status: 'in_progress' },
       { name: "Go-Live", status: 'pending' },
     ]

@@ -55,6 +55,7 @@ import AdvancedFinanceManagement from "./pages/dashboard/AdvancedFinanceManageme
 import SuppliersManagement from "./pages/dashboard/SuppliersManagement";
 import DataMigration from "./pages/admin/DataMigration";
 import Roadmap from "./pages/admin/Roadmap";
+import SystemHealthCheck from "./pages/admin/SystemHealthCheck";
 
 const queryClient = new QueryClient();
 
@@ -118,6 +119,7 @@ const App = () => (
               <Route path="/admin/assinaturas" element={<ProtectedAdminRoute><SubscriptionsManagement /></ProtectedAdminRoute>} />
               <Route path="/admin/migracao" element={<DataMigration />} />
               <Route path="/admin/roadmap" element={<ProtectedAdminRoute><Roadmap /></ProtectedAdminRoute>} />
+              <Route path="/admin/health" element={<ProtectedAdminRoute><SystemHealthCheck /></ProtectedAdminRoute>} />
               <Route path="/painel/garcom" element={<WaiterApp />} />
               <Route path="/painel/agendamentos" element={<ScheduledOrdersManagement />} />
               <Route path="/afiliado" element={<AffiliateDashboard />} />
