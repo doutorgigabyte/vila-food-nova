@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Package, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -98,11 +98,20 @@ interface ProductCardProps {
 }
 
 const ProductCard = ({ product, onClick, onQuickAdd, variant }: ProductCardProps) => {
-  const hasPromo = product.promotional_price && product.promotional_price < product.price;
+  const [imageError, setImageError] = useState(false);
+  
+  // Safe discount calculation
+  const hasPromo = Boolean(
+    product.promotional_price && 
+    product.promotional_price > 0 && 
+    product.promotional_price < product.price
+  );
   const displayPrice = hasPromo ? product.promotional_price! : product.price;
   const discount = hasPromo
     ? Math.round(((product.price - product.promotional_price!) / product.price) * 100)
     : 0;
+
+  const showImage = product.image_url && !imageError;
 
   return (
     <div
@@ -114,42 +123,44 @@ const ProductCard = ({ product, onClick, onQuickAdd, variant }: ProductCardProps
     >
       {/* Image */}
       <div className="relative aspect-square bg-muted overflow-hidden">
-        {product.image_url ? (
+        {showImage ? (
           <img
-            src={product.image_url}
+            src={product.image_url!}
             alt={product.name}
             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+            loading="lazy"
+            onError={() => setImageError(true)}
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center">
+          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">
             <Package className="w-12 h-12 text-muted-foreground/30" />
           </div>
         )}
 
         {/* Discount Badge */}
-        {hasPromo && (
-          <Badge className="absolute top-2 left-2 bg-destructive text-destructive-foreground text-xs font-bold px-2">
+        {hasPromo && discount > 0 && (
+          <Badge className="absolute top-2 left-2 bg-destructive text-destructive-foreground text-xs font-bold px-2 py-1 shadow-lg">
             -{discount}%
           </Badge>
         )}
 
         {/* Featured Badge */}
         {product.is_featured && !hasPromo && (
-          <Badge className="absolute top-2 left-2 bg-amber-500 text-white text-xs font-bold px-2">
+          <Badge className="absolute top-2 left-2 bg-amber-500 text-white text-xs font-bold px-2 py-1 shadow-lg">
             ⭐ Destaque
           </Badge>
         )}
 
-        {/* Quick Add Button */}
+        {/* Quick Add Button - Visible on mobile, hover on desktop */}
         <Button
           size="icon"
-          className="absolute bottom-2 right-2 w-8 h-8 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+          className="absolute bottom-2 right-2 w-9 h-9 rounded-full shadow-lg md:opacity-0 md:group-hover:opacity-100 transition-all bg-primary hover:bg-primary/90"
           onClick={(e) => {
             e.stopPropagation();
             onQuickAdd();
           }}
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="w-5 h-5" />
         </Button>
       </div>
 
@@ -163,8 +174,8 @@ const ProductCard = ({ product, onClick, onQuickAdd, variant }: ProductCardProps
             {product.description}
           </p>
         )}
-        <div className="flex items-center gap-2 mt-2">
-          <span className="font-bold text-primary">
+        <div className="flex items-center gap-2 mt-2 flex-wrap">
+          <span className="font-bold text-primary text-base">
             R$ {displayPrice.toFixed(2)}
           </span>
           {hasPromo && (

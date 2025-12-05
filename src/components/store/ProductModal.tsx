@@ -15,12 +15,22 @@ interface ProductModalProps {
 export const ProductModal = ({ product, onClose, onAddToCart }: ProductModalProps) => {
   const [quantity, setQuantity] = useState(1);
   const [observation, setObservation] = useState("");
+  const [imageError, setImageError] = useState(false);
 
   if (!product) return null;
 
-  const hasPromo = product.promotional_price && product.promotional_price < product.price;
+  // Safe discount calculation
+  const hasPromo = Boolean(
+    product.promotional_price && 
+    product.promotional_price > 0 && 
+    product.promotional_price < product.price
+  );
   const displayPrice = hasPromo ? product.promotional_price! : product.price;
   const total = displayPrice * quantity;
+  const discount = hasPromo
+    ? Math.round(((product.price - product.promotional_price!) / product.price) * 100)
+    : 0;
+  const showImage = product.image_url && !imageError;
 
   const handleAdd = () => {
     onAddToCart(product, quantity, observation);
@@ -33,24 +43,22 @@ export const ProductModal = ({ product, onClose, onAddToCart }: ProductModalProp
     <Dialog open={!!product} onOpenChange={() => onClose()}>
       <DialogContent className="max-w-lg p-0 overflow-hidden">
         {/* Product Image */}
-        <div className="relative h-48 bg-muted">
-          {product.image_url ? (
+        <div className="relative h-56 bg-muted">
+          {showImage ? (
             <img
-              src={product.image_url}
+              src={product.image_url!}
               alt={product.name}
               className="w-full h-full object-cover"
-              onError={(e) => {
-                e.currentTarget.style.display = 'none';
-              }}
+              onError={() => setImageError(true)}
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center">
+            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">
               <Package className="w-16 h-16 text-muted-foreground/30" />
             </div>
           )}
-          {hasPromo && (
-            <Badge variant="destructive" className="absolute top-3 left-3">
-              {Math.round(((product.price - product.promotional_price!) / product.price) * 100)}% OFF
+          {hasPromo && discount > 0 && (
+            <Badge variant="destructive" className="absolute top-3 left-3 text-sm px-3 py-1 shadow-lg">
+              -{discount}% OFF
             </Badge>
           )}
         </div>
