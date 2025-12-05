@@ -65,14 +65,19 @@ const AllRestaurants = ({ establishments, loading }: AllRestaurantsProps) => {
           {establishments.map((est) => (
             <Link key={est.id} to={`/loja/${est.slug}`}>
               <Card className="overflow-hidden hover:shadow-elevated transition-all group h-full">
-                <div className="relative h-40">
-                  {est.banner_url ? (
+                <div className="relative h-40 bg-muted">
+                  {est.banner_url && (
                     <img
                       src={est.banner_url}
                       alt={est.name}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                      }}
                     />
-                  ) : (
+                  )}
+                  {!est.banner_url && (
                     <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
                       <span className="text-6xl opacity-50">🍴</span>
                     </div>
@@ -100,22 +105,33 @@ const AllRestaurants = ({ establishments, loading }: AllRestaurantsProps) => {
                 
                 <CardContent className="p-4">
                   <div className="flex items-start gap-3">
-                    {est.logo_url ? (
-                      <img
-                        src={est.logo_url}
-                        alt={est.name}
-                        className="w-12 h-12 rounded-full object-cover border-2 border-background -mt-8 relative z-10 shadow-md"
-                      />
-                    ) : (
-                      <div className="w-12 h-12 rounded-full bg-primary/10 border-2 border-background -mt-8 relative z-10 flex items-center justify-center shadow-md">
-                        <span className="text-lg">🏪</span>
-                      </div>
-                    )}
+                    <div className="w-12 h-12 rounded-full border-2 border-background -mt-8 relative z-10 shadow-md overflow-hidden bg-card flex-shrink-0">
+                      {est.logo_url ? (
+                        <img
+                          src={est.logo_url}
+                          alt={est.name}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                            target.parentElement?.classList.add('bg-primary/10');
+                            const span = document.createElement('span');
+                            span.className = 'text-lg flex items-center justify-center w-full h-full';
+                            span.textContent = '🏪';
+                            target.parentElement?.appendChild(span);
+                          }}
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-primary/10 flex items-center justify-center">
+                          <span className="text-lg">🏪</span>
+                        </div>
+                      )}
+                    </div>
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold truncate">{est.name}</h3>
                       {est.neighborhood && (
                         <p className="text-sm text-muted-foreground truncate flex items-center gap-1">
-                          <MapPin className="w-3 h-3" />
+                          <MapPin className="w-3 h-3 flex-shrink-0" />
                           {est.neighborhood}
                         </p>
                       )}
@@ -138,9 +154,7 @@ const AllRestaurants = ({ establishments, loading }: AllRestaurantsProps) => {
                   
                   <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
                     {est.min_order_value && est.min_order_value > 0 && (
-                      <>
-                        <span>Pedido mín: R$ {est.min_order_value.toFixed(2)}</span>
-                      </>
+                      <span>Pedido mín: R$ {est.min_order_value.toFixed(2)}</span>
                     )}
                     <div className="flex gap-1 ml-auto">
                       {est.accepts_delivery && (

@@ -1,65 +1,47 @@
 import { Link } from "react-router-dom";
-import { Star, Heart, Plus } from "lucide-react";
+import { Star, Heart, Clock, MapPin } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useEstablishments } from "@/hooks/useEstablishment";
 
-interface Highlight {
-  id: string;
-  title: string;
-  subtitle: string;
-  image: string;
-  rating: number;
-  reviews: number;
-  discount?: string;
-  restaurantLogo?: string;
-  restaurantName: string;
-  type: "promo" | "video" | "banner";
-}
+const HighlightsSection = () => {
+  const { establishments, loading } = useEstablishments();
+  
+  // Pegar apenas os primeiros 3 estabelecimentos como destaques
+  const highlights = establishments.slice(0, 3);
 
-const defaultHighlights: Highlight[] = [
-  {
-    id: "1",
-    title: "Prove o Sabor! Festival de Comida...",
-    subtitle: "Delicie-se com as delícias culinárias em nosso Festival de Comida Extravagante!",
-    image: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600",
-    rating: 4.7,
-    reviews: 3,
-    discount: "45%",
-    restaurantLogo: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=100",
-    restaurantName: "Food Festival",
-    type: "promo"
-  },
-  {
-    id: "2",
-    title: "Hambúrgueres Incríveis! Desconto de 4...",
-    subtitle: "Descubra ofertas imbatíveis com nossa promoção de 45%!",
-    image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=600",
-    rating: 4.7,
-    reviews: 3,
-    restaurantLogo: "https://images.unsplash.com/photo-1550547660-d9450f859349?w=100",
-    restaurantName: "Burger House",
-    type: "banner"
-  },
-  {
-    id: "3",
-    title: "Promoção de Verão!",
-    subtitle: "Mergulhe nas economias com nossa Promoção de Verão!",
-    image: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=600",
-    rating: 4.5,
-    reviews: 2,
-    discount: "30%",
-    restaurantLogo: "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=100",
-    restaurantName: "Summer Foods",
-    type: "promo"
-  },
-];
+  if (loading) {
+    return (
+      <section className="py-8 bg-card">
+        <div className="container mx-auto px-4">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-xl font-bold">Destaques para você</h2>
+              <p className="text-sm text-muted-foreground">Veja nossos restaurantes e pratos mais populares</p>
+            </div>
+            <div className="text-primary text-2xl">✨</div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3].map((i) => (
+              <Card key={i} className="overflow-hidden animate-pulse">
+                <div className="h-48 bg-muted" />
+                <CardContent className="p-4">
+                  <div className="h-4 bg-muted rounded w-3/4 mb-2" />
+                  <div className="h-3 bg-muted rounded w-1/2" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
 
-interface HighlightsSectionProps {
-  highlights?: Highlight[];
-}
+  if (highlights.length === 0) {
+    return null;
+  }
 
-const HighlightsSection = ({ highlights = defaultHighlights }: HighlightsSectionProps) => {
   return (
     <section className="py-8 bg-card">
       <div className="container mx-auto px-4">
@@ -72,47 +54,88 @@ const HighlightsSection = ({ highlights = defaultHighlights }: HighlightsSection
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {highlights.map((highlight) => (
-            <Card key={highlight.id} className="overflow-hidden group hover:shadow-elevated transition-all">
-              <div className="relative h-48 overflow-hidden">
-                <img
-                  src={highlight.image}
-                  alt={highlight.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                />
-                
-                {highlight.discount && (
-                  <Badge className="absolute top-3 left-3 bg-destructive">
-                    {highlight.discount} OFF
-                  </Badge>
-                )}
-                
-                <div className="absolute bottom-3 right-3 flex items-center gap-1 bg-card/90 backdrop-blur-sm px-2 py-1 rounded-full text-sm font-medium">
-                  <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                  <span>{highlight.rating}</span>
-                  <span className="text-muted-foreground">({highlight.reviews})</span>
-                </div>
-              </div>
-              
-              <CardContent className="p-4">
-                <div className="flex items-start gap-3">
-                  {highlight.restaurantLogo && (
+          {highlights.map((est) => (
+            <Link key={est.id} to={`/loja/${est.slug}`}>
+              <Card className="overflow-hidden group hover:shadow-elevated transition-all h-full">
+                <div className="relative h-48 overflow-hidden">
+                  {est.banner_url ? (
                     <img
-                      src={highlight.restaurantLogo}
-                      alt={highlight.restaurantName}
-                      className="w-10 h-10 rounded-full object-cover border-2 border-background"
+                      src={est.banner_url}
+                      alt={est.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                        target.parentElement?.classList.add('bg-gradient-to-br', 'from-primary/20', 'to-primary/5');
+                      }}
                     />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+                      <span className="text-6xl opacity-50">🍽️</span>
+                    </div>
                   )}
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold truncate">{highlight.title}</h3>
-                    <p className="text-sm text-muted-foreground line-clamp-2">{highlight.subtitle}</p>
+                  
+                  {est.is_open ? (
+                    <Badge className="absolute top-3 left-3 bg-green-500">Aberto</Badge>
+                  ) : (
+                    <Badge variant="secondary" className="absolute top-3 left-3">Fechado</Badge>
+                  )}
+                  
+                  <div className="absolute bottom-3 right-3 flex items-center gap-1 bg-card/90 backdrop-blur-sm px-2 py-1 rounded-full text-sm font-medium">
+                    <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                    <span>4.5</span>
+                    <span className="text-muted-foreground">(0)</span>
                   </div>
-                  <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive">
-                    <Heart className="w-5 h-5" />
-                  </Button>
                 </div>
-              </CardContent>
-            </Card>
+                
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-3">
+                    {est.logo_url ? (
+                      <img
+                        src={est.logo_url}
+                        alt={est.name}
+                        className="w-10 h-10 rounded-full object-cover border-2 border-background"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                        }}
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                        <span className="text-lg">🏪</span>
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold truncate">{est.name}</h3>
+                      <p className="text-sm text-muted-foreground line-clamp-2">{est.description}</p>
+                    </div>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="text-muted-foreground hover:text-destructive"
+                      onClick={(e) => e.preventDefault()}
+                    >
+                      <Heart className="w-5 h-5" />
+                    </Button>
+                  </div>
+                  
+                  <div className="flex items-center gap-3 mt-3 text-sm text-muted-foreground">
+                    {est.neighborhood && (
+                      <span className="flex items-center gap-1">
+                        <MapPin className="w-3 h-3" />
+                        {est.neighborhood}
+                      </span>
+                    )}
+                    {est.avg_delivery_time && (
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {est.avg_delivery_time} min
+                      </span>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
           ))}
         </div>
       </div>
