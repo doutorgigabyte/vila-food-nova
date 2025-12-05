@@ -4,13 +4,11 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { 
   Search, 
-  MapPin, 
   Bell,
   ShoppingCart,
   Menu,
-  User,
-  ChevronDown,
-  Globe
+  Globe,
+  ChevronDown
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -19,6 +17,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import logoHorizontal from "@/assets/logo-horizontal.png";
+import { LocationSelector } from "./LocationSelector";
+import { UserMenu } from "./UserMenu";
+import { useCart } from "@/hooks/useCart";
 
 interface MarketplaceHeaderProps {
   searchTerm: string;
@@ -26,7 +27,8 @@ interface MarketplaceHeaderProps {
 }
 
 const MarketplaceHeader = ({ searchTerm, onSearchChange }: MarketplaceHeaderProps) => {
-  const [location, setLocation] = useState("Tamandaré, PE");
+  const { items } = useCart();
+  const cartCount = items.reduce((acc, item) => acc + item.quantity, 0);
 
   return (
     <header className="sticky top-0 z-50 bg-card shadow-sm">
@@ -34,18 +36,14 @@ const MarketplaceHeader = ({ searchTerm, onSearchChange }: MarketplaceHeaderProp
       <div className="bg-primary/5 border-b border-border">
         <div className="container mx-auto px-4 py-2">
           <div className="flex items-center justify-between">
-            <button className="flex items-center gap-2 text-sm text-primary hover:text-primary/80 transition-colors">
-              <MapPin className="w-4 h-4" />
-              <span className="font-medium">{location}</span>
-              <ChevronDown className="w-4 h-4" />
-            </button>
+            <LocationSelector />
             
             <div className="flex items-center gap-4">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
                     <Globe className="w-4 h-4" />
-                    <span>Português</span>
+                    <span className="hidden sm:inline">Português</span>
                     <ChevronDown className="w-3 h-3" />
                   </button>
                 </DropdownMenuTrigger>
@@ -56,10 +54,7 @@ const MarketplaceHeader = ({ searchTerm, onSearchChange }: MarketplaceHeaderProp
                 </DropdownMenuContent>
               </DropdownMenu>
               
-              <Link to="/auth" className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
-                <User className="w-4 h-4" />
-                <span>Entrar</span>
-              </Link>
+              <UserMenu />
             </div>
           </div>
         </div>
@@ -106,17 +101,14 @@ const MarketplaceHeader = ({ searchTerm, onSearchChange }: MarketplaceHeaderProp
               <span className="absolute top-1 right-1 w-2 h-2 bg-destructive rounded-full" />
             </Button>
             
-            <Button variant="ghost" size="icon" className="relative">
-              <ShoppingCart className="w-5 h-5" />
-              <span className="absolute -top-1 -right-1 w-5 h-5 bg-primary text-primary-foreground text-xs rounded-full flex items-center justify-center">
-                0
-              </span>
-            </Button>
-
-            <Link to="/auth">
-              <Button variant="outline" size="sm" className="hidden md:flex gap-2">
-                <User className="w-4 h-4" />
-                Entrar
+            <Link to="/checkout">
+              <Button variant="ghost" size="icon" className="relative">
+                <ShoppingCart className="w-5 h-5" />
+                {cartCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-primary text-primary-foreground text-xs rounded-full flex items-center justify-center">
+                    {cartCount > 9 ? "9+" : cartCount}
+                  </span>
+                )}
               </Button>
             </Link>
 
