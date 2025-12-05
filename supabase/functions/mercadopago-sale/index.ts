@@ -6,7 +6,7 @@
  * - Plataforma retém taxa (application_fee)
  * - Restante vai para conta MP do lojista (split)
  * 
- * Usa o access_token do vendedor obtido via OAuth
+ * SECURITY: Requires authentication and ownership verification for sensitive operations
  */
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
@@ -17,9 +17,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Token da plataforma para operações de marketplace
 const MP_ACCESS_TOKEN = Deno.env.get('MERCADOPAGO_ACCESS_TOKEN');
-// Taxa da plataforma em percentual (ex: 5 = 5%)
 const PLATFORM_FEE_PERCENT = parseFloat(Deno.env.get('MERCADOPAGO_PLATFORM_FEE') || '5');
 
 interface SaleRequest {
@@ -27,25 +25,58 @@ interface SaleRequest {
   order_id?: string;
   establishment_id: string;
   payment_id?: string;
-  // Para criar pagamento
   payment_data?: {
     transaction_amount: number;
     description: string;
-    payment_method_id: string; // pix, credit_card, etc
+    payment_method_id: string;
     payer: {
       email: string;
       first_name?: string;
       last_name?: string;
       identification?: {
-        type: string; // CPF
+        type: string;
         number: string;
       };
     };
-    // Para cartão
     token?: string;
     installments?: number;
     issuer_id?: string;
   };
+}
+
+// Helper function to verify establishment ownership
+async function verifyEstablishmentOwnership(
+  supabaseAdmin: any,
+  userId: string,
+  establishmentId: string
+): Promise<{ authorized: boolean; error?: string }> {
+  const { data: establishment, error } = await supabaseAdmin
+    .from('establishments')
+    .select('owner_id')
+    .eq('id', establishmentId)
+    .single();
+
+  if (error || !establishment) {
+    return { authorized: false, error: 'Estabelecimento não encontrado' };
+  }
+
+  if (establishment.owner_id === userId) {
+    return { authorized: true };
+  }
+
+  // Check if user is super_admin
+  const { data: userRole } = await supabaseAdmin
+    .from('user_roles')
+    .select('role')
+    .eq('user_id', userId)
+    .eq('role', 'super_admin')
+    .single();
+
+  if (userRole) {
+    return { authorized: true };
+  }
+
+  return { authorized: false, error: 'Você não tem permissão para gerenciar este estabelecimento' };
 }
 
 serve(async (req) => {
@@ -54,7 +85,7 @@ serve(async (req) => {
   }
 
   try {
-    const supabase = createClient(
+    const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
@@ -64,10 +95,43 @@ serve(async (req) => {
 
     console.log('Sale request:', { action, order_id, establishment_id });
 
-    // Buscar dados do estabelecimento (incluindo credentials do MP)
-    const { data: establishment, error: estError } = await supabase
+    // For refund action, require authentication and ownership verification
+    if (action === 'refund') {
+      const authHeader = req.headers.get('authorization');
+      if (!authHeader) {
+        return new Response(
+          JSON.stringify({ error: 'Autenticação necessária para estorno', success: false }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const supabase = createClient(
+        Deno.env.get('SUPABASE_URL')!,
+        Deno.env.get('SUPABASE_ANON_KEY')!,
+        { global: { headers: { Authorization: authHeader } } }
+      );
+
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        return new Response(
+          JSON.stringify({ error: 'Usuário não autenticado', success: false }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const ownershipCheck = await verifyEstablishmentOwnership(supabaseAdmin, user.id, establishment_id);
+      if (!ownershipCheck.authorized) {
+        return new Response(
+          JSON.stringify({ error: ownershipCheck.error, success: false }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
+    // Fetch establishment data
+    const { data: establishment, error: estError } = await supabaseAdmin
       .from('establishments')
-      .select('*')
+      .select('mp_user_id, name')
       .eq('id', establishment_id)
       .single();
 
@@ -76,13 +140,6 @@ serve(async (req) => {
     }
 
     switch (action) {
-      /**
-       * Cria pagamento com split automático
-       * 
-       * O pagamento é processado na conta da plataforma (MP_ACCESS_TOKEN)
-       * mas usando application_fee + transfer_data, o valor líquido
-       * vai automaticamente para a conta do vendedor
-       */
       case 'create_payment': {
         if (!payment_data) {
           throw new Error('payment_data é obrigatório');
@@ -92,27 +149,15 @@ serve(async (req) => {
           throw new Error('MERCADOPAGO_ACCESS_TOKEN não configurado');
         }
 
-        // Verificar se vendedor está conectado via OAuth
         if (!establishment.mp_user_id) {
           throw new Error('Estabelecimento não conectou conta Mercado Pago');
         }
 
         const { transaction_amount, description, payment_method_id, payer, token, installments, issuer_id } = payment_data;
 
-        // Calcular taxa da plataforma
         const platformFee = Math.round((transaction_amount * PLATFORM_FEE_PERCENT / 100) * 100) / 100;
         const netAmount = transaction_amount - platformFee;
 
-        /**
-         * Payload do pagamento com split:
-         * - application_fee: valor que fica com a plataforma
-         * - collector_id: ID do vendedor no MP (obtido via OAuth)
-         * 
-         * O MP automaticamente:
-         * 1. Processa o pagamento total
-         * 2. Retém application_fee na conta da plataforma
-         * 3. Transfere o restante para o vendedor
-         */
         const paymentPayload: Record<string, unknown> = {
           transaction_amount,
           description,
@@ -124,15 +169,11 @@ serve(async (req) => {
             identification: payer.identification,
           },
           external_reference: order_id || `order_${Date.now()}`,
-          // Configuração de split/marketplace
           application_fee: platformFee,
-          // Dados do recebedor (vendedor)
           collector_id: parseInt(establishment.mp_user_id),
-          // Notificação webhook
           notification_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/mercadopago-webhook`,
         };
 
-        // Adicionar dados de cartão se for pagamento com cartão
         if (payment_method_id !== 'pix' && token) {
           paymentPayload.token = token;
           paymentPayload.installments = installments || 1;
@@ -146,8 +187,6 @@ serve(async (req) => {
           collector: establishment.mp_user_id 
         });
 
-        // Criar pagamento usando token da plataforma
-        // O MP usa o collector_id para saber para onde enviar o dinheiro
         const paymentResponse = await fetch('https://api.mercadopago.com/v1/payments', {
           method: 'POST',
           headers: {
@@ -171,16 +210,7 @@ serve(async (req) => {
           status_detail: payment.status_detail,
         });
 
-        /**
-         * Resposta do pagamento:
-         * - id: ID do pagamento
-         * - status: approved, pending, rejected, etc
-         * - status_detail: Detalhe do status
-         * - point_of_interaction.transaction_data (para PIX): QR code
-         */
-
-        // Registrar transação no banco
-        await supabase.from('mp_transactions').insert({
+        await supabaseAdmin.from('mp_transactions').insert({
           establishment_id,
           type: 'sale',
           mp_payment_id: payment.id.toString(),
@@ -197,12 +227,11 @@ serve(async (req) => {
           },
         });
 
-        // Atualizar pedido se existir
         if (order_id) {
           const orderStatus = payment.status === 'approved' ? 'confirmed' : 
                             payment.status === 'pending' ? 'pending' : 'cancelled';
           
-          await supabase
+          await supabaseAdmin
             .from('orders')
             .update({ 
               status: orderStatus,
@@ -211,7 +240,6 @@ serve(async (req) => {
             .eq('id', order_id);
         }
 
-        // Preparar resposta
         const response: Record<string, unknown> = {
           success: true,
           payment_id: payment.id,
@@ -221,7 +249,6 @@ serve(async (req) => {
           net_amount: netAmount,
         };
 
-        // Adicionar dados do PIX se aplicável
         if (payment_method_id === 'pix' && payment.point_of_interaction?.transaction_data) {
           const pixData = payment.point_of_interaction.transaction_data;
           response.pix = {
@@ -236,9 +263,6 @@ serve(async (req) => {
         });
       }
 
-      /**
-       * Consulta status de um pagamento
-       */
       case 'get_payment': {
         if (!payment_id) {
           throw new Error('payment_id é obrigatório');
@@ -270,10 +294,6 @@ serve(async (req) => {
         });
       }
 
-      /**
-       * Estorna um pagamento
-       * Nota: Estorno total retorna application_fee + valor do vendedor
-       */
       case 'refund': {
         if (!payment_id) {
           throw new Error('payment_id é obrigatório');
@@ -297,8 +317,7 @@ serve(async (req) => {
 
         const refund = await refundResponse.json();
 
-        // Registrar estorno
-        await supabase.from('mp_transactions').insert({
+        await supabaseAdmin.from('mp_transactions').insert({
           establishment_id,
           type: 'refund',
           mp_payment_id: payment_id,
@@ -335,63 +354,3 @@ serve(async (req) => {
     });
   }
 });
-
-/**
- * PAYLOADS DE EXEMPLO:
- * 
- * 1. Criar pagamento PIX com split:
- * POST /mercadopago-sale
- * {
- *   "action": "create_payment",
- *   "establishment_id": "uuid-do-estabelecimento",
- *   "order_id": "uuid-do-pedido",
- *   "payment_data": {
- *     "transaction_amount": 100.00,
- *     "description": "Pedido #123 - Hamburgueria do João",
- *     "payment_method_id": "pix",
- *     "payer": {
- *       "email": "cliente@email.com",
- *       "first_name": "João",
- *       "last_name": "Silva",
- *       "identification": {
- *         "type": "CPF",
- *         "number": "12345678900"
- *       }
- *     }
- *   }
- * }
- * 
- * 2. Criar pagamento com cartão:
- * POST /mercadopago-sale
- * {
- *   "action": "create_payment",
- *   "establishment_id": "uuid-do-estabelecimento",
- *   "order_id": "uuid-do-pedido",
- *   "payment_data": {
- *     "transaction_amount": 100.00,
- *     "description": "Pedido #123",
- *     "payment_method_id": "master",
- *     "token": "card_token_from_frontend",
- *     "installments": 1,
- *     "payer": {
- *       "email": "cliente@email.com"
- *     }
- *   }
- * }
- * 
- * 3. Consultar pagamento:
- * POST /mercadopago-sale
- * {
- *   "action": "get_payment",
- *   "establishment_id": "uuid",
- *   "payment_id": "123456789"
- * }
- * 
- * 4. Estornar pagamento:
- * POST /mercadopago-sale
- * {
- *   "action": "refund",
- *   "establishment_id": "uuid",
- *   "payment_id": "123456789"
- * }
- */

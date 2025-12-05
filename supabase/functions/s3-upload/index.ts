@@ -1,9 +1,15 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// Allowed file types for security
+const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+const ALLOWED_CONTENT_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
 serve(async (req) => {
   // Handle CORS preflight
@@ -12,10 +18,34 @@ serve(async (req) => {
   }
 
   try {
+    // SECURITY: Verify user authentication
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: 'Autenticação necessária' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_ANON_KEY')!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    // Get authenticated user
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return new Response(
+        JSON.stringify({ error: 'Usuário não autenticado' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const formData = await req.formData();
     const file = formData.get('file') as File;
     const type = formData.get('type') as string || 'products';
-    const establishmentId = formData.get('establishmentId') as string || 'general';
+    const establishmentId = formData.get('establishmentId') as string;
 
     if (!file) {
       console.error('No file provided in request');
@@ -25,7 +55,76 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Processing upload: ${file.name}, type: ${type}, establishment: ${establishmentId}`);
+    if (!establishmentId || establishmentId === 'general') {
+      return new Response(
+        JSON.stringify({ error: 'ID do estabelecimento é obrigatório' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // SECURITY: Verify user owns the establishment
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    );
+
+    const { data: establishment, error: estError } = await supabaseAdmin
+      .from('establishments')
+      .select('owner_id')
+      .eq('id', establishmentId)
+      .single();
+
+    if (estError || !establishment) {
+      return new Response(
+        JSON.stringify({ error: 'Estabelecimento não encontrado' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (establishment.owner_id !== user.id) {
+      // Check if user is super_admin
+      const { data: userRole } = await supabaseAdmin
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .eq('role', 'super_admin')
+        .single();
+
+      if (!userRole) {
+        return new Response(
+          JSON.stringify({ error: 'Você não tem permissão para fazer upload neste estabelecimento' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
+    // SECURITY: Validate file size
+    if (file.size > MAX_FILE_SIZE) {
+      return new Response(
+        JSON.stringify({ error: `Arquivo muito grande. Máximo permitido: ${MAX_FILE_SIZE / 1024 / 1024}MB` }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // SECURITY: Validate file extension
+    const extension = file.name.split('.').pop()?.toLowerCase() || '';
+    if (!ALLOWED_EXTENSIONS.includes(extension)) {
+      return new Response(
+        JSON.stringify({ error: `Tipo de arquivo não permitido. Permitidos: ${ALLOWED_EXTENSIONS.join(', ')}` }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // SECURITY: Validate content type
+    const contentType = file.type || 'application/octet-stream';
+    if (!ALLOWED_CONTENT_TYPES.includes(contentType)) {
+      return new Response(
+        JSON.stringify({ error: `Tipo de conteúdo não permitido. Permitidos: ${ALLOWED_CONTENT_TYPES.join(', ')}` }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log(`Processing upload: ${file.name}, type: ${type}, establishment: ${establishmentId}, user: ${user.id}`);
 
     // Get AWS credentials from environment
     const accessKeyId = Deno.env.get('AWS_ACCESS_KEY_ID');
@@ -45,7 +144,6 @@ serve(async (req) => {
     // Generate unique filename
     const timestamp = Date.now();
     const random = Math.random().toString(36).substring(2, 10);
-    const extension = file.name.split('.').pop()?.toLowerCase() || 'jpg';
     const fileName = `${timestamp}_${random}.${extension}`;
 
     // Build S3 path following VilFood pattern
@@ -66,8 +164,6 @@ serve(async (req) => {
     const amzDate = now.toISOString().replace(/[:-]|\.\d{3}/g, '');
     const dateStamp = amzDate.slice(0, 8);
 
-    const contentType = file.type || 'application/octet-stream';
-    
     // Create canonical request
     const method = 'PUT';
     const canonicalUri = '/' + key;

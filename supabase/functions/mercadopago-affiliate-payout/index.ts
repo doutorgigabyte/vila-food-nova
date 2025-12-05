@@ -3,13 +3,7 @@
  * 
  * Processa pagamentos de comissões para afiliados via PIX.
  * 
- * Fluxo:
- * 1. Cron job busca payouts pendentes
- * 2. Verifica saldo disponível na conta da plataforma
- * 3. Envia pagamento PIX para chave do afiliado
- * 4. Atualiza status do payout
- * 
- * Usa a API de Pagamentos do MP para enviar dinheiro
+ * SECURITY: All actions require super_admin authentication
  */
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
@@ -20,12 +14,22 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Token da plataforma (tem saldo para pagar afiliados)
 const MP_ACCESS_TOKEN = Deno.env.get('MERCADOPAGO_ACCESS_TOKEN');
 
 interface PayoutRequest {
   action: 'process_pending' | 'process_single' | 'check_balance' | 'list_pending';
   payout_id?: string;
+}
+
+// Helper to verify super_admin role
+async function verifySuperAdmin(supabaseAdmin: any, userId: string): Promise<boolean> {
+  const { data } = await supabaseAdmin
+    .from('user_roles')
+    .select('role')
+    .eq('user_id', userId)
+    .eq('role', 'super_admin')
+    .single();
+  return !!data;
 }
 
 serve(async (req) => {
@@ -34,7 +38,7 @@ serve(async (req) => {
   }
 
   try {
-    const supabase = createClient(
+    const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
@@ -43,16 +47,44 @@ serve(async (req) => {
       throw new Error('MERCADOPAGO_ACCESS_TOKEN não configurado');
     }
 
+    // SECURITY: Verify authentication for all actions
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: 'Autenticação necessária', success: false }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_ANON_KEY')!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return new Response(
+        JSON.stringify({ error: 'Usuário não autenticado', success: false }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // SECURITY: Only super_admin can manage payouts
+    const isSuperAdmin = await verifySuperAdmin(supabaseAdmin, user.id);
+    if (!isSuperAdmin) {
+      return new Response(
+        JSON.stringify({ error: 'Apenas administradores podem gerenciar pagamentos de afiliados', success: false }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const body: PayoutRequest = await req.json();
     const { action, payout_id } = body;
 
-    console.log('Payout request:', { action, payout_id });
+    console.log('Payout request:', { action, payout_id, admin_user: user.id });
 
     switch (action) {
-      /**
-       * Verifica saldo disponível na conta da plataforma
-       * Importante verificar antes de tentar pagar
-       */
       case 'check_balance': {
         const balanceResponse = await fetch(
           'https://api.mercadopago.com/users/me',
@@ -67,7 +99,6 @@ serve(async (req) => {
 
         const userData = await balanceResponse.json();
         
-        // Buscar saldo disponível
         const accountResponse = await fetch(
           'https://api.mercadopago.com/mercadopago_account/balance',
           {
@@ -90,11 +121,8 @@ serve(async (req) => {
         });
       }
 
-      /**
-       * Lista pagamentos pendentes
-       */
       case 'list_pending': {
-        const { data: pendingPayouts, error } = await supabase
+        const { data: pendingPayouts, error } = await supabaseAdmin
           .from('affiliate_payouts')
           .select('*, affiliates(*, profiles(full_name))')
           .eq('status', 'pending')
@@ -114,33 +142,25 @@ serve(async (req) => {
         });
       }
 
-      /**
-       * Processa um único payout
-       */
       case 'process_single': {
         if (!payout_id) {
           throw new Error('payout_id é obrigatório');
         }
 
-        const result = await processPayout(supabase, payout_id, MP_ACCESS_TOKEN);
+        const result = await processPayout(supabaseAdmin, payout_id, MP_ACCESS_TOKEN);
 
         return new Response(JSON.stringify(result), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
 
-      /**
-       * Processa todos os payouts pendentes (cron job)
-       * Deve ser chamado periodicamente (ex: diariamente)
-       */
       case 'process_pending': {
-        // Buscar payouts pendentes
-        const { data: pendingPayouts, error: fetchError } = await supabase
+        const { data: pendingPayouts, error: fetchError } = await supabaseAdmin
           .from('affiliate_payouts')
           .select('*')
           .eq('status', 'pending')
           .order('created_at', { ascending: true })
-          .limit(10); // Processar em batches para evitar timeout
+          .limit(10);
 
         if (fetchError) throw fetchError;
 
@@ -156,10 +176,9 @@ serve(async (req) => {
 
         const results: Array<{ payout_id: string; success: boolean; error?: string }> = [];
 
-        // Processar cada payout
         for (const payout of pendingPayouts) {
           try {
-            const result = await processPayout(supabase, payout.id, MP_ACCESS_TOKEN);
+            const result = await processPayout(supabaseAdmin, payout.id, MP_ACCESS_TOKEN);
             results.push({
               payout_id: payout.id,
               success: result.success,
@@ -173,7 +192,6 @@ serve(async (req) => {
             });
           }
 
-          // Pequeno delay entre pagamentos para evitar rate limit
           await new Promise(resolve => setTimeout(resolve, 1000));
         }
 
@@ -209,19 +227,12 @@ serve(async (req) => {
   }
 });
 
-/**
- * Processa um payout individual via PIX
- * 
- * Usa a API de Pagamentos do MP com payment_method_id = 'pix'
- * O dinheiro sai da conta da plataforma e vai para a chave PIX do afiliado
- */
 async function processPayout(
   supabase: any,
   payoutId: string,
   accessToken: string
 ): Promise<{ success: boolean; mp_payment_id?: string; error?: string }> {
   
-  // Buscar detalhes do payout
   const { data: payout, error: fetchError } = await supabase
     .from('affiliate_payouts')
     .select('*, affiliates(*)')
@@ -236,7 +247,6 @@ async function processPayout(
     return { success: false, error: 'Payout já foi processado' };
   }
 
-  // Marcar como processando
   await supabase
     .from('affiliate_payouts')
     .update({ status: 'processing' })
@@ -248,31 +258,20 @@ async function processPayout(
       user_id: string;
     };
 
-    // Buscar email do afiliado
     const { data: profile } = await supabase
       .from('profiles')
       .select('full_name')
       .eq('id', affiliate.user_id)
       .single();
 
-    /**
-     * Criar pagamento PIX
-     * 
-     * Nota: Para enviar dinheiro via PIX, usamos a API de Pagamentos
-     * com payment_method_id = 'pix' e os dados do recebedor
-     * 
-     * Em produção, você pode precisar usar a API de Disbursements
-     * ou a API de Withdrawal dependendo do seu modelo de negócio
-     */
     const paymentPayload = {
       transaction_amount: Number(payout.amount),
       description: `Comissão de afiliado - VilaFood`,
       payment_method_id: 'pix',
       payer: {
-        email: `afiliado_${affiliate.id}@vilafood.com`, // Email interno para tracking
+        email: `afiliado_${affiliate.id}@vilafood.com`,
         first_name: profile?.full_name || 'Afiliado',
       },
-      // Dados do recebedor PIX
       point_of_interaction: {
         type: 'PIX_TRANSFER',
         transaction_data: {
@@ -288,7 +287,6 @@ async function processPayout(
       pix_key: payout.pix_key?.substring(0, 5) + '***',
     });
 
-    // Criar pagamento
     const paymentResponse = await fetch('https://api.mercadopago.com/v1/payments', {
       method: 'POST',
       headers: {
@@ -303,7 +301,6 @@ async function processPayout(
       const error = await paymentResponse.json();
       console.error('MP Payout error:', error);
       
-      // Marcar como falhou
       await supabase
         .from('affiliate_payouts')
         .update({ 
@@ -324,7 +321,6 @@ async function processPayout(
       status: payment.status,
     });
 
-    // Atualizar payout com sucesso
     await supabase
       .from('affiliate_payouts')
       .update({
@@ -334,7 +330,6 @@ async function processPayout(
       })
       .eq('id', payoutId);
 
-    // Enviar notificação WhatsApp se pagamento aprovado
     if (payment.status === 'approved') {
       try {
         const { data: profileData } = await supabase
@@ -370,7 +365,6 @@ async function processPayout(
         }
       } catch (notifError) {
         console.error('Failed to send WhatsApp notification:', notifError);
-        // Não falha o payout se a notificação falhar
       }
     }
 
@@ -382,7 +376,6 @@ async function processPayout(
   } catch (error) {
     console.error('Payout processing error:', error);
 
-    // Reverter para pendente em caso de erro
     await supabase
       .from('affiliate_payouts')
       .update({ 
@@ -397,47 +390,3 @@ async function processPayout(
     };
   }
 }
-
-/**
- * PAYLOADS DE EXEMPLO:
- * 
- * 1. Verificar saldo:
- * POST /mercadopago-affiliate-payout
- * {
- *   "action": "check_balance"
- * }
- * 
- * 2. Listar pendentes:
- * POST /mercadopago-affiliate-payout
- * {
- *   "action": "list_pending"
- * }
- * 
- * 3. Processar um payout:
- * POST /mercadopago-affiliate-payout
- * {
- *   "action": "process_single",
- *   "payout_id": "uuid-do-payout"
- * }
- * 
- * 4. Processar todos pendentes (cron):
- * POST /mercadopago-affiliate-payout
- * {
- *   "action": "process_pending"
- * }
- * 
- * 
- * CONFIGURAÇÃO DO CRON JOB (executar diariamente):
- * 
- * SELECT cron.schedule(
- *   'process-affiliate-payouts',
- *   '0 10 * * *', -- Todo dia às 10h
- *   $$
- *   SELECT net.http_post(
- *     url:='https://gyagfsjbdaacgmmofqip.supabase.co/functions/v1/mercadopago-affiliate-payout',
- *     headers:='{"Content-Type": "application/json", "Authorization": "Bearer eyJhbG..."}'::jsonb,
- *     body:='{"action": "process_pending"}'::jsonb
- *   ) AS request_id;
- *   $$
- * );
- */
