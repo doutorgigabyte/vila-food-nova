@@ -47,9 +47,11 @@ import {
   RotateCcw,
   Eye,
   ExternalLink,
+  BarChart3,
 } from 'lucide-react';
 import { usePayments, Transaction } from '@/hooks/usePayments';
 import { useUserEstablishment } from '@/hooks/useDashboardData';
+import { PaymentRevenueChart } from '@/components/dashboard/PaymentRevenueChart';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -240,6 +242,24 @@ export default function PaymentsManagement() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Revenue Charts */}
+        {establishmentId && (
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5 text-primary" />
+                <CardTitle>Análise de Receita</CardTitle>
+              </div>
+              <CardDescription>
+                Visualize suas vendas e métodos de pagamento
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <PaymentRevenueChart establishmentId={establishmentId} />
+            </CardContent>
+          </Card>
+        )}
 
         {/* Transactions Table */}
         <Card>
