@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Upload, X, Loader2, Image as ImageIcon } from "lucide-react";
@@ -27,6 +27,11 @@ export const ImageUpload = ({
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState<string | null>(currentImage || null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Sync preview with currentImage when it changes
+  useEffect(() => {
+    setPreview(currentImage || null);
+  }, [currentImage]);
 
   const aspectClasses = {
     square: "aspect-square",

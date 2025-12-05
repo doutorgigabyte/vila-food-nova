@@ -2,7 +2,11 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import AdminLayout from '@/components/admin/AdminLayout';
-import { Tag, Plus, Edit, Trash2, Search, Pizza, Coffee, ShoppingBag, Utensils, Beer, IceCream, Cake, Sandwich, Fish, Salad } from 'lucide-react';
+import { 
+  Tag, Plus, Edit, Trash2, Search, Pizza, Coffee, ShoppingBag, Utensils, 
+  Beer, IceCream, Cake, Sandwich, Fish, Salad, Grape, CupSoda, Sparkles, 
+  Home, Smartphone, Pill, Beef, Package, Shirt, Box, Croissant, Dog, Wrench, ShoppingCart
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -24,22 +28,87 @@ interface Segment {
   created_at: string | null;
 }
 
+// Map icon names (both kebab-case from DB and PascalCase) to components
+const iconMap: Record<string, any> = {
+  'pizza': Pizza,
+  'Pizza': Pizza,
+  'coffee': Coffee,
+  'Coffee': Coffee,
+  'shopping-bag': ShoppingBag,
+  'ShoppingBag': ShoppingBag,
+  'utensils': Utensils,
+  'Utensils': Utensils,
+  'beer': Beer,
+  'Beer': Beer,
+  'ice-cream': IceCream,
+  'IceCream': IceCream,
+  'cake': Cake,
+  'Cake': Cake,
+  'sandwich': Sandwich,
+  'Sandwich': Sandwich,
+  'fish': Fish,
+  'Fish': Fish,
+  'salad': Salad,
+  'Salad': Salad,
+  'grape': Grape,
+  'Grape': Grape,
+  'cup-soda': CupSoda,
+  'CupSoda': CupSoda,
+  'sparkles': Sparkles,
+  'Sparkles': Sparkles,
+  'home': Home,
+  'Home': Home,
+  'smartphone': Smartphone,
+  'Smartphone': Smartphone,
+  'pill': Pill,
+  'Pill': Pill,
+  'beef': Beef,
+  'Beef': Beef,
+  'package': Package,
+  'Package': Package,
+  'shirt': Shirt,
+  'Shirt': Shirt,
+  'box': Box,
+  'Box': Box,
+  'croissant': Croissant,
+  'Croissant': Croissant,
+  'dog': Dog,
+  'Dog': Dog,
+  'wrench': Wrench,
+  'Wrench': Wrench,
+  'shopping-cart': ShoppingCart,
+  'ShoppingCart': ShoppingCart,
+};
+
 const iconOptions = [
-  { value: 'Pizza', label: 'Pizza', icon: Pizza },
-  { value: 'Coffee', label: 'Café', icon: Coffee },
-  { value: 'ShoppingBag', label: 'Mercado', icon: ShoppingBag },
-  { value: 'Utensils', label: 'Restaurante', icon: Utensils },
-  { value: 'Beer', label: 'Bar', icon: Beer },
-  { value: 'IceCream', label: 'Sorvete', icon: IceCream },
-  { value: 'Cake', label: 'Doces', icon: Cake },
-  { value: 'Sandwich', label: 'Lanche', icon: Sandwich },
-  { value: 'Fish', label: 'Frutos do Mar', icon: Fish },
-  { value: 'Salad', label: 'Saudável', icon: Salad },
+  { value: 'pizza', label: 'Pizza', icon: Pizza },
+  { value: 'utensils', label: 'Restaurante', icon: Utensils },
+  { value: 'beef', label: 'Hamburgueria', icon: Beef },
+  { value: 'sandwich', label: 'Lanchonete', icon: Sandwich },
+  { value: 'croissant', label: 'Padaria', icon: Croissant },
+  { value: 'cake', label: 'Doces/Confeitaria', icon: Cake },
+  { value: 'grape', label: 'Açaí', icon: Grape },
+  { value: 'ice-cream', label: 'Sorveteria', icon: IceCream },
+  { value: 'fish', label: 'Sushi/Frutos do Mar', icon: Fish },
+  { value: 'package', label: 'Marmitaria', icon: Package },
+  { value: 'cup-soda', label: 'Bebidas', icon: CupSoda },
+  { value: 'coffee', label: 'Café', icon: Coffee },
+  { value: 'beer', label: 'Bar', icon: Beer },
+  { value: 'salad', label: 'Saudável', icon: Salad },
+  { value: 'shopping-cart', label: 'Supermercado', icon: ShoppingCart },
+  { value: 'pill', label: 'Farmácia', icon: Pill },
+  { value: 'dog', label: 'Pet Shop', icon: Dog },
+  { value: 'sparkles', label: 'Beleza', icon: Sparkles },
+  { value: 'shirt', label: 'Moda', icon: Shirt },
+  { value: 'smartphone', label: 'Eletrônicos', icon: Smartphone },
+  { value: 'home', label: 'Casa e Jardim', icon: Home },
+  { value: 'wrench', label: 'Serviços', icon: Wrench },
+  { value: 'box', label: 'Outros', icon: Box },
 ];
 
 const getIconComponent = (iconName: string | null) => {
-  const found = iconOptions.find(opt => opt.value === iconName);
-  return found?.icon || Tag;
+  if (!iconName) return Tag;
+  return iconMap[iconName] || Tag;
 };
 
 const SegmentsManagement = () => {
@@ -368,7 +437,7 @@ const SegmentsManagement = () => {
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione um ícone" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="max-h-72">
                   {iconOptions.map((opt) => {
                     const Icon = opt.icon;
                     return (
