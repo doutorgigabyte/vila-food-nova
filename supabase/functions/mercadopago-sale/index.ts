@@ -145,6 +145,35 @@ serve(async (req) => {
           throw new Error('payment_data é obrigatório');
         }
 
+        // SECURITY: Require valid order_id for payment creation
+        if (!order_id) {
+          throw new Error('order_id é obrigatório para criar pagamento');
+        }
+
+        // Validate that order exists and belongs to this establishment
+        const { data: order, error: orderError } = await supabaseAdmin
+          .from('orders')
+          .select('id, establishment_id, total, status')
+          .eq('id', order_id)
+          .eq('establishment_id', establishment_id)
+          .single();
+
+        if (orderError || !order) {
+          console.error('Order validation failed:', { order_id, establishment_id, error: orderError });
+          return new Response(
+            JSON.stringify({ error: 'Pedido não encontrado ou não pertence a este estabelecimento', success: false }),
+            { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        // Prevent duplicate payments for already paid orders
+        if (order.status === 'confirmed' || order.status === 'preparing' || order.status === 'delivered') {
+          return new Response(
+            JSON.stringify({ error: 'Este pedido já foi pago', success: false }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
         if (!MP_ACCESS_TOKEN) {
           throw new Error('MERCADOPAGO_ACCESS_TOKEN não configurado');
         }
@@ -168,7 +197,7 @@ serve(async (req) => {
             last_name: payer.last_name,
             identification: payer.identification,
           },
-          external_reference: order_id || `order_${Date.now()}`,
+          external_reference: order_id,
           application_fee: platformFee,
           collector_id: parseInt(establishment.mp_user_id),
           notification_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/mercadopago-webhook`,
@@ -266,6 +295,21 @@ serve(async (req) => {
       case 'get_payment': {
         if (!payment_id) {
           throw new Error('payment_id é obrigatório');
+        }
+
+        // SECURITY: Verify payment belongs to this establishment before returning status
+        const { data: transaction } = await supabaseAdmin
+          .from('mp_transactions')
+          .select('id')
+          .eq('mp_payment_id', payment_id)
+          .eq('establishment_id', establishment_id)
+          .single();
+
+        if (!transaction) {
+          return new Response(
+            JSON.stringify({ error: 'Pagamento não encontrado para este estabelecimento', success: false }),
+            { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
         }
 
         const statusResponse = await fetch(
