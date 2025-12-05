@@ -47,3 +47,6 @@ verify_jwt = false
 
 [functions.sync-legacy-users]
 verify_jwt = false
+
+[functions.ai-recommendations]
+verify_jwt = false
