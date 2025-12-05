@@ -15,6 +15,7 @@ import { StoreCategoryNav } from "@/components/store/StoreCategoryNav";
 import { StoreProductGrid } from "@/components/store/StoreProductGrid";
 import { StoreInfoTab } from "@/components/store/StoreInfoTab";
 import { StoreFloatingCart } from "@/components/store/StoreFloatingCart";
+import { StoreAccountTab } from "@/components/store/StoreAccountTab";
 import { toast } from "sonner";
 
 const Store = () => {
@@ -215,16 +216,7 @@ const Store = () => {
       {activeTab === "info" ? (
         <StoreInfoTab establishment={establishment} />
       ) : activeTab === "conta" ? (
-        <div className="p-4 text-center">
-          <div className="py-12">
-            <StoreIcon className="w-16 h-16 text-muted-foreground/30 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold mb-2">Minha Conta</h2>
-            <p className="text-muted-foreground mb-4">Faça login para ver seus pedidos</p>
-            <Button asChild>
-              <Link to="/auth">Entrar</Link>
-            </Button>
-          </div>
-        </div>
+        <StoreAccountTab establishmentSlug={establishment.slug} />
       ) : (
         <>
           {/* Hero Section */}
