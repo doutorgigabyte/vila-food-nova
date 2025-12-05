@@ -18,7 +18,10 @@ import {
   Star,
   Ticket,
   LogOut,
-  Settings
+  Settings,
+  Shield,
+  Rocket,
+  Database
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -92,6 +95,15 @@ const navItems: NavItem[] = [
       { label: 'Gerenciar', icon: List, href: '/admin/planos' },
       { label: 'Assinaturas', icon: Star, href: '/admin/assinaturas' },
       { label: 'Vouchers', icon: Ticket, href: '/admin/vouchers' }
+    ]
+  },
+  {
+    label: 'Sistema',
+    icon: Settings,
+    children: [
+      { label: 'Health Check', icon: Shield, href: '/admin/health' },
+      { label: 'Roadmap', icon: Rocket, href: '/admin/roadmap' },
+      { label: 'Migração', icon: Database, href: '/admin/migracao' }
     ]
   }
 ];
