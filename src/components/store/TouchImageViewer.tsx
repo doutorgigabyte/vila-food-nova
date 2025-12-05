@@ -20,6 +20,8 @@ export const TouchImageViewer = ({ src, alt, onClose }: TouchImageViewerProps) =
   const [lastTouchDistance, setLastTouchDistance] = useState<number | null>(null);
   const [lastTouchCenter, setLastTouchCenter] = useState<TouchPoint | null>(null);
   const [dragStart, setDragStart] = useState<TouchPoint | null>(null);
+  const [isMouseDragging, setIsMouseDragging] = useState(false);
+  const [mouseStart, setMouseStart] = useState<TouchPoint | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
@@ -154,6 +156,58 @@ export const TouchImageViewer = ({ src, alt, onClose }: TouchImageViewerProps) =
     });
   };
 
+  // Mouse wheel zoom
+  const handleWheel = useCallback((e: React.WheelEvent) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -0.3 : 0.3;
+    setScale(prev => {
+      const newScale = Math.min(Math.max(prev + delta, 1), 5);
+      if (newScale === 1) setPosition({ x: 0, y: 0 });
+      return newScale;
+    });
+  }, []);
+
+  // Mouse drag start
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    if (scale > 1) {
+      e.preventDefault();
+      setIsMouseDragging(true);
+      setMouseStart({
+        x: e.clientX - position.x,
+        y: e.clientY - position.y,
+      });
+    }
+  }, [scale, position]);
+
+  // Mouse drag move
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (isMouseDragging && mouseStart && scale > 1) {
+      const newX = e.clientX - mouseStart.x;
+      const newY = e.clientY - mouseStart.y;
+      const maxOffset = (scale - 1) * 150;
+      setPosition({
+        x: Math.min(Math.max(newX, -maxOffset), maxOffset),
+        y: Math.min(Math.max(newY, -maxOffset), maxOffset),
+      });
+    }
+  }, [isMouseDragging, mouseStart, scale]);
+
+  // Mouse drag end
+  const handleMouseUp = useCallback(() => {
+    setIsMouseDragging(false);
+    setMouseStart(null);
+  }, []);
+
+  // Double click to zoom
+  const handleDoubleClick = useCallback(() => {
+    if (scale > 1) {
+      setScale(1);
+      setPosition({ x: 0, y: 0 });
+    } else {
+      setScale(2);
+    }
+  }, [scale]);
+
   // Close on escape key
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -162,6 +216,16 @@ export const TouchImageViewer = ({ src, alt, onClose }: TouchImageViewerProps) =
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [onClose]);
+
+  // Global mouse up listener
+  useEffect(() => {
+    const handleGlobalMouseUp = () => {
+      setIsMouseDragging(false);
+      setMouseStart(null);
+    };
+    window.addEventListener("mouseup", handleGlobalMouseUp);
+    return () => window.removeEventListener("mouseup", handleGlobalMouseUp);
+  }, []);
 
   return (
     <div className="fixed inset-0 z-50 bg-black/95 flex flex-col">
@@ -212,12 +276,17 @@ export const TouchImageViewer = ({ src, alt, onClose }: TouchImageViewerProps) =
       {/* Image Container */}
       <div
         ref={containerRef}
-        className="flex-1 flex items-center justify-center overflow-hidden touch-none"
+        className="flex-1 flex items-center justify-center overflow-hidden touch-none select-none"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
+        onWheel={handleWheel}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
         onClick={(e) => {
-          if (e.target === containerRef.current) onClose();
+          if (e.target === containerRef.current && !isMouseDragging) onClose();
         }}
       >
         <img
@@ -227,16 +296,18 @@ export const TouchImageViewer = ({ src, alt, onClose }: TouchImageViewerProps) =
           className="max-w-full max-h-full object-contain select-none transition-transform duration-100"
           style={{
             transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
-            cursor: scale > 1 ? "grab" : "zoom-in",
+            cursor: scale > 1 ? (isMouseDragging ? "grabbing" : "grab") : "zoom-in",
           }}
           draggable={false}
           onTouchEnd={handleDoubleTap}
+          onDoubleClick={handleDoubleClick}
         />
       </div>
 
       {/* Instructions */}
       <div className="p-4 text-center text-white/60 text-sm">
-        <p>Pinça para zoom • Toque duplo para ampliar • Arraste para mover</p>
+        <p className="hidden md:block">Scroll para zoom • Duplo clique para ampliar • Arraste para mover</p>
+        <p className="md:hidden">Pinça para zoom • Toque duplo para ampliar • Arraste para mover</p>
       </div>
     </div>
   );
