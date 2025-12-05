@@ -34,6 +34,7 @@ interface CartContextType {
   items: CartItem[];
   establishments: Map<string, EstablishmentInfo>;
   currentVilaId: string | null;
+  isLoaded: boolean;
   addToCart: (product: CartProduct, establishmentInfo: EstablishmentInfo, quantity?: number, observation?: string) => Promise<boolean>;
   updateQuantity: (productId: string, delta: number) => void;
   removeFromCart: (productId: string) => void;
@@ -56,6 +57,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [items, setItems] = useState<CartItem[]>([]);
   const [establishments, setEstablishments] = useState<Map<string, EstablishmentInfo>>(new Map());
   const [currentVilaId, setCurrentVilaId] = useState<string | null>(null);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   // Load cart from localStorage on mount
   useEffect(() => {
@@ -78,6 +80,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       }
     } catch (error) {
       console.error("Error loading cart from localStorage:", error);
+    } finally {
+      setIsLoaded(true);
     }
   }, []);
 
@@ -258,6 +262,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         items,
         establishments,
         currentVilaId,
+        isLoaded,
         addToCart,
         updateQuantity,
         removeFromCart,

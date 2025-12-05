@@ -32,6 +32,7 @@ const Checkout = () => {
   const { 
     items, 
     establishments, 
+    isLoaded,
     getUniqueEstablishments, 
     getEstablishmentItems, 
     getEstablishmentSubtotal,
@@ -68,12 +69,21 @@ const Checkout = () => {
     }
   }, [isMultiStore]);
 
-  // Redirect if cart is empty
+  // Redirect if cart is empty (only after cart is loaded from localStorage)
   useEffect(() => {
-    if (items.length === 0 && step !== "success") {
+    if (isLoaded && items.length === 0 && step !== "success") {
       navigate(storeSlug ? `/loja/${storeSlug}` : "/marketplace");
     }
-  }, [items.length, step, storeSlug, navigate]);
+  }, [isLoaded, items.length, step, storeSlug, navigate]);
+
+  // Show loading while cart is being loaded
+  if (!isLoaded) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   const fetchCep = async (cepValue: string) => {
     if (cepValue.length === 8) {
