@@ -115,7 +115,7 @@ const ProductCard = ({ product, onClick, onQuickAdd, variant }: ProductCardProps
 
   return (
     <div
-      className={`bg-card rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer group shrink-0 border ${
+      className={`bg-card rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer group shrink-0 border touch-manipulation active:scale-[0.98] ${
         variant === "scroll" ? "w-[160px] md:w-[200px]" : ""
       }`}
       style={{ scrollSnapAlign: "start" }}
@@ -154,7 +154,7 @@ const ProductCard = ({ product, onClick, onQuickAdd, variant }: ProductCardProps
         {/* Quick Add Button - Visible on mobile, hover on desktop */}
         <Button
           size="icon"
-          className="absolute bottom-2 right-2 w-9 h-9 rounded-full shadow-lg md:opacity-0 md:group-hover:opacity-100 transition-all bg-primary hover:bg-primary/90"
+          className="absolute bottom-2 right-2 w-10 h-10 rounded-full shadow-lg md:opacity-0 md:group-hover:opacity-100 transition-all bg-primary hover:bg-primary/90 touch-manipulation active:scale-95"
           onClick={(e) => {
             e.stopPropagation();
             onQuickAdd();

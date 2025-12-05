@@ -17,12 +17,12 @@ export const StoreFloatingCart = ({ itemCount, total, onClick, primaryColor }: S
     : {};
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 p-4 bg-gradient-to-t from-background via-background to-transparent">
+    <div className="fixed bottom-0 left-0 right-0 z-50 p-4 bg-gradient-to-t from-background via-background to-transparent safe-area-inset-bottom">
       <Button
         className={cn(
           "w-full h-14 rounded-xl shadow-xl text-white font-semibold",
           "flex items-center justify-between px-4",
-          "hover:scale-[1.02] transition-transform"
+          "hover:scale-[1.02] active:scale-[0.98] transition-transform touch-manipulation"
         )}
         style={primaryColor ? bgStyle : undefined}
         onClick={onClick}
