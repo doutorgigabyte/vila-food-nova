@@ -24,6 +24,7 @@ import {
 import { toast } from "sonner";
 import { useCart } from "@/hooks/useCart";
 import { useCreateOrder } from "@/hooks/useCreateOrder";
+import AddressAutocomplete from "@/components/checkout/AddressAutocomplete";
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -49,12 +50,31 @@ const Checkout = () => {
   const [completedOrders, setCompletedOrders] = useState<string[]>([]);
   
   // Address form
-  const [cep, setCep] = useState("");
-  const [address, setAddress] = useState("");
-  const [number, setNumber] = useState("");
-  const [complement, setComplement] = useState("");
-  const [neighborhood, setNeighborhood] = useState("");
-  const [reference, setReference] = useState("");
+  const [addressData, setAddressData] = useState<{
+    cep: string;
+    address: string;
+    number: string;
+    complement: string;
+    neighborhood: string;
+    city: string;
+    state: string;
+    reference: string;
+    lat?: number;
+    lng?: number;
+    formatted_address?: string;
+  }>({
+    cep: "",
+    address: "",
+    number: "",
+    complement: "",
+    neighborhood: "",
+    city: "",
+    state: "",
+    reference: "",
+    lat: undefined,
+    lng: undefined,
+    formatted_address: "",
+  });
   
   // Payment
   const [change, setChange] = useState("");
@@ -92,8 +112,13 @@ const Checkout = () => {
         const response = await fetch(`https://viacep.com.br/ws/${cepValue}/json/`);
         const data = await response.json();
         if (!data.erro) {
-          setAddress(data.logradouro || "");
-          setNeighborhood(data.bairro || "");
+          setAddressData(prev => ({
+            ...prev,
+            address: data.logradouro || "",
+            neighborhood: data.bairro || "",
+            city: data.localidade || "",
+            state: data.uf || "",
+          }));
         }
       } catch (error) {
         console.error("Erro ao buscar CEP:", error);
@@ -103,8 +128,8 @@ const Checkout = () => {
 
   const handleSubmitDelivery = () => {
     if (deliveryType === "delivery") {
-      if (!cep || !address || !number || !neighborhood) {
-        toast.error("Preencha todos os campos obrigatórios");
+      if (!addressData.address || !addressData.number || !addressData.neighborhood) {
+        toast.error("Preencha todos os campos obrigatórios do endereço");
         return;
       }
     }
@@ -149,12 +174,12 @@ const Checkout = () => {
           delivery_fee: estDeliveryFee,
           total: estSubtotal + estDeliveryFee,
           delivery_address: deliveryType === 'delivery' ? {
-            cep,
-            address,
-            number,
-            complement,
-            neighborhood,
-            reference,
+            cep: addressData.cep,
+            address: addressData.address,
+            number: addressData.number,
+            complement: addressData.complement,
+            neighborhood: addressData.neighborhood,
+            reference: addressData.reference,
           } : undefined,
           change_for: paymentMethod === 'cash' && change ? parseFloat(change) : undefined,
           observations: observations || undefined,
@@ -370,68 +395,11 @@ const Checkout = () => {
                     Endereço de entrega
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="cep">CEP *</Label>
-                    <Input
-                      id="cep"
-                      placeholder="00000-000"
-                      value={cep}
-                      onChange={(e) => {
-                        const value = e.target.value.replace(/\D/g, '');
-                        setCep(value);
-                        fetchCep(value);
-                      }}
-                      maxLength={8}
-                    />
-                  </div>
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className="col-span-2 space-y-2">
-                      <Label htmlFor="address">Endereço *</Label>
-                      <Input
-                        id="address"
-                        placeholder="Rua, Avenida..."
-                        value={address}
-                        onChange={(e) => setAddress(e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="number">Número *</Label>
-                      <Input
-                        id="number"
-                        placeholder="123"
-                        value={number}
-                        onChange={(e) => setNumber(e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="complement">Complemento</Label>
-                    <Input
-                      id="complement"
-                      placeholder="Apto, Bloco..."
-                      value={complement}
-                      onChange={(e) => setComplement(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="neighborhood">Bairro *</Label>
-                    <Input
-                      id="neighborhood"
-                      placeholder="Bairro"
-                      value={neighborhood}
-                      onChange={(e) => setNeighborhood(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="reference">Ponto de referência</Label>
-                    <Input
-                      id="reference"
-                      placeholder="Próximo a..."
-                      value={reference}
-                      onChange={(e) => setReference(e.target.value)}
-                    />
-                  </div>
+                <CardContent>
+                  <AddressAutocomplete
+                    value={addressData}
+                    onChange={setAddressData}
+                  />
                 </CardContent>
               </Card>
             )}
