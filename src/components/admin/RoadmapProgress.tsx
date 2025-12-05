@@ -62,12 +62,12 @@ const phases: Phase[] = [
     name: "Integrações de Pagamento",
     description: "Mercado Pago PIX, Cartão e Assinaturas",
     icon: CreditCard,
-    status: 'in_progress',
-    progress: 60,
+    status: 'completed',
+    progress: 100,
     tasks: [
       { name: "PIX QR Code (Edge Function)", status: 'completed' },
-      { name: "Split Payment", status: 'in_progress' },
-      { name: "Assinaturas SaaS", status: 'in_progress' },
+      { name: "Split Payment (Edge Function)", status: 'completed' },
+      { name: "Assinaturas SaaS (Edge Function)", status: 'completed' },
       { name: "Webhooks MP", status: 'completed' },
     ]
   },
@@ -76,13 +76,13 @@ const phases: Phase[] = [
     name: "Integração WhatsApp",
     description: "Bot IA com Evolution API + Gemini",
     icon: MessageSquare,
-    status: 'in_progress',
-    progress: 70,
+    status: 'completed',
+    progress: 100,
     tasks: [
       { name: "Configuração por Estabelecimento", status: 'completed' },
       { name: "Bot de Atendimento IA", status: 'completed' },
       { name: "Webhook WhatsApp", status: 'completed' },
-      { name: "Notificações automáticas", status: 'in_progress' },
+      { name: "Notificações automáticas (Hook)", status: 'completed' },
     ]
   },
   {
