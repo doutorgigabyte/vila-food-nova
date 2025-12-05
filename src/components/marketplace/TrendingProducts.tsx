@@ -1,11 +1,12 @@
 import { useRef } from "react";
 import { Link } from "react-router-dom";
-import { Heart, Plus, ChevronLeft, ChevronRight } from "lucide-react";
+import { Heart, Plus, ChevronLeft, ChevronRight, Clock } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useProducts } from "@/hooks/useProducts";
+import { useEstablishments } from "@/hooks/useEstablishment";
 
 interface TrendingProductsProps {
   title?: string;
@@ -17,7 +18,12 @@ const TrendingProducts = ({
   subtitle = "Aqui está o que você pode gostar de provar"
 }: TrendingProductsProps) => {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const { products, loading } = useProducts(10);
+  const { products, loading: productsLoading } = useProducts(10);
+  const { establishments, loading: establishmentsLoading } = useEstablishments();
+
+  const loading = productsLoading || establishmentsLoading;
+  const hasProducts = products.length > 0;
+  const trending = hasProducts ? [] : establishments.slice(0, 6);
 
   const scroll = (direction: "left" | "right") => {
     if (scrollRef.current) {
@@ -60,7 +66,126 @@ const TrendingProducts = ({
     );
   }
 
-  if (products.length === 0) {
+  // Se tem produtos, mostrar produtos
+  if (hasProducts) {
+    return (
+      <section className="py-8 bg-card">
+        <div className="container mx-auto px-4">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-xl font-bold text-primary">{title}</h2>
+              <p className="text-sm text-muted-foreground">{subtitle}</p>
+            </div>
+          </div>
+
+          <div className="relative group">
+            <Button
+              variant="outline"
+              size="icon"
+              className="absolute -left-4 top-1/2 -translate-y-1/2 z-10 shadow-md opacity-0 group-hover:opacity-100 transition-opacity bg-card"
+              onClick={() => scroll("left")}
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </Button>
+
+            <div
+              ref={scrollRef}
+              className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth pb-2"
+              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            >
+              {products.map((product) => {
+                const discount = getDiscount(product.price, product.promotional_price);
+                const currentPrice = product.promotional_price || product.price;
+                
+                return (
+                  <Link 
+                    key={product.id} 
+                    to={`/loja/${product.establishment?.slug || ''}`}
+                    className="flex-shrink-0"
+                  >
+                    <Card className="w-48 overflow-hidden group/card hover:shadow-lg transition-all">
+                      <div className="relative h-36 overflow-hidden bg-muted">
+                        {product.image_url && (
+                          <img
+                            src={product.image_url}
+                            alt={product.name}
+                            className="w-full h-full object-cover group-hover/card:scale-105 transition-transform duration-300"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                            }}
+                          />
+                        )}
+                        {!product.image_url && (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <span className="text-4xl opacity-30">🍽️</span>
+                          </div>
+                        )}
+                        
+                        {discount && (
+                          <Badge className="absolute top-2 left-2 bg-destructive text-xs">
+                            {discount} OFF
+                          </Badge>
+                        )}
+                        
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="absolute top-2 right-2 w-7 h-7 bg-card/80 backdrop-blur-sm hover:bg-card text-muted-foreground hover:text-destructive"
+                          onClick={(e) => e.preventDefault()}
+                        >
+                          <Heart className="w-4 h-4" />
+                        </Button>
+                        
+                        <Button 
+                          size="icon" 
+                          className="absolute bottom-2 right-2 w-7 h-7 rounded-full shadow-md"
+                          onClick={(e) => e.preventDefault()}
+                        >
+                          <Plus className="w-4 h-4" />
+                        </Button>
+                      </div>
+                      
+                      <CardContent className="p-3">
+                        <p className="text-xs text-muted-foreground truncate">
+                          {product.establishment?.name || 'Estabelecimento'}
+                        </p>
+                        <h3 className="font-medium text-sm truncate">
+                          {product.name}
+                        </h3>
+                        <div className="flex items-center gap-2 mt-1">
+                          {product.promotional_price && product.promotional_price < product.price && (
+                            <span className="text-xs text-muted-foreground line-through">
+                              R$ {product.price.toFixed(2)}
+                            </span>
+                          )}
+                          <span className="font-bold text-sm">
+                            R$ {currentPrice.toFixed(2)}
+                          </span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                );
+              })}
+            </div>
+
+            <Button
+              variant="outline"
+              size="icon"
+              className="absolute -right-4 top-1/2 -translate-y-1/2 z-10 shadow-md opacity-0 group-hover:opacity-100 transition-opacity bg-card"
+              onClick={() => scroll("right")}
+            >
+              <ChevronRight className="w-5 h-5" />
+            </Button>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  // Se não tem produtos, mostrar estabelecimentos
+  if (trending.length === 0) {
     return null;
   }
 
@@ -89,76 +214,79 @@ const TrendingProducts = ({
             className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth pb-2"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
-            {products.map((product) => {
-              const discount = getDiscount(product.price, product.promotional_price);
-              const currentPrice = product.promotional_price || product.price;
-              
-              return (
-                <Link 
-                  key={product.id} 
-                  to={`/loja/${product.establishment?.slug || ''}`}
-                  className="flex-shrink-0"
-                >
-                  <Card className="w-48 overflow-hidden group/card hover:shadow-lg transition-all">
-                    <div className="relative h-36 overflow-hidden">
-                      {product.image_url ? (
-                        <img
-                          src={product.image_url}
-                          alt={product.name}
-                          className="w-full h-full object-cover group-hover/card:scale-105 transition-transform duration-300"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-muted flex items-center justify-center">
-                          <span className="text-4xl opacity-30">🍽️</span>
-                        </div>
-                      )}
-                      
-                      {discount && (
-                        <Badge className="absolute top-2 left-2 bg-destructive text-xs">
-                          {discount} OFF
-                        </Badge>
-                      )}
-                      
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="absolute top-2 right-2 w-7 h-7 bg-card/80 backdrop-blur-sm hover:bg-card text-muted-foreground hover:text-destructive"
-                        onClick={(e) => e.preventDefault()}
-                      >
-                        <Heart className="w-4 h-4" />
-                      </Button>
-                      
-                      <Button 
-                        size="icon" 
-                        className="absolute bottom-2 right-2 w-7 h-7 rounded-full shadow-md"
-                        onClick={(e) => e.preventDefault()}
-                      >
-                        <Plus className="w-4 h-4" />
-                      </Button>
-                    </div>
-                    
-                    <CardContent className="p-3">
-                      <p className="text-xs text-muted-foreground truncate">
-                        {product.establishment?.name || 'Estabelecimento'}
-                      </p>
-                      <h3 className="font-medium text-sm truncate">
-                        {product.name}
-                      </h3>
-                      <div className="flex items-center gap-2 mt-1">
-                        {product.promotional_price && product.promotional_price < product.price && (
-                          <span className="text-xs text-muted-foreground line-through">
-                            R$ {product.price.toFixed(2)}
-                          </span>
-                        )}
-                        <span className="font-bold text-sm">
-                          R$ {currentPrice.toFixed(2)}
-                        </span>
+            {trending.map((est) => (
+              <Link 
+                key={est.id} 
+                to={`/loja/${est.slug}`}
+                className="flex-shrink-0"
+              >
+                <Card className="w-48 overflow-hidden group/card hover:shadow-lg transition-all">
+                  <div className="relative h-36 overflow-hidden bg-muted">
+                    {est.banner_url && (
+                      <img
+                        src={est.banner_url}
+                        alt={est.name}
+                        className="w-full h-full object-cover group-hover/card:scale-105 transition-transform duration-300"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                        }}
+                      />
+                    )}
+                    {!est.banner_url && (
+                      <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+                        <span className="text-4xl opacity-50">🍽️</span>
                       </div>
-                    </CardContent>
-                  </Card>
-                </Link>
-              );
-            })}
+                    )}
+                    
+                    {est.is_open ? (
+                      <Badge className="absolute top-2 left-2 bg-green-500 text-xs">Aberto</Badge>
+                    ) : (
+                      <Badge variant="secondary" className="absolute top-2 left-2 text-xs">Fechado</Badge>
+                    )}
+                    
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="absolute top-2 right-2 w-7 h-7 bg-card/80 backdrop-blur-sm hover:bg-card text-muted-foreground hover:text-destructive"
+                      onClick={(e) => e.preventDefault()}
+                    >
+                      <Heart className="w-4 h-4" />
+                    </Button>
+                    
+                    <Button 
+                      size="icon" 
+                      className="absolute bottom-2 right-2 w-7 h-7 rounded-full shadow-md"
+                      onClick={(e) => e.preventDefault()}
+                    >
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  
+                  <CardContent className="p-3">
+                    <p className="text-xs text-muted-foreground truncate">
+                      {est.neighborhood || 'Estabelecimento'}
+                    </p>
+                    <h3 className="font-medium text-sm truncate">
+                      {est.name}
+                    </h3>
+                    <div className="flex items-center gap-2 mt-1">
+                      {est.min_order_value && est.min_order_value > 0 && (
+                        <span className="text-xs text-muted-foreground">
+                          Mín: R$ {est.min_order_value.toFixed(2)}
+                        </span>
+                      )}
+                      {est.avg_delivery_time && (
+                        <span className="text-xs text-muted-foreground flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {est.avg_delivery_time}min
+                        </span>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            ))}
           </div>
 
           <Button
