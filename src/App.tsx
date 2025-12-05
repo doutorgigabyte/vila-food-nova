@@ -8,6 +8,7 @@ import { AdminAccessProvider } from "./contexts/AdminAccessContext";
 import { CartProvider } from "./hooks/useCart";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
 import Vila from "./pages/Vila";
+import Vilas from "./pages/Vilas";
 import VilasManagement from "./pages/admin/VilasManagement";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -74,6 +75,7 @@ const App = () => (
               <Route path="/cadastro-estabelecimento" element={<RegisterEstablishment />} />
               <Route path="/marketplace" element={<Marketplace />} />
               <Route path="/loja/:slug" element={<Store />} />
+              <Route path="/vilas" element={<Vilas />} />
               <Route path="/vila/:slug" element={<Vila />} />
               <Route path="/checkout" element={<Checkout />} />
               <Route path="/pedidos" element={<Orders />} />
