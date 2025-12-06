@@ -54,7 +54,14 @@ const navItems: NavItem[] = [
       { icon: Store, label: "Vilas", href: "/admin/vilas" },
     ]
   },
-  { icon: Layers, label: "Segmentos", href: "/admin/segmentos" },
+  { 
+    icon: Layers, 
+    label: "Categorias",
+    children: [
+      { icon: Layers, label: "Principais", href: "/admin/categorias-principais" },
+      { icon: Layers, label: "Subcategorias", href: "/admin/segmentos" },
+    ]
+  },
   { icon: CreditCard, label: "Planos", href: "/admin/planos" },
   { icon: Gift, label: "Assinaturas", href: "/admin/assinaturas" },
   { icon: Ticket, label: "Vouchers", href: "/admin/vouchers" },

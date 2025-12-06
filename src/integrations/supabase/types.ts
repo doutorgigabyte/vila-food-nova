@@ -1401,6 +1401,51 @@ export type Database = {
           },
         ]
       }
+      main_categories: {
+        Row: {
+          bg_color: string | null
+          border_color: string | null
+          created_at: string | null
+          description: string | null
+          icon: string | null
+          icon_color: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean | null
+          name: string
+          slug: string
+          sort_order: number | null
+        }
+        Insert: {
+          bg_color?: string | null
+          border_color?: string | null
+          created_at?: string | null
+          description?: string | null
+          icon?: string | null
+          icon_color?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          name: string
+          slug: string
+          sort_order?: number | null
+        }
+        Update: {
+          bg_color?: string | null
+          border_color?: string | null
+          created_at?: string | null
+          description?: string | null
+          icon?: string | null
+          icon_color?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          name?: string
+          slug?: string
+          sort_order?: number | null
+        }
+        Relationships: []
+      }
       mp_subscription_plans: {
         Row: {
           created_at: string | null
@@ -1896,26 +1941,46 @@ export type Database = {
       segments: {
         Row: {
           created_at: string | null
+          description: string | null
           icon: string | null
           id: string
           is_active: boolean | null
           name: string
+          parent_category_id: string | null
+          slug: string | null
+          sort_order: number | null
         }
         Insert: {
           created_at?: string | null
+          description?: string | null
           icon?: string | null
           id?: string
           is_active?: boolean | null
           name: string
+          parent_category_id?: string | null
+          slug?: string | null
+          sort_order?: number | null
         }
         Update: {
           created_at?: string | null
+          description?: string | null
           icon?: string | null
           id?: string
           is_active?: boolean | null
           name?: string
+          parent_category_id?: string | null
+          slug?: string | null
+          sort_order?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "segments_parent_category_id_fkey"
+            columns: ["parent_category_id"]
+            isOneToOne: false
+            referencedRelation: "main_categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       states: {
         Row: {

@@ -5,7 +5,7 @@ import AdminLayout from '@/components/admin/AdminLayout';
 import { 
   Tag, Plus, Edit, Trash2, Search, Pizza, Coffee, ShoppingBag, Utensils, 
   Beer, IceCream, Cake, Sandwich, Fish, Salad, Grape, CupSoda, Sparkles, 
-  Home, Smartphone, Pill, Beef, Package, Shirt, Box, Croissant, Dog, Wrench, ShoppingCart
+  Home, Smartphone, Pill, Beef, Package, Shirt, Box, Croissant, Dog, Wrench, ShoppingCart, Palette
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,59 +25,44 @@ interface Segment {
   name: string;
   icon: string | null;
   is_active: boolean | null;
+  parent_category_id: string | null;
   created_at: string | null;
 }
 
-// Map icon names (both kebab-case from DB and PascalCase) to components
+interface MainCategory {
+  id: string;
+  slug: string;
+  name: string;
+  icon: string | null;
+}
+
+// Map icon names to components
 const iconMap: Record<string, any> = {
   'pizza': Pizza,
-  'Pizza': Pizza,
   'coffee': Coffee,
-  'Coffee': Coffee,
   'shopping-bag': ShoppingBag,
-  'ShoppingBag': ShoppingBag,
   'utensils': Utensils,
-  'Utensils': Utensils,
   'beer': Beer,
-  'Beer': Beer,
   'ice-cream': IceCream,
-  'IceCream': IceCream,
   'cake': Cake,
-  'Cake': Cake,
   'sandwich': Sandwich,
-  'Sandwich': Sandwich,
   'fish': Fish,
-  'Fish': Fish,
   'salad': Salad,
-  'Salad': Salad,
   'grape': Grape,
-  'Grape': Grape,
   'cup-soda': CupSoda,
-  'CupSoda': CupSoda,
   'sparkles': Sparkles,
-  'Sparkles': Sparkles,
   'home': Home,
-  'Home': Home,
   'smartphone': Smartphone,
-  'Smartphone': Smartphone,
   'pill': Pill,
-  'Pill': Pill,
   'beef': Beef,
-  'Beef': Beef,
   'package': Package,
-  'Package': Package,
   'shirt': Shirt,
-  'Shirt': Shirt,
   'box': Box,
-  'Box': Box,
   'croissant': Croissant,
-  'Croissant': Croissant,
   'dog': Dog,
-  'Dog': Dog,
   'wrench': Wrench,
-  'Wrench': Wrench,
   'shopping-cart': ShoppingCart,
-  'ShoppingCart': ShoppingCart,
+  'palette': Palette,
 };
 
 const iconOptions = [
@@ -103,6 +88,7 @@ const iconOptions = [
   { value: 'smartphone', label: 'Eletrônicos', icon: Smartphone },
   { value: 'home', label: 'Casa e Jardim', icon: Home },
   { value: 'wrench', label: 'Serviços', icon: Wrench },
+  { value: 'palette', label: 'Artesanato', icon: Palette },
   { value: 'box', label: 'Outros', icon: Box },
 ];
 
@@ -115,13 +101,29 @@ const SegmentsManagement = () => {
   const queryClient = useQueryClient();
   const { logAction } = useAuditLog();
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterCategory, setFilterCategory] = useState<string>('all');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedSegment, setSelectedSegment] = useState<Segment | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     icon: '',
+    parent_category_id: '',
     is_active: true
+  });
+
+  // Fetch main categories
+  const { data: mainCategories } = useQuery({
+    queryKey: ['admin-main-categories'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('main_categories')
+        .select('id, slug, name, icon')
+        .order('sort_order');
+      
+      if (error) throw error;
+      return data as MainCategory[];
+    }
   });
 
   // Fetch segments
@@ -152,15 +154,6 @@ const SegmentsManagement = () => {
     }
   });
 
-  // Group establishments by segment
-  const establishmentsBySegment = establishmentsData?.reduce((acc, est) => {
-    if (est.segment_id) {
-      if (!acc[est.segment_id]) acc[est.segment_id] = [];
-      acc[est.segment_id].push(est);
-    }
-    return acc;
-  }, {} as Record<string, typeof establishmentsData>);
-
   const establishmentCounts = establishmentsData?.reduce((acc, est) => {
     if (est.segment_id) {
       acc[est.segment_id] = (acc[est.segment_id] || 0) + 1;
@@ -168,7 +161,7 @@ const SegmentsManagement = () => {
     return acc;
   }, {} as Record<string, number>);
 
-  // Create segment mutation
+  // Create mutation
   const createMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
       const { data: newSegment, error } = await supabase
@@ -176,6 +169,7 @@ const SegmentsManagement = () => {
         .insert({
           name: data.name,
           icon: data.icon || null,
+          parent_category_id: data.parent_category_id || null,
           is_active: data.is_active
         })
         .select()
@@ -187,16 +181,16 @@ const SegmentsManagement = () => {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['admin-segments'] });
       logAction({ action: 'create', entityType: 'segment', entityId: data.id, newData: data as any });
-      toast.success('Segmento criado com sucesso!');
+      toast.success('Subcategoria criada com sucesso!');
       setIsDialogOpen(false);
       resetForm();
     },
     onError: (error) => {
-      toast.error('Erro ao criar segmento: ' + error.message);
+      toast.error('Erro ao criar subcategoria: ' + error.message);
     }
   });
 
-  // Update segment mutation
+  // Update mutation
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: typeof formData }) => {
       const { data: updated, error } = await supabase
@@ -204,6 +198,7 @@ const SegmentsManagement = () => {
         .update({
           name: data.name,
           icon: data.icon || null,
+          parent_category_id: data.parent_category_id || null,
           is_active: data.is_active
         })
         .eq('id', id)
@@ -216,16 +211,16 @@ const SegmentsManagement = () => {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['admin-segments'] });
       logAction({ action: 'update', entityType: 'segment', entityId: data.id, oldData: selectedSegment as any, newData: data as any });
-      toast.success('Segmento atualizado com sucesso!');
+      toast.success('Subcategoria atualizada com sucesso!');
       setIsDialogOpen(false);
       resetForm();
     },
     onError: (error) => {
-      toast.error('Erro ao atualizar segmento: ' + error.message);
+      toast.error('Erro ao atualizar subcategoria: ' + error.message);
     }
   });
 
-  // Delete segment mutation
+  // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
@@ -239,16 +234,16 @@ const SegmentsManagement = () => {
     onSuccess: (id) => {
       queryClient.invalidateQueries({ queryKey: ['admin-segments'] });
       logAction({ action: 'delete', entityType: 'segment', entityId: id, oldData: selectedSegment as any });
-      toast.success('Segmento excluído com sucesso!');
+      toast.success('Subcategoria excluída com sucesso!');
       setIsDeleteDialogOpen(false);
       setSelectedSegment(null);
     },
     onError: (error) => {
-      toast.error('Erro ao excluir segmento: ' + error.message);
+      toast.error('Erro ao excluir subcategoria: ' + error.message);
     }
   });
 
-  // Toggle active status
+  // Toggle active
   const toggleActiveMutation = useMutation({
     mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
       const { error } = await supabase
@@ -272,6 +267,7 @@ const SegmentsManagement = () => {
     setFormData({
       name: '',
       icon: '',
+      parent_category_id: '',
       is_active: true
     });
     setSelectedSegment(null);
@@ -282,6 +278,7 @@ const SegmentsManagement = () => {
     setFormData({
       name: segment.name,
       icon: segment.icon || '',
+      parent_category_id: segment.parent_category_id || '',
       is_active: segment.is_active ?? true
     });
     setIsDialogOpen(true);
@@ -305,30 +302,65 @@ const SegmentsManagement = () => {
     }
   };
 
-  const filteredSegments = segments?.filter(segment =>
-    segment.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const getCategoryName = (categoryId: string | null) => {
+    if (!categoryId) return 'Sem categoria';
+    const category = mainCategories?.find(c => c.id === categoryId);
+    return category?.name || 'Desconhecida';
+  };
+
+  const getCategoryBadgeColor = (categoryId: string | null) => {
+    if (!categoryId) return 'bg-muted text-muted-foreground';
+    const category = mainCategories?.find(c => c.id === categoryId);
+    switch (category?.slug) {
+      case 'mercado': return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300';
+      case 'farmacia': return 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300';
+      case 'compras': return 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300';
+      case 'comida': return 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300';
+      case 'artesanato': return 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300';
+      case 'servicos': return 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300';
+      default: return 'bg-muted text-muted-foreground';
+    }
+  };
+
+  const filteredSegments = segments?.filter(segment => {
+    const matchesSearch = segment.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = filterCategory === 'all' || segment.parent_category_id === filterCategory;
+    return matchesSearch && matchesCategory;
+  });
 
   return (
-    <AdminLayout title="Gerenciar Segmentos" icon={Tag} breadcrumb="Segmentos">
+    <AdminLayout title="Gerenciar Subcategorias" icon={Tag} breadcrumb="Subcategorias">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Segmentos Cadastrados ({segments?.length || 0})</CardTitle>
+          <CardTitle>Subcategorias ({segments?.length || 0})</CardTitle>
           <Button onClick={() => { resetForm(); setIsDialogOpen(true); }}>
             <Plus className="h-4 w-4 mr-2" />
-            Novo Segmento
+            Nova Subcategoria
           </Button>
         </CardHeader>
         <CardContent>
-          {/* Search */}
-          <div className="relative mb-6">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar por nome..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 max-w-md"
-            />
+          {/* Filters */}
+          <div className="flex flex-col md:flex-row gap-4 mb-6">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por nome..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <Select value={filterCategory} onValueChange={setFilterCategory}>
+              <SelectTrigger className="w-full md:w-[200px]">
+                <SelectValue placeholder="Filtrar por categoria" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas as categorias</SelectItem>
+                {mainCategories?.map(cat => (
+                  <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Table */}
@@ -340,6 +372,7 @@ const SegmentsManagement = () => {
                 <TableRow>
                   <TableHead>Ícone</TableHead>
                   <TableHead>Nome</TableHead>
+                  <TableHead>Categoria Principal</TableHead>
                   <TableHead>Estabelecimentos</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
@@ -357,21 +390,14 @@ const SegmentsManagement = () => {
                       </TableCell>
                       <TableCell className="font-medium">{segment.name}</TableCell>
                       <TableCell>
-                        <div className="flex flex-wrap gap-1">
-                          <Badge variant="secondary" className="cursor-pointer" title="Ver estabelecimentos">
-                            {establishmentCounts?.[segment.id] || 0} lojas
-                          </Badge>
-                          {establishmentsBySegment?.[segment.id]?.slice(0, 3).map(est => (
-                            <Badge key={est.id} variant="outline" className="text-xs">
-                              {est.name}
-                            </Badge>
-                          ))}
-                          {(establishmentsBySegment?.[segment.id]?.length || 0) > 3 && (
-                            <Badge variant="outline" className="text-xs">
-                              +{(establishmentsBySegment?.[segment.id]?.length || 0) - 3}
-                            </Badge>
-                          )}
-                        </div>
+                        <Badge className={getCategoryBadgeColor(segment.parent_category_id)}>
+                          {getCategoryName(segment.parent_category_id)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">
+                          {establishmentCounts?.[segment.id] || 0} lojas
+                        </Badge>
                       </TableCell>
                       <TableCell>
                         <Switch
@@ -401,8 +427,8 @@ const SegmentsManagement = () => {
                 })}
                 {filteredSegments?.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                      Nenhum segmento encontrado
+                    <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                      Nenhuma subcategoria encontrada
                     </TableCell>
                   </TableRow>
                 )}
@@ -416,7 +442,7 @@ const SegmentsManagement = () => {
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{selectedSegment ? 'Editar Segmento' : 'Novo Segmento'}</DialogTitle>
+            <DialogTitle>{selectedSegment ? 'Editar Subcategoria' : 'Nova Subcategoria'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
@@ -427,6 +453,22 @@ const SegmentsManagement = () => {
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 placeholder="Ex: Pizzaria"
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="parent_category">Categoria Principal</Label>
+              <Select 
+                value={formData.parent_category_id} 
+                onValueChange={(value) => setFormData({ ...formData, parent_category_id: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione uma categoria" />
+                </SelectTrigger>
+                <SelectContent>
+                  {mainCategories?.map(cat => (
+                    <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="icon">Ícone</Label>
@@ -458,7 +500,7 @@ const SegmentsManagement = () => {
                 checked={formData.is_active}
                 onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
               />
-              <Label htmlFor="is_active">Segmento ativo</Label>
+              <Label htmlFor="is_active">Subcategoria ativa</Label>
             </div>
           </div>
           <DialogFooter>
@@ -475,19 +517,19 @@ const SegmentsManagement = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
+      {/* Delete Confirmation */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Excluir segmento?</AlertDialogTitle>
+            <AlertDialogTitle>Excluir subcategoria?</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir o segmento "{selectedSegment?.name}"? 
+              Tem certeza que deseja excluir a subcategoria "{selectedSegment?.name}"? 
               Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
+            <AlertDialogAction 
               onClick={() => selectedSegment && deleteMutation.mutate(selectedSegment.id)}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
