@@ -76,21 +76,24 @@ import CategoryPage from "./pages/CategoryPage";
 import Menu from "./pages/Menu";
 import Favorites from "./pages/Favorites";
 import ProductsListing from "./pages/ProductsListing";
+import ProductDetail from "./pages/ProductDetail";
 import AIAnalysisDashboard from "./pages/dashboard/AIAnalysisDashboard";
+import { OrderSourceProvider } from "./hooks/useOrderSource";
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <AdminAccessProvider>
-        <CartProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <PWAInstallPrompt />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Index />} />
+        <OrderSourceProvider>
+          <CartProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <PWAInstallPrompt />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<Index />} />
               <Route path="/conheca" element={<Conheca />} />
               <Route path="/marketplace" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
@@ -106,6 +109,7 @@ const App = () => (
               <Route path="/menu" element={<Menu />} />
               <Route path="/favoritos" element={<Favorites />} />
               <Route path="/produtos/:section" element={<ProductsListing />} />
+              <Route path="/produto/:id" element={<ProductDetail />} />
               {/* Dashboard routes with slug parameter for admin access */}
               <Route path="/painel" element={<EstablishmentDashboard />} />
               <Route path="/painel/:slug" element={<EstablishmentDashboard />} />
@@ -191,8 +195,9 @@ const App = () => (
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
-          </TooltipProvider>
-        </CartProvider>
+            </TooltipProvider>
+          </CartProvider>
+        </OrderSourceProvider>
       </AdminAccessProvider>
     </AuthProvider>
   </QueryClientProvider>

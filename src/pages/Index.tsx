@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useEstablishments } from "@/hooks/useEstablishment";
 import MarketplaceHeader from "@/components/marketplace/MarketplaceHeader";
 import MainCategoriesGrid from "@/components/marketplace/MainCategoriesGrid";
@@ -22,8 +22,13 @@ import SmartSearch from "@/components/marketplace/SmartSearch";
 import VilaTokBubble from "@/components/vilatok/VilaTokBubble";
 import { getCategoryTheme } from "@/lib/categoryThemes";
 import { cn } from "@/lib/utils";
+import { setOrderSourceDirect } from "@/hooks/useOrderSource";
 
 const Index = () => {
+  // Set order source to marketplace when user enters this page
+  useEffect(() => {
+    setOrderSourceDirect('marketplace');
+  }, []);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedMainCategory, setSelectedMainCategory] = useState<string | null>(null);
   const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null);

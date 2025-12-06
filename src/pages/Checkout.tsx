@@ -20,17 +20,20 @@ import {
   CheckCircle,
   ShoppingBag,
   AlertTriangle,
-  Bookmark
+  Bookmark,
+  Info
 } from "lucide-react";
 import { toast } from "sonner";
 import { useCart } from "@/hooks/useCart";
 import { useCreateOrder } from "@/hooks/useCreateOrder";
 import { useAuth } from "@/hooks/useAuth";
 import { useSavedAddresses, SavedAddress } from "@/hooks/useSavedAddresses";
+import { useOrderSource } from "@/hooks/useOrderSource";
 import AddressAutocomplete from "@/components/checkout/AddressAutocomplete";
 import { SavedAddressSelector } from "@/components/checkout/SavedAddressSelector";
 import { SaveAddressDialog } from "@/components/checkout/SaveAddressDialog";
 import { PaymentProcessor } from "@/components/checkout/PaymentProcessor";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -50,6 +53,7 @@ const Checkout = () => {
   } = useCart();
 
   const { createOrder, loading: creatingOrder } = useCreateOrder();
+  const { source, shouldApplyPlatformFee, platformFeePercent } = useOrderSource();
 
   const [step, setStep] = useState<"delivery" | "payment" | "processing" | "success">("delivery");
   const [deliveryType, setDeliveryType] = useState("pickup");
@@ -350,10 +354,18 @@ const Checkout = () => {
       }
     });
 
-    return { subtotal, deliveryFee: totalDeliveryFee, total: subtotal + totalDeliveryFee };
+    // Calculate platform fee (5% for marketplace orders)
+    const platformFee = shouldApplyPlatformFee ? (subtotal * platformFeePercent) / 100 : 0;
+    
+    return { 
+      subtotal, 
+      deliveryFee: totalDeliveryFee, 
+      platformFee,
+      total: subtotal + totalDeliveryFee + platformFee 
+    };
   };
 
-  const { subtotal, deliveryFee, total } = calculateTotals();
+  const { subtotal, deliveryFee, platformFee, total } = calculateTotals();
 
   // Processing step - show payment processor
   if (step === "processing" && createdOrderId && currentEstablishmentId) {
@@ -817,6 +829,24 @@ const Checkout = () => {
                     <span>R$ {deliveryFee.toFixed(2)}</span>
                   </div>
                 )}
+                {shouldApplyPlatformFee && platformFee > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground flex items-center gap-1">
+                      Taxa de serviço
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="w-3.5 h-3.5 text-muted-foreground cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="text-xs max-w-[200px]">
+                            Taxa de {platformFeePercent}% para pedidos realizados pelo marketplace VilaFood
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </span>
+                    <span>R$ {platformFee.toFixed(2)}</span>
+                  </div>
+                )}
                 <Separator />
                 <div className="flex justify-between font-bold">
                   <span>Total</span>
@@ -825,7 +855,7 @@ const Checkout = () => {
               </CardContent>
             </Card>
 
-            <Button 
+            <Button
               onClick={handleSubmitPayment} 
               className="w-full" 
               size="lg"
