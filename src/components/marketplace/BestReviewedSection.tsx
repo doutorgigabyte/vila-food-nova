@@ -1,4 +1,3 @@
-import { useRef } from "react";
 import { Link } from "react-router-dom";
 import { Star, Heart, Plus, ChevronLeft, ChevronRight, Clock } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -7,25 +6,16 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useFeaturedProducts } from "@/hooks/useProducts";
 import { useEstablishments } from "@/hooks/useEstablishment";
+import { useDragScroll } from "@/hooks/useDragScroll";
 
 const BestReviewedSection = () => {
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const { scrollRef, isDragging, handlers, scroll } = useDragScroll();
   const { products, loading: productsLoading } = useFeaturedProducts();
   const { establishments, loading: establishmentsLoading } = useEstablishments();
 
   const loading = productsLoading || establishmentsLoading;
   const hasProducts = products.length > 0;
   const bestReviewed = hasProducts ? [] : establishments.slice(3, 8);
-
-  const scroll = (direction: "left" | "right") => {
-    if (scrollRef.current) {
-      const scrollAmount = 280;
-      scrollRef.current.scrollBy({
-        left: direction === "left" ? -scrollAmount : scrollAmount,
-        behavior: "smooth",
-      });
-    }
-  };
 
   const getDiscount = (price: number, promoPrice: number | null) => {
     if (!promoPrice || promoPrice >= price) return null;
@@ -83,7 +73,10 @@ const BestReviewedSection = () => {
 
             <div
               ref={scrollRef}
-              className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth pb-2"
+              {...handlers}
+              className={`flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth pb-2 select-none ${
+                isDragging ? "cursor-grabbing" : "cursor-grab"
+              }`}
               style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
               {products.map((product) => {
@@ -212,7 +205,10 @@ const BestReviewedSection = () => {
 
           <div
             ref={scrollRef}
-            className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth pb-2"
+            {...handlers}
+            className={`flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth pb-2 select-none ${
+              isDragging ? "cursor-grabbing" : "cursor-grab"
+            }`}
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
             {bestReviewed.map((est) => (

@@ -5,24 +5,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useEstablishments } from "@/hooks/useEstablishment";
-import { useRef } from "react";
+import { useDragScroll } from "@/hooks/useDragScroll";
 
 const HighlightsSection = () => {
   const { establishments, loading } = useEstablishments();
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const { scrollRef, isDragging, handlers, scroll } = useDragScroll();
   
   // Pegar os primeiros 6 estabelecimentos como destaques
   const highlights = establishments.slice(0, 6);
-
-  const scroll = (direction: "left" | "right") => {
-    if (scrollRef.current) {
-      const scrollAmount = 350;
-      scrollRef.current.scrollBy({
-        left: direction === "left" ? -scrollAmount : scrollAmount,
-        behavior: "smooth",
-      });
-    }
-  };
 
   if (loading) {
     return (
@@ -100,7 +90,10 @@ const HighlightsSection = () => {
 
           <div
             ref={scrollRef}
-            className="flex gap-3 md:gap-4 overflow-x-auto scrollbar-hide scroll-smooth pb-2 snap-x snap-mandatory md:snap-none"
+            {...handlers}
+            className={`flex gap-3 md:gap-4 overflow-x-auto scrollbar-hide scroll-smooth pb-2 snap-x snap-mandatory md:snap-none select-none ${
+              isDragging ? "cursor-grabbing" : "cursor-grab"
+            }`}
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
             {highlights.map((est) => (

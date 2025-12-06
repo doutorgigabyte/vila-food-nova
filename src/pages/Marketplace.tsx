@@ -9,6 +9,7 @@ import BestReviewedSection from "@/components/marketplace/BestReviewedSection";
 import RestaurantsSection from "@/components/marketplace/RestaurantsSection";
 import VilasSection from "@/components/marketplace/VilasSection";
 import AllRestaurants from "@/components/marketplace/AllRestaurants";
+import VideoHighlightsSection from "@/components/marketplace/VideoHighlightsSection";
 import Footer from "@/components/landing/Footer";
 
 const Marketplace = () => {
@@ -32,6 +33,9 @@ const Marketplace = () => {
 
         {/* Promotional Banners */}
         <PromoBanners />
+
+        {/* Video Highlights - Premium Partner Section */}
+        <VideoHighlightsSection />
 
         {/* Vilas Gastronômicas */}
         <VilasSection />

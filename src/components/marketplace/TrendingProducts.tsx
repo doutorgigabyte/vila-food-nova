@@ -1,4 +1,3 @@
-import { useRef } from "react";
 import { Link } from "react-router-dom";
 import { Heart, Plus, ChevronLeft, ChevronRight, Clock } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -7,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useProducts } from "@/hooks/useProducts";
 import { useEstablishments } from "@/hooks/useEstablishment";
+import { useDragScroll } from "@/hooks/useDragScroll";
 
 interface TrendingProductsProps {
   title?: string;
@@ -17,23 +17,13 @@ const TrendingProducts = ({
   title = "Tendências do Dia",
   subtitle = "Aqui está o que você pode gostar de provar"
 }: TrendingProductsProps) => {
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const { scrollRef, isDragging, handlers, scroll } = useDragScroll();
   const { products, loading: productsLoading } = useProducts(12);
   const { establishments, loading: establishmentsLoading } = useEstablishments();
 
   const loading = productsLoading || establishmentsLoading;
   const hasProducts = products.length > 0;
   const trending = hasProducts ? [] : establishments.slice(0, 8);
-
-  const scroll = (direction: "left" | "right") => {
-    if (scrollRef.current) {
-      const scrollAmount = 280;
-      scrollRef.current.scrollBy({
-        left: direction === "left" ? -scrollAmount : scrollAmount,
-        behavior: "smooth",
-      });
-    }
-  };
 
   const getDiscount = (price: number, promoPrice: number | null) => {
     if (!promoPrice || promoPrice >= price) return null;
@@ -90,7 +80,10 @@ const TrendingProducts = ({
 
           <div
             ref={scrollRef}
-            className="flex gap-3 md:gap-4 overflow-x-auto scrollbar-hide scroll-smooth pb-2 snap-x snap-mandatory md:snap-none"
+            {...handlers}
+            className={`flex gap-3 md:gap-4 overflow-x-auto scrollbar-hide scroll-smooth pb-2 snap-x snap-mandatory md:snap-none select-none ${
+              isDragging ? "cursor-grabbing" : "cursor-grab"
+            }`}
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
               {products.map((product) => {
@@ -211,7 +204,10 @@ const TrendingProducts = ({
 
           <div
             ref={scrollRef}
-            className="flex gap-3 md:gap-4 overflow-x-auto scrollbar-hide scroll-smooth pb-2 snap-x snap-mandatory md:snap-none"
+            {...handlers}
+            className={`flex gap-3 md:gap-4 overflow-x-auto scrollbar-hide scroll-smooth pb-2 snap-x snap-mandatory md:snap-none select-none ${
+              isDragging ? "cursor-grabbing" : "cursor-grab"
+            }`}
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
             {trending.map((est) => (
