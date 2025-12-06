@@ -72,7 +72,7 @@ interface CategoriesCarouselProps {
 }
 
 const CategoriesCarousel = ({ mainCategory, selectedCategory, onCategoryClick }: CategoriesCarouselProps) => {
-  const { scrollRef, isDragging, handlers, scroll } = useDragScroll();
+  const { scrollRef, isDragging, handlers, scroll, wasClick } = useDragScroll();
   const { segments, loading } = useSegments();
 
   // Filter segments by main category if provided
@@ -160,13 +160,14 @@ const CategoriesCarousel = ({ mainCategory, selectedCategory, onCategoryClick }:
               return (
               <button
                   key={category.id}
-                  onClick={() => !isDragging && onCategoryClick?.(category.id)}
-                  className="flex-shrink-0 flex flex-col items-center gap-1.5 group/item touch-feedback scroll-card"
+                  onClick={() => wasClick() && onCategoryClick?.(category.id)}
+                  className="flex-shrink-0 flex flex-col items-center gap-1.5 touch-feedback"
+                  style={{ pointerEvents: isDragging ? 'none' : 'auto' }}
                 >
                   <div 
                     className={cn(
                       "w-14 h-14 md:w-16 md:h-16 rounded-2xl flex items-center justify-center transition-all duration-300",
-                      "group-hover/item:scale-110 group-hover/item:shadow-lg active:scale-95",
+                      "hover:scale-110 hover:shadow-lg active:scale-95",
                       isSelected 
                         ? "ring-2 ring-primary ring-offset-2 shadow-md" 
                         : "shadow-soft",

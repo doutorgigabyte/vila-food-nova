@@ -40,7 +40,7 @@ const ProductOfferCard = ({ product, variant = "default", className }: ProductOf
       className={cn("block snap-center", className)}
     >
       <Card className={cn(
-        "overflow-hidden group/card hover:shadow-lg transition-all relative rounded-3xl border-0 shadow-md",
+        "overflow-hidden hover:shadow-lg transition-all relative rounded-3xl border-0 shadow-md",
         variant === "large" ? "w-56 md:w-64" : "w-44 md:w-52"
       )}>
         <div className={cn(
@@ -51,7 +51,7 @@ const ProductOfferCard = ({ product, variant = "default", className }: ProductOf
             <img
               src={product.image_url}
               alt={product.name}
-              className="w-full h-full object-cover group-hover/card:scale-110 transition-transform duration-500"
+              className="w-full h-full object-cover hover:scale-110 transition-transform duration-500"
               draggable={false}
               onError={(e) => {
                 const target = e.target as HTMLImageElement;

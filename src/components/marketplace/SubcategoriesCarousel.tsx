@@ -31,7 +31,7 @@ const SubcategoriesCarousel = ({
   selectedSubcategory, 
   onSubcategoryClick 
 }: SubcategoriesCarouselProps) => {
-  const { scrollRef, isDragging, handlers, scroll } = useDragScroll();
+  const { scrollRef, isDragging, handlers, scroll, wasClick } = useDragScroll();
   const navigate = useNavigate();
 
   // Get subcategories for the selected main category
@@ -103,9 +103,10 @@ const SubcategoriesCarousel = ({
           >
             {/* "Todos" card */}
             <button
-              onClick={() => !isDragging && onSubcategoryClick?.(null)}
+              onClick={() => wasClick() && onSubcategoryClick?.(null)}
+              style={{ pointerEvents: isDragging ? 'none' : 'auto' }}
               className={cn(
-                "flex-shrink-0 flex flex-col items-center justify-center transition-all duration-200 touch-feedback scroll-card",
+                "flex-shrink-0 flex flex-col items-center justify-center transition-all duration-200 touch-feedback",
                 "w-16 h-20 md:w-20 md:h-24 rounded-xl active:scale-95",
                 !selectedSubcategory 
                   ? `${mainCategoryConfig?.bgColor || 'bg-primary/10'} ring-2 ring-primary shadow-md`
@@ -130,11 +131,12 @@ const SubcategoriesCarousel = ({
               return (
                 <button
                   key={subcategory.id}
-                  onClick={() => !isDragging && onSubcategoryClick?.(
+                  onClick={() => wasClick() && onSubcategoryClick?.(
                     isSelected ? null : subcategory.id
                   )}
+                  style={{ pointerEvents: isDragging ? 'none' : 'auto' }}
                   className={cn(
-                    "flex-shrink-0 flex flex-col items-center justify-center transition-all duration-200 touch-feedback scroll-card",
+                    "flex-shrink-0 flex flex-col items-center justify-center transition-all duration-200 touch-feedback",
                     "w-16 h-20 md:w-20 md:h-24 rounded-xl active:scale-95",
                     isSelected 
                       ? `${bgColor} ring-2 ring-primary shadow-md`
