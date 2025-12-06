@@ -66,6 +66,8 @@ import DataMigration from "./pages/admin/DataMigration";
 import ExternalDataMigration from "./pages/admin/ExternalDataMigration";
 import Roadmap from "./pages/admin/Roadmap";
 import SystemHealthCheck from "./pages/admin/SystemHealthCheck";
+import VilaTok from "./pages/VilaTok";
+import VideosManagement from "./pages/dashboard/VideosManagement";
 
 const queryClient = new QueryClient();
 
@@ -86,6 +88,7 @@ const App = () => (
               <Route path="/auth" element={<Auth />} />
               <Route path="/recuperar-senha" element={<RecoverPassword />} />
               <Route path="/loja/:slug" element={<Store />} />
+              <Route path="/vilatok" element={<VilaTok />} />
               <Route path="/vilas" element={<Vilas />} />
               <Route path="/vila/:slug" element={<Vila />} />
               <Route path="/checkout" element={<Checkout />} />
@@ -118,6 +121,7 @@ const App = () => (
               <Route path="/painel/:slug/financeiro" element={<AdvancedFinanceManagement />} />
               <Route path="/painel/:slug/fornecedores" element={<SuppliersManagement />} />
               <Route path="/painel/:slug/pagamentos" element={<PaymentsManagement />} />
+              <Route path="/painel/:slug/videos" element={<VideosManagement />} />
               {/* Routes without slug for establishment owners */}
               <Route path="/painel/produtos" element={<ProductsManagement />} />
               <Route path="/painel/categorias" element={<CategoriesManagement />} />
