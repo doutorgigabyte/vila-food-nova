@@ -89,8 +89,9 @@ export const mainCategories: MainCategory[] = [
 ];
 
 // Mapeamento de segmentos para categorias principais
+// Includes all segments from the database
 export const segmentToCategoryMap: Record<string, string> = {
-  // Comida
+  // Comida - Food related
   "pizzaria": "comida",
   "hamburgueria": "comida",
   "lanchonete": "comida",
@@ -107,7 +108,15 @@ export const segmentToCategoryMap: Record<string, string> = {
   "churrascaria": "comida",
   "pastelaria": "comida",
   "tapiocaria": "comida",
-  // Mercado
+  "alimentacao": "comida",
+  "docesebolos": "comida",
+  "doces": "comida",
+  "bolos": "comida",
+  "tortas": "comida",
+  "lanches": "comida",
+  "comida": "comida",
+  
+  // Mercado - Market/Grocery
   "mercado": "mercado",
   "supermercado": "mercado",
   "mercearia": "mercado",
@@ -116,28 +125,67 @@ export const segmentToCategoryMap: Record<string, string> = {
   "peixaria": "mercado",
   "bebidas": "mercado",
   "adega": "mercado",
-  // Farmácia
+  "suplementos": "mercado",
+  "naturais": "mercado",
+  "organicos": "mercado",
+  
+  // Farmácia - Pharmacy
   "farmacia": "farmacia",
   "drogaria": "farmacia",
-  // Compras
+  "saude": "farmacia",
+  "medicamentos": "farmacia",
+  
+  // Compras - Shopping
   "loja": "compras",
   "moda": "compras",
   "eletronicos": "compras",
   "casa": "compras",
   "pet": "compras",
+  "petshop": "compras",
   "beleza": "compras",
   "cosmeticos": "compras",
   "brinquedos": "compras",
   "papelaria": "compras",
   "livraria": "compras",
-  // Artesanato
+  "casaejardim": "compras",
+  "jardim": "compras",
+  "moveis": "compras",
+  "utilidades": "compras",
+  "variedades": "compras",
+  "calcados": "compras",
+  "roupas": "compras",
+  "acessorios": "compras",
+  "joias": "compras",
+  "relogios": "compras",
+  "esportes": "compras",
+  "ferramentas": "compras",
+  "automotivo": "compras",
+  "informatica": "compras",
+  "celulares": "compras",
+  "games": "compras",
+  
+  // Artesanato - Crafts
   "artesanato": "artesanato",
   "arte": "artesanato",
   "decoracao": "artesanato",
-  // Serviços
+  "handmade": "artesanato",
+  "artesanal": "artesanato",
+  "croche": "artesanato",
+  "bordado": "artesanato",
+  "pintura": "artesanato",
+  "ceramica": "artesanato",
+  "madeira": "artesanato",
+  
+  // Serviços - Services
   "servicos": "servicos",
   "entrega": "servicos",
   "outros": "servicos",
+  "freelancer": "servicos",
+  "manutencao": "servicos",
+  "limpeza": "servicos",
+  "transporte": "servicos",
+  "tecnologia": "servicos",
+  "consultoria": "servicos",
 };
 
 interface MainCategoriesGridProps {

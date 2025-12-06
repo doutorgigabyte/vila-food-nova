@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { segmentToCategoryMap } from "@/components/marketplace/MainCategoriesGrid";
+import { getRandomizationSeed, seededRandom } from "@/hooks/useBehaviorTracking";
 
 export interface Product {
   id: string;
@@ -20,14 +21,51 @@ export interface Product {
   };
 }
 
+// Shuffle array with seeded random for session-consistent ordering
+const shuffleWithSeed = <T,>(array: T[], seed: number): T[] => {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(seededRandom(seed, i) * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+};
+
+// Distribute products fairly across establishments
+const distributeProductsFairly = (products: Product[], seed: number, maxPerEstablishment: number = 3): Product[] => {
+  // Group by establishment
+  const byEstablishment: Record<string, Product[]> = {};
+  products.forEach(product => {
+    const estId = product.establishment_id;
+    if (!byEstablishment[estId]) {
+      byEstablishment[estId] = [];
+    }
+    byEstablishment[estId].push(product);
+  });
+
+  // Shuffle products within each establishment and take limited amount
+  const distributed: Product[] = [];
+  Object.values(byEstablishment).forEach((estProducts, idx) => {
+    const shuffled = shuffleWithSeed(estProducts, seed + idx);
+    distributed.push(...shuffled.slice(0, maxPerEstablishment));
+  });
+
+  // Final shuffle to mix establishments
+  return shuffleWithSeed(distributed, seed);
+};
+
 export const useProducts = (limit?: number) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const seed = useMemo(() => getRandomizationSeed(), []);
 
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        let query = supabase
+        // Fetch more products than needed to allow fair distribution
+        const fetchLimit = limit ? limit * 5 : 200;
+        
+        const { data, error } = await supabase
           .from("products")
           .select(`
             id,
@@ -47,13 +85,7 @@ export const useProducts = (limit?: number) => {
             )
           `)
           .eq("is_active", true)
-          .order("is_featured", { ascending: false });
-
-        if (limit) {
-          query = query.limit(limit);
-        }
-
-        const { data, error } = await query;
+          .limit(fetchLimit);
 
         if (error) throw error;
 
@@ -62,7 +94,13 @@ export const useProducts = (limit?: number) => {
           establishment: p.establishments
         }));
 
-        setProducts(formattedProducts);
+        // Apply fair distribution with session-based seed
+        const distributed = distributeProductsFairly(formattedProducts, seed);
+        
+        // Apply limit after distribution
+        const finalProducts = limit ? distributed.slice(0, limit) : distributed;
+
+        setProducts(finalProducts);
       } catch (error) {
         console.error("Error fetching products:", error);
       } finally {
@@ -71,7 +109,7 @@ export const useProducts = (limit?: number) => {
     };
 
     fetchProducts();
-  }, [limit]);
+  }, [limit, seed]);
 
   return { products, loading };
 };
@@ -127,21 +165,25 @@ export const useFeaturedProducts = () => {
   return { products, loading };
 };
 
-// Hook para buscar produtos por categoria principal
+// Hook para buscar produtos por categoria principal com distribuição justa
 export const useProductsByMainCategory = (mainCategory: string | null, limit?: number) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const seed = useMemo(() => getRandomizationSeed(), []);
 
   useEffect(() => {
     const fetchProducts = async () => {
       setLoading(true);
       try {
-        // Primeiro buscar todos os segments para identificar quais pertencem à categoria
+        // Fetch more products to allow fair distribution
+        const fetchLimit = limit ? limit * 5 : 300;
+
+        // First, get all segments to identify which belong to the category
         const { data: segments } = await supabase
           .from("segments")
           .select("id, name");
 
-        // Mapear segment IDs que pertencem à categoria principal
+        // Map segment IDs that belong to the main category
         const categorySegmentIds = (segments || [])
           .filter(segment => {
             const segmentKey = segment.name.toLowerCase()
@@ -153,10 +195,11 @@ export const useProductsByMainCategory = (mainCategory: string | null, limit?: n
           })
           .map(s => s.id);
 
-        // Buscar estabelecimentos com esses segments
+        // Get establishments with these segments
         let estQuery = supabase
           .from("establishments")
-          .select("id, segment_id");
+          .select("id, segment_id")
+          .eq("status", "active");
 
         if (mainCategory && categorySegmentIds.length > 0) {
           estQuery = estQuery.in("segment_id", categorySegmentIds);
@@ -165,7 +208,7 @@ export const useProductsByMainCategory = (mainCategory: string | null, limit?: n
         const { data: establishments } = await estQuery;
         const establishmentIds = (establishments || []).map(e => e.id);
 
-        // Buscar produtos desses estabelecimentos
+        // Fetch products from these establishments
         let query = supabase
           .from("products")
           .select(`
@@ -186,14 +229,11 @@ export const useProductsByMainCategory = (mainCategory: string | null, limit?: n
             )
           `)
           .eq("is_active", true)
-          .order("is_featured", { ascending: false });
+          .limit(fetchLimit);
 
+        // Only filter by establishment if we have a main category selected
         if (mainCategory && establishmentIds.length > 0) {
           query = query.in("establishment_id", establishmentIds);
-        }
-
-        if (limit) {
-          query = query.limit(limit);
         }
 
         const { data, error } = await query;
@@ -205,7 +245,13 @@ export const useProductsByMainCategory = (mainCategory: string | null, limit?: n
           establishment: p.establishments
         }));
 
-        setProducts(formattedProducts);
+        // Apply fair distribution with session-based seed
+        const distributed = distributeProductsFairly(formattedProducts, seed);
+        
+        // Apply limit after distribution
+        const finalProducts = limit ? distributed.slice(0, limit) : distributed;
+
+        setProducts(finalProducts);
       } catch (error) {
         console.error("Error fetching products by category:", error);
       } finally {
@@ -214,7 +260,7 @@ export const useProductsByMainCategory = (mainCategory: string | null, limit?: n
     };
 
     fetchProducts();
-  }, [mainCategory, limit]);
+  }, [mainCategory, limit, seed]);
 
   return { products, loading };
 };
