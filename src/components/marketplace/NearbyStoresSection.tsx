@@ -1,10 +1,10 @@
-import { ChevronLeft, ChevronRight, MapPin, Star, Clock, Truck } from "lucide-react";
+import { ChevronLeft, ChevronRight, MapPin, Star, Clock, Truck, Store } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useDragScroll } from "@/hooks/useDragScroll";
-import { useEstablishments } from "@/hooks/useEstablishment";
+import { useEstablishmentsByMainCategory } from "@/hooks/useEstablishmentsByMainCategory";
 import { cn } from "@/lib/utils";
 import { Link } from "react-router-dom";
 import { getCategoryTheme } from "@/lib/categoryThemes";
@@ -15,20 +15,16 @@ interface NearbyStoresSectionProps {
 }
 
 const NearbyStoresSection = ({ mainCategory, subcategory }: NearbyStoresSectionProps) => {
-  const { scrollRef, isDragging, handlers, scroll } = useDragScroll();
-  const { establishments, loading } = useEstablishments();
+  const { scrollRef, isDragging, handlers, scroll, wasClick } = useDragScroll();
+  
+  // Usar o novo hook que filtra corretamente usando parent_category_id
+  const { establishments, loading } = useEstablishmentsByMainCategory(
+    mainCategory || null,
+    subcategory || null,
+    10
+  );
+  
   const theme = getCategoryTheme(mainCategory || null);
-
-  // Filter by category if selected
-  const filteredEstablishments = mainCategory 
-    ? establishments.filter((e) => {
-        // Se subcategoria selecionada, filtrar por segment_id
-        if (subcategory) {
-          return e.segment_id === subcategory;
-        }
-        return true;
-      }).slice(0, 10)
-    : establishments.slice(0, 10);
 
   if (loading) {
     return (
@@ -45,7 +41,7 @@ const NearbyStoresSection = ({ mainCategory, subcategory }: NearbyStoresSectionP
     );
   }
 
-  if (filteredEstablishments.length === 0) {
+  if (establishments.length === 0) {
     return null;
   }
 
@@ -106,7 +102,7 @@ const NearbyStoresSection = ({ mainCategory, subcategory }: NearbyStoresSectionP
               msOverflowStyle: 'none',
             }}
           >
-            {filteredEstablishments.map((est, index) => (
+            {establishments.map((est, index) => (
               <Link 
                 key={est.id} 
                 to={`/loja/${est.slug}`}
