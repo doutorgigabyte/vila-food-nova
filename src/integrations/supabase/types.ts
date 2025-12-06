@@ -238,6 +238,135 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_credits: {
+        Row: {
+          created_at: string
+          credits_balance: number | null
+          establishment_id: string
+          id: string
+          last_updated: string | null
+        }
+        Insert: {
+          created_at?: string
+          credits_balance?: number | null
+          establishment_id: string
+          id?: string
+          last_updated?: string | null
+        }
+        Update: {
+          created_at?: string
+          credits_balance?: number | null
+          establishment_id?: string
+          id?: string
+          last_updated?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_credits_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: true
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_profile_analyses: {
+        Row: {
+          analysis_date: string
+          banner_score: number | null
+          created_at: string
+          description_score: number | null
+          establishment_id: string
+          id: string
+          improvements_applied: boolean | null
+          logo_score: number | null
+          overall_score: number | null
+          photos_score: number | null
+          products_analyzed: number | null
+          suggestions: Json | null
+        }
+        Insert: {
+          analysis_date?: string
+          banner_score?: number | null
+          created_at?: string
+          description_score?: number | null
+          establishment_id: string
+          id?: string
+          improvements_applied?: boolean | null
+          logo_score?: number | null
+          overall_score?: number | null
+          photos_score?: number | null
+          products_analyzed?: number | null
+          suggestions?: Json | null
+        }
+        Update: {
+          analysis_date?: string
+          banner_score?: number | null
+          created_at?: string
+          description_score?: number | null
+          establishment_id?: string
+          id?: string
+          improvements_applied?: boolean | null
+          logo_score?: number | null
+          overall_score?: number | null
+          photos_score?: number | null
+          products_analyzed?: number | null
+          suggestions?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_profile_analyses_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_transactions: {
+        Row: {
+          created_at: string
+          credits_used: number | null
+          description: string | null
+          establishment_id: string
+          id: string
+          metadata: Json | null
+          price: number | null
+          status: string | null
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          credits_used?: number | null
+          description?: string | null
+          establishment_id: string
+          id?: string
+          metadata?: Json | null
+          price?: number | null
+          status?: string | null
+          type: string
+        }
+        Update: {
+          created_at?: string
+          credits_used?: number | null
+          description?: string | null
+          establishment_id?: string
+          id?: string
+          metadata?: Json | null
+          price?: number | null
+          status?: string | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_transactions_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       analytics_pixels: {
         Row: {
           created_at: string | null
@@ -1506,6 +1635,7 @@ export type Database = {
       }
       plans: {
         Row: {
+          ai_unlimited: boolean | null
           billing_period: string | null
           created_at: string | null
           description: string | null
@@ -1520,6 +1650,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          ai_unlimited?: boolean | null
           billing_period?: string | null
           created_at?: string | null
           description?: string | null
@@ -1534,6 +1665,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          ai_unlimited?: boolean | null
           billing_period?: string | null
           created_at?: string | null
           description?: string | null
