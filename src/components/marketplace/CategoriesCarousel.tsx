@@ -1,7 +1,7 @@
-import { useRef } from "react";
 import { ChevronLeft, ChevronRight, Pizza, Beef, Utensils, Sandwich, IceCream, Croissant, Grape, Fish, Package, CupSoda, Store } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSegments } from "@/hooks/useSegments";
+import { useDragScroll } from "@/hooks/useDragScroll";
 
 const iconMap: Record<string, React.ElementType> = {
   pizza: Pizza,
@@ -34,18 +34,8 @@ interface CategoriesCarouselProps {
 }
 
 const CategoriesCarousel = ({ onCategoryClick }: CategoriesCarouselProps) => {
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const { scrollRef, isDragging, handlers, scroll } = useDragScroll();
   const { segments, loading } = useSegments();
-
-  const scroll = (direction: "left" | "right") => {
-    if (scrollRef.current) {
-      const scrollAmount = 200;
-      scrollRef.current.scrollBy({
-        left: direction === "left" ? -scrollAmount : scrollAmount,
-        behavior: "smooth",
-      });
-    }
-  };
 
   if (loading) {
     return (
@@ -86,7 +76,10 @@ const CategoriesCarousel = ({ onCategoryClick }: CategoriesCarouselProps) => {
 
           <div
             ref={scrollRef}
-            className="flex gap-6 overflow-x-auto scrollbar-hide scroll-smooth pb-2"
+            {...handlers}
+            className={`flex gap-6 overflow-x-auto scrollbar-hide scroll-smooth pb-2 select-none ${
+              isDragging ? "cursor-grabbing" : "cursor-grab"
+            }`}
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
             {segments.map((segment) => {
