@@ -197,18 +197,33 @@ serve(async (req) => {
     const aiData = await aiResponse.json();
     console.log('AI Response received, extracting image...');
 
+    // Check if the model refused to generate the image
+    const message = aiData.choices?.[0]?.message;
+    if (message?.refusal) {
+      console.log('AI refused to generate image for:', name, 'Reason:', message.refusal);
+      // Return a skip response instead of throwing error
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          skipped: true, 
+          reason: `AI recusou gerar imagem para "${name}" - conteúdo não permitido` 
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Extract image from response - check multiple possible paths
     let imageBase64: string | undefined;
     
     // Path 1: images array in message
-    if (aiData.choices?.[0]?.message?.images?.[0]?.image_url?.url) {
-      imageBase64 = aiData.choices[0].message.images[0].image_url.url;
+    if (message?.images?.[0]?.image_url?.url) {
+      imageBase64 = message.images[0].image_url.url;
       console.log('Found image in images array');
     }
     
     // Path 2: content is base64 directly
-    if (!imageBase64 && aiData.choices?.[0]?.message?.content) {
-      const content = aiData.choices[0].message.content;
+    if (!imageBase64 && message?.content) {
+      const content = message.content;
       if (typeof content === 'string' && content.startsWith('data:image')) {
         imageBase64 = content;
         console.log('Found image in content as base64');
@@ -216,7 +231,7 @@ serve(async (req) => {
     }
 
     if (!imageBase64) {
-      console.error('No image found in response. Keys:', JSON.stringify(Object.keys(aiData.choices?.[0]?.message || {})));
+      console.error('No image found in response. Full message:', JSON.stringify(message));
       throw new Error('No image generated from AI');
     }
 
