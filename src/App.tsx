@@ -66,7 +66,7 @@ import DataMigration from "./pages/admin/DataMigration";
 import ExternalDataMigration from "./pages/admin/ExternalDataMigration";
 import Roadmap from "./pages/admin/Roadmap";
 import SystemHealthCheck from "./pages/admin/SystemHealthCheck";
-import VilaTok from "./pages/VilaTok";
+import VilaTokPage from "./pages/VilaTok";
 import VideosManagement from "./pages/dashboard/VideosManagement";
 import CategoryPage from "./pages/CategoryPage";
 import Menu from "./pages/Menu";
@@ -91,7 +91,7 @@ const App = () => (
               <Route path="/auth" element={<Auth />} />
               <Route path="/recuperar-senha" element={<RecoverPassword />} />
               <Route path="/loja/:slug" element={<Store />} />
-              <Route path="/vilatok" element={<VilaTok />} />
+              <Route path="/vilatok" element={<VilaTokPage />} />
               <Route path="/categoria/:categoryId" element={<CategoryPage />} />
               <Route path="/categoria/:categoryId/:subcategoryId" element={<CategoryPage />} />
               <Route path="/vilas" element={<Vilas />} />
