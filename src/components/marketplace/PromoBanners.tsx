@@ -11,6 +11,158 @@ interface Banner {
   image?: string;
 }
 
+// Category-specific banners
+const bannersByCategory: Record<string, Banner[]> = {
+  comida: [
+    {
+      id: "1",
+      title: "Saboreie Cada Mordida",
+      subtitle: "Experimente o Puro Prazer",
+      discount: "10%",
+      bgColor: "from-amber-500 to-orange-400",
+      image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400"
+    },
+    {
+      id: "2",
+      title: "Mordidas Suculentas",
+      subtitle: "Explosão de Sabor, Pura Felicidade!",
+      bgColor: "from-red-500 to-rose-400",
+      image: "https://images.unsplash.com/photo-1550547660-d9450f859349?w=400"
+    },
+    {
+      id: "3",
+      title: "Fatia Deliciosa",
+      subtitle: "Perfeita para Indulgência",
+      discount: "15%",
+      bgColor: "from-orange-500 to-yellow-400",
+      image: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=400"
+    },
+  ],
+  farmacia: [
+    {
+      id: "1",
+      title: "Cuide da Sua Saúde",
+      subtitle: "Medicamentos com Preços Especiais",
+      discount: "20%",
+      bgColor: "from-red-500 to-rose-400",
+      image: "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=400"
+    },
+    {
+      id: "2",
+      title: "Vitaminas e Suplementos",
+      subtitle: "Fortaleça sua Imunidade",
+      bgColor: "from-green-500 to-emerald-400",
+      image: "https://images.unsplash.com/photo-1550572017-edd951aa8f72?w=400"
+    },
+    {
+      id: "3",
+      title: "Cuidados Pessoais",
+      subtitle: "Higiene e Beleza com Desconto",
+      discount: "15%",
+      bgColor: "from-pink-500 to-purple-400",
+      image: "https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400"
+    },
+  ],
+  mercado: [
+    {
+      id: "1",
+      title: "Feira em Casa",
+      subtitle: "Frutas e Verduras Fresquinhas",
+      discount: "25%",
+      bgColor: "from-emerald-500 to-green-400",
+      image: "https://images.unsplash.com/photo-1542838132-92c53300491e?w=400"
+    },
+    {
+      id: "2",
+      title: "Despensa Completa",
+      subtitle: "Tudo que você precisa",
+      bgColor: "from-blue-500 to-cyan-400",
+      image: "https://images.unsplash.com/photo-1604719312566-8912e9227c6a?w=400"
+    },
+    {
+      id: "3",
+      title: "Ofertas da Semana",
+      subtitle: "Economize nas Compras",
+      discount: "30%",
+      bgColor: "from-yellow-500 to-amber-400",
+      image: "https://images.unsplash.com/photo-1534723452862-4c874018d66d?w=400"
+    },
+  ],
+  compras: [
+    {
+      id: "1",
+      title: "Moda & Estilo",
+      subtitle: "Renove seu Guarda-Roupa",
+      discount: "40%",
+      bgColor: "from-pink-500 to-rose-400",
+      image: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400"
+    },
+    {
+      id: "2",
+      title: "Eletrônicos",
+      subtitle: "Tecnologia com Preços Incríveis",
+      bgColor: "from-blue-500 to-indigo-400",
+      image: "https://images.unsplash.com/photo-1498049794561-7780e7231661?w=400"
+    },
+    {
+      id: "3",
+      title: "Casa & Decoração",
+      subtitle: "Transforme seu Lar",
+      discount: "20%",
+      bgColor: "from-amber-500 to-orange-400",
+      image: "https://images.unsplash.com/photo-1484101403633-562f891dc89a?w=400"
+    },
+  ],
+  artesanato: [
+    {
+      id: "1",
+      title: "Arte Local",
+      subtitle: "Peças Únicas e Exclusivas",
+      bgColor: "from-purple-500 to-violet-400",
+      image: "https://images.unsplash.com/photo-1452860606245-08befc0ff44b?w=400"
+    },
+    {
+      id: "2",
+      title: "Feito à Mão",
+      subtitle: "Apoie Artesãos Locais",
+      discount: "15%",
+      bgColor: "from-amber-500 to-yellow-400",
+      image: "https://images.unsplash.com/photo-1528396518501-b53b655eb9b3?w=400"
+    },
+    {
+      id: "3",
+      title: "Decoração Artesanal",
+      subtitle: "Dê Vida ao Seu Ambiente",
+      bgColor: "from-teal-500 to-emerald-400",
+      image: "https://images.unsplash.com/photo-1490312278390-ab64016e0aa9?w=400"
+    },
+  ],
+  servicos: [
+    {
+      id: "1",
+      title: "Serviços Profissionais",
+      subtitle: "Encontre o Especialista Ideal",
+      bgColor: "from-blue-500 to-cyan-400",
+      image: "https://images.unsplash.com/photo-1521791136064-7986c2920216?w=400"
+    },
+    {
+      id: "2",
+      title: "Manutenção & Reparos",
+      subtitle: "Soluções para sua Casa",
+      discount: "10%",
+      bgColor: "from-orange-500 to-amber-400",
+      image: "https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=400"
+    },
+    {
+      id: "3",
+      title: "Delivery Expresso",
+      subtitle: "Entregas Rápidas e Seguras",
+      bgColor: "from-green-500 to-emerald-400",
+      image: "https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?w=400"
+    },
+  ],
+};
+
 const defaultBanners: Banner[] = [
   {
     id: "1",
@@ -39,11 +191,15 @@ const defaultBanners: Banner[] = [
 
 interface PromoBannersProps {
   banners?: Banner[];
+  mainCategory?: string | null;
 }
 
-const PromoBanners = ({ banners = defaultBanners }: PromoBannersProps) => {
+const PromoBanners = ({ banners, mainCategory }: PromoBannersProps) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
+
+  // Get category-specific banners or defaults
+  const displayBanners = banners || (mainCategory && bannersByCategory[mainCategory]) || defaultBanners;
 
   // Track scroll for iOS-style snap
   useEffect(() => {
@@ -54,21 +210,29 @@ const PromoBanners = ({ banners = defaultBanners }: PromoBannersProps) => {
       const scrollLeft = container.scrollLeft;
       const itemWidth = container.offsetWidth * 0.85 + 12;
       const newIndex = Math.round(scrollLeft / itemWidth);
-      setActiveIndex(Math.min(newIndex, banners.length - 1));
+      setActiveIndex(Math.min(newIndex, displayBanners.length - 1));
     };
 
     container.addEventListener('scroll', handleScroll, { passive: true });
     return () => container.removeEventListener('scroll', handleScroll);
-  }, [banners.length]);
+  }, [displayBanners.length]);
+
+  // Reset to first banner when category changes
+  useEffect(() => {
+    setActiveIndex(0);
+    if (scrollRef.current) {
+      scrollRef.current.scrollTo({ left: 0, behavior: 'smooth' });
+    }
+  }, [mainCategory]);
 
   // Auto-scroll
   useEffect(() => {
-    if (banners.length <= 1) return;
+    if (displayBanners.length <= 1) return;
     const container = scrollRef.current;
     if (!container) return;
 
     const interval = setInterval(() => {
-      const nextIndex = (activeIndex + 1) % banners.length;
+      const nextIndex = (activeIndex + 1) % displayBanners.length;
       const itemWidth = container.offsetWidth * 0.85 + 12;
       container.scrollTo({
         left: nextIndex * itemWidth,
@@ -77,7 +241,7 @@ const PromoBanners = ({ banners = defaultBanners }: PromoBannersProps) => {
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [banners.length, activeIndex]);
+  }, [displayBanners.length, activeIndex]);
 
   const scrollToIndex = (index: number) => {
     const container = scrollRef.current;
@@ -101,7 +265,7 @@ const PromoBanners = ({ banners = defaultBanners }: PromoBannersProps) => {
           WebkitOverflowScrolling: 'touch',
         }}
       >
-        {banners.map((banner, index) => (
+        {displayBanners.map((banner, index) => (
           <div
             key={banner.id}
             className={cn(
@@ -146,7 +310,7 @@ const PromoBanners = ({ banners = defaultBanners }: PromoBannersProps) => {
 
       {/* iOS-style dot indicators */}
       <div className="flex justify-center gap-2 mt-4">
-        {banners.map((_, index) => (
+        {displayBanners.map((_, index) => (
           <button
             key={index}
             onClick={() => scrollToIndex(index)}

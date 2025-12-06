@@ -77,11 +77,11 @@ const Marketplace = () => {
           onCategoryClick={(id) => setSelectedSubcategory(selectedSubcategory === id ? null : id)}
         />
 
-        {/* Promotional Banners */}
-        <PromoBanners />
+        {/* Promotional Banners - filtered by category */}
+        <PromoBanners mainCategory={selectedMainCategory} />
 
-        {/* Video Highlights - Premium Partner Section */}
-        <VideoHighlightsSection />
+        {/* Video Highlights - Premium Partner Section - filtered by category */}
+        <VideoHighlightsSection mainCategory={selectedMainCategory} />
 
         {/* Top Offers - filtered by category */}
         <TopOffersSection mainCategory={selectedMainCategory} />

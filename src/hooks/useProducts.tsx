@@ -195,6 +195,13 @@ export const useProductsByMainCategory = (mainCategory: string | null, limit?: n
           })
           .map(s => s.id);
 
+        // If category selected but no segments found, return empty
+        if (mainCategory && categorySegmentIds.length === 0) {
+          setProducts([]);
+          setLoading(false);
+          return;
+        }
+
         // Get establishments with these segments
         let estQuery = supabase
           .from("establishments")
@@ -207,6 +214,13 @@ export const useProductsByMainCategory = (mainCategory: string | null, limit?: n
 
         const { data: establishments } = await estQuery;
         const establishmentIds = (establishments || []).map(e => e.id);
+
+        // If category selected but no establishments found, return empty
+        if (mainCategory && establishmentIds.length === 0) {
+          setProducts([]);
+          setLoading(false);
+          return;
+        }
 
         // Fetch products from these establishments
         let query = supabase

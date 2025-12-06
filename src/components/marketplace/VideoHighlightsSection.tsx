@@ -1,9 +1,8 @@
 import { useState, useRef, useEffect } from "react";
-import { Play, Pause, Volume2, VolumeX, ChevronRight, Sparkles, ChevronLeft, Crown } from "lucide-react";
+import { Play, Pause, Volume2, VolumeX, ChevronRight, Sparkles, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { useDragScroll } from "@/hooks/useDragScroll";
 import { cn } from "@/lib/utils";
 
@@ -19,15 +18,191 @@ interface VideoHighlight {
   discount?: string;
 }
 
+// Category-specific highlights
+const highlightsByCategory: Record<string, VideoHighlight[]> = {
+  comida: [
+    {
+      id: "1",
+      title: "Delícias Asiáticas para Você",
+      subtitle: "Peça R$100+ em culinária asiática e ganhe frete grátis!",
+      thumbnailUrl: "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=800",
+      ctaText: "Ver Ofertas",
+      establishmentName: "Premium Partner",
+      discount: "Frete Grátis"
+    },
+    {
+      id: "2",
+      title: "Pizza Artesanal Premiada",
+      subtitle: "As melhores pizzas da cidade com 20% OFF",
+      thumbnailUrl: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800",
+      ctaText: "Pedir Agora",
+      establishmentName: "Parceiro Destaque",
+      discount: "20% OFF"
+    },
+    {
+      id: "3",
+      title: "Burger Week Especial",
+      subtitle: "Hambúrgueres artesanais com desconto exclusivo",
+      thumbnailUrl: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=800",
+      ctaText: "Aproveitar",
+      establishmentName: "Top Partner",
+      discount: "25% OFF"
+    }
+  ],
+  farmacia: [
+    {
+      id: "1",
+      title: "Saúde em Primeiro Lugar",
+      subtitle: "Medicamentos essenciais com até 30% de desconto",
+      thumbnailUrl: "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=800",
+      ctaText: "Ver Ofertas",
+      establishmentName: "Farmácia Premium",
+      discount: "30% OFF"
+    },
+    {
+      id: "2",
+      title: "Vitaminas e Bem-Estar",
+      subtitle: "Fortaleça sua imunidade com os melhores suplementos",
+      thumbnailUrl: "https://images.unsplash.com/photo-1550572017-edd951aa8f72?w=800",
+      ctaText: "Comprar Agora",
+      establishmentName: "Saúde Partner",
+      discount: "20% OFF"
+    },
+    {
+      id: "3",
+      title: "Cuidados Pessoais",
+      subtitle: "Produtos de higiene e beleza com preços especiais",
+      thumbnailUrl: "https://images.unsplash.com/photo-1556228720-195a672e8a03?w=800",
+      ctaText: "Explorar",
+      establishmentName: "Beleza Partner",
+      discount: "15% OFF"
+    }
+  ],
+  mercado: [
+    {
+      id: "1",
+      title: "Feira Fresca Todo Dia",
+      subtitle: "Frutas, verduras e legumes direto do produtor",
+      thumbnailUrl: "https://images.unsplash.com/photo-1542838132-92c53300491e?w=800",
+      ctaText: "Ver Ofertas",
+      establishmentName: "Mercado Premium",
+      discount: "25% OFF"
+    },
+    {
+      id: "2",
+      title: "Compras da Semana",
+      subtitle: "Tudo que você precisa em um só lugar",
+      thumbnailUrl: "https://images.unsplash.com/photo-1604719312566-8912e9227c6a?w=800",
+      ctaText: "Comprar Agora",
+      establishmentName: "Super Partner",
+      discount: "Frete Grátis"
+    },
+    {
+      id: "3",
+      title: "Bebidas Geladas",
+      subtitle: "Refrigerantes, sucos e cervejas com desconto",
+      thumbnailUrl: "https://images.unsplash.com/photo-1558642452-9d2a7deb7f62?w=800",
+      ctaText: "Pedir Agora",
+      establishmentName: "Bebidas Express",
+      discount: "30% OFF"
+    }
+  ],
+  compras: [
+    {
+      id: "1",
+      title: "Moda em Alta",
+      subtitle: "As últimas tendências com preços incríveis",
+      thumbnailUrl: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800",
+      ctaText: "Ver Coleção",
+      establishmentName: "Fashion Partner",
+      discount: "40% OFF"
+    },
+    {
+      id: "2",
+      title: "Tech Week",
+      subtitle: "Eletrônicos e gadgets com super desconto",
+      thumbnailUrl: "https://images.unsplash.com/photo-1498049794561-7780e7231661?w=800",
+      ctaText: "Comprar Agora",
+      establishmentName: "Tech Partner",
+      discount: "35% OFF"
+    },
+    {
+      id: "3",
+      title: "Casa & Decoração",
+      subtitle: "Transforme seu lar com peças exclusivas",
+      thumbnailUrl: "https://images.unsplash.com/photo-1484101403633-562f891dc89a?w=800",
+      ctaText: "Explorar",
+      establishmentName: "Decor Partner",
+      discount: "25% OFF"
+    }
+  ],
+  artesanato: [
+    {
+      id: "1",
+      title: "Arte Feita à Mão",
+      subtitle: "Peças únicas de artesãos locais",
+      thumbnailUrl: "https://images.unsplash.com/photo-1452860606245-08befc0ff44b?w=800",
+      ctaText: "Ver Artesãos",
+      establishmentName: "Artesão Premium",
+      discount: "Exclusivo"
+    },
+    {
+      id: "2",
+      title: "Decoração Artesanal",
+      subtitle: "Dê personalidade ao seu ambiente",
+      thumbnailUrl: "https://images.unsplash.com/photo-1528396518501-b53b655eb9b3?w=800",
+      ctaText: "Explorar",
+      establishmentName: "Craft Partner",
+      discount: "20% OFF"
+    },
+    {
+      id: "3",
+      title: "Presentes Especiais",
+      subtitle: "Surpreenda com presentes feitos com amor",
+      thumbnailUrl: "https://images.unsplash.com/photo-1490312278390-ab64016e0aa9?w=800",
+      ctaText: "Ver Mais",
+      establishmentName: "Gift Partner",
+      discount: "15% OFF"
+    }
+  ],
+  servicos: [
+    {
+      id: "1",
+      title: "Profissionais Qualificados",
+      subtitle: "Encontre o especialista ideal para você",
+      thumbnailUrl: "https://images.unsplash.com/photo-1521791136064-7986c2920216?w=800",
+      ctaText: "Buscar Serviço",
+      establishmentName: "Pro Partner",
+      discount: "Verificado"
+    },
+    {
+      id: "2",
+      title: "Manutenção Express",
+      subtitle: "Resolva problemas em casa rapidamente",
+      thumbnailUrl: "https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=800",
+      ctaText: "Contratar",
+      establishmentName: "Service Partner",
+      discount: "10% OFF"
+    },
+    {
+      id: "3",
+      title: "Delivery Premium",
+      subtitle: "Entregas rápidas e seguras para você",
+      thumbnailUrl: "https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?w=800",
+      ctaText: "Pedir Agora",
+      establishmentName: "Express Partner",
+      discount: "Frete Grátis"
+    }
+  ]
+};
+
 const defaultHighlights: VideoHighlight[] = [
   {
     id: "1",
     title: "Delícias Asiáticas para Você",
     subtitle: "Peça R$100+ em culinária asiática e ganhe frete grátis!",
     thumbnailUrl: "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=800",
-    videoUrl: "",
     ctaText: "Ver Ofertas",
-    ctaLink: "/marketplace/ofertas",
     establishmentName: "Premium Partner",
     discount: "Frete Grátis"
   },
@@ -36,9 +211,7 @@ const defaultHighlights: VideoHighlight[] = [
     title: "Pizza Artesanal Premiada",
     subtitle: "As melhores pizzas da cidade com 20% OFF",
     thumbnailUrl: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800",
-    videoUrl: "",
     ctaText: "Pedir Agora",
-    ctaLink: "/marketplace/pizzas",
     establishmentName: "Parceiro Destaque",
     discount: "20% OFF"
   },
@@ -47,9 +220,7 @@ const defaultHighlights: VideoHighlight[] = [
     title: "Sabores do Nordeste",
     subtitle: "Experimente o melhor da culinária regional",
     thumbnailUrl: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800",
-    videoUrl: "",
     ctaText: "Explorar",
-    ctaLink: "/marketplace/regional",
     establishmentName: "Premium Partner",
     discount: "15% OFF"
   },
@@ -58,19 +229,28 @@ const defaultHighlights: VideoHighlight[] = [
     title: "Burger Week Especial",
     subtitle: "Hambúrgueres artesanais com desconto exclusivo",
     thumbnailUrl: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=800",
-    videoUrl: "",
     ctaText: "Aproveitar",
-    ctaLink: "/marketplace/burgers",
     establishmentName: "Top Partner",
     discount: "25% OFF"
   }
 ];
 
+// Category-specific titles
+const categoryTitles: Record<string, { title: string; subtitle: string }> = {
+  comida: { title: "Sabores Imperdíveis", subtitle: "Ofertas exclusivas dos melhores restaurantes" },
+  farmacia: { title: "Saúde e Bem-Estar", subtitle: "Cuide de você com nossas farmácias parceiras" },
+  mercado: { title: "Ofertas do Mercado", subtitle: "As melhores promoções para sua despensa" },
+  compras: { title: "Shopping em Casa", subtitle: "As melhores ofertas das nossas lojas" },
+  artesanato: { title: "Arte Local", subtitle: "Peças únicas feitas por artesãos da região" },
+  servicos: { title: "Serviços Premium", subtitle: "Profissionais qualificados à sua disposição" }
+};
+
 interface VideoHighlightsSectionProps {
   highlights?: VideoHighlight[];
+  mainCategory?: string | null;
 }
 
-const VideoHighlightsSection = ({ highlights = defaultHighlights }: VideoHighlightsSectionProps) => {
+const VideoHighlightsSection = ({ highlights, mainCategory }: VideoHighlightsSectionProps) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
@@ -78,7 +258,22 @@ const VideoHighlightsSection = ({ highlights = defaultHighlights }: VideoHighlig
   const videoRef = useRef<HTMLVideoElement>(null);
   const { scrollRef, isDragging, handlers, scroll } = useDragScroll();
 
-  const currentHighlight = highlights[currentIndex];
+  // Get category-specific highlights or defaults
+  const displayHighlights = highlights || (mainCategory && highlightsByCategory[mainCategory]) || defaultHighlights;
+  
+  // Get category-specific title
+  const categoryTitle = (mainCategory && categoryTitles[mainCategory]) || {
+    title: "Destaques Premium",
+    subtitle: "Ofertas exclusivas dos nossos melhores parceiros"
+  };
+
+  const currentHighlight = displayHighlights[currentIndex];
+
+  // Reset to first highlight when category changes
+  useEffect(() => {
+    setCurrentIndex(0);
+    setProgress(0);
+  }, [mainCategory]);
 
   // Auto-advance carousel with progress bar
   useEffect(() => {
@@ -93,14 +288,14 @@ const VideoHighlightsSection = ({ highlights = defaultHighlights }: VideoHighlig
       setProgress((elapsed / duration) * 100);
       
       if (elapsed >= duration) {
-        setCurrentIndex((prev) => (prev + 1) % highlights.length);
+        setCurrentIndex((prev) => (prev + 1) % displayHighlights.length);
         elapsed = 0;
         setProgress(0);
       }
     }, interval);
 
     return () => clearInterval(timer);
-  }, [highlights.length, isPlaying, currentIndex]);
+  }, [displayHighlights.length, isPlaying, currentIndex]);
 
   const togglePlay = () => {
     if (videoRef.current) {
@@ -136,11 +331,11 @@ const VideoHighlightsSection = ({ highlights = defaultHighlights }: VideoHighlig
             </div>
             <div>
               <h2 className="text-lg md:text-xl font-bold flex items-center gap-2">
-                Destaques Premium
+                {categoryTitle.title}
                 <Crown className="w-4 h-4 text-accent md:hidden" />
               </h2>
               <p className="text-xs md:text-sm text-muted-foreground hidden md:block">
-                Ofertas exclusivas dos nossos melhores parceiros
+                {categoryTitle.subtitle}
               </p>
             </div>
           </div>
@@ -253,7 +448,7 @@ const VideoHighlightsSection = ({ highlights = defaultHighlights }: VideoHighlig
 
         {/* Progress Dots - No arrows, auto-advance only */}
         <div className="flex justify-center gap-2 mt-4">
-          {highlights.map((_, index) => (
+          {displayHighlights.map((_, index) => (
             <button
               key={index}
               onClick={() => handleSlideChange(index)}
