@@ -122,7 +122,8 @@ const MarketplaceHeader = ({ searchTerm, onSearchChange, onSearchClick }: Market
               <span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full" />
             </Button>
             
-            <Link to="/checkout">
+            {/* Cart - Hidden on mobile (exists in bottom nav) */}
+            <Link to="/checkout" className="hidden md:block">
               <Button variant="ghost" size="icon" className="relative">
                 <ShoppingCart className="w-5 h-5" />
                 {cartCount > 0 && (
@@ -133,10 +134,10 @@ const MarketplaceHeader = ({ searchTerm, onSearchChange, onSearchClick }: Market
               </Button>
             </Link>
 
-            {/* Mobile Menu */}
+            {/* Mobile Menu - Hidden on mobile (exists in bottom nav) */}
             <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="lg:hidden">
+                <Button variant="ghost" size="icon" className="hidden lg:hidden md:flex">
                   <Menu className="w-5 h-5" />
                 </Button>
               </SheetTrigger>
