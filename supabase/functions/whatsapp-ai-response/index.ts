@@ -33,9 +33,9 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY not configured');
+    const GOOGLE_API_KEY = Deno.env.get('GOOGLE_API_KEY');
+    if (!GOOGLE_API_KEY) {
+      throw new Error('GOOGLE_API_KEY not configured');
     }
 
     const body: AIRequest = await req.json();
@@ -214,29 +214,38 @@ ${JSON.stringify(context || {})}`;
       }
     ];
 
-    // Call Lovable AI Gateway
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    // Call Google Gemini API directly
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GOOGLE_API_KEY}`;
+    
+    const aiResponse = await fetch(geminiUrl, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: message }
+        contents: [
+          {
+            role: "user",
+            parts: [{ text: `${systemPrompt}\n\nMensagem do cliente: ${message}` }]
+          }
         ],
-        tools,
-        tool_choice: 'auto',
-        temperature: 0.7,
-        max_tokens: 1024,
+        tools: [{
+          functionDeclarations: tools.map(t => ({
+            name: t.function.name,
+            description: t.function.description,
+            parameters: t.function.parameters
+          }))
+        }],
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 1024,
+        }
       }),
     });
 
     if (!aiResponse.ok) {
       const errorText = await aiResponse.text();
-      console.error('AI Gateway error:', aiResponse.status, errorText);
+      console.error('Gemini API error:', aiResponse.status, errorText);
       
       if (aiResponse.status === 429) {
         return new Response(JSON.stringify({ 
@@ -248,25 +257,35 @@ ${JSON.stringify(context || {})}`;
         });
       }
       
-      if (aiResponse.status === 402) {
-        return new Response(JSON.stringify({ 
-          error: 'Credits exhausted',
-          response: 'O serviço de IA está temporariamente indisponível. Por favor, aguarde um atendente humano. 🙏'
-        }), {
-          status: 402,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-      
-      throw new Error(`AI Gateway error: ${aiResponse.status}`);
+      throw new Error(`Gemini API error: ${aiResponse.status}`);
     }
 
     const aiData = await aiResponse.json();
-    console.log('AI Response:', JSON.stringify(aiData, null, 2));
+    console.log('Gemini Response:', JSON.stringify(aiData, null, 2));
 
-    const choice = aiData.choices?.[0];
-    let responseText = choice?.message?.content || 'Desculpe, não entendi. Pode repetir?';
-    let toolCalls = choice?.message?.tool_calls || [];
+    const candidate = aiData.candidates?.[0];
+    const parts = candidate?.content?.parts || [];
+    
+    let responseText = '';
+    let toolCalls: Array<{ function: { name: string; arguments: string } }> = [];
+    
+    for (const part of parts) {
+      if (part.text) {
+        responseText += part.text;
+      }
+      if (part.functionCall) {
+        toolCalls.push({
+          function: {
+            name: part.functionCall.name,
+            arguments: JSON.stringify(part.functionCall.args || {})
+          }
+        });
+      }
+    }
+    
+    if (!responseText) {
+      responseText = 'Desculpe, não entendi. Pode repetir?';
+    }
 
     // Process tool calls
     const actions: Array<{ action: string; params: Record<string, unknown> }> = [];
