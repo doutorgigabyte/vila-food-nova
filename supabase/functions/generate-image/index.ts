@@ -232,8 +232,8 @@ Do not include any text in the image.`;
     console.log(`Generating image for ${type}: ${name}`);
     console.log(`Prompt: ${prompt}`);
 
-    // Call Google Gemini API directly for image generation (gemini-2.5-flash-image - "Nano Banana")
-    const model = 'gemini-2.5-flash-image';
+    // Call Google Imagen 3.0 API for stable image generation
+    const model = 'imagen-3.0-generate-001';
     const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GOOGLE_API_KEY}`;
     
     const aiResponse = await fetch(geminiUrl, {
