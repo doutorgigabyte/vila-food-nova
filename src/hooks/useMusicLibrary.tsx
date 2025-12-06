@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 const CLOUDFRONT_URL = 'https://d2fhl3f70zfvod.cloudfront.net';
+const MUSIC_PATH = '_uploads/Musicas%20VilaFood';
 
 export interface MusicTrack {
   id: string;
@@ -11,52 +12,40 @@ export interface MusicTrack {
   category: string;
 }
 
-// Music library from S3 - organized by category
+// Music library from S3 - actual files uploaded
 const musicLibrary: MusicTrack[] = [
-  // Alegre
-  { id: 'alegre-1', name: 'Happy Morning', artist: 'VilaFood', duration: '0:30', url: `${CLOUDFRONT_URL}/_uploads/music/alegre/happy-morning.mp3`, category: 'Alegre' },
-  { id: 'alegre-2', name: 'Sunny Day', artist: 'VilaFood', duration: '0:30', url: `${CLOUDFRONT_URL}/_uploads/music/alegre/sunny-day.mp3`, category: 'Alegre' },
-  { id: 'alegre-3', name: 'Good Vibes', artist: 'VilaFood', duration: '0:30', url: `${CLOUDFRONT_URL}/_uploads/music/alegre/good-vibes.mp3`, category: 'Alegre' },
-  { id: 'alegre-4', name: 'Joyful Dance', artist: 'VilaFood', duration: '0:30', url: `${CLOUDFRONT_URL}/_uploads/music/alegre/joyful-dance.mp3`, category: 'Alegre' },
-  { id: 'alegre-5', name: 'Celebrate Life', artist: 'VilaFood', duration: '0:30', url: `${CLOUDFRONT_URL}/_uploads/music/alegre/celebrate-life.mp3`, category: 'Alegre' },
+  // Energético
+  { id: '1', name: 'Cyberpunk', artist: 'Alex Productions', duration: '3:20', url: `${CLOUDFRONT_URL}/${MUSIC_PATH}/--%20Angry%20Dubstep%20Music%20(No%20Copyright)%20-%20_Cyberpunk_%20by%20Alex%20Productions%20----%20(MP3_320K).mp3`, category: 'Energético' },
+  { id: '2', name: 'Free Instrumental Trap', artist: 'Unknown', duration: '2:45', url: `${CLOUDFRONT_URL}/${MUSIC_PATH}/%5BFREE%20NO%20COPYRIGHT%20BEAT%202020%5D%20FREE%20INSTRUMENTAL%20TRAP%20_8(MP3_160K).mp3`, category: 'Energético' },
+  { id: '3', name: 'Hard Bass Russian Slav', artist: 'Leo', duration: '3:10', url: `${CLOUDFRONT_URL}/${MUSIC_PATH}/%5BFREE%5D%20Hard%20Bass%20Type%20Beat%20Russian%20_Slav_%20(prod.%20Leo)%20hard%20bass%20type%20beat(MP3_320K).mp3`, category: 'Energético' },
+  { id: '4', name: 'Push', artist: 'Alex Productions', duration: '2:30', url: `${CLOUDFRONT_URL}/${MUSIC_PATH}/Extreme%20Sport%20Electronic%20Stomp%20by%20Alex-Productions%20%5BNo%20Copyright%20Music%5D%20_%20Push(MP3_160K).mp3`, category: 'Energético' },
   
   // Relaxante
-  { id: 'relaxante-1', name: 'Peaceful Mind', artist: 'VilaFood', duration: '0:30', url: `${CLOUDFRONT_URL}/_uploads/music/relaxante/peaceful-mind.mp3`, category: 'Relaxante' },
-  { id: 'relaxante-2', name: 'Calm Waters', artist: 'VilaFood', duration: '0:30', url: `${CLOUDFRONT_URL}/_uploads/music/relaxante/calm-waters.mp3`, category: 'Relaxante' },
-  { id: 'relaxante-3', name: 'Gentle Breeze', artist: 'VilaFood', duration: '0:30', url: `${CLOUDFRONT_URL}/_uploads/music/relaxante/gentle-breeze.mp3`, category: 'Relaxante' },
-  { id: 'relaxante-4', name: 'Soft Dreams', artist: 'VilaFood', duration: '0:30', url: `${CLOUDFRONT_URL}/_uploads/music/relaxante/soft-dreams.mp3`, category: 'Relaxante' },
-  { id: 'relaxante-5', name: 'Serenity', artist: 'VilaFood', duration: '0:30', url: `${CLOUDFRONT_URL}/_uploads/music/relaxante/serenity.mp3`, category: 'Relaxante' },
+  { id: '5', name: 'Glass', artist: 'Anno Domini Beats', duration: '3:00', url: `${CLOUDFRONT_URL}/${MUSIC_PATH}/Anno%20Domini%20Beats%20-%20Glass(MP3_160K).mp3`, category: 'Relaxante' },
+  { id: '6', name: 'Stand Up', artist: 'Infraction', duration: '2:50', url: `${CLOUDFRONT_URL}/${MUSIC_PATH}/Fashion%20Saxophone%20Rnb%20Beat%20by%20Infraction%20%5BNo%20Copyright%20Music%5D%20_%20Stand%20Up(MP3_160K).mp3`, category: 'Relaxante' },
+  { id: '7', name: 'Land of Fire', artist: 'Feel', duration: '3:15', url: `${CLOUDFRONT_URL}/${MUSIC_PATH}/Feel%20-%20Land%20of%20Fire%20(No%20Copyright%20Music)%20_%20Release%20Preview(MP3_320K).mp3`, category: 'Relaxante' },
+  { id: '8', name: 'Pleasant', artist: 'SebastiAn', duration: '2:40', url: `${CLOUDFRONT_URL}/${MUSIC_PATH}/SebastiAn%20-%20Pleasant(MP3_320K).mp3`, category: 'Relaxante' },
   
-  // Energético
-  { id: 'energetico-1', name: 'Power Up', artist: 'VilaFood', duration: '0:30', url: `${CLOUDFRONT_URL}/_uploads/music/energetico/power-up.mp3`, category: 'Energético' },
-  { id: 'energetico-2', name: 'Go Hard', artist: 'VilaFood', duration: '0:30', url: `${CLOUDFRONT_URL}/_uploads/music/energetico/go-hard.mp3`, category: 'Energético' },
-  { id: 'energetico-3', name: 'Adrenaline Rush', artist: 'VilaFood', duration: '0:30', url: `${CLOUDFRONT_URL}/_uploads/music/energetico/adrenaline-rush.mp3`, category: 'Energético' },
-  { id: 'energetico-4', name: 'Unstoppable', artist: 'VilaFood', duration: '0:30', url: `${CLOUDFRONT_URL}/_uploads/music/energetico/unstoppable.mp3`, category: 'Energético' },
-  { id: 'energetico-5', name: 'Fire Beats', artist: 'VilaFood', duration: '0:30', url: `${CLOUDFRONT_URL}/_uploads/music/energetico/fire-beats.mp3`, category: 'Energético' },
-  
-  // Acústico
-  { id: 'acustico-1', name: 'Guitar Dreams', artist: 'VilaFood', duration: '0:30', url: `${CLOUDFRONT_URL}/_uploads/music/acustico/guitar-dreams.mp3`, category: 'Acústico' },
-  { id: 'acustico-2', name: 'Acoustic Sunrise', artist: 'VilaFood', duration: '0:30', url: `${CLOUDFRONT_URL}/_uploads/music/acustico/acoustic-sunrise.mp3`, category: 'Acústico' },
-  { id: 'acustico-3', name: 'Coffee Shop', artist: 'VilaFood', duration: '0:30', url: `${CLOUDFRONT_URL}/_uploads/music/acustico/coffee-shop.mp3`, category: 'Acústico' },
-  { id: 'acustico-4', name: 'Folk Tales', artist: 'VilaFood', duration: '0:30', url: `${CLOUDFRONT_URL}/_uploads/music/acustico/folk-tales.mp3`, category: 'Acústico' },
-  { id: 'acustico-5', name: 'Strings & Soul', artist: 'VilaFood', duration: '0:30', url: `${CLOUDFRONT_URL}/_uploads/music/acustico/strings-soul.mp3`, category: 'Acústico' },
+  // Alegre
+  { id: '9', name: 'Doraemon', artist: 'Unknown', duration: '2:20', url: `${CLOUDFRONT_URL}/${MUSIC_PATH}/Doraemon(MP3_320K).mp3`, category: 'Alegre' },
+  { id: '10', name: 'Okay Energy', artist: 'Unknown', duration: '2:35', url: `${CLOUDFRONT_URL}/${MUSIC_PATH}/Okay%20Energy(MP3_160K).mp3`, category: 'Alegre' },
+  { id: '11', name: 'Happy-Go-Lively', artist: 'SpongeBob Music', duration: '1:45', url: `${CLOUDFRONT_URL}/${MUSIC_PATH}/SpongeBob%20Music_Happy-Go-Lively(MP3_320K).mp3`, category: 'Alegre' },
+  { id: '12', name: 'The Disc', artist: 'Infraction', duration: '2:55', url: `${CLOUDFRONT_URL}/${MUSIC_PATH}/Upbeat%20Dance%20Funk%20Pop%20by%20Infraction%20%5BNo%20Copyright%20Music%5D%20_%20The%20Disc(MP3_320K).mp3`, category: 'Alegre' },
   
   // Urbano
-  { id: 'urbano-1', name: 'City Nights', artist: 'VilaFood', duration: '0:30', url: `${CLOUDFRONT_URL}/_uploads/music/urbano/city-nights.mp3`, category: 'Urbano' },
-  { id: 'urbano-2', name: 'Street Flow', artist: 'VilaFood', duration: '0:30', url: `${CLOUDFRONT_URL}/_uploads/music/urbano/street-flow.mp3`, category: 'Urbano' },
-  { id: 'urbano-3', name: 'Urban Dreams', artist: 'VilaFood', duration: '0:30', url: `${CLOUDFRONT_URL}/_uploads/music/urbano/urban-dreams.mp3`, category: 'Urbano' },
-  { id: 'urbano-4', name: 'Metro Groove', artist: 'VilaFood', duration: '0:30', url: `${CLOUDFRONT_URL}/_uploads/music/urbano/metro-groove.mp3`, category: 'Urbano' },
-  { id: 'urbano-5', name: 'Concrete Jungle', artist: 'VilaFood', duration: '0:30', url: `${CLOUDFRONT_URL}/_uploads/music/urbano/concrete-jungle.mp3`, category: 'Urbano' },
+  { id: '13', name: 'Getaway Instrumental', artist: 'Ryan Trahan', duration: '3:05', url: `${CLOUDFRONT_URL}/${MUSIC_PATH}/Palm%20City-%20Getaway%20Instrumental%20(Ryan%20Trahan%20Donation%20List%20Music)%20(MP3_320K).mp3`, category: 'Urbano' },
+  { id: '14', name: 'Past', artist: 'Alex Productions', duration: '2:25', url: `${CLOUDFRONT_URL}/${MUSIC_PATH}/PAST%20%C3%94%C3%87%C3%B4%20Alex-Productions%20(No%20Copyright%20Music)(MP3_160K).mp3`, category: 'Urbano' },
+  { id: '15', name: 'The GOAT', artist: 'Alex Productions', duration: '3:00', url: `${CLOUDFRONT_URL}/${MUSIC_PATH}/Powerful%20Upbeat%20Energetic%20Lo-Fi%20Hip%20Hop%20by%20Alex-Productions%20%5BNo%20Copyright%20Music%5D%20_%20The%20GOAT(MP3_160K).mp3`, category: 'Urbano' },
+  { id: '16', name: 'Rebel', artist: 'Alex Productions', duration: '2:40', url: `${CLOUDFRONT_URL}/${MUSIC_PATH}/Rebel%20%C3%94%C3%87%C3%B4%20Alex-Productions%20(No%20Copyright%20Music)(MP3_160K).mp3`, category: 'Urbano' },
+  { id: '17', name: 'Uplifting Hip Hop', artist: 'Unknown', duration: '2:50', url: `${CLOUDFRONT_URL}/${MUSIC_PATH}/Uplifting%20Hip%20Hop%20Background%20Music%20for%20Videos%20(Free%20For%20Non-Commercial%20Use)%20(MP3_160K).mp3`, category: 'Urbano' },
   
-  // Festivo
-  { id: 'festivo-1', name: 'Party Time', artist: 'VilaFood', duration: '0:30', url: `${CLOUDFRONT_URL}/_uploads/music/festivo/party-time.mp3`, category: 'Festivo' },
-  { id: 'festivo-2', name: 'Celebration', artist: 'VilaFood', duration: '0:30', url: `${CLOUDFRONT_URL}/_uploads/music/festivo/celebration.mp3`, category: 'Festivo' },
-  { id: 'festivo-3', name: 'Dance Floor', artist: 'VilaFood', duration: '0:30', url: `${CLOUDFRONT_URL}/_uploads/music/festivo/dance-floor.mp3`, category: 'Festivo' },
-  { id: 'festivo-4', name: 'Summer Fiesta', artist: 'VilaFood', duration: '0:30', url: `${CLOUDFRONT_URL}/_uploads/music/festivo/summer-fiesta.mp3`, category: 'Festivo' },
-  { id: 'festivo-5', name: 'Let\'s Go', artist: 'VilaFood', duration: '0:30', url: `${CLOUDFRONT_URL}/_uploads/music/festivo/lets-go.mp3`, category: 'Festivo' },
+  // Acústico/Rock
+  { id: '18', name: 'Promotional Video', artist: 'Alex Productions', duration: '2:45', url: `${CLOUDFRONT_URL}/${MUSIC_PATH}/Powerful%20Indie%20Rock%20music%20by%20Alex-Productions%20(No%20Copyright%20Music)%20_%20Promotional%20Video(MP3_160K).mp3`, category: 'Acústico' },
+  { id: '19', name: 'Bubbles', artist: 'Alex Productions', duration: '2:30', url: `${CLOUDFRONT_URL}/${MUSIC_PATH}/Sport%20Percussive%20Rap%20by%20Alex-Productions%20(No%20Copyright%20Music)%20_%20Bubbles(MP3_160K).mp3`, category: 'Acústico' },
+  { id: '20', name: 'Punch', artist: 'Infraction', duration: '2:55', url: `${CLOUDFRONT_URL}/${MUSIC_PATH}/Sport%20Rock%20Racing%20Workout%20by%20Infraction%20%5BNo%20Copyright%20Music%5D%20_%20Punch(MP3_160K).mp3`, category: 'Acústico' },
 ];
 
-export const categories = ['Todos', 'Alegre', 'Relaxante', 'Energético', 'Acústico', 'Urbano', 'Festivo'];
+export const categories = ['Todos', 'Alegre', 'Relaxante', 'Energético', 'Acústico', 'Urbano'];
 
 export function useMusicLibrary() {
   const [tracks] = useState<MusicTrack[]>(musicLibrary);
