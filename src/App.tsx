@@ -45,6 +45,7 @@ import SubscriptionsManagement from "./pages/admin/SubscriptionsManagement";
 import CitiesManagement from "./pages/admin/CitiesManagement";
 import StatesManagement from "./pages/admin/StatesManagement";
 import SegmentsManagement from "./pages/admin/SegmentsManagement";
+import MainCategoriesManagement from "./pages/admin/MainCategoriesManagement";
 import AdminProductsManagement from "./pages/admin/AdminProductsManagement";
 import AdminCategoriesManagement from "./pages/admin/AdminCategoriesManagement";
 import AdminOrdersManagement from "./pages/admin/AdminOrdersManagement";
@@ -175,6 +176,7 @@ const App = () => (
               <Route path="/admin/cidades" element={<ProtectedAdminRoute><CitiesManagement /></ProtectedAdminRoute>} />
               <Route path="/admin/estados" element={<ProtectedAdminRoute><StatesManagement /></ProtectedAdminRoute>} />
               <Route path="/admin/segmentos" element={<ProtectedAdminRoute><SegmentsManagement /></ProtectedAdminRoute>} />
+              <Route path="/admin/categorias-principais" element={<ProtectedAdminRoute><MainCategoriesManagement /></ProtectedAdminRoute>} />
               <Route path="/admin/produtos" element={<ProtectedAdminRoute><AdminProductsManagement /></ProtectedAdminRoute>} />
               <Route path="/admin/categorias" element={<ProtectedAdminRoute><AdminCategoriesManagement /></ProtectedAdminRoute>} />
               <Route path="/admin/pedidos" element={<ProtectedAdminRoute><AdminOrdersManagement /></ProtectedAdminRoute>} />
