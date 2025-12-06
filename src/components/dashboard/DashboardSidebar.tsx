@@ -33,7 +33,10 @@ import {
   ChevronDown,
   ChevronRight,
   Brain,
-  Sparkles
+  Sparkles,
+  Video,
+  Camera,
+  Cog
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -66,6 +69,8 @@ const getMenuItems = (baseUrl: string) => [
   { icon: Package, label: "Produtos", href: `${baseUrl}/produtos` },
   { icon: Tag, label: "Categorias", href: `${baseUrl}/categorias` },
   { icon: Boxes, label: "Estoque", href: `${baseUrl}/estoque` },
+  { icon: Video, label: "VilaTok", href: `${baseUrl}/videos`, badge: "Novo" },
+  { icon: Camera, label: "Stories", href: `${baseUrl}/stories` },
   { icon: Truck, label: "Área de Atendimento", href: `${baseUrl}/area-atendimento` },
   { icon: Bike, label: "Entregadores", href: `${baseUrl}/entregadores` },
   { icon: DollarSign, label: "Cupons", href: `${baseUrl}/cupons` },
@@ -81,6 +86,7 @@ const getMenuItems = (baseUrl: string) => [
   { icon: QrCode, label: "QR Code", href: `${baseUrl}/qrcode` },
   { icon: Eye, label: "Banners", href: `${baseUrl}/banners` },
   { icon: Settings, label: "Integrações", href: `${baseUrl}/integracoes` },
+  { icon: Cog, label: "Configurações", href: `${baseUrl}/configuracoes` },
 ];
 
 const DashboardSidebar = ({ 
