@@ -309,19 +309,23 @@ serve(async (req) => {
 
       if (catError) throw catError;
 
-      // Buscar mapeamento de IDs de estabelecimentos
+      // Buscar mapeamento de IDs de estabelecimentos - CORRIGIDO: usa "establishments" não "estabelecimentos"
       const { data: idMapping } = await externalClient
         .from("id_mapping")
         .select("*")
-        .eq("table_name", "estabelecimentos");
+        .eq("table_name", "establishments");
+
+      console.log("Found establishment mappings:", idMapping?.length);
 
       const estIdMap = new Map(idMapping?.map(m => [m.old_id, m.new_id]) ?? []);
 
-      // Buscar mapeamento de categorias
+      // Buscar mapeamento de categorias - CORRIGIDO: usa "categories" não "categorias"  
       const { data: catIdMapping } = await externalClient
         .from("id_mapping")
         .select("*")
-        .eq("table_name", "categorias");
+        .eq("table_name", "categories");
+
+      console.log("Found category mappings:", catIdMapping?.length);
 
       const catIdMap = new Map(catIdMapping?.map(m => [m.old_id, m.new_id]) ?? []);
 
@@ -373,21 +377,23 @@ serve(async (req) => {
 
       if (prodError) throw prodError;
 
-      // Buscar mapeamentos
+      // Buscar mapeamentos - CORRIGIDO: usar nomes em inglês
       const { data: estIdMapping } = await externalClient
         .from("id_mapping")
         .select("*")
-        .eq("table_name", "estabelecimentos");
+        .eq("table_name", "establishments");
 
       const { data: catIdMapping } = await externalClient
         .from("id_mapping")
         .select("*")
-        .eq("table_name", "categorias");
+        .eq("table_name", "categories");
 
       const { data: prodIdMapping } = await externalClient
         .from("id_mapping")
         .select("*")
-        .eq("table_name", "produtos");
+        .eq("table_name", "products");
+
+      console.log("Mappings found - establishments:", estIdMapping?.length, "categories:", catIdMapping?.length, "products:", prodIdMapping?.length);
 
       const estIdMap = new Map(estIdMapping?.map(m => [m.old_id, m.new_id]) ?? []);
       const catIdMap = new Map(catIdMapping?.map(m => [m.old_id, m.new_id]) ?? []);
