@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { 
   ShoppingCart, Pill, ShoppingBag, UtensilsCrossed, Palette, Package, Wrench,
   Pizza, Beef, Utensils, Sandwich, IceCream, Croissant, Grape, Fish, CupSoda,
-  Sparkles, Home, Smartphone, Shirt, Dog, LucideIcon, Store
+  Sparkles, Home, Smartphone, Shirt, Dog, Cake, LucideIcon, Store
 } from "lucide-react";
 
 export interface MainCategory {
@@ -52,6 +52,7 @@ const iconMap: Record<string, LucideIcon> = {
   "smartphone": Smartphone,
   "shirt": Shirt,
   "dog": Dog,
+  "cake": Cake,
 };
 
 export const getIconComponent = (iconName: string | null): LucideIcon => {
