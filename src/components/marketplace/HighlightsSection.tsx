@@ -1,43 +1,27 @@
 import { Link } from "react-router-dom";
-import { Star, Heart, Clock, MapPin, Sparkles, ChevronRight, ChevronLeft, Bike } from "lucide-react";
+import { Star, Clock, MapPin, Heart, ChevronRight, ChevronLeft, Sparkles, Truck } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useEstablishments } from "@/hooks/useEstablishment";
 import { useDragScroll } from "@/hooks/useDragScroll";
+import { cn } from "@/lib/utils";
 
 const HighlightsSection = () => {
   const { establishments, loading } = useEstablishments();
   const { scrollRef, isDragging, handlers, scroll } = useDragScroll();
-  
-  // Pegar os primeiros 6 estabelecimentos como destaques
+
   const highlights = establishments.slice(0, 6);
 
   if (loading) {
     return (
-      <section className="py-6 md:py-8 bg-card">
+      <section className="py-6 md:py-8">
         <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between mb-4 md:mb-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary/10 rounded-lg hidden md:flex">
-                <Sparkles className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <Skeleton className="h-6 w-40 mb-1" />
-                <Skeleton className="h-4 w-64 hidden md:block" />
-              </div>
-            </div>
-          </div>
+          <Skeleton className="h-8 w-64 mb-4" />
           <div className="flex gap-4 overflow-hidden">
             {[1, 2, 3, 4].map((i) => (
-              <Card key={i} className="flex-shrink-0 w-[280px] md:w-[320px] overflow-hidden animate-pulse">
-                <div className="h-40 md:h-48 bg-muted" />
-                <CardContent className="p-4">
-                  <div className="h-4 bg-muted rounded w-3/4 mb-2" />
-                  <div className="h-3 bg-muted rounded w-1/2" />
-                </CardContent>
-              </Card>
+              <Skeleton key={i} className="flex-shrink-0 w-72 h-52 rounded-xl" />
             ))}
           </div>
         </div>
@@ -50,12 +34,11 @@ const HighlightsSection = () => {
   }
 
   return (
-    <section className="py-6 md:py-8 bg-card">
+    <section className="py-6 md:py-8">
       <div className="container mx-auto px-4">
-        {/* Header */}
         <div className="flex items-center justify-between mb-4 md:mb-6">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-primary/10 rounded-lg hidden md:flex">
+            <div className="p-2 bg-primary/10 rounded-xl hidden md:flex">
               <Sparkles className="w-5 h-5 text-primary" />
             </div>
             <div>
@@ -69,16 +52,14 @@ const HighlightsSection = () => {
             </div>
           </div>
           <Link 
-            to="/marketplace/destaques" 
+            to="/estabelecimentos" 
             className="text-primary text-sm font-medium hover:underline flex items-center gap-1"
           >
             Ver todos <ChevronRight className="w-4 h-4" />
           </Link>
         </div>
 
-        {/* Horizontal scroll container */}
         <div className="relative group">
-          {/* Desktop scroll buttons */}
           <Button
             variant="outline"
             size="icon"
@@ -91,171 +72,115 @@ const HighlightsSection = () => {
           <div
             ref={scrollRef}
             {...handlers}
-            className={`flex gap-3 md:gap-4 overflow-x-auto scrollbar-hide scroll-smooth pb-2 snap-x snap-mandatory md:snap-none select-none ${
+            className={cn(
+              "flex gap-3 md:gap-4 overflow-x-auto scrollbar-hide scroll-smooth pb-2 snap-x snap-mandatory md:snap-none select-none",
               isDragging ? "cursor-grabbing" : "cursor-grab"
-            }`}
+            )}
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
-            {highlights.map((est) => (
+            {highlights.map((est, index) => (
               <Link 
                 key={est.id} 
                 to={`/loja/${est.slug}`}
                 className="flex-shrink-0 snap-start"
+                onClick={(e) => isDragging && e.preventDefault()}
               >
-                {/* Mobile Card - Compact */}
-                <Card className="w-[280px] md:hidden overflow-hidden group/card hover:shadow-lg transition-all">
-                  <div className="relative h-36 overflow-hidden">
+                <Card className="w-64 md:w-72 overflow-hidden group/card hover:shadow-elevated transition-all duration-300 border-0 shadow-soft">
+                  <div className="relative h-36 md:h-40 bg-muted overflow-hidden">
                     {est.banner_url ? (
                       <img
                         src={est.banner_url}
                         alt={est.name}
                         className="w-full h-full object-cover group-hover/card:scale-105 transition-transform duration-500"
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          target.style.display = 'none';
-                          target.parentElement?.classList.add('bg-gradient-to-br', 'from-primary/20', 'to-primary/5');
-                        }}
+                        draggable={false}
                       />
                     ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-                        <span className="text-4xl opacity-50">🍽️</span>
+                      <div className="w-full h-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
+                        <span className="text-5xl opacity-50">🍴</span>
                       </div>
                     )}
                     
+                    {/* Gradient overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                    
+                    {/* Status Badge */}
                     {est.is_open ? (
-                      <Badge className="absolute top-2 left-2 bg-green-500 text-xs">Aberto</Badge>
+                      <Badge className="absolute top-3 left-3 bg-green-500 text-white text-xs shadow-md">
+                        Aberto
+                      </Badge>
                     ) : (
-                      <Badge variant="secondary" className="absolute top-2 left-2 text-xs">Fechado</Badge>
+                      <Badge variant="secondary" className="absolute top-3 left-3 text-xs shadow-md">
+                        Fechado
+                      </Badge>
                     )}
-                    
-                    <div className="absolute bottom-2 right-2 flex items-center gap-1 bg-card/90 backdrop-blur-sm px-2 py-0.5 rounded-full text-xs font-medium">
-                      <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                      <span>4.5</span>
-                    </div>
-                  </div>
-                  
-                  <CardContent className="p-3">
-                    <div className="flex items-center gap-2">
-                      {est.logo_url && (
-                        <img
-                          src={est.logo_url}
-                          alt={est.name}
-                          className="w-8 h-8 rounded-full object-cover border border-border"
-                        />
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-sm truncate">{est.name}</h3>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          {est.avg_delivery_time && (
-                            <span className="flex items-center gap-1">
-                              <Clock className="w-3 h-3" />
-                              {est.avg_delivery_time}min
-                            </span>
-                          )}
-                          {est.neighborhood && (
-                            <span className="truncate">{est.neighborhood}</span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
 
-                {/* Desktop Card - More complete */}
-                <Card className="hidden md:block w-[320px] overflow-hidden group/card hover:shadow-elevated transition-all h-full">
-                  <div className="relative h-48 overflow-hidden">
-                    {est.banner_url ? (
-                      <img
-                        src={est.banner_url}
-                        alt={est.name}
-                        className="w-full h-full object-cover group-hover/card:scale-105 transition-transform duration-500"
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          target.style.display = 'none';
-                          target.parentElement?.classList.add('bg-gradient-to-br', 'from-primary/20', 'to-primary/5');
-                        }}
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-                        <span className="text-6xl opacity-50">🍽️</span>
-                      </div>
+                    {/* New badge for first 2 items */}
+                    {index < 2 && (
+                      <Badge className="absolute top-3 left-20 bg-accent text-accent-foreground text-xs font-bold shadow-md">
+                        NOVO
+                      </Badge>
                     )}
                     
-                    {est.is_open ? (
-                      <Badge className="absolute top-3 left-3 bg-green-500">Aberto agora</Badge>
-                    ) : (
-                      <Badge variant="secondary" className="absolute top-3 left-3">Fechado</Badge>
-                    )}
-                    
-                    <div className="absolute bottom-3 right-3 flex items-center gap-1 bg-card/90 backdrop-blur-sm px-2 py-1 rounded-full text-sm font-medium">
-                      <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                      <span>4.5</span>
-                      <span className="text-muted-foreground">(0)</span>
-                    </div>
-
+                    {/* Favorite button */}
                     <Button 
                       variant="ghost" 
                       size="icon" 
-                      className="absolute top-3 right-3 bg-card/80 backdrop-blur-sm text-muted-foreground hover:text-destructive hover:bg-card"
+                      className="absolute top-3 right-3 w-8 h-8 bg-card/80 backdrop-blur-sm hover:bg-card text-muted-foreground hover:text-destructive transition-colors"
                       onClick={(e) => e.preventDefault()}
                     >
-                      <Heart className="w-5 h-5" />
+                      <Heart className="w-4 h-4" />
                     </Button>
-                  </div>
-                  
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-3">
+
+                    {/* Logo */}
+                    <div className="absolute -bottom-5 left-4 w-14 h-14 rounded-xl border-2 border-card bg-card shadow-lg overflow-hidden">
                       {est.logo_url ? (
-                        <img
-                          src={est.logo_url}
-                          alt={est.name}
-                          className="w-12 h-12 rounded-full object-cover border-2 border-background shadow-sm"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.style.display = 'none';
-                          }}
-                        />
+                        <img src={est.logo_url} alt={est.name} className="w-full h-full object-cover" draggable={false} />
                       ) : (
-                        <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                        <div className="w-full h-full bg-primary/10 flex items-center justify-center">
                           <span className="text-xl">🏪</span>
                         </div>
                       )}
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-base truncate">{est.name}</h3>
-                        <p className="text-sm text-muted-foreground line-clamp-2">
-                          {est.description || 'Deliciosas opções esperando por você'}
-                        </p>
-                      </div>
                     </div>
+                  </div>
+                  
+                  <CardContent className="pt-8 pb-4 px-4">
+                    <h3 className="font-bold text-base truncate">{est.name}</h3>
                     
-                    {/* Info tags */}
-                    <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-border/50">
-                      {est.neighborhood && (
-                        <span className="flex items-center gap-1 text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">
-                          <MapPin className="w-3 h-3" />
-                          {est.neighborhood}
-                        </span>
-                      )}
+                    {est.description && (
+                      <p className="text-xs text-muted-foreground truncate mt-1">{est.description}</p>
+                    )}
+
+                    <div className="flex items-center gap-3 mt-3 text-sm">
+                      <div className="flex items-center gap-1">
+                        <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                        <span className="font-semibold">4.5</span>
+                      </div>
                       {est.avg_delivery_time && (
-                        <span className="flex items-center gap-1 text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">
-                          <Clock className="w-3 h-3" />
-                          {est.avg_delivery_time}-{est.avg_delivery_time + 15}min
-                        </span>
+                        <div className="flex items-center gap-1 text-muted-foreground">
+                          <Clock className="w-4 h-4" />
+                          <span>{est.avg_delivery_time} min</span>
+                        </div>
                       )}
-                      {est.accepts_delivery && (
-                        <span className="flex items-center gap-1 text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">
-                          <Bike className="w-3 h-3" />
-                          Delivery
-                        </span>
+                      {est.neighborhood && (
+                        <div className="flex items-center gap-1 text-muted-foreground text-xs ml-auto truncate max-w-[100px]">
+                          <MapPin className="w-3 h-3 flex-shrink-0" />
+                          <span className="truncate">{est.neighborhood}</span>
+                        </div>
                       )}
                     </div>
 
-                    {/* Min order value */}
-                    {est.min_order_value && est.min_order_value > 0 && (
-                      <p className="text-xs text-muted-foreground mt-2">
-                        Pedido mínimo: <span className="font-medium text-foreground">R$ {est.min_order_value.toFixed(2)}</span>
-                      </p>
-                    )}
+                    {/* Delivery info */}
+                    <div className="flex items-center gap-2 mt-3">
+                      {est.accepts_delivery && (
+                        <Badge variant="outline" className="text-xs gap-1">
+                          <Truck className="w-3 h-3" />
+                          Delivery
+                        </Badge>
+                      )}
+                      {est.accepts_pickup && (
+                        <Badge variant="outline" className="text-xs">Retirada</Badge>
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
               </Link>
