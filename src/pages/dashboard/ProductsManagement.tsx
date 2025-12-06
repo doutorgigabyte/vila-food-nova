@@ -1,18 +1,16 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { ImageUpload } from "@/components/ImageUpload";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserEstablishment } from "@/hooks/useDashboardData";
 import { toast } from "sonner";
+import { ProductFormIntelligent } from "@/components/products/ProductFormIntelligent";
+import { BulkProductImport } from "@/components/products/BulkProductImport";
 import {
   ArrowLeft,
   Plus,
@@ -22,6 +20,10 @@ import {
   Package,
   Loader2,
   Star,
+  Upload,
+  Pizza,
+  Wine,
+  Snowflake,
 } from "lucide-react";
 
 interface Product {
@@ -35,6 +37,8 @@ interface Product {
   is_active: boolean | null;
   is_featured: boolean | null;
   preparation_time: number | null;
+  product_type: string | null;
+  temperature_options: string[] | null;
 }
 
 interface Category {
@@ -49,21 +53,8 @@ const ProductsManagement = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [dialogMode, setDialogMode] = useState<'form' | 'import'>('form');
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [saving, setSaving] = useState(false);
-
-  // Form state
-  const [form, setForm] = useState({
-    name: "",
-    description: "",
-    price: "",
-    promotional_price: "",
-    image_url: "",
-    category_id: "",
-    is_active: true,
-    is_featured: false,
-    preparation_time: "30",
-  });
 
   useEffect(() => {
     if (establishmentId) {
@@ -100,82 +91,21 @@ const ProductsManagement = () => {
   };
 
   const handleOpenDialog = (product?: Product) => {
-    if (product) {
-      setEditingProduct(product);
-      setForm({
-        name: product.name,
-        description: product.description || "",
-        price: product.price.toString(),
-        promotional_price: product.promotional_price?.toString() || "",
-        image_url: product.image_url || "",
-        category_id: product.category_id || "",
-        is_active: product.is_active ?? true,
-        is_featured: product.is_featured ?? false,
-        preparation_time: product.preparation_time?.toString() || "30",
-      });
-    } else {
-      setEditingProduct(null);
-      setForm({
-        name: "",
-        description: "",
-        price: "",
-        promotional_price: "",
-        image_url: "",
-        category_id: "",
-        is_active: true,
-        is_featured: false,
-        preparation_time: "30",
-      });
-    }
+    setEditingProduct(product || null);
+    setDialogMode('form');
     setIsDialogOpen(true);
   };
 
-  const handleSave = async () => {
-    if (!form.name || !form.price) {
-      toast.error("Nome e preço são obrigatórios");
-      return;
-    }
+  const handleOpenImport = () => {
+    setDialogMode('import');
+    setIsDialogOpen(true);
+  };
 
-    setSaving(true);
-
-    const productData = {
-      name: form.name,
-      description: form.description || null,
-      price: parseFloat(form.price),
-      promotional_price: form.promotional_price ? parseFloat(form.promotional_price) : null,
-      image_url: form.image_url || null,
-      category_id: form.category_id || null,
-      is_active: form.is_active,
-      is_featured: form.is_featured,
-      preparation_time: parseInt(form.preparation_time) || 30,
-      establishment_id: establishmentId,
-    };
-
-    try {
-      if (editingProduct) {
-        const { error } = await supabase
-          .from("products")
-          .update(productData)
-          .eq("id", editingProduct.id);
-
-        if (error) throw error;
-        toast.success("Produto atualizado!");
-      } else {
-        const { error } = await supabase
-          .from("products")
-          .insert(productData);
-
-        if (error) throw error;
-        toast.success("Produto criado!");
-      }
-
-      setIsDialogOpen(false);
-      fetchProducts();
-    } catch (error: any) {
-      toast.error(error.message || "Erro ao salvar produto");
-    } finally {
-      setSaving(false);
-    }
+  const handleSuccess = () => {
+    setIsDialogOpen(false);
+    setEditingProduct(null);
+    fetchProducts();
+    fetchCategories();
   };
 
   const handleDelete = async (product: Product) => {
@@ -198,6 +128,15 @@ const ProductsManagement = () => {
     p.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const getProductTypeIcon = (type: string | null) => {
+    switch (type) {
+      case 'pizza': return <Pizza className="w-4 h-4" />;
+      case 'drink': return <Wine className="w-4 h-4" />;
+      case 'frozen': return <Snowflake className="w-4 h-4" />;
+      default: return null;
+    }
+  };
+
   const getCategoryName = (categoryId: string | null) => {
     if (!categoryId) return "Sem categoria";
     return categories.find((c) => c.id === categoryId)?.name || "Sem categoria";
@@ -215,10 +154,16 @@ const ProductsManagement = () => {
             </Link>
             <h1 className="text-lg font-semibold">Produtos</h1>
           </div>
-          <Button onClick={() => handleOpenDialog()}>
-            <Plus className="w-4 h-4 mr-2" />
-            Novo Produto
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={handleOpenImport}>
+              <Upload className="w-4 h-4 mr-2" />
+              Importar
+            </Button>
+            <Button onClick={() => handleOpenDialog()}>
+              <Plus className="w-4 h-4 mr-2" />
+              Novo Produto
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -275,8 +220,15 @@ const ProductsManagement = () => {
                       <div>
                         <div className="flex items-center gap-2">
                           <h3 className="font-medium">{product.name}</h3>
+                          {getProductTypeIcon(product.product_type)}
                           {product.is_featured && (
                             <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                          )}
+                          {product.temperature_options && product.temperature_options.includes('gelada') && (
+                            <Badge variant="outline" className="text-blue-500 border-blue-300">
+                              <Snowflake className="w-3 h-3 mr-1" />
+                              Gelada
+                            </Badge>
                           )}
                           {!product.is_active && (
                             <Badge variant="secondary">Inativo</Badge>
@@ -326,125 +278,33 @@ const ProductsManagement = () => {
 
       {/* Product Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {editingProduct ? "Editar Produto" : "Novo Produto"}
+              {dialogMode === 'import' 
+                ? 'Importar Produtos em Lote' 
+                : editingProduct 
+                  ? 'Editar Produto' 
+                  : 'Novo Produto'}
             </DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-4">
-            <ImageUpload
-              bucket="products"
-              currentImage={form.image_url}
-              onUpload={(url) => setForm({ ...form, image_url: url })}
-              onRemove={() => setForm({ ...form, image_url: "" })}
-              aspectRatio="square"
-              establishmentId={establishmentId || undefined}
+          {dialogMode === 'import' ? (
+            <BulkProductImport
+              establishmentId={establishmentId || ''}
+              categories={categories}
+              onSuccess={handleSuccess}
+              onCancel={() => setIsDialogOpen(false)}
             />
-
-            <div className="space-y-2">
-              <Label htmlFor="name">Nome *</Label>
-              <Input
-                id="name"
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                placeholder="Ex: Pizza Margherita"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="description">Descrição</Label>
-              <Textarea
-                id="description"
-                value={form.description}
-                onChange={(e) => setForm({ ...form, description: e.target.value })}
-                placeholder="Descreva o produto..."
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="price">Preço *</Label>
-                <Input
-                  id="price"
-                  type="number"
-                  step="0.01"
-                  value={form.price}
-                  onChange={(e) => setForm({ ...form, price: e.target.value })}
-                  placeholder="0.00"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="promotional_price">Preço Promocional</Label>
-                <Input
-                  id="promotional_price"
-                  type="number"
-                  step="0.01"
-                  value={form.promotional_price}
-                  onChange={(e) => setForm({ ...form, promotional_price: e.target.value })}
-                  placeholder="0.00"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="category">Categoria</Label>
-                <Select
-                  value={form.category_id}
-                  onValueChange={(value) => setForm({ ...form, category_id: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map((cat) => (
-                      <SelectItem key={cat.id} value={cat.id}>
-                        {cat.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="preparation_time">Tempo de Preparo (min)</Label>
-                <Input
-                  id="preparation_time"
-                  type="number"
-                  value={form.preparation_time}
-                  onChange={(e) => setForm({ ...form, preparation_time: e.target.value })}
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Switch
-                  checked={form.is_active}
-                  onCheckedChange={(checked) => setForm({ ...form, is_active: checked })}
-                />
-                <Label>Produto ativo</Label>
-              </div>
-              <div className="flex items-center gap-2">
-                <Switch
-                  checked={form.is_featured}
-                  onCheckedChange={(checked) => setForm({ ...form, is_featured: checked })}
-                />
-                <Label>Destaque</Label>
-              </div>
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-              Cancelar
-            </Button>
-            <Button onClick={handleSave} disabled={saving}>
-              {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              {editingProduct ? "Salvar" : "Criar"}
-            </Button>
-          </DialogFooter>
+          ) : (
+            <ProductFormIntelligent
+              establishmentId={establishmentId || ''}
+              categories={categories}
+              initialData={editingProduct}
+              onSuccess={handleSuccess}
+              onCancel={() => setIsDialogOpen(false)}
+            />
+          )}
         </DialogContent>
       </Dialog>
     </div>

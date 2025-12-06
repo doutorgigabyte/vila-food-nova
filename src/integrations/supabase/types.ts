@@ -1956,6 +1956,7 @@ export type Database = {
       products: {
         Row: {
           additionals: Json | null
+          allows_multiple_flavors: boolean | null
           category_id: string | null
           cost_price: number | null
           created_at: string | null
@@ -1965,18 +1966,25 @@ export type Database = {
           image_url: string | null
           is_active: boolean | null
           is_featured: boolean | null
+          max_flavors: number | null
           max_stock: number | null
           min_stock: number | null
           name: string
           preparation_time: number | null
           price: number
+          product_type: string | null
+          progressive_pricing: Json | null
           promotional_price: number | null
+          requires_age_verification: boolean | null
           stock_quantity: number | null
+          storage_type: string | null
+          temperature_options: Json | null
           updated_at: string | null
           variations: Json | null
         }
         Insert: {
           additionals?: Json | null
+          allows_multiple_flavors?: boolean | null
           category_id?: string | null
           cost_price?: number | null
           created_at?: string | null
@@ -1986,18 +1994,25 @@ export type Database = {
           image_url?: string | null
           is_active?: boolean | null
           is_featured?: boolean | null
+          max_flavors?: number | null
           max_stock?: number | null
           min_stock?: number | null
           name: string
           preparation_time?: number | null
           price: number
+          product_type?: string | null
+          progressive_pricing?: Json | null
           promotional_price?: number | null
+          requires_age_verification?: boolean | null
           stock_quantity?: number | null
+          storage_type?: string | null
+          temperature_options?: Json | null
           updated_at?: string | null
           variations?: Json | null
         }
         Update: {
           additionals?: Json | null
+          allows_multiple_flavors?: boolean | null
           category_id?: string | null
           cost_price?: number | null
           created_at?: string | null
@@ -2007,13 +2022,19 @@ export type Database = {
           image_url?: string | null
           is_active?: boolean | null
           is_featured?: boolean | null
+          max_flavors?: number | null
           max_stock?: number | null
           min_stock?: number | null
           name?: string
           preparation_time?: number | null
           price?: number
+          product_type?: string | null
+          progressive_pricing?: Json | null
           promotional_price?: number | null
+          requires_age_verification?: boolean | null
           stock_quantity?: number | null
+          storage_type?: string | null
+          temperature_options?: Json | null
           updated_at?: string | null
           variations?: Json | null
         }
