@@ -9,17 +9,23 @@ export const useDragScroll = (options: UseDragScrollOptions = {}) => {
   const { sensitivity = 1, momentum = true } = options;
   const scrollRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [hasDragged, setHasDragged] = useState(false);
   const [startX, setStartX] = useState(0);
   const [scrollLeft, setScrollLeft] = useState(0);
   const [velocity, setVelocity] = useState(0);
   const lastX = useRef(0);
   const lastTime = useRef(0);
   const animationRef = useRef<number>();
+  const dragThreshold = 5;
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (!scrollRef.current) return;
     
+    // Prevent text selection during drag
+    e.preventDefault();
+    
     setIsDragging(true);
+    setHasDragged(false);
     setStartX(e.pageX - scrollRef.current.offsetLeft);
     setScrollLeft(scrollRef.current.scrollLeft);
     lastX.current = e.pageX;
@@ -37,6 +43,12 @@ export const useDragScroll = (options: UseDragScrollOptions = {}) => {
     e.preventDefault();
     const x = e.pageX - scrollRef.current.offsetLeft;
     const walk = (x - startX) * sensitivity;
+    
+    // Check if movement exceeds drag threshold
+    if (Math.abs(walk) > dragThreshold) {
+      setHasDragged(true);
+    }
+    
     scrollRef.current.scrollLeft = scrollLeft - walk;
 
     // Calculate velocity for momentum
@@ -69,6 +81,9 @@ export const useDragScroll = (options: UseDragScrollOptions = {}) => {
       
       animationRef.current = requestAnimationFrame(animate);
     }
+    
+    // Reset hasDragged after a short delay to allow click events
+    setTimeout(() => setHasDragged(false), 50);
   }, [isDragging, velocity, momentum]);
 
   const handleMouseLeave = useCallback(() => {
@@ -82,6 +97,7 @@ export const useDragScroll = (options: UseDragScrollOptions = {}) => {
     if (!scrollRef.current) return;
     
     setIsDragging(true);
+    setHasDragged(false);
     setStartX(e.touches[0].pageX - scrollRef.current.offsetLeft);
     setScrollLeft(scrollRef.current.scrollLeft);
     lastX.current = e.touches[0].pageX;
@@ -98,6 +114,12 @@ export const useDragScroll = (options: UseDragScrollOptions = {}) => {
     
     const x = e.touches[0].pageX - scrollRef.current.offsetLeft;
     const walk = (x - startX) * sensitivity;
+    
+    // Check if movement exceeds drag threshold
+    if (Math.abs(walk) > dragThreshold) {
+      setHasDragged(true);
+    }
+    
     scrollRef.current.scrollLeft = scrollLeft - walk;
 
     // Calculate velocity for momentum
@@ -136,7 +158,7 @@ export const useDragScroll = (options: UseDragScrollOptions = {}) => {
 
   return {
     scrollRef,
-    isDragging,
+    isDragging: hasDragged, // Return hasDragged instead of isDragging to prevent click on drag
     handlers: {
       onMouseDown: handleMouseDown,
       onMouseMove: handleMouseMove,
