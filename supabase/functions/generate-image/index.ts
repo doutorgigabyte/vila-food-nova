@@ -155,58 +155,69 @@ function generatePrompt(type: string, name: string): { prompt: string; aspectRat
   }
 }
 
-// ==================== Imagen 4.0 API Call ====================
-async function generateImageWithImagen(prompt: string, aspectRatio: string): Promise<Uint8Array> {
+// ==================== Gemini Image Generation API ====================
+async function generateImageWithGemini(prompt: string): Promise<Uint8Array> {
   const GOOGLE_API_KEY = Deno.env.get('GOOGLE_API_KEY');
   if (!GOOGLE_API_KEY) {
     throw new Error('GOOGLE_API_KEY not configured');
   }
 
-  // Try Imagen 4.0 first, fallback to 3.0 if needed
-  const models = ['imagen-4.0-generate-001', 'imagen-3.0-generate-002'];
+  // Use gemini-2.0-flash-preview-image-generation which supports image output
+  const models = [
+    'gemini-2.0-flash-preview-image-generation',
+    'gemini-2.0-flash-exp'
+  ];
   
   for (const model of models) {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:predict?key=${GOOGLE_API_KEY}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GOOGLE_API_KEY}`;
     
-    console.log(`Trying model: ${model}`);
+    console.log(`Trying Gemini model: ${model}`);
     
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        instances: [{ prompt }],
-        parameters: {
-          sampleCount: 1,
-          aspectRatio: aspectRatio,
-          personGeneration: 'dont_allow'
+        contents: [{
+          parts: [{ text: `Generate an image: ${prompt}` }]
+        }],
+        generationConfig: {
+          responseModalities: ["IMAGE", "TEXT"],
+          temperature: 1.0
         }
       }),
     });
 
     if (response.ok) {
       const data = await response.json();
-      const base64Image = data.predictions?.[0]?.bytesBase64Encoded;
+      console.log('Gemini response structure:', JSON.stringify(data).substring(0, 500));
       
-      if (base64Image) {
-        console.log(`Image generated successfully with ${model}`);
-        const binaryString = atob(base64Image);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-          bytes[i] = binaryString.charCodeAt(i);
+      // Extract image from response - check for inline_data in parts
+      const parts = data.candidates?.[0]?.content?.parts || [];
+      for (const part of parts) {
+        if (part.inlineData?.mimeType?.startsWith('image/')) {
+          const base64Image = part.inlineData.data;
+          console.log(`Image generated successfully with ${model}`);
+          const binaryString = atob(base64Image);
+          const bytes = new Uint8Array(binaryString.length);
+          for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+          }
+          return bytes;
         }
-        return bytes;
       }
+      
+      console.log(`No image in ${model} response`);
     }
     
     const errorText = await response.text();
-    console.log(`Model ${model} failed: ${response.status} - ${errorText.substring(0, 200)}`);
+    console.log(`Model ${model} failed: ${response.status} - ${errorText.substring(0, 300)}`);
     
     if (response.status === 429) {
       throw new Error('RATE_LIMIT');
     }
   }
 
-  throw new Error('All Imagen models failed to generate image');
+  throw new Error('All Gemini models failed to generate image');
 }
 
 // ==================== Main Handler ====================
@@ -225,24 +236,24 @@ serve(async (req) => {
     }
 
     console.log(`[generate-image] Generating ${type} for: ${name}`);
-    const { prompt, aspectRatio } = generatePrompt(type, name);
+    const { prompt } = generatePrompt(type, name);
 
-    // Use Google Imagen API directly (no fallback to Lovable AI)
+    // Use Google Gemini API for image generation
     let imageBytes: Uint8Array;
     
     try {
-      imageBytes = await generateImageWithImagen(prompt, aspectRatio);
-    } catch (imagenError) {
-      console.error('Imagen generation failed:', imagenError);
+      imageBytes = await generateImageWithGemini(prompt);
+    } catch (geminiError) {
+      console.error('Gemini generation failed:', geminiError);
       
-      if (imagenError instanceof Error && imagenError.message === 'RATE_LIMIT') {
+      if (geminiError instanceof Error && geminiError.message === 'RATE_LIMIT') {
         return new Response(JSON.stringify({ 
           error: 'Rate limit exceeded. Try again in 60 seconds.',
           retryAfter: 60
         }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
 
-      throw imagenError;
+      throw geminiError;
     }
 
     // Upload to S3
