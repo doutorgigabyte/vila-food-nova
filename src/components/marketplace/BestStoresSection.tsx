@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDragScroll } from "@/hooks/useDragScroll";
 import { useEstablishments } from "@/hooks/useEstablishment";
+import { cn } from "@/lib/utils";
 import EstablishmentCard from "./EstablishmentCard";
 import { Link } from "react-router-dom";
 
@@ -71,15 +72,20 @@ const BestStoresSection = () => {
           <div
             ref={scrollRef}
             {...handlers}
-            className={`flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth pb-2 snap-x snap-mandatory md:snap-none select-none ${
+            className={cn(
+              "flex gap-4 overflow-x-auto scrollbar-hide pb-2 select-none",
+              "touch-pan-y will-change-scroll overscroll-x-contain",
               isDragging ? "cursor-grabbing" : "cursor-grab"
-            }`}
-            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            )}
+            style={{
+              WebkitOverflowScrolling: 'touch',
+              scrollSnapType: isDragging ? 'none' : 'x proximity',
+            }}
           >
             {bestStores.map((establishment) => (
               <div 
                 key={establishment.id} 
-                className="flex-shrink-0 snap-start w-72 md:w-80"
+                className="flex-shrink-0 w-72 md:w-80 scroll-card"
                 onClick={(e) => isDragging && e.preventDefault()}
               >
                 <EstablishmentCard 

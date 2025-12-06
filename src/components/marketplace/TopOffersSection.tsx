@@ -68,12 +68,17 @@ const TopOffersSection = () => {
             ref={scrollRef}
             {...handlers}
             className={cn(
-              "flex gap-3 md:gap-4 overflow-x-auto scrollbar-hide pb-2 snap-x snap-mandatory md:snap-none select-none drag-scroll-container",
-              isDragging && "cursor-grabbing"
+              "flex gap-3 md:gap-4 overflow-x-auto scrollbar-hide pb-2 select-none",
+              "touch-pan-y will-change-scroll overscroll-x-contain",
+              isDragging ? "cursor-grabbing" : "cursor-grab"
             )}
+            style={{
+              WebkitOverflowScrolling: 'touch',
+              scrollSnapType: isDragging ? 'none' : 'x proximity',
+            }}
           >
             {offersProducts.map((product) => (
-              <div key={product.id} className="flex-shrink-0 snap-start">
+              <div key={product.id} className="flex-shrink-0 scroll-card">
                 <ProductOfferCard product={product} variant="large" />
               </div>
             ))}
