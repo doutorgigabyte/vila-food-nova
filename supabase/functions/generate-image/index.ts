@@ -152,9 +152,9 @@ serve(async (req) => {
   try {
     const { type, id, name, establishmentId } = await req.json();
     
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY not configured');
+    const GOOGLE_API_KEY = Deno.env.get('GOOGLE_API_KEY');
+    if (!GOOGLE_API_KEY) {
+      throw new Error('GOOGLE_API_KEY not configured');
     }
 
     // Generate prompt based on type
@@ -172,74 +172,77 @@ serve(async (req) => {
     console.log(`Generating image for ${type}: ${name}`);
     console.log(`Prompt: ${prompt}`);
 
-    // Call Lovable AI to generate image
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-3-pro-image-preview',
-        messages: [
-          { role: 'user', content: prompt }
-        ],
-        modalities: ['image', 'text']
-      }),
-    });
+    // Call Google Gemini API directly for image generation
+    const aiResponse = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp-image-generation:generateContent?key=${GOOGLE_API_KEY}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                { text: prompt }
+              ]
+            }
+          ],
+          generationConfig: {
+            responseModalities: ['TEXT', 'IMAGE']
+          }
+        }),
+      }
+    );
 
     if (!aiResponse.ok) {
       const errorText = await aiResponse.text();
-      console.error('AI API error:', aiResponse.status, errorText);
-      throw new Error(`AI API error: ${aiResponse.status} - ${errorText}`);
+      console.error('Google AI API error:', aiResponse.status, errorText);
+      throw new Error(`Google AI API error: ${aiResponse.status} - ${errorText}`);
     }
 
     const aiData = await aiResponse.json();
-    console.log('AI Response received, extracting image...');
+    console.log('Google AI Response received, extracting image...');
 
-    // Check if the model refused to generate the image
-    const message = aiData.choices?.[0]?.message;
-    if (message?.refusal) {
-      console.log('AI refused to generate image for:', name, 'Reason:', message.refusal);
-      // Return a skip response instead of throwing error
+    // Check for blocked content
+    if (aiData.promptFeedback?.blockReason) {
+      console.log('AI blocked content for:', name, 'Reason:', aiData.promptFeedback.blockReason);
       return new Response(
         JSON.stringify({ 
           success: false, 
           skipped: true, 
-          reason: `AI recusou gerar imagem para "${name}" - conteúdo não permitido` 
+          reason: `AI recusou gerar imagem para "${name}" - conteúdo bloqueado: ${aiData.promptFeedback.blockReason}` 
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Extract image from response - check multiple possible paths
+    // Extract image from Google Gemini response format
+    // Format: { candidates: [{ content: { parts: [{ inlineData: { mimeType, data } }] } }] }
     let imageBase64: string | undefined;
+    let mimeType = 'image/png';
     
-    // Path 1: images array in message
-    if (message?.images?.[0]?.image_url?.url) {
-      imageBase64 = message.images[0].image_url.url;
-      console.log('Found image in images array');
-    }
-    
-    // Path 2: content is base64 directly
-    if (!imageBase64 && message?.content) {
-      const content = message.content;
-      if (typeof content === 'string' && content.startsWith('data:image')) {
-        imageBase64 = content;
-        console.log('Found image in content as base64');
+    const candidates = aiData.candidates;
+    if (candidates && candidates[0]?.content?.parts) {
+      for (const part of candidates[0].content.parts) {
+        if (part.inlineData?.data) {
+          imageBase64 = part.inlineData.data;
+          mimeType = part.inlineData.mimeType || 'image/png';
+          console.log('Found image in inlineData, mimeType:', mimeType);
+          break;
+        }
       }
     }
 
     if (!imageBase64) {
-      console.error('No image found in response. Full message:', JSON.stringify(message));
-      throw new Error('No image generated from AI');
+      console.error('No image found in Google response. Full response:', JSON.stringify(aiData));
+      throw new Error('No image generated from Google AI');
     }
 
     console.log('Image extracted, base64 length:', imageBase64.length);
 
-    // Convert base64 to binary
-    const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, '');
-    const binaryString = atob(base64Data);
+    // Convert base64 to binary - Google returns raw base64 without data URI prefix
+    const binaryString = atob(imageBase64);
     const bytes = new Uint8Array(binaryString.length);
     for (let i = 0; i < binaryString.length; i++) {
       bytes[i] = binaryString.charCodeAt(i);
