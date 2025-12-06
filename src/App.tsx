@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -68,6 +69,7 @@ import Roadmap from "./pages/admin/Roadmap";
 import SystemHealthCheck from "./pages/admin/SystemHealthCheck";
 import VilaTokPage from "./pages/VilaTok";
 import VideosManagement from "./pages/dashboard/VideosManagement";
+import StoriesManagement from "./pages/dashboard/StoriesManagement";
 import CategoryPage from "./pages/CategoryPage";
 import Menu from "./pages/Menu";
 import Favorites from "./pages/Favorites";
@@ -129,6 +131,7 @@ const App = () => (
               <Route path="/painel/:slug/fornecedores" element={<SuppliersManagement />} />
               <Route path="/painel/:slug/pagamentos" element={<PaymentsManagement />} />
               <Route path="/painel/:slug/videos" element={<VideosManagement />} />
+              <Route path="/painel/:slug/stories" element={<StoriesManagement />} />
               {/* Routes without slug for establishment owners */}
               <Route path="/painel/produtos" element={<ProductsManagement />} />
               <Route path="/painel/categorias" element={<CategoriesManagement />} />
