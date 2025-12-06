@@ -211,19 +211,21 @@ Background: Soft watercolor gradient tones.
 The 3D icon should be the prominent focus, modern and app-ready.
 Professional UI/UX quality for food delivery app.
 Do not include any text in the image.`;
-    } else if (type === 'establishment_logo') {
-      prompt = `Create a professional restaurant logo icon for "${name}".
-Style: Modern 3D logo, clean minimalist design.
-Format: Circular or square format, suitable for app icon.
-Colors: Vibrant, appetizing color palette.
-Professional quality for food delivery platform.
-Do not include any text in the image.`;
-    } else if (type === 'establishment_banner') {
+    } else if (type === 'logo' || type === 'establishment_logo') {
+      prompt = `Create a professional, modern business logo for "${name}".
+Style: Clean, minimalist logo design suitable for a restaurant/food business.
+Format: Square format (500x500), centered composition.
+Design: Modern flat or subtle 3D style, vibrant appetizing colors.
+The logo should convey professionalism and food quality.
+Clean background, suitable for use as app icon or profile picture.
+Do not include any text in the image, only iconography.`;
+    } else if (type === 'banner' || type === 'establishment_banner') {
       prompt = `Create a professional wide restaurant banner image for "${name}".
-Aspect ratio: 16:9 wide format banner.
-Style: Appetizing food theme with warm, inviting lighting.
-Quality: Commercial photography level.
+Aspect ratio: Wide panoramic format (1200x400 pixels, 3:1 ratio).
+Style: Appetizing food arrangement with warm, inviting lighting.
+Quality: High-end commercial photography style.
 Mood: Professional, welcoming restaurant atmosphere.
+Show beautiful food presentation suitable for a ${name} business.
 Do not include any text in the image.`;
     }
 
@@ -318,37 +320,39 @@ Do not include any text in the image.`;
 
     // Upload directly to S3
     const uploadType = type === 'category' ? 'categories' : type === 'product' ? 'products' : 'establishments';
-    const imageUrl = await uploadToS3(bytes, `${id}.png`, 'image/png', uploadType, establishmentId);
+    const imageUrl = await uploadToS3(bytes, `${id}.png`, 'image/png', uploadType, establishmentId || id);
 
-    // Update database record
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    // Update database record if we have an ID
+    if (id) {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+      const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+      const supabase = createClient(supabaseUrl, supabaseKey);
 
-    if (type === 'product') {
-      const { error } = await supabase
-        .from('products')
-        .update({ image_url: imageUrl })
-        .eq('id', id);
-      if (error) throw error;
-    } else if (type === 'category') {
-      const { error } = await supabase
-        .from('categories')
-        .update({ image_url: imageUrl })
-        .eq('id', id);
-      if (error) throw error;
-    } else if (type === 'establishment_logo') {
-      const { error } = await supabase
-        .from('establishments')
-        .update({ logo_url: imageUrl })
-        .eq('id', id);
-      if (error) throw error;
-    } else if (type === 'establishment_banner') {
-      const { error } = await supabase
-        .from('establishments')
-        .update({ banner_url: imageUrl })
-        .eq('id', id);
-      if (error) throw error;
+      if (type === 'product') {
+        const { error } = await supabase
+          .from('products')
+          .update({ image_url: imageUrl })
+          .eq('id', id);
+        if (error) throw error;
+      } else if (type === 'category') {
+        const { error } = await supabase
+          .from('categories')
+          .update({ image_url: imageUrl })
+          .eq('id', id);
+        if (error) throw error;
+      } else if (type === 'logo' || type === 'establishment_logo') {
+        const { error } = await supabase
+          .from('establishments')
+          .update({ logo_url: imageUrl })
+          .eq('id', id);
+        if (error) throw error;
+      } else if (type === 'banner' || type === 'establishment_banner') {
+        const { error } = await supabase
+          .from('establishments')
+          .update({ banner_url: imageUrl })
+          .eq('id', id);
+        if (error) throw error;
+      }
     }
 
     console.log(`Successfully generated and saved image for ${type}: ${name}`);

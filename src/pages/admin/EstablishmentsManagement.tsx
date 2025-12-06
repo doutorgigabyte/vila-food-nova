@@ -47,7 +47,9 @@ import {
   Building2,
   Star,
   Trash2,
-  LayoutDashboard
+  LayoutDashboard,
+  Sparkles,
+  Loader2
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -136,6 +138,95 @@ const EstablishmentsManagement = () => {
     status: "pending",
     is_open: false,
   });
+
+  // AI generation states
+  const [generatingLogo, setGeneratingLogo] = useState(false);
+  const [generatingBanner, setGeneratingBanner] = useState(false);
+
+  // Format establishment name for display (capitalize words properly)
+  const formatDisplayName = (name: string) => {
+    return name
+      .toLowerCase()
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
+
+  // Generate logo using AI
+  const handleGenerateLogo = async () => {
+    if (!formData.name) {
+      toast({ title: "Digite o nome do estabelecimento primeiro", variant: "destructive" });
+      return;
+    }
+
+    setGeneratingLogo(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-image', {
+        body: {
+          type: 'logo',
+          id: editingEstablishment?.id,
+          name: formData.name,
+          establishmentId: editingEstablishment?.id
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.imageUrl) {
+        setFormData(prev => ({ ...prev, logo_url: data.imageUrl }));
+        toast({ title: "Logo gerada com sucesso!" });
+      } else {
+        throw new Error(data?.error || 'Falha ao gerar logo');
+      }
+    } catch (error: any) {
+      console.error('Error generating logo:', error);
+      toast({ 
+        title: "Erro ao gerar logo", 
+        description: error.message || "Tente novamente mais tarde",
+        variant: "destructive" 
+      });
+    } finally {
+      setGeneratingLogo(false);
+    }
+  };
+
+  // Generate banner using AI
+  const handleGenerateBanner = async () => {
+    if (!formData.name) {
+      toast({ title: "Digite o nome do estabelecimento primeiro", variant: "destructive" });
+      return;
+    }
+
+    setGeneratingBanner(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-image', {
+        body: {
+          type: 'banner',
+          id: editingEstablishment?.id,
+          name: formData.name,
+          establishmentId: editingEstablishment?.id
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.imageUrl) {
+        setFormData(prev => ({ ...prev, banner_url: data.imageUrl }));
+        toast({ title: "Banner gerado com sucesso!" });
+      } else {
+        throw new Error(data?.error || 'Falha ao gerar banner');
+      }
+    } catch (error: any) {
+      console.error('Error generating banner:', error);
+      toast({ 
+        title: "Erro ao gerar banner", 
+        description: error.message || "Tente novamente mais tarde",
+        variant: "destructive" 
+      });
+    } finally {
+      setGeneratingBanner(false);
+    }
+  };
 
   useEffect(() => {
     fetchEstablishments();
@@ -574,20 +665,67 @@ const EstablishmentsManagement = () => {
           <div className="space-y-4 pt-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Logo</Label>
+                <div className="flex items-center justify-between">
+                  <Label>Logo</Label>
+                  <span className="text-xs text-muted-foreground">500x500px</span>
+                </div>
                 <ImageUpload
                   currentImage={formData.logo_url}
                   onUpload={(url) => setFormData(prev => ({ ...prev, logo_url: url }))}
                   bucket="establishments"
                 />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="w-full gap-2"
+                  onClick={handleGenerateLogo}
+                  disabled={generatingLogo || !formData.name}
+                >
+                  {generatingLogo ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Gerando...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-4 w-4" />
+                      Gerar Logo com IA
+                    </>
+                  )}
+                </Button>
               </div>
               <div className="space-y-2">
-                <Label>Banner</Label>
+                <div className="flex items-center justify-between">
+                  <Label>Banner</Label>
+                  <span className="text-xs text-muted-foreground">1200x400px</span>
+                </div>
                 <ImageUpload
                   currentImage={formData.banner_url}
                   onUpload={(url) => setFormData(prev => ({ ...prev, banner_url: url }))}
                   bucket="establishments"
+                  aspectRatio="banner"
                 />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="w-full gap-2"
+                  onClick={handleGenerateBanner}
+                  disabled={generatingBanner || !formData.name}
+                >
+                  {generatingBanner ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Gerando...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-4 w-4" />
+                      Gerar Banner com IA
+                    </>
+                  )}
+                </Button>
               </div>
             </div>
 
