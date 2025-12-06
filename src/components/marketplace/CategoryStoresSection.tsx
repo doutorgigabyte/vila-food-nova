@@ -1,14 +1,14 @@
 import { useState } from "react";
-import { Store, Star, Clock } from "lucide-react";
+import { Store, Star, Clock, Heart } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface Establishment {
   id: string;
   name: string;
   slug: string;
   logo_url: string | null;
+  banner_url?: string | null;
   description: string | null;
   is_open: boolean;
   avg_delivery_time: number | null;
@@ -24,13 +24,20 @@ const CategoryStoresSection = ({ establishments, categoryName, loading }: Catego
   const navigate = useNavigate();
   const [filter, setFilter] = useState("todos");
 
+  const filters = [
+    { id: "todos", label: "Todos" },
+    { id: "novos", label: "Novos" },
+    { id: "populares", label: "Populares" },
+    { id: "avaliados", label: "Bem Avaliados" },
+  ];
+
   if (loading) {
     return (
       <div className="py-6 px-4">
         <div className="h-6 w-48 bg-muted animate-pulse rounded mb-4" />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div key={i} className="h-32 bg-muted animate-pulse rounded-xl" />
+            <div key={i} className="h-48 bg-muted animate-pulse rounded-xl" />
           ))}
         </div>
       </div>
@@ -50,69 +57,94 @@ const CategoryStoresSection = ({ establishments, categoryName, loading }: Catego
   }
 
   return (
-    <div className="py-6">
+    <div className="py-6 bg-card">
       <div className="flex items-center justify-between mb-4 px-4">
         <h2 className="text-lg font-semibold">Lojas de {categoryName}</h2>
         <span className="text-sm text-muted-foreground">{establishments.length} lojas</span>
       </div>
 
       {/* Filter tabs */}
-      <div className="px-4 mb-4">
-        <Tabs value={filter} onValueChange={setFilter} className="w-full">
-          <TabsList className="w-full grid grid-cols-4">
-            <TabsTrigger value="todos" className="text-xs">Todos</TabsTrigger>
-            <TabsTrigger value="novos" className="text-xs">Novos</TabsTrigger>
-            <TabsTrigger value="populares" className="text-xs">Populares</TabsTrigger>
-            <TabsTrigger value="avaliados" className="text-xs">Bem Avaliados</TabsTrigger>
-          </TabsList>
-        </Tabs>
+      <div className="px-4 mb-4 flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+        {filters.map((f) => (
+          <button
+            key={f.id}
+            onClick={() => setFilter(f.id)}
+            className={`
+              px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all
+              ${filter === f.id 
+                ? 'bg-primary text-primary-foreground' 
+                : 'bg-muted text-muted-foreground hover:bg-muted/80'
+              }
+            `}
+          >
+            {f.label}
+          </button>
+        ))}
       </div>
 
-      {/* Store grid */}
+      {/* Store grid - card style like 6amMart */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 px-4">
         {establishments.map((establishment) => (
           <button
             key={establishment.id}
             onClick={() => navigate(`/loja/${establishment.slug}`)}
-            className="flex items-center gap-4 p-4 bg-card rounded-xl border border-border hover:shadow-lg transition-all duration-200 text-left group"
+            className="bg-background rounded-2xl border border-border overflow-hidden hover:shadow-lg transition-all duration-200 text-left group"
           >
-            {/* Logo */}
-            <div className="w-16 h-16 rounded-xl bg-muted flex items-center justify-center overflow-hidden shrink-0">
-              {establishment.logo_url ? (
+            {/* Banner/Image area */}
+            <div className="relative h-32 bg-gradient-to-br from-primary/10 to-primary/5">
+              {establishment.banner_url ? (
                 <img
-                  src={establishment.logo_url}
+                  src={establishment.banner_url}
                   alt={establishment.name}
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <Store className="h-8 w-8 text-muted-foreground" />
+                <div className="w-full h-full flex items-center justify-center">
+                  <Store className="h-12 w-12 text-muted-foreground/30" />
+                </div>
               )}
+              
+              {/* Favorite button */}
+              <button 
+                className="absolute top-2 right-2 w-8 h-8 bg-white/90 rounded-full flex items-center justify-center hover:bg-white transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  // Handle favorite
+                }}
+              >
+                <Heart className="h-4 w-4 text-muted-foreground" />
+              </button>
+
+              {/* Logo overlay */}
+              <div className="absolute -bottom-6 left-4">
+                <div className="w-14 h-14 rounded-xl bg-background border-2 border-background shadow-md flex items-center justify-center overflow-hidden">
+                  {establishment.logo_url ? (
+                    <img
+                      src={establishment.logo_url}
+                      alt={establishment.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <Store className="h-6 w-6 text-muted-foreground" />
+                  )}
+                </div>
+              </div>
             </div>
 
             {/* Info */}
-            <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors truncate">
+            <div className="p-4 pt-8">
+              <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">
                 {establishment.name}
               </h3>
-              {establishment.description && (
-                <p className="text-xs text-muted-foreground line-clamp-1 mt-1">
-                  {establishment.description}
-                </p>
-              )}
+              
               <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-                <span className={`flex items-center gap-1 ${establishment.is_open ? 'text-green-600' : 'text-red-500'}`}>
-                  <span className={`w-2 h-2 rounded-full ${establishment.is_open ? 'bg-green-500' : 'bg-red-500'}`} />
-                  {establishment.is_open ? 'Aberto' : 'Fechado'}
-                </span>
-                {establishment.avg_delivery_time && (
-                  <span className="flex items-center gap-1">
-                    <Clock className="h-3 w-3" />
-                    {establishment.avg_delivery_time} min
-                  </span>
-                )}
                 <span className="flex items-center gap-1">
                   <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                  4.5
+                  4.5 (0)
+                </span>
+                <span className={`flex items-center gap-1 ${establishment.is_open ? 'text-green-600' : 'text-red-500'}`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${establishment.is_open ? 'bg-green-500' : 'bg-red-500'}`} />
+                  {establishment.is_open ? 'Aberto' : 'Fechado'}
                 </span>
               </div>
             </div>
