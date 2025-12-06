@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Heart, Plus, ChevronLeft, ChevronRight, Clock, Flame } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -64,21 +64,27 @@ const TrendingProducts = ({ mainCategory }: TrendingProductsProps) => {
       )}>
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between mb-4 md:mb-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-xl hidden md:flex">
-                <Flame className="w-5 h-5 text-orange-500" />
-              </div>
-              <div>
-                <h2 className="text-lg md:text-xl font-bold text-foreground flex items-center gap-2">
-                  {theme.trendingTitle}
-                  <Flame className="w-4 h-4 text-orange-500 md:hidden" />
-                </h2>
-                <p className="text-xs md:text-sm text-muted-foreground hidden md:block">
-                  {theme.trendingSubtitle}
-                </p>
-              </div>
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-xl hidden md:flex">
+              <Flame className="w-5 h-5 text-orange-500" />
+            </div>
+            <div>
+              <h2 className="text-lg md:text-xl font-bold text-foreground flex items-center gap-2">
+                {theme.trendingTitle}
+                <Flame className="w-4 h-4 text-orange-500 md:hidden" />
+              </h2>
+              <p className="text-xs md:text-sm text-muted-foreground hidden md:block">
+                {theme.trendingSubtitle}
+              </p>
             </div>
           </div>
+          <Link 
+            to={`/produtos/trending${mainCategory ? `?categoria=${mainCategory}` : ''}`}
+            className="text-sm font-medium text-primary hover:underline"
+          >
+            Ver todos
+          </Link>
+        </div>
 
           <div className="relative group">
             <Button
