@@ -155,64 +155,63 @@ function generatePrompt(type: string, name: string): { prompt: string; aspectRat
   }
 }
 
-// ==================== Imagen 3 Image Generation API ====================
-async function generateImageWithImagen(prompt: string, aspectRatio: string = '1:1'): Promise<Uint8Array> {
+// ==================== Gemini 2.0 Flash Image Generation API ====================
+async function generateImageWithGemini(prompt: string, aspectRatio: string = '1:1'): Promise<Uint8Array> {
   const GOOGLE_API_KEY = Deno.env.get('GOOGLE_API_KEY');
   if (!GOOGLE_API_KEY) {
     throw new Error('GOOGLE_API_KEY not configured');
   }
 
-  // Imagen 3 - Official free model for image generation
-  const model = 'imagen-3.0-generate-001';
+  // Gemini 2.0 Flash with image generation capability
+  const model = 'gemini-2.0-flash-exp-image-generation';
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GOOGLE_API_KEY}`;
   
-  // Imagen uses :predict endpoint (NOT :generateContent)
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:predict?key=${GOOGLE_API_KEY}`;
-  
-  console.log(`Generating image with Imagen 3 (${aspectRatio})...`);
+  console.log(`Generating image with Gemini 2.0 Flash (${aspectRatio})...`);
   
   const response = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      // Imagen 3 format: instances + parameters
-      instances: [
-        { prompt: prompt }
-      ],
-      parameters: {
-        sampleCount: 1,
-        aspectRatio: aspectRatio,
-        outputOptions: {
-          mimeType: "image/png"
+      contents: [
+        {
+          parts: [
+            { text: prompt }
+          ]
         }
+      ],
+      generationConfig: {
+        responseModalities: ["IMAGE", "TEXT"],
+        responseMimeType: "image/png"
       }
     }),
   });
 
   if (response.status === 429) {
-    console.log('Rate limit hit on Imagen 3');
+    console.log('Rate limit hit on Gemini');
     throw new Error('RATE_LIMIT');
   }
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error(`Imagen 3 failed: ${response.status} - ${errorText.substring(0, 500)}`);
-    throw new Error(`Imagen 3 API error: ${response.status}`);
+    console.error(`Gemini failed: ${response.status} - ${errorText.substring(0, 500)}`);
+    throw new Error(`Gemini API error: ${response.status}`);
   }
 
   const data = await response.json();
   
-  // Imagen 3 returns image in: predictions[0].bytesBase64Encoded
-  const imageBase64 = data.predictions?.[0]?.bytesBase64Encoded;
+  // Gemini returns image in: candidates[0].content.parts[].inlineData.data
+  const parts = data.candidates?.[0]?.content?.parts || [];
+  const imagePart = parts.find((part: any) => part.inlineData?.data);
   
-  if (!imageBase64) {
-    console.error('No image in Imagen response:', JSON.stringify(data).substring(0, 300));
-    throw new Error('Imagen 3 did not return an image');
+  if (!imagePart?.inlineData?.data) {
+    console.error('No image in Gemini response:', JSON.stringify(data).substring(0, 500));
+    throw new Error('Gemini did not return an image');
   }
 
-  console.log('✅ Image generated successfully with Imagen 3');
+  console.log('✅ Image generated successfully with Gemini 2.0 Flash');
   
   // Convert base64 to bytes
-  const binaryString = atob(imageBase64);
+  const binaryString = atob(imagePart.inlineData.data);
   const bytes = new Uint8Array(binaryString.length);
   for (let i = 0; i < binaryString.length; i++) {
     bytes[i] = binaryString.charCodeAt(i);
@@ -239,22 +238,22 @@ serve(async (req) => {
     console.log(`[generate-image] Generating ${type} for: ${name}`);
     const { prompt, aspectRatio } = generatePrompt(type, name);
 
-    // Use Google Imagen 3 API for image generation
+    // Use Gemini 2.0 Flash for image generation
     let imageBytes: Uint8Array;
     
     try {
-      imageBytes = await generateImageWithImagen(prompt, aspectRatio);
-    } catch (imagenError) {
-      console.error('Imagen generation failed:', imagenError);
+      imageBytes = await generateImageWithGemini(prompt, aspectRatio);
+    } catch (geminiError) {
+      console.error('Gemini generation failed:', geminiError);
       
-      if (imagenError instanceof Error && imagenError.message === 'RATE_LIMIT') {
+      if (geminiError instanceof Error && geminiError.message === 'RATE_LIMIT') {
         return new Response(JSON.stringify({ 
           error: 'Limite de requisições atingido. Aguarde 60 segundos.',
           retryAfter: 60
         }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
 
-      throw imagenError;
+      throw geminiError;
     }
 
     // Upload to S3
@@ -281,7 +280,7 @@ serve(async (req) => {
     return new Response(JSON.stringify({ 
       success: true, 
       imageUrl: s3ImageUrl,
-      engine: 'google-imagen',
+      engine: 'gemini-2.0-flash',
       type,
       id,
       name
