@@ -209,53 +209,6 @@ async function generateImageWithImagen(prompt: string, aspectRatio: string): Pro
   throw new Error('All Imagen models failed to generate image');
 }
 
-// ==================== Fallback: Lovable AI Gateway ====================
-async function generateImageWithLovable(prompt: string): Promise<Uint8Array> {
-  const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-  if (!LOVABLE_API_KEY) {
-    throw new Error('LOVABLE_API_KEY not configured');
-  }
-
-  console.log('Using Lovable AI Gateway fallback...');
-
-  const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'google/gemini-2.5-flash-image-preview',
-      messages: [{ role: 'user', content: prompt }],
-      modalities: ['image', 'text']
-    }),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    if (response.status === 429) throw new Error('RATE_LIMIT');
-    if (response.status === 402) throw new Error('PAYMENT_REQUIRED');
-    throw new Error(`Lovable AI error: ${response.status} - ${errorText}`);
-  }
-
-  const data = await response.json();
-  const imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-  
-  if (imageUrl && imageUrl.startsWith('data:image')) {
-    const base64Match = imageUrl.match(/^data:image\/[^;]+;base64,(.+)$/);
-    if (base64Match?.[1]) {
-      const binaryString = atob(base64Match[1]);
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
-      return bytes;
-    }
-  }
-
-  throw new Error('No image in Lovable AI response');
-}
-
 // ==================== Main Handler ====================
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -274,14 +227,13 @@ serve(async (req) => {
     console.log(`[generate-image] Generating ${type} for: ${name}`);
     const { prompt, aspectRatio } = generatePrompt(type, name);
 
-    // Try Imagen 4.0 first, then fallback to Lovable AI
+    // Use Google Imagen API directly (no fallback to Lovable AI)
     let imageBytes: Uint8Array;
-    let engine = 'imagen';
     
     try {
       imageBytes = await generateImageWithImagen(prompt, aspectRatio);
     } catch (imagenError) {
-      console.log('Imagen failed, trying Lovable AI fallback:', imagenError);
+      console.error('Imagen generation failed:', imagenError);
       
       if (imagenError instanceof Error && imagenError.message === 'RATE_LIMIT') {
         return new Response(JSON.stringify({ 
@@ -290,31 +242,13 @@ serve(async (req) => {
         }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
 
-      try {
-        imageBytes = await generateImageWithLovable(prompt);
-        engine = 'lovable';
-      } catch (lovableError) {
-        if (lovableError instanceof Error) {
-          if (lovableError.message === 'RATE_LIMIT') {
-            return new Response(JSON.stringify({ 
-              error: 'Rate limit exceeded on all engines.',
-              retryAfter: 60
-            }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-          }
-          if (lovableError.message === 'PAYMENT_REQUIRED') {
-            return new Response(JSON.stringify({ 
-              error: 'Payment required for Lovable AI'
-            }), { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-          }
-        }
-        throw lovableError;
-      }
+      throw imagenError;
     }
 
     // Upload to S3
     const uploadType = type === 'category' ? 'categories' : type === 'product' ? 'products' : 'establishments';
     const s3ImageUrl = await uploadToS3(imageBytes, 'image/png', uploadType, establishmentId || id);
-    console.log(`[generate-image] Uploaded to S3: ${s3ImageUrl} (engine: ${engine})`);
+    console.log(`[generate-image] Uploaded to S3: ${s3ImageUrl}`);
 
     // Update database if ID provided
     if (id) {
@@ -335,7 +269,7 @@ serve(async (req) => {
     return new Response(JSON.stringify({ 
       success: true, 
       imageUrl: s3ImageUrl,
-      engine,
+      engine: 'google-imagen',
       type,
       id,
       name
