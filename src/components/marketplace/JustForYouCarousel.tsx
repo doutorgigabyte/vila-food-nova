@@ -94,19 +94,27 @@ const JustForYouCarousel = ({ mainCategory }: JustForYouCarouselProps) => {
       mainCategory && `bg-gradient-to-b ${theme.bgGradient}`
     )}>
       <div className="container mx-auto px-4">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="p-2 bg-accent/20 rounded-lg hidden md:flex">
-            <Sparkles className={cn("w-5 h-5", theme.accentColor || "text-accent-foreground")} />
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-accent/20 rounded-lg hidden md:flex">
+              <Sparkles className={cn("w-5 h-5", theme.accentColor || "text-accent-foreground")} />
+            </div>
+            <div>
+              <h2 className="text-lg md:text-xl font-bold text-foreground flex items-center gap-2">
+                {theme.forYouTitle}
+                <Sparkles className={cn("w-4 h-4 md:hidden", theme.accentColor || "text-accent")} />
+              </h2>
+              <p className="text-xs md:text-sm text-muted-foreground hidden md:block">
+                {theme.forYouSubtitle}
+              </p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-lg md:text-xl font-bold text-foreground flex items-center gap-2">
-              {theme.forYouTitle}
-              <Sparkles className={cn("w-4 h-4 md:hidden", theme.accentColor || "text-accent")} />
-            </h2>
-            <p className="text-xs md:text-sm text-muted-foreground hidden md:block">
-              {theme.forYouSubtitle}
-            </p>
-          </div>
+          <Link 
+            to={`/produtos/recomendados${mainCategory ? `?categoria=${mainCategory}` : ''}`}
+            className="text-sm font-medium text-primary hover:underline"
+          >
+            Ver todos
+          </Link>
         </div>
 
         {/* 3D Carousel Container */}

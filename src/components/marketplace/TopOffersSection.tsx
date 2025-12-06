@@ -6,6 +6,7 @@ import { useDragScroll } from "@/hooks/useDragScroll";
 import { useProductsByMainCategory } from "@/hooks/useProducts";
 import ProductOfferCard from "./ProductOfferCard";
 import { getCategoryTheme } from "@/lib/categoryThemes";
+import { Link } from "react-router-dom";
 
 interface TopOffersSectionProps {
   mainCategory?: string | null;
@@ -61,6 +62,12 @@ const TopOffersSection = ({ mainCategory }: TopOffersSectionProps) => {
               </p>
             </div>
           </div>
+          <Link 
+            to={`/produtos/ofertas${mainCategory ? `?categoria=${mainCategory}` : ''}`}
+            className="text-sm font-medium text-primary hover:underline"
+          >
+            Ver todos
+          </Link>
         </div>
 
         <div className="relative group">

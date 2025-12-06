@@ -73,6 +73,7 @@ import StoriesManagement from "./pages/dashboard/StoriesManagement";
 import CategoryPage from "./pages/CategoryPage";
 import Menu from "./pages/Menu";
 import Favorites from "./pages/Favorites";
+import ProductsListing from "./pages/ProductsListing";
 
 const queryClient = new QueryClient();
 
@@ -102,6 +103,7 @@ const App = () => (
               <Route path="/pedidos" element={<Orders />} />
               <Route path="/menu" element={<Menu />} />
               <Route path="/favoritos" element={<Favorites />} />
+              <Route path="/produtos/:section" element={<ProductsListing />} />
               {/* Dashboard routes with slug parameter for admin access */}
               <Route path="/painel" element={<EstablishmentDashboard />} />
               <Route path="/painel/:slug" element={<EstablishmentDashboard />} />
