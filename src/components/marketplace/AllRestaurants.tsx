@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Store } from "lucide-react";
 import { Establishment } from "@/hooks/useEstablishment";
 import EstablishmentCard from "./EstablishmentCard";
 import RestaurantFilters from "./RestaurantFilters";
@@ -45,7 +46,10 @@ const AllRestaurants = ({ establishments, loading, mainCategory, subcategory }: 
     return (
       <section className="py-8">
         <div className="container mx-auto px-4">
-          <h2 className="text-xl font-bold mb-6">{titles.stores}</h2>
+          <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
+            <Store className="w-5 h-5 text-primary" />
+            {titles.stores}
+          </h2>
           <div className="text-center py-12">
             <div className="w-24 h-24 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
               <span className="text-4xl">{theme.icon}</span>
@@ -63,15 +67,12 @@ const AllRestaurants = ({ establishments, loading, mainCategory, subcategory }: 
   // Filter establishments based on active filter
   const filteredEstablishments = establishments.filter((est) => {
     switch (activeFilter) {
-      case "new":
-        // Could filter by created_at in the future
-        return true;
-      case "popular":
-        // Could filter by order count in the future
-        return true;
-      case "top_rated":
-        // Could filter by rating in the future
-        return true;
+      case "open":
+        return est.is_open === true;
+      case "delivery":
+        return est.accepts_delivery === true;
+      case "pickup":
+        return est.accepts_pickup === true;
       default:
         return true;
     }
@@ -83,7 +84,10 @@ const AllRestaurants = ({ establishments, loading, mainCategory, subcategory }: 
       mainCategory && `bg-gradient-to-b ${theme.bgGradient}`
     )}>
       <div className="container mx-auto px-4">
-        <h2 className="text-xl font-bold mb-4">{titles.stores}</h2>
+        <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+          <Store className={cn("w-5 h-5", theme.iconColor || "text-primary")} />
+          {titles.stores}
+        </h2>
         
         <RestaurantFilters
           activeFilter={activeFilter}

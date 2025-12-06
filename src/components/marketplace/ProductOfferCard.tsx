@@ -22,7 +22,7 @@ interface Product {
 
 interface ProductOfferCardProps {
   product: Product;
-  variant?: "default" | "large";
+  variant?: "default" | "large" | "compact";
   className?: string;
 }
 
@@ -41,11 +41,11 @@ const ProductOfferCard = ({ product, variant = "default", className }: ProductOf
     >
       <Card className={cn(
         "overflow-hidden hover:shadow-lg transition-all relative rounded-3xl border-0 shadow-md",
-        variant === "large" ? "w-56 md:w-64" : "w-44 md:w-52"
+        variant === "large" ? "w-56 md:w-64" : variant === "compact" ? "w-40 md:w-44" : "w-44 md:w-52"
       )}>
         <div className={cn(
           "relative overflow-hidden bg-muted",
-          variant === "large" ? "h-44 md:h-52" : "h-36"
+          variant === "large" ? "h-44 md:h-52" : variant === "compact" ? "h-32" : "h-36"
         )}>
           {product.image_url ? (
             <img

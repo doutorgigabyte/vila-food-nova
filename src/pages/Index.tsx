@@ -3,19 +3,17 @@ import { useEstablishments } from "@/hooks/useEstablishment";
 import MarketplaceHeader from "@/components/marketplace/MarketplaceHeader";
 import MainCategoriesGrid from "@/components/marketplace/MainCategoriesGrid";
 import SubcategoriesCarousel from "@/components/marketplace/SubcategoriesCarousel";
-import PromoBanners from "@/components/marketplace/PromoBanners";
-import HighlightsSection from "@/components/marketplace/HighlightsSection";
-import TrendingProducts from "@/components/marketplace/TrendingProducts";
-import BestReviewedSection from "@/components/marketplace/BestReviewedSection";
-import RestaurantsSection from "@/components/marketplace/RestaurantsSection";
+import CategoryBannerSlider from "@/components/marketplace/CategoryBannerSlider";
+import TopOffersSection from "@/components/marketplace/TopOffersSection";
+import DepartmentProductsSection from "@/components/marketplace/DepartmentProductsSection";
+import NearbyStoresSection from "@/components/marketplace/NearbyStoresSection";
+import BestStoresSection from "@/components/marketplace/BestStoresSection";
+import NewPartnersSection from "@/components/marketplace/NewPartnersSection";
+import JustForYouCarousel from "@/components/marketplace/JustForYouCarousel";
 import VilasSection from "@/components/marketplace/VilasSection";
 import AllRestaurants from "@/components/marketplace/AllRestaurants";
 import VideoHighlightsSection from "@/components/marketplace/VideoHighlightsSection";
 import MobileBottomNav from "@/components/marketplace/MobileBottomNav";
-import TopOffersSection from "@/components/marketplace/TopOffersSection";
-import BestStoresSection from "@/components/marketplace/BestStoresSection";
-import NewPartnersSection from "@/components/marketplace/NewPartnersSection";
-import JustForYouCarousel from "@/components/marketplace/JustForYouCarousel";
 import Footer from "@/components/landing/Footer";
 import BusinessCTABanner from "@/components/marketplace/BusinessCTABanner";
 import SmartSearch from "@/components/marketplace/SmartSearch";
@@ -29,6 +27,7 @@ const Index = () => {
   useEffect(() => {
     setOrderSourceDirect('marketplace');
   }, []);
+  
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedMainCategory, setSelectedMainCategory] = useState<string | null>(null);
   const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null);
@@ -91,14 +90,17 @@ const Index = () => {
           onSubcategoryClick={setSelectedSubcategory}
         />
 
-        {/* Promotional Banners */}
-        <PromoBanners />
+        {/* Category-specific Banner Slider with real images */}
+        <CategoryBannerSlider mainCategory={selectedMainCategory} />
 
         {/* Video Highlights - Premium Partner Section */}
         <VideoHighlightsSection />
 
-        {/* Top Offers - filtered by category */}
+        {/* Top Offers - Products with discounts, filtered by category */}
         <TopOffersSection mainCategory={selectedMainCategory} />
+
+        {/* Department-organized Products (only when no category selected) */}
+        <DepartmentProductsSection mainCategory={selectedMainCategory} />
 
         {/* Vilas Gastronômicas - only show when no category or comida */}
         {(!selectedMainCategory || selectedMainCategory === 'comida') && (
@@ -108,35 +110,33 @@ const Index = () => {
         {/* Just For You Carousel - filtered by category */}
         <JustForYouCarousel mainCategory={selectedMainCategory} />
 
-        {/* Best Stores Nearby */}
-        <BestStoresSection />
+        {/* Nearby Stores - Establishments by proximity */}
+        <NearbyStoresSection 
+          mainCategory={selectedMainCategory} 
+          subcategory={selectedSubcategory} 
+        />
 
-        {/* New Partners */}
-        <NewPartnersSection />
+        {/* Best Stores - Filtered by category */}
+        <BestStoresSection 
+          mainCategory={selectedMainCategory} 
+          subcategory={selectedSubcategory} 
+        />
 
-        {/* Highlights - only show when no category or comida */}
-        {(!selectedMainCategory || selectedMainCategory === 'comida') && (
-          <HighlightsSection />
-        )}
-
-        {/* Trending Products - filtered by category */}
-        <TrendingProducts mainCategory={selectedMainCategory} />
-
-        {/* Best Reviewed */}
-        <BestReviewedSection />
-
-        {/* Want to Dine In - only show when no category or comida */}
-        {(!selectedMainCategory || selectedMainCategory === 'comida') && (
-          <RestaurantsSection />
-        )}
+        {/* New Partners - Filtered by category */}
+        <NewPartnersSection 
+          mainCategory={selectedMainCategory} 
+          subcategory={selectedSubcategory} 
+        />
 
         {/* Business CTA Banner */}
         <BusinessCTABanner />
 
-        {/* All Restaurants */}
+        {/* All Establishments - Filtered */}
         <AllRestaurants 
           establishments={filteredEstablishments} 
           loading={loading} 
+          mainCategory={selectedMainCategory}
+          subcategory={selectedSubcategory}
         />
       </main>
 
