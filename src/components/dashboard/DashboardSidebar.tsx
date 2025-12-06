@@ -31,7 +31,9 @@ import {
   CreditCard,
   Store,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  Brain,
+  Sparkles
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -55,6 +57,7 @@ interface DashboardSidebarProps {
 
 const getMenuItems = (baseUrl: string) => [
   { icon: LayoutDashboard, label: "Dashboard", href: baseUrl },
+  { icon: Brain, label: "Diagnóstico IA", href: `${baseUrl}/analise-ia`, badge: "Novo" },
   { icon: Store, label: "PDV", href: `${baseUrl}/pdv` },
   { icon: ShoppingBag, label: "Pedidos", href: `${baseUrl}/pedidos` },
   { icon: Calendar, label: "Agendados", href: `${baseUrl}/agendados` },
@@ -163,6 +166,7 @@ const DashboardSidebar = ({
           {menuItems.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.href);
+            const itemBadge = 'badge' in item ? item.badge : null;
             return (
               <Link
                 key={item.label}
@@ -175,6 +179,11 @@ const DashboardSidebar = ({
               >
                 <Icon className="w-5 h-5 shrink-0" />
                 <span className="flex-1 text-sm font-medium">{item.label}</span>
+                {itemBadge && (
+                  <Badge className="bg-primary/20 text-primary text-[10px] px-1.5 py-0">
+                    {itemBadge}
+                  </Badge>
+                )}
               </Link>
             );
           })}
