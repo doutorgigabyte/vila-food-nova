@@ -2,10 +2,12 @@ import { ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDragScroll } from "@/hooks/useDragScroll";
-import { useEstablishmentsByCategory, useCategoryTitle } from "@/hooks/useEstablishmentsByCategory";
+import { useEstablishmentsByMainCategory } from "@/hooks/useEstablishmentsByMainCategory";
+import { useCategoryTitle } from "@/hooks/useEstablishmentsByCategory";
 import { cn } from "@/lib/utils";
 import EstablishmentCard from "./EstablishmentCard";
 import { getCategoryTheme } from "@/lib/categoryThemes";
+import { Link } from "react-router-dom";
 
 interface NewPartnersSectionProps {
   mainCategory?: string | null;
@@ -14,7 +16,14 @@ interface NewPartnersSectionProps {
 
 const NewPartnersSection = ({ mainCategory, subcategory }: NewPartnersSectionProps) => {
   const { scrollRef, isDragging, handlers, scroll } = useDragScroll();
-  const { establishments, loading } = useEstablishmentsByCategory(mainCategory || null, subcategory, 6);
+  
+  // Usar o novo hook que filtra corretamente usando parent_category_id
+  const { establishments, loading } = useEstablishmentsByMainCategory(
+    mainCategory || null,
+    subcategory || null,
+    8
+  );
+  
   const titles = useCategoryTitle(mainCategory || null);
   const theme = getCategoryTheme(mainCategory || null);
 

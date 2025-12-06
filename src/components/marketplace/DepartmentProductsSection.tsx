@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
-import { ChevronLeft, ChevronRight, Package } from "lucide-react";
+import { ChevronLeft, ChevronRight, Layers, Package } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useProductsByMainCategory } from "@/hooks/useProducts";
+import { useProductsByMainCategory } from "@/hooks/useProductsByCategory";
 import ProductOfferCard from "./ProductOfferCard";
 import { getCategoryTheme } from "@/lib/categoryThemes";
 import { Link } from "react-router-dom";
@@ -169,15 +169,15 @@ const DepartmentProductsSection = ({ mainCategory }: DepartmentProductsSectionPr
       <div className="container mx-auto px-4">
         <div className="flex items-center gap-3 mb-4">
           <div className="p-2 bg-primary/10 rounded-xl hidden md:flex">
-            <Package className="w-5 h-5 text-primary" />
+            <Layers className="w-5 h-5 text-primary" />
           </div>
           <div>
             <h2 className="text-lg md:text-xl font-bold text-foreground flex items-center gap-2">
-              Navegue por Departamento
-              <Package className="w-4 h-4 text-primary md:hidden" />
+              Explore por Departamento
+              <Layers className="w-4 h-4 text-primary md:hidden" />
             </h2>
             <p className="text-xs md:text-sm text-muted-foreground hidden md:block">
-              Encontre produtos organizados por categoria
+              Produtos organizados por categoria
             </p>
           </div>
         </div>
