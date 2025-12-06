@@ -12,6 +12,20 @@ interface SubcategoriesCarouselProps {
   onSubcategoryClick?: (subcategoryId: string | null) => void;
 }
 
+// Cores de fundo para os cards das subcategorias
+const subcategoryColors = [
+  "bg-rose-100 dark:bg-rose-900/30",
+  "bg-amber-100 dark:bg-amber-900/30",
+  "bg-lime-100 dark:bg-lime-900/30",
+  "bg-cyan-100 dark:bg-cyan-900/30",
+  "bg-violet-100 dark:bg-violet-900/30",
+  "bg-pink-100 dark:bg-pink-900/30",
+  "bg-orange-100 dark:bg-orange-900/30",
+  "bg-teal-100 dark:bg-teal-900/30",
+  "bg-indigo-100 dark:bg-indigo-900/30",
+  "bg-emerald-100 dark:bg-emerald-900/30",
+];
+
 const SubcategoriesCarousel = ({ 
   mainCategory, 
   selectedSubcategory, 
@@ -56,14 +70,12 @@ const SubcategoriesCarousel = ({
           )}>
             {categoryConfig?.name || "Subcategorias"}
           </h3>
-          {hasMore && (
-            <button
-              onClick={handleViewAll}
-              className="text-xs md:text-sm text-primary hover:underline touch-feedback"
-            >
-              Ver todas
-            </button>
-          )}
+          <button
+            onClick={handleViewAll}
+            className="text-xs md:text-sm text-primary hover:underline touch-feedback"
+          >
+            Ver todas
+          </button>
         </div>
         
         <div className="relative group">
@@ -89,22 +101,31 @@ const SubcategoriesCarousel = ({
               scrollSnapType: isDragging ? 'none' : 'x proximity',
             }}
           >
-            {/* "Todos" button */}
+            {/* "Todos" card */}
             <button
               onClick={() => !isDragging && onSubcategoryClick?.(null)}
               className={cn(
-                "flex-shrink-0 px-4 py-2 rounded-full transition-all duration-200 touch-feedback scroll-card",
-                "text-sm font-medium whitespace-nowrap",
+                "flex-shrink-0 flex flex-col items-center justify-center transition-all duration-200 touch-feedback scroll-card",
+                "w-16 h-20 md:w-20 md:h-24 rounded-xl active:scale-95",
                 !selectedSubcategory 
-                  ? `${mainCategoryConfig?.bgColor || 'bg-primary/10'} ${mainCategoryConfig?.iconColor || 'text-primary'} shadow-sm`
-                  : "bg-muted/60 text-muted-foreground hover:bg-muted"
+                  ? `${mainCategoryConfig?.bgColor || 'bg-primary/10'} ring-2 ring-primary shadow-md`
+                  : "bg-muted/60 hover:bg-muted"
               )}
             >
-              Todos
+              <div className="text-2xl md:text-3xl mb-1">🏠</div>
+              <span className={cn(
+                "text-[10px] md:text-xs font-medium text-center leading-tight",
+                !selectedSubcategory 
+                  ? mainCategoryConfig?.iconColor || "text-primary"
+                  : "text-foreground"
+              )}>
+                Todos
+              </span>
             </button>
 
-            {visibleSubcategories.map((subcategory) => {
+            {visibleSubcategories.map((subcategory, index) => {
               const isSelected = selectedSubcategory === subcategory.id;
+              const bgColor = subcategoryColors[index % subcategoryColors.length];
               
               return (
                 <button
@@ -113,27 +134,34 @@ const SubcategoriesCarousel = ({
                     isSelected ? null : subcategory.id
                   )}
                   className={cn(
-                    "flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-full transition-all duration-200 touch-feedback scroll-card",
-                    "text-sm font-medium whitespace-nowrap active:scale-95",
+                    "flex-shrink-0 flex flex-col items-center justify-center transition-all duration-200 touch-feedback scroll-card",
+                    "w-16 h-20 md:w-20 md:h-24 rounded-xl active:scale-95",
                     isSelected 
-                      ? `${mainCategoryConfig?.bgColor || 'bg-primary/10'} ${mainCategoryConfig?.iconColor || 'text-primary'} shadow-sm`
-                      : "bg-muted/60 text-foreground hover:bg-muted"
+                      ? `${bgColor} ring-2 ring-primary shadow-md`
+                      : `${bgColor} hover:shadow-md`
                   )}
                 >
-                  <span className="text-base">{subcategory.icon}</span>
-                  <span>{subcategory.name}</span>
+                  <div className="text-2xl md:text-3xl mb-1">{subcategory.icon}</div>
+                  <span className={cn(
+                    "text-[10px] md:text-xs font-medium text-center leading-tight px-1 line-clamp-2",
+                    isSelected ? "text-primary" : "text-foreground"
+                  )}>
+                    {subcategory.name}
+                  </span>
                 </button>
               );
             })}
 
-            {/* "Ver todas" button at the end */}
+            {/* "Ver todas" card at the end */}
             {hasMore && (
               <button
                 onClick={handleViewAll}
-                className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-full bg-muted/80 text-muted-foreground hover:bg-muted transition-all touch-feedback scroll-card"
+                className="flex-shrink-0 flex flex-col items-center justify-center w-16 h-20 md:w-20 md:h-24 rounded-xl bg-muted/80 hover:bg-muted transition-all touch-feedback scroll-card"
               >
-                <MoreHorizontal className="w-4 h-4" />
-                <span className="text-sm font-medium">Ver todas</span>
+                <MoreHorizontal className="w-6 h-6 md:w-7 md:h-7 mb-1 text-muted-foreground" />
+                <span className="text-[10px] md:text-xs font-medium text-muted-foreground text-center">
+                  Ver todas
+                </span>
               </button>
             )}
           </div>
