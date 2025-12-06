@@ -831,6 +831,7 @@ export type Database = {
           name: string
           phone: string
           updated_at: string | null
+          user_id: string | null
           vehicle_type: string | null
         }
         Insert: {
@@ -844,6 +845,7 @@ export type Database = {
           name: string
           phone: string
           updated_at?: string | null
+          user_id?: string | null
           vehicle_type?: string | null
         }
         Update: {
@@ -857,6 +859,7 @@ export type Database = {
           name?: string
           phone?: string
           updated_at?: string | null
+          user_id?: string | null
           vehicle_type?: string | null
         }
         Relationships: [
@@ -909,6 +912,100 @@ export type Database = {
             columns: ["establishment_id"]
             isOneToOne: false
             referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      delivery_tracking: {
+        Row: {
+          accepted_at: string | null
+          cancelled_at: string | null
+          created_at: string
+          current_lat: number | null
+          current_lng: number | null
+          delivered_at: string | null
+          delivery_lat: number | null
+          delivery_lng: number | null
+          distance_km: number | null
+          driver_id: string
+          establishment_id: string
+          estimated_minutes: number | null
+          id: string
+          notes: string | null
+          order_id: string
+          picked_up_at: string | null
+          pickup_lat: number | null
+          pickup_lng: number | null
+          route_polyline: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          cancelled_at?: string | null
+          created_at?: string
+          current_lat?: number | null
+          current_lng?: number | null
+          delivered_at?: string | null
+          delivery_lat?: number | null
+          delivery_lng?: number | null
+          distance_km?: number | null
+          driver_id: string
+          establishment_id: string
+          estimated_minutes?: number | null
+          id?: string
+          notes?: string | null
+          order_id: string
+          picked_up_at?: string | null
+          pickup_lat?: number | null
+          pickup_lng?: number | null
+          route_polyline?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          cancelled_at?: string | null
+          created_at?: string
+          current_lat?: number | null
+          current_lng?: number | null
+          delivered_at?: string | null
+          delivery_lat?: number | null
+          delivery_lng?: number | null
+          distance_km?: number | null
+          driver_id?: string
+          establishment_id?: string
+          estimated_minutes?: number | null
+          id?: string
+          notes?: string | null
+          order_id?: string
+          picked_up_at?: string | null
+          pickup_lat?: number | null
+          pickup_lng?: number | null
+          route_polyline?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_tracking_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_tracking_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_tracking_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
             referencedColumns: ["id"]
           },
         ]
@@ -2888,6 +2985,7 @@ export type Database = {
         | "manager"
         | "cashier"
         | "attendant"
+        | "driver"
       delivery_type: "delivery" | "pickup" | "table" | "other"
       establishment_status: "active" | "inactive" | "suspended" | "pending"
       order_status:
@@ -3035,6 +3133,7 @@ export const Constants = {
         "manager",
         "cashier",
         "attendant",
+        "driver",
       ],
       delivery_type: ["delivery", "pickup", "table", "other"],
       establishment_status: ["active", "inactive", "suspended", "pending"],

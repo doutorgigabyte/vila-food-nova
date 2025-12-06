@@ -89,6 +89,8 @@ import AffiliateReports from "./pages/affiliate/AffiliateReports";
 import AffiliateSettings from "./pages/affiliate/AffiliateSettings";
 // Admin settings
 import AdminSettings from "./pages/admin/AdminSettings";
+// Driver app
+import DriverApp from "./pages/driver/DriverApp";
 
 const queryClient = new QueryClient();
 
@@ -212,6 +214,8 @@ const App = () => (
               <Route path="/afiliado/vouchers" element={<AffiliateVouchers />} />
               <Route path="/afiliado/relatorios" element={<AffiliateReports />} />
               <Route path="/afiliado/configuracoes" element={<AffiliateSettings />} />
+              {/* Driver app */}
+              <Route path="/entregador" element={<DriverApp />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
