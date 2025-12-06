@@ -43,10 +43,13 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.migrate-legacy-data]
-verify_jwt = false
+verify_jwt = true
 
 [functions.sync-legacy-users]
-verify_jwt = false
+verify_jwt = true
+
+[functions.migrate-external-data]
+verify_jwt = true
 
 [functions.ai-recommendations]
 verify_jwt = false
