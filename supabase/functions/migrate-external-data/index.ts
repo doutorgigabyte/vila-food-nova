@@ -99,27 +99,41 @@ serve(async (req) => {
       console.log("Starting migration by slug...");
 
       // Buscar estabelecimentos externos
-      const { data: extEstabelecimentos } = await externalClient
+      const { data: extEstabelecimentos, error: extError } = await externalClient
         .from("estabelecimentos")
         .select("*");
 
+      console.log(`External establishments found: ${extEstabelecimentos?.length || 0}`);
+      if (extError) console.log(`External error: ${extError.message}`);
+
       // Buscar estabelecimentos atuais
-      const { data: currentEstablishments } = await currentClient
+      const { data: currentEstablishments, error: curError } = await currentClient
         .from("establishments")
         .select("id, slug");
+
+      console.log(`Current establishments found: ${currentEstablishments?.length || 0}`);
+      if (curError) console.log(`Current error: ${curError.message}`);
+
+      // Listar slugs para debug
+      const extSlugs = (extEstabelecimentos ?? []).map(e => e.slug || e.subdominio).filter(Boolean);
+      const curSlugs = (currentEstablishments ?? []).map(e => e.slug).filter(Boolean);
+      console.log(`External slugs: ${JSON.stringify(extSlugs.slice(0, 5))}...`);
+      console.log(`Current slugs: ${JSON.stringify(curSlugs.slice(0, 5))}...`);
 
       // Criar mapa de slug -> novo ID
       const slugToNewId = new Map(currentEstablishments?.map(e => [e.slug, e.id]) ?? []);
       
-      // Criar mapa de ID externo -> novo ID (baseado no slug)
+      // Criar mapa de ID externo -> novo ID (baseado no slug ou subdominio)
       const extIdToNewId = new Map<string, string>();
       const mappedEstablishments: any[] = [];
 
       for (const ext of extEstabelecimentos ?? []) {
-        const newId = slugToNewId.get(ext.slug);
+        // Tentar slug primeiro, depois subdominio
+        const extSlug = ext.slug || ext.subdominio;
+        const newId = slugToNewId.get(extSlug);
         if (newId) {
           extIdToNewId.set(String(ext.id), newId);
-          mappedEstablishments.push({ legacy_id: ext.id, nome: ext.nome, slug: ext.slug, new_id: newId });
+          mappedEstablishments.push({ legacy_id: ext.id, nome: ext.nome, slug: extSlug, new_id: newId });
         }
       }
 
