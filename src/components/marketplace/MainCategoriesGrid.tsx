@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { 
   ShoppingCart, 
   Pill, 
@@ -123,11 +123,18 @@ export const segmentToCategoryMap: Record<string, string> = {
 };
 
 interface MainCategoriesGridProps {
-  selectedCategory: string | null;
-  onCategorySelect: (categoryId: string | null) => void;
+  selectedCategory?: string | null;
+  onCategorySelect?: (categoryId: string | null) => void;
 }
 
 const MainCategoriesGrid = ({ selectedCategory, onCategorySelect }: MainCategoriesGridProps) => {
+  const navigate = useNavigate();
+
+  const handleCategoryClick = (categoryId: string) => {
+    // Navigate to the dedicated category page
+    navigate(`/categoria/${categoryId}`);
+  };
+
   return (
     <section className="py-6 md:py-8 bg-gradient-to-b from-primary/5 to-transparent">
       <div className="container mx-auto px-4">
@@ -142,7 +149,7 @@ const MainCategoriesGrid = ({ selectedCategory, onCategorySelect }: MainCategori
             return (
               <button
                 key={category.id}
-                onClick={() => onCategorySelect(isSelected ? null : category.id)}
+                onClick={() => handleCategoryClick(category.id)}
                 className={cn(
                   "flex flex-col items-center justify-center p-4 md:p-6 rounded-2xl transition-all duration-300 touch-feedback",
                   "border-2 hover:shadow-lg active:scale-95",
