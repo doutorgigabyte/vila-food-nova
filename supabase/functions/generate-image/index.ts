@@ -76,7 +76,6 @@ async function uploadToS3(fileBuffer: Uint8Array, contentType: string, type: str
   const uploadUrl = `https://${host}/${s3Key}`;
   console.log('Uploading to S3:', s3Key);
 
-  // Convert Uint8Array to ArrayBuffer for fetch body
   const bodyBuffer = new ArrayBuffer(fileBuffer.byteLength);
   new Uint8Array(bodyBuffer).set(fileBuffer);
 
@@ -124,99 +123,79 @@ function getCategoryColor(categoryName: string): string {
   return colors[hash % colors.length];
 }
 
-// ==================== Prompt Generation ====================
-function generatePrompt(type: string, name: string): { prompt: string; aspectRatio: string } {
+// ==================== Prompt Generation for Pollinations ====================
+function generatePollinationsPrompt(type: string, name: string): { description: string; width: number; height: number } {
+  const encodeName = encodeURIComponent(name);
+  
   switch (type) {
     case 'product':
       return {
-        prompt: `Professional food photography of "${name}". High-end commercial style, appetizing presentation, soft gradient background, restaurant quality, ready for delivery app. Ultra high resolution):1.4, no text.`,
-        aspectRatio: '1:1'
+        description: `professional%20food%20photography%20${encodeName}%20appetizing%20delicious%20commercial%20quality%20soft%20gradient%20background%20restaurant%20presentation%20high%20resolution`,
+        width: 512,
+        height: 512
       };
-    case 'category':
-      const colorScheme = getCategoryColor(name);
+    case 'category': {
+      const colorScheme = getCategoryColor(name).replace(/ /g, '%20');
       return {
-        prompt: `3D glossy icon for food category "${name}". ${colorScheme} color scheme, circular shape, soft watercolor gradient background, modern app-ready UI/UX quality, no text.`,
-        aspectRatio: '1:1'
+        description: `3D%20glossy%20food%20icon%20${encodeName}%20${colorScheme}%20circular%20shape%20watercolor%20gradient%20background%20modern%20app%20UI%20design`,
+        width: 512,
+        height: 512
       };
+    }
     case 'logo':
     case 'establishment_logo':
       return {
-        prompt: `Professional minimalist business logo for "${name}" restaurant/food business. Clean modern flat design, vibrant appetizing colors, centered composition, suitable as app icon, no text.`,
-        aspectRatio: '1:1'
+        description: `minimalist%20restaurant%20logo%20${encodeName}%20clean%20modern%20flat%20design%20vibrant%20colors%20centered%20composition%20professional%20business`,
+        width: 512,
+        height: 512
       };
     case 'banner':
     case 'establishment_banner':
       return {
-        prompt: `Professional wide restaurant banner for "${name}". Panoramic format, appetizing food arrangement, warm inviting lighting, high-end commercial photography, welcoming atmosphere, no text.`,
-        aspectRatio: '16:9'
+        description: `professional%20restaurant%20banner%20${encodeName}%20panoramic%20appetizing%20food%20warm%20lighting%20commercial%20photography%20welcoming%20atmosphere`,
+        width: 1024,
+        height: 576
       };
     default:
-      return { prompt: `Professional image of ${name}, high quality, no text.`, aspectRatio: '1:1' };
+      return {
+        description: `professional%20image%20${encodeName}%20high%20quality`,
+        width: 512,
+        height: 512
+      };
   }
 }
 
-// ==================== Gemini 2.0 Flash Image Generation API ====================
-async function generateImageWithGemini(prompt: string, aspectRatio: string = '1:1'): Promise<Uint8Array> {
-  const GOOGLE_API_KEY = Deno.env.get('GOOGLE_API_KEY');
-  if (!GOOGLE_API_KEY) {
-    throw new Error('GOOGLE_API_KEY not configured');
-  }
-
-  // Gemini 2.0 Flash Experimental with image generation
-  const model = 'gemini-2.0-flash-exp';
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GOOGLE_API_KEY}`;
+// ==================== Pollinations.ai Image Generation ====================
+async function generateImageWithPollinations(type: string, name: string): Promise<Uint8Array> {
+  const { description, width, height } = generatePollinationsPrompt(type, name);
   
-  console.log(`Generating image with Gemini 2.0 Flash Exp (${aspectRatio})...`);
+  // Add seed for reproducibility and nologo to avoid watermarks
+  const seed = Math.floor(Math.random() * 1000000);
+  const url = `https://image.pollinations.ai/prompt/${description}?width=${width}&height=${height}&seed=${seed}&nologo=true`;
+  
+  console.log(`Generating image with Pollinations.ai: ${url.substring(0, 150)}...`);
   
   const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [
-        {
-          parts: [
-            { text: `Generate an image: ${prompt}` }
-          ]
-        }
-      ],
-      generationConfig: {
-        responseModalities: ["IMAGE", "TEXT"]
-      }
-    }),
+    method: 'GET',
+    headers: {
+      'Accept': 'image/png,image/jpeg,image/*',
+    },
   });
-
-  if (response.status === 429) {
-    console.log('Rate limit hit on Gemini');
-    throw new Error('RATE_LIMIT');
-  }
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error(`Gemini failed: ${response.status} - ${errorText.substring(0, 500)}`);
-    throw new Error(`Gemini API error: ${response.status}`);
+    console.error(`Pollinations failed: ${response.status} - ${errorText.substring(0, 200)}`);
+    throw new Error(`Pollinations API error: ${response.status}`);
   }
 
-  const data = await response.json();
-  console.log('Gemini response structure:', JSON.stringify(data).substring(0, 300));
+  const arrayBuffer = await response.arrayBuffer();
+  const bytes = new Uint8Array(arrayBuffer);
   
-  // Gemini returns image in: candidates[0].content.parts[].inlineData.data
-  const parts = data.candidates?.[0]?.content?.parts || [];
-  const imagePart = parts.find((part: any) => part.inlineData?.data);
-  
-  if (!imagePart?.inlineData?.data) {
-    console.error('No image in Gemini response:', JSON.stringify(data).substring(0, 500));
-    throw new Error('Gemini did not return an image');
+  if (bytes.length < 1000) {
+    throw new Error('Pollinations returned invalid/empty image');
   }
 
-  console.log('✅ Image generated successfully with Gemini 2.0 Flash');
-  
-  // Convert base64 to bytes
-  const binaryString = atob(imagePart.inlineData.data);
-  const bytes = new Uint8Array(binaryString.length);
-  for (let i = 0; i < binaryString.length; i++) {
-    bytes[i] = binaryString.charCodeAt(i);
-  }
-  
+  console.log(`✅ Image generated successfully with Pollinations.ai (${bytes.length} bytes)`);
   return bytes;
 }
 
@@ -236,25 +215,9 @@ serve(async (req) => {
     }
 
     console.log(`[generate-image] Generating ${type} for: ${name}`);
-    const { prompt, aspectRatio } = generatePrompt(type, name);
 
-    // Use Gemini 2.0 Flash for image generation
-    let imageBytes: Uint8Array;
-    
-    try {
-      imageBytes = await generateImageWithGemini(prompt, aspectRatio);
-    } catch (geminiError) {
-      console.error('Gemini generation failed:', geminiError);
-      
-      if (geminiError instanceof Error && geminiError.message === 'RATE_LIMIT') {
-        return new Response(JSON.stringify({ 
-          error: 'Limite de requisições atingido. Aguarde 60 segundos.',
-          retryAfter: 60
-        }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-      }
-
-      throw geminiError;
-    }
+    // Use Pollinations.ai for image generation (free, no rate limits)
+    const imageBytes = await generateImageWithPollinations(type, name);
 
     // Upload to S3
     const uploadType = type === 'category' ? 'categories' : type === 'product' ? 'products' : 'establishments';
@@ -280,7 +243,7 @@ serve(async (req) => {
     return new Response(JSON.stringify({ 
       success: true, 
       imageUrl: s3ImageUrl,
-      engine: 'gemini-2.0-flash',
+      engine: 'pollinations.ai',
       type,
       id,
       name
