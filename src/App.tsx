@@ -9,6 +9,7 @@ import { CartProvider } from "./hooks/useCart";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
 import Vila from "./pages/Vila";
 import Vilas from "./pages/Vilas";
+import Conheca from "./pages/Conheca";
 import VilasManagement from "./pages/admin/VilasManagement";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -79,10 +80,10 @@ const App = () => (
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<Index />} />
+              <Route path="/conheca" element={<Conheca />} />
+              <Route path="/marketplace" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/recuperar-senha" element={<RecoverPassword />} />
-              <Route path="/cadastro-estabelecimento" element={<RegisterEstablishment />} />
-              <Route path="/marketplace" element={<Marketplace />} />
               <Route path="/loja/:slug" element={<Store />} />
               <Route path="/vilas" element={<Vilas />} />
               <Route path="/vila/:slug" element={<Vila />} />
