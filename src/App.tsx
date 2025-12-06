@@ -158,7 +158,7 @@ const App = () => (
               <Route path="/painel/financeiro" element={<AdvancedFinanceManagement />} />
               <Route path="/painel/fornecedores" element={<SuppliersManagement />} />
               <Route path="/painel/pagamentos" element={<PaymentsManagement />} />
-              <Route path="/dashboard/mercadopago" element={<MercadoPagoManagement />} />
+              <Route path="/painel/stories" element={<StoriesManagement />} />
               <Route path="/dashboard/mercadopago/callback" element={<MercadoPagoCallback />} />
               {/* Admin routes */}
               <Route path="/admin" element={<ProtectedAdminRoute><AdminDashboard /></ProtectedAdminRoute>} />

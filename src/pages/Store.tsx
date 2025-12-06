@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -17,6 +18,8 @@ import { StoreInfoTab } from "@/components/store/StoreInfoTab";
 import { StoreFloatingCart } from "@/components/store/StoreFloatingCart";
 import { StoreAccountTab } from "@/components/store/StoreAccountTab";
 import StoreBottomNav from "@/components/store/StoreBottomNav";
+import StoreStories from "@/components/store/StoreStories";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 const Store = () => {
@@ -50,7 +53,29 @@ const Store = () => {
   const [selectedProduct, setSelectedProduct] = useState<StoreProduct | null>(null);
   const [isCartOpen, setIsCartOpen] = useState(false);
 
-  // Get current establishment info for cart
+  // Fetch stories for this establishment
+  const { data: stories } = useQuery({
+    queryKey: ["store-stories", establishment?.id],
+    queryFn: async () => {
+      if (!establishment?.id) return [];
+      const { data, error } = await supabase
+        .from("establishment_videos")
+        .select("id, video_url, thumbnail_url, description, duration")
+        .eq("establishment_id", establishment.id)
+        .eq("is_active", true)
+        .order("sort_order", { ascending: true });
+      
+      if (error) throw error;
+      return (data || []).map(s => ({
+        id: s.id,
+        videoUrl: s.video_url,
+        thumbnailUrl: s.thumbnail_url || s.video_url,
+        description: s.description || undefined,
+        duration: s.duration || 15
+      }));
+    },
+    enabled: !!establishment?.id,
+  });
   const currentEstablishmentInfo: EstablishmentInfo | null = establishment
     ? {
         id: establishment.id,
@@ -220,6 +245,18 @@ const Store = () => {
         <StoreAccountTab establishmentSlug={establishment.slug} />
       ) : (
         <>
+          {/* Stories */}
+          {stories && stories.length > 0 && (
+            <div className="px-4 pt-2">
+              <StoreStories
+                stories={stories}
+                establishmentName={establishment.name}
+                establishmentLogo={establishment.logo_url || undefined}
+                primaryColor={establishment.primary_color || undefined}
+              />
+            </div>
+          )}
+
           {/* Hero Section */}
           <StoreHero establishment={establishment} cashbackPercentage={5} />
 
