@@ -68,6 +68,7 @@ import Roadmap from "./pages/admin/Roadmap";
 import SystemHealthCheck from "./pages/admin/SystemHealthCheck";
 import VilaTok from "./pages/VilaTok";
 import VideosManagement from "./pages/dashboard/VideosManagement";
+import CategoryPage from "./pages/CategoryPage";
 
 const queryClient = new QueryClient();
 
@@ -89,6 +90,7 @@ const App = () => (
               <Route path="/recuperar-senha" element={<RecoverPassword />} />
               <Route path="/loja/:slug" element={<Store />} />
               <Route path="/vilatok" element={<VilaTok />} />
+              <Route path="/categoria/:categoryId" element={<CategoryPage />} />
               <Route path="/vilas" element={<Vilas />} />
               <Route path="/vila/:slug" element={<Vila />} />
               <Route path="/checkout" element={<Checkout />} />
