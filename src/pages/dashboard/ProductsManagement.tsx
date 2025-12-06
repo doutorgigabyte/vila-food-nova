@@ -340,6 +340,7 @@ const ProductsManagement = () => {
               onUpload={(url) => setForm({ ...form, image_url: url })}
               onRemove={() => setForm({ ...form, image_url: "" })}
               aspectRatio="square"
+              establishmentId={establishmentId || undefined}
             />
 
             <div className="space-y-2">
