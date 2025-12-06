@@ -36,6 +36,9 @@ verify_jwt = false
 [functions.mercadopago-affiliate-payout]
 verify_jwt = false
 
+[functions.mercadopago-multi-split]
+verify_jwt = false
+
 [functions.whatsapp-notification]
 verify_jwt = false
 
