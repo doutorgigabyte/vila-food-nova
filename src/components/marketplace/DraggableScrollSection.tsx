@@ -87,9 +87,14 @@ const DraggableScrollSection = ({
             ref={scrollRef}
             {...handlers}
             className={cn(
-              "flex gap-3 md:gap-4 overflow-x-auto scrollbar-hide pb-2 select-none drag-scroll-container",
-              isDragging && "cursor-grabbing"
+              "flex gap-3 md:gap-4 overflow-x-auto scrollbar-hide pb-2 select-none",
+              "touch-pan-y will-change-scroll overscroll-x-contain",
+              isDragging ? "cursor-grabbing" : "cursor-grab"
             )}
+            style={{
+              WebkitOverflowScrolling: 'touch',
+              scrollSnapType: isDragging ? 'none' : 'x proximity',
+            }}
           >
             {children}
           </div>

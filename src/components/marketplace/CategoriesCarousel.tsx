@@ -144,19 +144,24 @@ const CategoriesCarousel = ({ mainCategory, selectedCategory, onCategoryClick }:
             ref={scrollRef}
             {...handlers}
             className={cn(
-              "flex gap-3 md:gap-4 overflow-x-auto scrollbar-hide pb-2 select-none drag-scroll-container",
-              isDragging && "cursor-grabbing"
+              "flex gap-3 md:gap-4 overflow-x-auto scrollbar-hide pb-2 select-none",
+              "touch-pan-y will-change-scroll overscroll-x-contain",
+              isDragging ? "cursor-grabbing" : "cursor-grab"
             )}
+            style={{
+              WebkitOverflowScrolling: 'touch',
+              scrollSnapType: isDragging ? 'none' : 'x proximity',
+            }}
           >
             {categories.map((category) => {
               const IconComponent = category.icon;
               const isSelected = selectedCategory === category.id;
               
               return (
-                <button
+              <button
                   key={category.id}
                   onClick={() => !isDragging && onCategoryClick?.(category.id)}
-                  className="flex-shrink-0 flex flex-col items-center gap-1.5 group/item touch-feedback"
+                  className="flex-shrink-0 flex flex-col items-center gap-1.5 group/item touch-feedback scroll-card"
                 >
                   <div 
                     className={cn(

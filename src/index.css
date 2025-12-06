@@ -239,17 +239,38 @@
     display: none;
   }
 
-  /* Drag scroll container optimizations */
+  /* Drag scroll container optimizations - improved for fluidity */
   .drag-scroll-container {
     -webkit-overflow-scrolling: touch;
-    touch-action: pan-x;
+    touch-action: pan-x pan-y;
     overscroll-behavior-x: contain;
     scroll-behavior: auto;
     cursor: grab;
+    /* GPU acceleration for smooth scrolling */
+    transform: translateZ(0);
+    will-change: scroll-position;
+    /* Prevent bouncing on edges */
+    overscroll-behavior: contain;
   }
 
   .drag-scroll-container:active {
     cursor: grabbing;
+  }
+  
+  /* Smooth horizontal scroll for carousels */
+  .smooth-scroll-x {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+    overscroll-behavior-x: contain;
+    transform: translateZ(0);
+  }
+  
+  /* Cards inside scroll containers - prevent jitter */
+  .scroll-card {
+    flex-shrink: 0;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
   }
 
   /* Safe area support for iOS */

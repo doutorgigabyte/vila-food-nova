@@ -66,14 +66,19 @@ const NewPartnersSection = () => {
             ref={scrollRef}
             {...handlers}
             className={cn(
-              "flex gap-3 md:gap-4 overflow-x-auto scrollbar-hide pb-2 snap-x snap-mandatory md:snap-none select-none drag-scroll-container",
-              isDragging && "cursor-grabbing"
+              "flex gap-3 md:gap-4 overflow-x-auto scrollbar-hide pb-2 select-none",
+              "touch-pan-y will-change-scroll overscroll-x-contain",
+              isDragging ? "cursor-grabbing" : "cursor-grab"
             )}
+            style={{
+              WebkitOverflowScrolling: 'touch',
+              scrollSnapType: isDragging ? 'none' : 'x proximity',
+            }}
           >
             {newPartners.map((establishment) => (
               <div 
                 key={establishment.id} 
-                className="flex-shrink-0 snap-start w-52 md:w-60"
+                className="flex-shrink-0 w-52 md:w-60 scroll-card"
                 onClick={(e) => isDragging && e.preventDefault()}
               >
                 <EstablishmentCard 
