@@ -4,14 +4,21 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Establishment } from "@/hooks/useEstablishment";
 import EstablishmentCard from "./EstablishmentCard";
 import RestaurantFilters from "./RestaurantFilters";
+import { useCategoryTitle } from "@/hooks/useEstablishmentsByCategory";
+import { getCategoryTheme } from "@/lib/categoryThemes";
+import { cn } from "@/lib/utils";
 
 interface AllRestaurantsProps {
   establishments: Establishment[];
   loading?: boolean;
+  mainCategory?: string | null;
+  subcategory?: string | null;
 }
 
-const AllRestaurants = ({ establishments, loading }: AllRestaurantsProps) => {
+const AllRestaurants = ({ establishments, loading, mainCategory, subcategory }: AllRestaurantsProps) => {
   const [activeFilter, setActiveFilter] = useState("all");
+  const titles = useCategoryTitle(mainCategory || null);
+  const theme = getCategoryTheme(mainCategory || null);
 
   if (loading) {
     return (
@@ -38,14 +45,14 @@ const AllRestaurants = ({ establishments, loading }: AllRestaurantsProps) => {
     return (
       <section className="py-8">
         <div className="container mx-auto px-4">
-          <h2 className="text-xl font-bold mb-6">Todos os Restaurantes</h2>
+          <h2 className="text-xl font-bold mb-6">{titles.stores}</h2>
           <div className="text-center py-12">
             <div className="w-24 h-24 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-4xl">🍽️</span>
+              <span className="text-4xl">{theme.icon}</span>
             </div>
-            <h3 className="font-semibold mb-2">Nenhum restaurante encontrado</h3>
+            <h3 className="font-semibold mb-2">Nenhum estabelecimento encontrado</h3>
             <p className="text-muted-foreground">
-              Não há restaurantes disponíveis no momento
+              Não há estabelecimentos disponíveis {mainCategory ? 'nesta categoria' : 'no momento'}
             </p>
           </div>
         </div>
@@ -71,9 +78,12 @@ const AllRestaurants = ({ establishments, loading }: AllRestaurantsProps) => {
   });
 
   return (
-    <section className="py-8">
+    <section className={cn(
+      "py-8",
+      mainCategory && `bg-gradient-to-b ${theme.bgGradient}`
+    )}>
       <div className="container mx-auto px-4">
-        <h2 className="text-xl font-bold mb-4">Todos os Restaurantes</h2>
+        <h2 className="text-xl font-bold mb-4">{titles.stores}</h2>
         
         <RestaurantFilters
           activeFilter={activeFilter}

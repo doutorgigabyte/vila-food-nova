@@ -2,16 +2,21 @@ import { ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDragScroll } from "@/hooks/useDragScroll";
-import { useEstablishments } from "@/hooks/useEstablishment";
+import { useEstablishmentsByCategory, useCategoryTitle } from "@/hooks/useEstablishmentsByCategory";
 import { cn } from "@/lib/utils";
 import EstablishmentCard from "./EstablishmentCard";
+import { getCategoryTheme } from "@/lib/categoryThemes";
 
-const NewPartnersSection = () => {
+interface NewPartnersSectionProps {
+  mainCategory?: string | null;
+  subcategory?: string | null;
+}
+
+const NewPartnersSection = ({ mainCategory, subcategory }: NewPartnersSectionProps) => {
   const { scrollRef, isDragging, handlers, scroll } = useDragScroll();
-  const { establishments, loading } = useEstablishments();
-
-  // Get newest establishments (could be sorted by created_at in the future)
-  const newPartners = establishments.slice(0, 6);
+  const { establishments, loading } = useEstablishmentsByCategory(mainCategory || null, subcategory, 6);
+  const titles = useCategoryTitle(mainCategory || null);
+  const theme = getCategoryTheme(mainCategory || null);
 
   if (loading) {
     return (
@@ -28,22 +33,28 @@ const NewPartnersSection = () => {
     );
   }
 
-  if (newPartners.length === 0) {
+  if (establishments.length === 0) {
     return null;
   }
 
   return (
-    <section className="py-6 md:py-8">
+    <section className={cn(
+      "py-6 md:py-8",
+      mainCategory && `bg-gradient-to-b ${theme.bgGradient}`
+    )}>
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between mb-4 md:mb-6">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-primary/10 rounded-lg hidden md:flex">
-              <Sparkles className="w-5 h-5 text-primary" />
+            <div className={cn(
+              "p-2 rounded-lg hidden md:flex",
+              theme.iconBg || "bg-primary/10"
+            )}>
+              <Sparkles className={cn("w-5 h-5", theme.iconColor || "text-primary")} />
             </div>
             <div>
               <h2 className="text-lg md:text-xl font-bold text-foreground flex items-center gap-2">
-                Novos no VilaFood
-                <Sparkles className="w-4 h-4 text-primary md:hidden" />
+                {titles.newPartners}
+                <Sparkles className={cn("w-4 h-4 md:hidden", theme.iconColor || "text-primary")} />
               </h2>
               <p className="text-xs md:text-sm text-muted-foreground hidden md:block">
                 Conheça os novos parceiros da nossa plataforma
@@ -75,7 +86,7 @@ const NewPartnersSection = () => {
               scrollSnapType: isDragging ? 'none' : 'x proximity',
             }}
           >
-            {newPartners.map((establishment) => (
+            {establishments.map((establishment) => (
               <div 
                 key={establishment.id} 
                 className="flex-shrink-0 w-52 md:w-60"

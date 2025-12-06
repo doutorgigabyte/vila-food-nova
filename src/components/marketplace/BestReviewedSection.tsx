@@ -1,21 +1,30 @@
 import { Link } from "react-router-dom";
-import { Star, Heart, Plus, ChevronLeft, ChevronRight, Clock } from "lucide-react";
+import { Star, Heart, Plus, ChevronLeft, ChevronRight, Clock, Trophy } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useFeaturedProducts } from "@/hooks/useProducts";
-import { useEstablishments } from "@/hooks/useEstablishment";
+import { useProductsByMainCategory } from "@/hooks/useProducts";
+import { useEstablishmentsByCategory, useCategoryTitle } from "@/hooks/useEstablishmentsByCategory";
 import { useDragScroll } from "@/hooks/useDragScroll";
+import { getCategoryTheme } from "@/lib/categoryThemes";
+import { cn } from "@/lib/utils";
 
-const BestReviewedSection = () => {
+interface BestReviewedSectionProps {
+  mainCategory?: string | null;
+  subcategory?: string | null;
+}
+
+const BestReviewedSection = ({ mainCategory, subcategory }: BestReviewedSectionProps) => {
   const { scrollRef, isDragging, handlers, scroll } = useDragScroll();
-  const { products, loading: productsLoading } = useFeaturedProducts();
-  const { establishments, loading: establishmentsLoading } = useEstablishments();
+  const { products, loading: productsLoading } = useProductsByMainCategory(mainCategory || null, 10);
+  const { establishments, loading: establishmentsLoading } = useEstablishmentsByCategory(mainCategory || null, subcategory, 8);
+  const titles = useCategoryTitle(mainCategory || null);
+  const theme = getCategoryTheme(mainCategory || null);
 
   const loading = productsLoading || establishmentsLoading;
   const hasProducts = products.length > 0;
-  const bestReviewed = hasProducts ? [] : establishments.slice(3, 8);
+  const bestReviewed = hasProducts ? [] : establishments.slice(0, 5);
 
   const getDiscount = (price: number, promoPrice: number | null) => {
     if (!promoPrice || promoPrice >= price) return null;
@@ -48,13 +57,32 @@ const BestReviewedSection = () => {
     );
   }
 
-  // Se tem produtos, mostrar produtos
+  // If has products, show products
   if (hasProducts) {
     return (
-      <section className="py-8 bg-muted/30">
+      <section className={cn(
+        "py-8",
+        mainCategory ? `bg-gradient-to-b ${theme.bgGradient}` : "bg-muted/30"
+      )}>
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold">Destaques</h2>
+            <div className="flex items-center gap-3">
+              <div className={cn(
+                "p-2 rounded-lg hidden md:flex",
+                theme.iconBg || "bg-yellow-100 dark:bg-yellow-900/30"
+              )}>
+                <Trophy className={cn("w-5 h-5", theme.iconColor || "text-yellow-600")} />
+              </div>
+              <div>
+                <h2 className="text-lg md:text-xl font-bold flex items-center gap-2">
+                  {titles.bestReviewed}
+                  <Trophy className={cn("w-4 h-4 md:hidden", theme.iconColor || "text-yellow-500")} />
+                </h2>
+                <p className="text-xs md:text-sm text-muted-foreground hidden md:block">
+                  Os produtos mais bem avaliados
+                </p>
+              </div>
+            </div>
             <Button variant="ghost" size="sm" className="text-primary gap-1">
               Ver todos
               <ChevronRight className="w-4 h-4" />
@@ -88,6 +116,7 @@ const BestReviewedSection = () => {
                     key={product.id} 
                     to={`/loja/${product.establishment?.slug || ''}`}
                     className="flex-shrink-0"
+                    onClick={(e) => isDragging && e.preventDefault()}
                   >
                     <Card className="w-52 overflow-hidden group/card hover:shadow-lg transition-all">
                       <div className="relative h-40 overflow-hidden bg-muted">
@@ -104,7 +133,7 @@ const BestReviewedSection = () => {
                         )}
                         {!product.image_url && (
                           <div className="w-full h-full flex items-center justify-center">
-                            <span className="text-4xl opacity-30">🍽️</span>
+                            <span className="text-4xl opacity-30">{theme.icon}</span>
                           </div>
                         )}
                         
@@ -177,17 +206,36 @@ const BestReviewedSection = () => {
     );
   }
 
-  // Se não tem produtos, mostrar estabelecimentos
+  // If no products, show establishments
   if (bestReviewed.length === 0) {
     return null;
   }
 
   return (
-    <section className="py-8 bg-muted/30">
+    <section className={cn(
+      "py-8",
+      mainCategory ? `bg-gradient-to-b ${theme.bgGradient}` : "bg-muted/30"
+    )}>
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold">Melhores Avaliados</h2>
-          <Link to="/marketplace" className="text-primary text-sm font-medium flex items-center gap-1 hover:underline">
+          <div className="flex items-center gap-3">
+            <div className={cn(
+              "p-2 rounded-lg hidden md:flex",
+              theme.iconBg || "bg-yellow-100 dark:bg-yellow-900/30"
+            )}>
+              <Trophy className={cn("w-5 h-5", theme.iconColor || "text-yellow-600")} />
+            </div>
+            <div>
+              <h2 className="text-lg md:text-xl font-bold flex items-center gap-2">
+                {titles.bestReviewed}
+                <Trophy className={cn("w-4 h-4 md:hidden", theme.iconColor || "text-yellow-500")} />
+              </h2>
+              <p className="text-xs md:text-sm text-muted-foreground hidden md:block">
+                Os estabelecimentos mais bem avaliados
+              </p>
+            </div>
+          </div>
+          <Link to={mainCategory ? `/categoria/${mainCategory}` : "/marketplace"} className="text-primary text-sm font-medium flex items-center gap-1 hover:underline">
             Ver todos
             <ChevronRight className="w-4 h-4" />
           </Link>
@@ -216,6 +264,7 @@ const BestReviewedSection = () => {
                 key={est.id} 
                 to={`/loja/${est.slug}`}
                 className="flex-shrink-0"
+                onClick={(e) => isDragging && e.preventDefault()}
               >
                 <Card className="w-52 overflow-hidden group/card hover:shadow-lg transition-all">
                   <div className="relative h-40 overflow-hidden bg-muted">
@@ -232,7 +281,7 @@ const BestReviewedSection = () => {
                     )}
                     {!est.banner_url && (
                       <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-                        <span className="text-4xl opacity-50">🍽️</span>
+                        <span className="text-4xl opacity-50">{theme.icon}</span>
                       </div>
                     )}
                     

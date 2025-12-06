@@ -4,15 +4,21 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useEstablishments } from "@/hooks/useEstablishment";
+import { useEstablishmentsByCategory, useCategoryTitle } from "@/hooks/useEstablishmentsByCategory";
 import { useDragScroll } from "@/hooks/useDragScroll";
 import { cn } from "@/lib/utils";
+import { getCategoryTheme } from "@/lib/categoryThemes";
 
-const HighlightsSection = () => {
-  const { establishments, loading } = useEstablishments();
+interface HighlightsSectionProps {
+  mainCategory?: string | null;
+  subcategory?: string | null;
+}
+
+const HighlightsSection = ({ mainCategory, subcategory }: HighlightsSectionProps) => {
+  const { establishments, loading } = useEstablishmentsByCategory(mainCategory || null, subcategory, 6);
   const { scrollRef, isDragging, handlers, scroll } = useDragScroll();
-
-  const highlights = establishments.slice(0, 6);
+  const titles = useCategoryTitle(mainCategory || null);
+  const theme = getCategoryTheme(mainCategory || null);
 
   if (loading) {
     return (
@@ -29,30 +35,36 @@ const HighlightsSection = () => {
     );
   }
 
-  if (highlights.length === 0) {
+  if (establishments.length === 0) {
     return null;
   }
 
   return (
-    <section className="py-6 md:py-8">
+    <section className={cn(
+      "py-6 md:py-8",
+      mainCategory && `bg-gradient-to-b ${theme.bgGradient}`
+    )}>
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between mb-4 md:mb-6">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-primary/10 rounded-xl hidden md:flex">
-              <Sparkles className="w-5 h-5 text-primary" />
+            <div className={cn(
+              "p-2 rounded-xl hidden md:flex",
+              theme.iconBg || "bg-primary/10"
+            )}>
+              <Sparkles className={cn("w-5 h-5", theme.iconColor || "text-primary")} />
             </div>
             <div>
               <h2 className="text-lg md:text-xl font-bold flex items-center gap-2">
-                Destaques para você
-                <Sparkles className="w-4 h-4 text-primary md:hidden" />
+                {titles.highlights}
+                <Sparkles className={cn("w-4 h-4 md:hidden", theme.iconColor || "text-primary")} />
               </h2>
               <p className="text-xs md:text-sm text-muted-foreground hidden md:block">
-                Veja nossos restaurantes e pratos mais populares
+                Veja nossos estabelecimentos mais populares
               </p>
             </div>
           </div>
           <Link 
-            to="/estabelecimentos" 
+            to={mainCategory ? `/categoria/${mainCategory}` : "/estabelecimentos"}
             className="text-primary text-sm font-medium hover:underline flex items-center gap-1"
           >
             Ver todos <ChevronRight className="w-4 h-4" />
@@ -78,7 +90,7 @@ const HighlightsSection = () => {
             )}
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
-            {highlights.map((est, index) => (
+            {establishments.map((est, index) => (
               <Link 
                 key={est.id} 
                 to={`/loja/${est.slug}`}
@@ -96,7 +108,7 @@ const HighlightsSection = () => {
                       />
                     ) : (
                       <div className="w-full h-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
-                        <span className="text-5xl opacity-50">🍴</span>
+                        <span className="text-5xl opacity-50">{theme.icon}</span>
                       </div>
                     )}
                     
