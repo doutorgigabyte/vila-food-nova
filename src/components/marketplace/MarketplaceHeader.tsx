@@ -8,7 +8,9 @@ import {
   ShoppingCart,
   Menu,
   Globe,
-  ChevronDown
+  ChevronDown,
+  Store,
+  X
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -16,6 +18,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import logoHorizontal from "@/assets/logo-horizontal.png";
 import { LocationSelector } from "./LocationSelector";
 import { UserMenu } from "./UserMenu";
@@ -28,22 +37,31 @@ interface MarketplaceHeaderProps {
 
 const MarketplaceHeader = ({ searchTerm, onSearchChange }: MarketplaceHeaderProps) => {
   const { items } = useCart();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const cartCount = items.reduce((acc, item) => acc + item.quantity, 0);
 
   return (
     <header className="sticky top-0 z-50 bg-card shadow-sm">
       {/* Top Bar */}
-      <div className="bg-primary/5 border-b border-border">
+      <div className="bg-primary text-white">
         <div className="container mx-auto px-4 py-2">
           <div className="flex items-center justify-between">
             <LocationSelector />
             
             <div className="flex items-center gap-4">
+              <Link 
+                to="/conheca" 
+                className="hidden sm:flex items-center gap-2 text-sm font-medium hover:text-accent transition-colors"
+              >
+                <Store className="w-4 h-4" />
+                Seja um Parceiro
+              </Link>
+              
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  <button className="flex items-center gap-1.5 text-sm text-white/80 hover:text-white transition-colors">
                     <Globe className="w-4 h-4" />
-                    <span className="hidden sm:inline">Português</span>
+                    <span className="hidden sm:inline">PT</span>
                     <ChevronDown className="w-3 h-3" />
                   </button>
                 </DropdownMenuTrigger>
@@ -64,33 +82,33 @@ const MarketplaceHeader = ({ searchTerm, onSearchChange }: MarketplaceHeaderProp
       <div className="container mx-auto px-4 py-3">
         <div className="flex items-center justify-between gap-4">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2">
-            <img src={logoHorizontal} alt="VilaFood" className="h-10" />
+          <Link to="/" className="flex items-center gap-2 shrink-0">
+            <img src={logoHorizontal} alt="VilaFood" className="h-9 md:h-10" />
           </Link>
 
-          {/* Navigation */}
+          {/* Navigation - Desktop */}
           <nav className="hidden lg:flex items-center gap-6">
-            <Link to="/marketplace" className="text-sm font-medium hover:text-primary transition-colors">
+            <Link to="/" className="text-sm font-medium text-primary hover:text-primary/80 transition-colors">
               Início
             </Link>
-            <Link to="/marketplace?view=categories" className="text-sm font-medium hover:text-primary transition-colors">
+            <Link to="/?view=categories" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
               Categorias
             </Link>
-            <Link to="/marketplace?view=cuisines" className="text-sm font-medium hover:text-primary transition-colors">
-              Culinárias
+            <Link to="/vilas" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+              Vilas
             </Link>
-            <Link to="/marketplace?view=restaurants" className="text-sm font-medium hover:text-primary transition-colors">
+            <Link to="/?view=restaurants" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
               Restaurantes
             </Link>
           </nav>
 
           {/* Search & Actions */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 md:gap-3">
             <div className="relative hidden md:block w-64">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
                 placeholder="Buscar..."
-                className="pl-10 h-9"
+                className="pl-10 h-9 bg-muted/50"
                 value={searchTerm}
                 onChange={(e) => onSearchChange(e.target.value)}
               />
@@ -98,23 +116,75 @@ const MarketplaceHeader = ({ searchTerm, onSearchChange }: MarketplaceHeaderProp
             
             <Button variant="ghost" size="icon" className="relative">
               <Bell className="w-5 h-5" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-destructive rounded-full" />
+              <span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full" />
             </Button>
             
             <Link to="/checkout">
               <Button variant="ghost" size="icon" className="relative">
                 <ShoppingCart className="w-5 h-5" />
                 {cartCount > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-primary text-primary-foreground text-xs rounded-full flex items-center justify-center">
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-primary text-primary-foreground text-xs rounded-full flex items-center justify-center font-semibold">
                     {cartCount > 9 ? "9+" : cartCount}
                   </span>
                 )}
               </Button>
             </Link>
 
-            <Button variant="ghost" size="icon" className="lg:hidden">
-              <Menu className="w-5 h-5" />
-            </Button>
+            {/* Mobile Menu */}
+            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="lg:hidden">
+                  <Menu className="w-5 h-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-80">
+                <SheetHeader>
+                  <SheetTitle>Menu</SheetTitle>
+                </SheetHeader>
+                <nav className="flex flex-col gap-4 mt-8">
+                  <Link 
+                    to="/" 
+                    className="text-lg font-medium py-2 border-b border-border"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Início
+                  </Link>
+                  <Link 
+                    to="/?view=categories" 
+                    className="text-lg font-medium py-2 border-b border-border"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Categorias
+                  </Link>
+                  <Link 
+                    to="/vilas" 
+                    className="text-lg font-medium py-2 border-b border-border"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Vilas Gastronômicas
+                  </Link>
+                  <Link 
+                    to="/?view=restaurants" 
+                    className="text-lg font-medium py-2 border-b border-border"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Restaurantes
+                  </Link>
+                  
+                  <div className="mt-6 pt-6 border-t border-border">
+                    <Link 
+                      to="/conheca"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      <Button className="w-full btn-yellow">
+                        <Store className="w-4 h-4 mr-2" />
+                        Seja um Parceiro
+                      </Button>
+                    </Link>
+                  </div>
+                </nav>
+              </SheetContent>
+            </Sheet>
           </div>
         </div>
 
@@ -124,7 +194,7 @@ const MarketplaceHeader = ({ searchTerm, onSearchChange }: MarketplaceHeaderProp
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               placeholder="Buscar restaurantes ou pratos..."
-              className="pl-10"
+              className="pl-10 bg-muted/50"
               value={searchTerm}
               onChange={(e) => onSearchChange(e.target.value)}
             />

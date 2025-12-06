@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { MapPin, Mail, Phone, Instagram, Facebook, Linkedin } from "lucide-react";
+import { MapPin, Mail, Phone, Instagram, Facebook, Linkedin, Store } from "lucide-react";
 import logoHorizontalWhite from "@/assets/logo-horizontal-white.png";
 
 const Footer = () => {
@@ -7,13 +7,13 @@ const Footer = () => {
 
   const links = {
     product: [
-      { label: "Recursos", href: "#features" },
-      { label: "Planos", href: "#pricing" },
-      { label: "Integrações", href: "#" },
-      { label: "API", href: "#" },
+      { label: "Recursos", href: "/conheca#features" },
+      { label: "Planos", href: "/conheca#pricing" },
+      { label: "Integrações", href: "/conheca" },
+      { label: "API", href: "/conheca" },
     ],
     company: [
-      { label: "Sobre", href: "#" },
+      { label: "Sobre", href: "/conheca" },
       { label: "Blog", href: "#" },
       { label: "Carreiras", href: "#" },
       { label: "Parceiros", href: "#" },
@@ -22,7 +22,7 @@ const Footer = () => {
       { label: "Central de Ajuda", href: "#" },
       { label: "Documentação", href: "#" },
       { label: "Status", href: "#" },
-      { label: "Contato", href: "#contact" },
+      { label: "Contato", href: "/conheca#contact" },
     ],
     legal: [
       { label: "Termos de Uso", href: "#" },
@@ -65,9 +65,9 @@ const Footer = () => {
             <ul className="space-y-3">
               {links.product.map((link) => (
                 <li key={link.label}>
-                  <a href={link.href} className="text-background/70 hover:text-background transition-colors">
+                  <Link to={link.href} className="text-background/70 hover:text-background transition-colors">
                     {link.label}
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -79,9 +79,9 @@ const Footer = () => {
             <ul className="space-y-3">
               {links.company.map((link) => (
                 <li key={link.label}>
-                  <a href={link.href} className="text-background/70 hover:text-background transition-colors">
+                  <Link to={link.href} className="text-background/70 hover:text-background transition-colors">
                     {link.label}
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -93,9 +93,9 @@ const Footer = () => {
             <ul className="space-y-3">
               {links.support.map((link) => (
                 <li key={link.label}>
-                  <a href={link.href} className="text-background/70 hover:text-background transition-colors">
+                  <Link to={link.href} className="text-background/70 hover:text-background transition-colors">
                     {link.label}
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -107,13 +107,31 @@ const Footer = () => {
             <ul className="space-y-3">
               {links.legal.map((link) => (
                 <li key={link.label}>
-                  <a href={link.href} className="text-background/70 hover:text-background transition-colors">
+                  <Link to={link.href} className="text-background/70 hover:text-background transition-colors">
                     {link.label}
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>
           </div>
+        </div>
+
+        {/* CTA for business owners */}
+        <div className="mb-12 p-6 rounded-2xl bg-primary/10 border border-primary/20 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center">
+              <Store className="text-white" size={24} />
+            </div>
+            <div>
+              <h4 className="font-semibold text-background">Tem um restaurante?</h4>
+              <p className="text-background/70 text-sm">Conheça nossa plataforma e comece a vender mais!</p>
+            </div>
+          </div>
+          <Link to="/conheca" className="shrink-0">
+            <button className="px-6 py-3 bg-accent text-foreground font-semibold rounded-xl hover:bg-accent/90 transition-colors">
+              Conhecer Plataforma
+            </button>
+          </Link>
         </div>
 
         {/* Bottom */}
@@ -122,10 +140,10 @@ const Footer = () => {
             © {currentYear} VilaFood. Todos os direitos reservados.
           </p>
           <div className="flex items-center gap-4">
-            <a href="#" className="text-background/60 hover:text-background transition-colors">
+            <a href="https://instagram.com/vilafood" target="_blank" rel="noopener noreferrer" className="text-background/60 hover:text-background transition-colors">
               <Instagram size={20} />
             </a>
-            <a href="#" className="text-background/60 hover:text-background transition-colors">
+            <a href="https://facebook.com/vilafood" target="_blank" rel="noopener noreferrer" className="text-background/60 hover:text-background transition-colors">
               <Facebook size={20} />
             </a>
             <a href="#" className="text-background/60 hover:text-background transition-colors">
