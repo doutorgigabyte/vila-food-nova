@@ -120,17 +120,31 @@ export default function VilaTok() {
     }
   }, [currentVideo, currentEstablishment, incrementShares]);
 
-  const handleAddToCart = useCallback(() => {
+  const handleAddToCart = useCallback(async () => {
     if (!currentVideo?.product || !currentEstablishment) return;
 
-    addToCart({
+    const product = {
       id: currentVideo.product.id,
       name: currentVideo.product.name,
-      price: currentVideo.product.promotional_price || currentVideo.product.price,
+      price: currentVideo.product.price,
+      promotional_price: currentVideo.product.promotional_price,
       image_url: currentVideo.product.image_url,
       establishment_id: currentEstablishment.establishment.id,
-    });
+    };
 
+    const establishmentInfo = {
+      id: currentEstablishment.establishment.id,
+      name: currentEstablishment.establishment.name,
+      slug: currentEstablishment.establishment.slug,
+      logo_url: currentEstablishment.establishment.logo_url,
+      vila_id: null,
+      delivery_base_fee: 0,
+      min_order_value: 0,
+      accepts_pickup: true,
+      accepts_delivery: true,
+    };
+
+    await addToCart(product, establishmentInfo);
     toast.success(`${currentVideo.product.name} adicionado ao carrinho!`);
   }, [currentVideo, currentEstablishment, addToCart]);
 
