@@ -20,6 +20,8 @@ import Footer from "@/components/landing/Footer";
 import BusinessCTABanner from "@/components/marketplace/BusinessCTABanner";
 import SmartSearch from "@/components/marketplace/SmartSearch";
 import VilaTokBubble from "@/components/vilatok/VilaTokBubble";
+import { getCategoryTheme } from "@/lib/categoryThemes";
+import { cn } from "@/lib/utils";
 
 const Index = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -27,6 +29,9 @@ const Index = () => {
   const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const { establishments, loading } = useEstablishments();
+
+  // Get theme based on selected category
+  const theme = getCategoryTheme(selectedMainCategory);
 
   // Filtra estabelecimentos por categoria principal e subcategoria
   const filteredEstablishments = establishments.filter((est) => {
@@ -55,7 +60,12 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col pb-16 md:pb-0">
+    <div className={cn(
+      "min-h-screen flex flex-col pb-16 md:pb-0 transition-colors duration-300",
+      selectedMainCategory 
+        ? `bg-gradient-to-b ${theme.bgGradient} bg-background`
+        : "bg-background"
+    )}>
       <MarketplaceHeader 
         searchTerm={searchTerm} 
         onSearchChange={setSearchTerm}
@@ -82,14 +92,16 @@ const Index = () => {
         {/* Video Highlights - Premium Partner Section */}
         <VideoHighlightsSection />
 
-        {/* Top Offers */}
-        <TopOffersSection />
+        {/* Top Offers - filtered by category */}
+        <TopOffersSection mainCategory={selectedMainCategory} />
 
-        {/* Vilas Gastronômicas */}
-        <VilasSection />
+        {/* Vilas Gastronômicas - only show when no category or comida */}
+        {(!selectedMainCategory || selectedMainCategory === 'comida') && (
+          <VilasSection />
+        )}
 
-        {/* Just For You Carousel */}
-        <JustForYouCarousel />
+        {/* Just For You Carousel - filtered by category */}
+        <JustForYouCarousel mainCategory={selectedMainCategory} />
 
         {/* Best Stores Nearby */}
         <BestStoresSection />
@@ -97,17 +109,21 @@ const Index = () => {
         {/* New Partners */}
         <NewPartnersSection />
 
-        {/* Highlights */}
-        <HighlightsSection />
+        {/* Highlights - only show when no category or comida */}
+        {(!selectedMainCategory || selectedMainCategory === 'comida') && (
+          <HighlightsSection />
+        )}
 
-        {/* Trending Products */}
-        <TrendingProducts />
+        {/* Trending Products - filtered by category */}
+        <TrendingProducts mainCategory={selectedMainCategory} />
 
         {/* Best Reviewed */}
         <BestReviewedSection />
 
-        {/* Want to Dine In */}
-        <RestaurantsSection />
+        {/* Want to Dine In - only show when no category or comida */}
+        {(!selectedMainCategory || selectedMainCategory === 'comida') && (
+          <RestaurantsSection />
+        )}
 
         {/* Business CTA Banner */}
         <BusinessCTABanner />

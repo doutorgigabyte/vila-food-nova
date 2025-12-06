@@ -3,12 +3,18 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDragScroll } from "@/hooks/useDragScroll";
-import { useProducts } from "@/hooks/useProducts";
+import { useProductsByMainCategory } from "@/hooks/useProducts";
 import ProductOfferCard from "./ProductOfferCard";
+import { getCategoryTheme } from "@/lib/categoryThemes";
 
-const TopOffersSection = () => {
+interface TopOffersSectionProps {
+  mainCategory?: string | null;
+}
+
+const TopOffersSection = ({ mainCategory }: TopOffersSectionProps) => {
   const { scrollRef, isDragging, handlers, scroll } = useDragScroll();
-  const { products, loading } = useProducts(20);
+  const { products, loading } = useProductsByMainCategory(mainCategory || null, 30);
+  const theme = getCategoryTheme(mainCategory || null);
 
   // Filter products with promotional price
   const offersProducts = products.filter(
@@ -39,16 +45,19 @@ const TopOffersSection = () => {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between mb-4 md:mb-6">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-destructive/10 rounded-lg hidden md:flex">
-              <Percent className="w-5 h-5 text-destructive" />
+            <div className={cn(
+              "p-2 rounded-lg hidden md:flex",
+              mainCategory ? `bg-${mainCategory === 'comida' ? 'amber' : mainCategory === 'mercado' ? 'emerald' : mainCategory === 'farmacia' ? 'red' : 'primary'}-100 dark:bg-${mainCategory}-900/30` : "bg-destructive/10"
+            )}>
+              <Percent className={cn("w-5 h-5", theme.accentColor || "text-destructive")} />
             </div>
             <div>
               <h2 className="text-lg md:text-xl font-bold text-foreground flex items-center gap-2">
-                Ofertas Imperdíveis
-                <Percent className="w-4 h-4 text-destructive md:hidden" />
+                {theme.offersTitle}
+                <Percent className={cn("w-4 h-4 md:hidden", theme.accentColor || "text-destructive")} />
               </h2>
               <p className="text-xs md:text-sm text-muted-foreground hidden md:block">
-                Produtos com desconto especial para você
+                {theme.offersSubtitle}
               </p>
             </div>
           </div>
