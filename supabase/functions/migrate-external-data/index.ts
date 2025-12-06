@@ -379,8 +379,101 @@ serve(async (req) => {
       );
     }
 
+    // Sincronizar imagens do CloudFront legado
+    if (action === "sync_images") {
+      const LEGACY_CLOUDFRONT = "https://d2fhl3f70zfvod.cloudfront.net";
+      const results: any[] = [];
+
+      // Buscar produtos com URLs de imagem relativas (sem http)
+      const { data: products } = await currentClient
+        .from("products")
+        .select("id, name, image_url, establishment_id")
+        .not("image_url", "is", null)
+        .not("image_url", "like", "http%");
+
+      console.log(`Found ${products?.length || 0} products with relative image paths`);
+
+      let updated = 0;
+      let skipped = 0;
+      let errors = 0;
+
+      for (const product of products ?? []) {
+        if (!product.image_url) {
+          skipped++;
+          continue;
+        }
+
+        // Construir URL completa do CloudFront
+        let imagePath = product.image_url;
+        
+        // Remover barra inicial se houver
+        if (imagePath.startsWith("/")) {
+          imagePath = imagePath.substring(1);
+        }
+        
+        const fullUrl = `${LEGACY_CLOUDFRONT}/${imagePath}`;
+
+        const { error } = await currentClient
+          .from("products")
+          .update({ image_url: fullUrl })
+          .eq("id", product.id);
+
+        if (error) {
+          errors++;
+          results.push({ id: product.id, name: product.name, status: "error", error: error.message });
+        } else {
+          updated++;
+          results.push({ id: product.id, name: product.name, status: "updated", new_url: fullUrl });
+        }
+      }
+
+      // Também atualizar categorias
+      const { data: categories } = await currentClient
+        .from("categories")
+        .select("id, name, image_url")
+        .not("image_url", "is", null)
+        .not("image_url", "like", "http%");
+
+      let catUpdated = 0;
+      for (const cat of categories ?? []) {
+        if (!cat.image_url) continue;
+
+        let imagePath = cat.image_url;
+        if (imagePath.startsWith("/")) {
+          imagePath = imagePath.substring(1);
+        }
+        
+        const fullUrl = `${LEGACY_CLOUDFRONT}/${imagePath}`;
+
+        const { error } = await currentClient
+          .from("categories")
+          .update({ image_url: fullUrl })
+          .eq("id", cat.id);
+
+        if (!error) catUpdated++;
+      }
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          products: {
+            total: products?.length || 0,
+            updated,
+            skipped,
+            errors,
+          },
+          categories: {
+            total: categories?.length || 0,
+            updated: catUpdated,
+          },
+          sample_results: results.slice(0, 20),
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     return new Response(
-      JSON.stringify({ success: false, error: "Ação inválida. Use: check_external, migrate_by_slug, cleanup_external, confirm_cleanup" }),
+      JSON.stringify({ success: false, error: "Ação inválida. Use: check_external, migrate_by_slug, cleanup_external, confirm_cleanup, sync_images" }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
     );
 

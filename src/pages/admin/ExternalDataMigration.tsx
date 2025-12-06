@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, Database, CheckCircle, XCircle, AlertCircle, Trash2, RefreshCw, Zap } from "lucide-react";
+import { Loader2, Database, CheckCircle, XCircle, AlertCircle, Trash2, RefreshCw, Zap, Image } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -14,6 +14,7 @@ export default function ExternalDataMigration() {
   const [checkResult, setCheckResult] = useState<any>(null);
   const [migrationResult, setMigrationResult] = useState<any>(null);
   const [cleanupResult, setCleanupResult] = useState<any>(null);
+  const [imageResult, setImageResult] = useState<any>(null);
 
   const handleAction = async (action: string) => {
     setLoading(action);
@@ -35,6 +36,11 @@ export default function ExternalDataMigration() {
         setCleanupResult(data);
         if (action === "confirm_cleanup" && data.success) {
           toast.success("Tabelas legadas limpas com sucesso!");
+        }
+      } else if (action === "sync_images") {
+        setImageResult(data);
+        if (data.success) {
+          toast.success(`Imagens sincronizadas! ${data.products?.updated || 0} produtos atualizados.`);
         }
       }
     } catch (error: any) {
@@ -268,12 +274,86 @@ export default function ExternalDataMigration() {
           </CardContent>
         </Card>
 
-        {/* Passo 3: Limpeza */}
+        {/* Passo 3: Sincronizar Imagens */}
+        <Card className="border-blue-500 border-2">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-blue-600">
+              <Image className="w-5 h-5" />
+              Passo 3: Sincronizar Imagens
+            </CardTitle>
+            <CardDescription>
+              Atualiza as URLs das imagens para o CloudFront legado
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Sobre as imagens</AlertTitle>
+              <AlertDescription>
+                As imagens migradas usam caminhos relativos. Este passo adiciona o prefixo do CloudFront legado
+                (https://d2fhl3f70zfvod.cloudfront.net) para que as imagens sejam exibidas corretamente.
+              </AlertDescription>
+            </Alert>
+
+            <Button
+              onClick={() => handleAction("sync_images")}
+              disabled={loading !== null}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {loading === "sync_images" ? (
+                <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Sincronizando...</>
+              ) : (
+                <><Image className="w-4 h-4 mr-2" />Sincronizar Imagens</>
+              )}
+            </Button>
+
+            {imageResult && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="text-center p-4 bg-muted rounded-lg">
+                    <div className="text-2xl font-bold">{imageResult.products?.total || 0}</div>
+                    <div className="text-sm text-muted-foreground">Produtos Analisados</div>
+                  </div>
+                  <div className="text-center p-4 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                    <div className="text-2xl font-bold text-blue-600">{imageResult.products?.updated || 0}</div>
+                    <div className="text-sm text-muted-foreground">Atualizados</div>
+                  </div>
+                  <div className="text-center p-4 bg-muted rounded-lg">
+                    <div className="text-2xl font-bold">{imageResult.categories?.total || 0}</div>
+                    <div className="text-sm text-muted-foreground">Categorias</div>
+                  </div>
+                  <div className="text-center p-4 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                    <div className="text-2xl font-bold text-blue-600">{imageResult.categories?.updated || 0}</div>
+                    <div className="text-sm text-muted-foreground">Cat. Atualizadas</div>
+                  </div>
+                </div>
+
+                {imageResult.sample_results?.length > 0 && (
+                  <ScrollArea className="h-48 border rounded-lg">
+                    <div className="p-2 space-y-1">
+                      {imageResult.sample_results.map((item: any, idx: number) => (
+                        <div key={idx} className="flex items-center justify-between text-sm">
+                          <span className="truncate max-w-[40%]">{item.name}</span>
+                          <span className="truncate max-w-[40%] font-mono text-xs text-muted-foreground">
+                            {item.new_url?.split('/').slice(-1)[0] || ''}
+                          </span>
+                          {getStatusBadge(item.status === "updated" ? "success" : item.status)}
+                        </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Passo 4: Limpeza */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Trash2 className="w-5 h-5" />
-              Passo 3: Limpeza (Opcional)
+              Passo 4: Limpeza (Opcional)
             </CardTitle>
             <CardDescription>
               Remove as tabelas legadas do banco externo após a migração
