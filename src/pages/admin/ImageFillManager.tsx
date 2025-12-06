@@ -231,8 +231,8 @@ export default function ImageFillManager() {
         await generateSingleImage(item);
         processed++;
         setBatchProgress(Math.round((processed / items.length) * 100));
-        // Small delay to avoid rate limiting
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        // Delay maior para evitar rate limiting da API Google (5 segundos)
+        await new Promise(resolve => setTimeout(resolve, 5000));
       } catch (error) {
         errors++;
         console.error(`Error processing ${item.name}:`, error);
