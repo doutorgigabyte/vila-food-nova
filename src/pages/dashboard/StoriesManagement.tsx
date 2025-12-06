@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import AdminLayout from "@/components/admin/AdminLayout";
+import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -114,7 +114,7 @@ const StoriesManagement = () => {
   };
 
   return (
-    <AdminLayout title="Stories">
+    <DashboardLayout title="Stories" establishment={establishment}>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -307,7 +307,7 @@ const StoriesManagement = () => {
           onPublish={handlePublish}
         />
       )}
-    </AdminLayout>
+    </DashboardLayout>
   );
 };
 

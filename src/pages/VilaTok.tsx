@@ -9,6 +9,7 @@ import { VilaTokNavigation } from '@/components/vilatok/VilaTokNavigation';
 import { useCart } from '@/hooks/useCart';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
+import VideoComments from '@/components/stories/VideoComments';
 
 export default function VilaTok() {
   const navigate = useNavigate();
@@ -32,6 +33,7 @@ export default function VilaTok() {
   } = useVilaTok();
 
   const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null);
+  const [showComments, setShowComments] = useState(false);
 
   // Handle keyboard navigation
   useEffect(() => {
@@ -227,14 +229,23 @@ export default function VilaTok() {
           videoId={currentVideo.id}
           likesCount={currentVideo.likes_count}
           sharesCount={currentVideo.shares_count}
+          commentsCount={currentVideo.comments_count || 0}
           isLiked={likedVideos.has(currentVideo.id)}
           onLike={() => toggleLike(currentVideo.id)}
           onShare={handleShare}
+          onComment={() => setShowComments(true)}
           onViewProduct={handleAddToCart}
           onGoToStore={handleGoToStore}
           hasProduct={!!currentVideo.product}
         />
       </div>
+
+      {/* Comments Modal */}
+      <VideoComments
+        videoId={currentVideo.id}
+        isOpen={showComments}
+        onClose={() => setShowComments(false)}
+      />
 
       {/* Overlay */}
       <VilaTokOverlay
