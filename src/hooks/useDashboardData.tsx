@@ -9,6 +9,13 @@ interface DashboardStats {
   todayOrders: number;
   pendingOrders: number;
   monthSales: number;
+  platformFees: number;
+  ordersBySource: {
+    marketplace: number;
+    direct: number;
+    pdv: number;
+    whatsapp: number;
+  };
 }
 
 interface Order {
@@ -37,6 +44,13 @@ export const useDashboardData = (establishmentId: string | null) => {
     todayOrders: 0,
     pendingOrders: 0,
     monthSales: 0,
+    platformFees: 0,
+    ordersBySource: {
+      marketplace: 0,
+      direct: 0,
+      pdv: 0,
+      whatsapp: 0,
+    },
   });
   const [pendingOrders, setPendingOrders] = useState<Order[]>([]);
   const [recentOrders, setRecentOrders] = useState<Order[]>([]);
@@ -55,17 +69,17 @@ export const useDashboardData = (establishmentId: string | null) => {
       const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
       const monthISO = monthStart.toISOString();
 
-      // Fetch today's orders
+      // Fetch today's orders with source info
       const { data: todayOrders } = await supabase
         .from('orders')
-        .select('total, status')
+        .select('total, status, order_source, platform_fee')
         .eq('establishment_id', establishmentId)
         .gte('created_at', todayISO);
 
-      // Fetch month's orders
+      // Fetch month's orders with source info
       const { data: monthOrders } = await supabase
         .from('orders')
-        .select('total, status')
+        .select('total, status, order_source, platform_fee')
         .eq('establishment_id', establishmentId)
         .gte('created_at', monthISO);
 
@@ -105,11 +119,26 @@ export const useDashboardData = (establishmentId: string | null) => {
         ?.filter(o => o.status !== 'cancelled')
         .reduce((sum, o) => sum + (o.total || 0), 0) || 0;
 
+      // Calculate platform fees
+      const platformFees = monthOrders
+        ?.filter(o => o.status !== 'cancelled')
+        .reduce((sum, o) => sum + ((o as any).platform_fee || 0), 0) || 0;
+
+      // Calculate orders by source
+      const ordersBySource = {
+        marketplace: monthOrders?.filter(o => (o as any).order_source === 'marketplace').length || 0,
+        direct: monthOrders?.filter(o => (o as any).order_source === 'direct' || !(o as any).order_source).length || 0,
+        pdv: monthOrders?.filter(o => (o as any).order_source === 'pdv').length || 0,
+        whatsapp: monthOrders?.filter(o => (o as any).order_source === 'whatsapp').length || 0,
+      };
+
       setStats({
         todaySales,
         todayOrders: todayCount,
         pendingOrders: pendingCount,
         monthSales,
+        platformFees,
+        ordersBySource,
       });
 
       setPendingOrders(pending || []);

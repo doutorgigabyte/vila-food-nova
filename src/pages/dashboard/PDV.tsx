@@ -37,7 +37,8 @@ import {
   ChefHat,
   Percent,
   Calculator,
-  Settings2
+  Settings2,
+  DollarSign
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -113,8 +114,10 @@ const PDV = () => {
   const [customerAddress, setCustomerAddress] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'pix' | 'credit_card' | 'debit_card'>('cash');
   const [observations, setObservations] = useState("");
-  const [discount, setDiscount] = useState(0);
+  const [discountValue, setDiscountValue] = useState(0);
+  const [discountType, setDiscountType] = useState<'fixed' | 'percent'>('fixed');
   const [deliveryFee, setDeliveryFee] = useState(0);
+  const [serviceFee, setServiceFee] = useState(0);
   
   // Card fees by payment method (%)
   const [cardFees, setCardFees] = useState({
@@ -248,8 +251,10 @@ const PDV = () => {
 
   const clearCart = () => {
     setCart([]);
-    setDiscount(0);
+    setDiscountValue(0);
+    setDiscountType('fixed');
     setDeliveryFee(0);
+    setServiceFee(0);
     setObservations("");
     setCustomerName("");
     setCustomerPhone("");
@@ -266,7 +271,14 @@ const PDV = () => {
   // Card fee based on selected payment method
   const currentCardFee = cardFees[paymentMethod] || 0;
   const cardFeeAmount = (subtotal * currentCardFee) / 100;
-  const total = subtotal + cardFeeAmount - discount + (orderType === 'delivery' ? deliveryFee : 0);
+  
+  // Calculate discount based on type
+  const discountAmount = discountType === 'percent' 
+    ? (subtotal * discountValue) / 100 
+    : discountValue;
+  
+  // Calculate total
+  const total = subtotal + cardFeeAmount - discountAmount + (orderType === 'delivery' ? deliveryFee : 0) + serviceFee;
 
   // Fullscreen toggle
   const toggleFullscreen = async () => {
@@ -336,10 +348,11 @@ const PDV = () => {
     message += `\n📦 *Itens:*\n${itemsList}\n`;
     message += `\n━━━━━━━━━━━━━━━\n`;
     message += `Subtotal: R$ ${subtotal.toFixed(2)}\n`;
-    if (discount > 0) message += `Desconto: -R$ ${discount.toFixed(2)}\n`;
+    if (discountAmount > 0) message += `Desconto: -R$ ${discountAmount.toFixed(2)}\n`;
     if (orderType === 'delivery' && deliveryFee > 0) {
       message += `Frete: R$ ${deliveryFee.toFixed(2)}\n`;
     }
+    if (serviceFee > 0) message += `Taxa serviço: R$ ${serviceFee.toFixed(2)}\n`;
     message += `\n💰 *TOTAL: R$ ${total.toFixed(2)}*`;
     message += pixInfo;
     if (observations) message += `\n\n📝 Obs: ${observations}`;
@@ -397,7 +410,8 @@ const PDV = () => {
           </div>
           <div class="total">
             <div class="item"><span>Subtotal:</span><span>R$ ${subtotal.toFixed(2)}</span></div>
-            ${discount > 0 ? `<div class="item"><span>Desconto:</span><span>-R$ ${discount.toFixed(2)}</span></div>` : ''}
+            ${discountAmount > 0 ? `<div class="item"><span>Desconto${discountType === 'percent' ? ` (${discountValue}%)` : ''}:</span><span>-R$ ${discountAmount.toFixed(2)}</span></div>` : ''}
+            ${serviceFee > 0 ? `<div class="item"><span>Taxa Serviço:</span><span>+R$ ${serviceFee.toFixed(2)}</span></div>` : ''}
             ${orderType === 'delivery' && deliveryFee > 0 ? `<div class="item"><span>Frete:</span><span>R$ ${deliveryFee.toFixed(2)}</span></div>` : ''}
             <div class="item" style="font-size: 16px;"><span>TOTAL:</span><span>R$ ${total.toFixed(2)}</span></div>
           </div>
@@ -457,8 +471,10 @@ const PDV = () => {
           payment_method: paymentMethod,
           items: orderItems,
           subtotal: subtotal,
-          discount: discount,
+          discount: discountAmount,
           delivery_fee: orderType === 'delivery' ? deliveryFee : 0,
+          platform_fee: serviceFee,
+          order_source: 'pdv',
           total: total,
           table_number: orderType === 'table' ? tableNumber : null,
           observations: observations || null,
@@ -975,15 +991,46 @@ const PDV = () => {
                   </div>
                   <div className="flex items-center gap-1">
                     <Calculator className="w-3 h-3 text-muted-foreground shrink-0" />
-                    <Input
-                      type="number"
-                      min="0"
-                      className="h-7 text-xs"
-                      value={discount || ''}
-                      onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)}
-                      placeholder="Desconto R$"
-                    />
+                    <div className="flex items-center gap-1 flex-1">
+                      <Input
+                        type="number"
+                        min="0"
+                        className="h-7 text-xs w-16"
+                        value={discountValue || ''}
+                        onChange={(e) => setDiscountValue(parseFloat(e.target.value) || 0)}
+                        placeholder="0"
+                      />
+                      <Button
+                        variant={discountType === 'fixed' ? 'default' : 'outline'}
+                        size="sm"
+                        className="h-7 px-2 text-xs"
+                        onClick={() => setDiscountType('fixed')}
+                      >
+                        R$
+                      </Button>
+                      <Button
+                        variant={discountType === 'percent' ? 'default' : 'outline'}
+                        size="sm"
+                        className="h-7 px-2 text-xs"
+                        onClick={() => setDiscountType('percent')}
+                      >
+                        <Percent className="w-3 h-3" />
+                      </Button>
+                    </div>
                   </div>
+                </div>
+
+                {/* Service Fee */}
+                <div className="flex items-center gap-1">
+                  <DollarSign className="w-3 h-3 text-muted-foreground shrink-0" />
+                  <Input
+                    type="number"
+                    min="0"
+                    className="h-7 text-xs flex-1"
+                    value={serviceFee || ''}
+                    onChange={(e) => setServiceFee(parseFloat(e.target.value) || 0)}
+                    placeholder="Taxa serviço R$"
+                  />
                 </div>
 
                 {/* Card Fees Configuration (Collapsible) */}
@@ -1047,10 +1094,16 @@ const PDV = () => {
                       <span>+R$ {cardFeeAmount.toFixed(2)}</span>
                     </div>
                   )}
-                  {discount > 0 && (
+                  {discountAmount > 0 && (
                     <div className="flex justify-between text-green-600">
-                      <span>Desconto:</span>
-                      <span>-R$ {discount.toFixed(2)}</span>
+                      <span>Desconto{discountType === 'percent' ? ` (${discountValue}%)` : ''}:</span>
+                      <span>-R$ {discountAmount.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {serviceFee > 0 && (
+                    <div className="flex justify-between text-muted-foreground">
+                      <span>Taxa serviço:</span>
+                      <span>+R$ {serviceFee.toFixed(2)}</span>
                     </div>
                   )}
                   {orderType === 'delivery' && deliveryFee > 0 && (
