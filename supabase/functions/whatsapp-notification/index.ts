@@ -9,8 +9,17 @@ const corsHeaders = {
 interface NotificationRequest {
   phone: string;
   message: string;
-  type: 'affiliate_payout' | 'order_status' | 'payment_received' | 'general';
+  type: 'affiliate_payout' | 'order_status' | 'payment_received' | 'system_alert' | 'maintenance' | 'general';
   metadata?: Record<string, any>;
+  instanceType?: 'system' | 'establishment';
+  establishmentId?: string;
+}
+
+interface WhatsAppInstance {
+  instance_id: string;
+  instance_name: string;
+  evolution_api_url?: string;
+  evolution_api_key?: string;
 }
 
 serve(async (req) => {
@@ -19,30 +28,79 @@ serve(async (req) => {
   }
 
   try {
-    const evolutionApiUrl = Deno.env.get('EVOLUTION_API_URL');
-    const evolutionApiKey = Deno.env.get('EVOLUTION_API_KEY');
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Configurações padrão da Evolution API
+    const defaultEvolutionApiUrl = Deno.env.get('EVOLUTION_API_URL');
+    const defaultEvolutionApiKey = Deno.env.get('EVOLUTION_API_KEY');
+
+    const { phone, message, type, metadata, instanceType, establishmentId } = await req.json() as NotificationRequest;
+
+    if (!phone || !message) {
+      throw new Error('Phone and message are required');
+    }
+
+    // Determinar qual instância usar baseado no tipo de notificação
+    let instance: WhatsAppInstance | null = null;
+    let evolutionApiUrl = defaultEvolutionApiUrl;
+    let evolutionApiKey = defaultEvolutionApiKey;
+
+    // Tipos de notificação que usam instância do sistema
+    const systemNotificationTypes = ['system_alert', 'maintenance', 'affiliate_payout'];
+    const useSystemInstance = instanceType === 'system' || systemNotificationTypes.includes(type);
+
+    if (useSystemInstance) {
+      // Buscar instância do sistema (Doutorgigabyte)
+      const { data: systemInstance } = await supabase
+        .from('whatsapp_instances')
+        .select('instance_id, instance_name, evolution_api_url, evolution_api_key')
+        .eq('instance_type', 'system')
+        .eq('status', 'connected')
+        .single();
+
+      if (systemInstance) {
+        instance = systemInstance;
+        evolutionApiUrl = systemInstance.evolution_api_url || defaultEvolutionApiUrl;
+        evolutionApiKey = systemInstance.evolution_api_key || defaultEvolutionApiKey;
+        console.log(`Using system instance: ${instance.instance_name}`);
+      }
+    } else if (establishmentId) {
+      // Buscar instância do estabelecimento
+      const { data: estInstance } = await supabase
+        .from('whatsapp_instances')
+        .select('instance_id, instance_name, evolution_api_url, evolution_api_key')
+        .eq('establishment_id', establishmentId)
+        .eq('status', 'connected')
+        .single();
+
+      if (estInstance) {
+        instance = estInstance;
+        evolutionApiUrl = estInstance.evolution_api_url || defaultEvolutionApiUrl;
+        evolutionApiKey = estInstance.evolution_api_key || defaultEvolutionApiKey;
+        console.log(`Using establishment instance: ${instance.instance_name}`);
+      }
+    }
 
     if (!evolutionApiUrl || !evolutionApiKey) {
       console.error('Evolution API credentials not configured');
       throw new Error('Evolution API credentials not configured');
     }
 
-    const { phone, message, type, metadata } = await req.json() as NotificationRequest;
+    // Determinar nome da instância a usar na API
+    const instanceName = instance?.instance_name || 'vilafood';
 
-    if (!phone || !message) {
-      throw new Error('Phone and message are required');
-    }
-
-    // Format phone number (remove non-digits and ensure country code)
+    // Formatar número de telefone (remover caracteres não numéricos e adicionar código do país)
     let formattedPhone = phone.replace(/\D/g, '');
     if (!formattedPhone.startsWith('55')) {
       formattedPhone = '55' + formattedPhone;
     }
 
-    console.log(`Sending ${type} notification to ${formattedPhone}`);
+    console.log(`Sending ${type} notification to ${formattedPhone} via instance ${instanceName}`);
 
-    // Send message via Evolution API
-    const response = await fetch(`${evolutionApiUrl}/message/sendText/vilafood`, {
+    // Enviar mensagem via Evolution API
+    const response = await fetch(`${evolutionApiUrl}/message/sendText/${instanceName}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -63,24 +121,22 @@ serve(async (req) => {
     const result = await response.json();
     console.log('Message sent successfully:', result);
 
-    // Log notification in database
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
+    // Registrar notificação no banco de dados
     await supabase.from('whatsapp_analytics').insert({
-      establishment_id: metadata?.establishment_id || '00000000-0000-0000-0000-000000000000',
+      establishment_id: metadata?.establishment_id || establishmentId || '00000000-0000-0000-0000-000000000000',
       event_type: `notification_${type}`,
       event_data: {
         phone: formattedPhone,
         message_preview: message.substring(0, 100),
+        instance_used: instanceName,
+        instance_type: useSystemInstance ? 'system' : 'establishment',
         metadata,
         sent_at: new Date().toISOString(),
       },
     });
 
     return new Response(
-      JSON.stringify({ success: true, message_id: result?.key?.id }),
+      JSON.stringify({ success: true, message_id: result?.key?.id, instance_used: instanceName }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
