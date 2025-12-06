@@ -11,7 +11,7 @@ const MobileBottomNav = () => {
   const navItems = [
     { icon: Home, label: "Início", path: "/marketplace" },
     { icon: Heart, label: "Favoritos", path: "/favoritos" },
-    { icon: ShoppingBag, label: "Carrinho", path: "/carrinho", isCenter: true, count: cartCount },
+    { icon: ShoppingBag, label: "Carrinho", path: "/checkout", isCenter: true, count: cartCount },
     { icon: ClipboardList, label: "Pedidos", path: "/pedidos" },
     { icon: Menu, label: "Menu", path: "/menu" },
   ];

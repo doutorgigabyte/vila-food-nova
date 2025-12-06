@@ -69,6 +69,8 @@ import SystemHealthCheck from "./pages/admin/SystemHealthCheck";
 import VilaTok from "./pages/VilaTok";
 import VideosManagement from "./pages/dashboard/VideosManagement";
 import CategoryPage from "./pages/CategoryPage";
+import Menu from "./pages/Menu";
+import Favorites from "./pages/Favorites";
 
 const queryClient = new QueryClient();
 
@@ -96,6 +98,8 @@ const App = () => (
               <Route path="/vila/:slug" element={<Vila />} />
               <Route path="/checkout" element={<Checkout />} />
               <Route path="/pedidos" element={<Orders />} />
+              <Route path="/menu" element={<Menu />} />
+              <Route path="/favoritos" element={<Favorites />} />
               {/* Dashboard routes with slug parameter for admin access */}
               <Route path="/painel" element={<EstablishmentDashboard />} />
               <Route path="/painel/:slug" element={<EstablishmentDashboard />} />

@@ -58,7 +58,7 @@ export const mainCategories: MainCategory[] = [
     icon: Palette, 
     bgColor: "bg-purple-50",
     iconColor: "text-purple-600",
-    description: "Artesãos locais - Grátis por 1 ano!"
+    description: "Artesãos locais"
   },
   { 
     id: "servicos", 
@@ -171,11 +171,6 @@ const MainCategoriesGrid = ({ selectedCategory, onCategorySelect }: MainCategori
                 )}>
                   {category.name}
                 </span>
-                {category.id === "artesanato" && (
-                  <span className="text-[10px] text-purple-600 font-medium mt-1 bg-purple-100 px-2 py-0.5 rounded-full">
-                    Grátis!
-                  </span>
-                )}
               </button>
             );
           })}
