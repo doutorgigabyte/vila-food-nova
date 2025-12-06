@@ -1,9 +1,9 @@
 import { ChevronLeft, ChevronRight, Percent } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDragScroll } from "@/hooks/useDragScroll";
 import { useProducts } from "@/hooks/useProducts";
-import { cn } from "@/lib/utils";
 import ProductOfferCard from "./ProductOfferCard";
 
 const TopOffersSection = () => {
