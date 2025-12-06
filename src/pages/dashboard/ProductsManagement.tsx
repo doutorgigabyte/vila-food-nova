@@ -26,20 +26,9 @@ import {
   Snowflake,
 } from "lucide-react";
 
-interface Product {
-  id: string;
-  name: string;
-  description: string | null;
-  price: number;
-  promotional_price: number | null;
-  image_url: string | null;
-  category_id: string | null;
-  is_active: boolean | null;
-  is_featured: boolean | null;
-  preparation_time: number | null;
-  product_type: string | null;
-  temperature_options: string[] | null;
-}
+import type { Database } from "@/integrations/supabase/types";
+
+type Product = Database['public']['Tables']['products']['Row'];
 
 interface Category {
   id: string;
@@ -224,7 +213,7 @@ const ProductsManagement = () => {
                           {product.is_featured && (
                             <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
                           )}
-                          {product.temperature_options && product.temperature_options.includes('gelada') && (
+                          {product.temperature_options && Array.isArray(product.temperature_options) && (product.temperature_options as string[]).includes('gelada') && (
                             <Badge variant="outline" className="text-blue-500 border-blue-300">
                               <Snowflake className="w-3 h-3 mr-1" />
                               Gelada
