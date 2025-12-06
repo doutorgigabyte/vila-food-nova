@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ChefHat, Clock, CheckCircle, AlertCircle, Utensils } from "lucide-react";
+import { ChefHat, Clock, CheckCircle, AlertCircle, Utensils, Package, Cog } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -22,9 +22,43 @@ interface Order {
   status: string;
 }
 
+// Mapeamento de segmentos para tipo de display
+const getDisplayConfig = (segmentSlug: string | null) => {
+  const kitchenSegments = [
+    'restaurante', 'pizzaria', 'hamburgueria', 'lanchonete', 'churrascaria',
+    'japonesa', 'chinesa', 'italiana', 'arabe', 'brasileira', 'marmita',
+    'acai', 'sorvetes', 'pastel', 'saudavel', 'carnes', 'lanches'
+  ];
+  
+  const productionSegments = [
+    'padaria', 'confeitaria', 'doces-e-bolos', 'salgados', 'artesanato'
+  ];
+  
+  const pharmacySegments = ['farmacia', 'pet-shop', 'cosmeticos'];
+  
+  if (!segmentSlug) {
+    return { title: "Display Produção", icon: Package, emptyText: "Nenhum pedido pendente" };
+  }
+  
+  if (kitchenSegments.includes(segmentSlug)) {
+    return { title: "Display Cozinha", icon: ChefHat, emptyText: "Nenhum pedido pendente" };
+  }
+  
+  if (productionSegments.includes(segmentSlug)) {
+    return { title: "Display Produção", icon: Package, emptyText: "Nenhum pedido em produção" };
+  }
+  
+  if (pharmacySegments.includes(segmentSlug)) {
+    return { title: "Display Processos", icon: Cog, emptyText: "Nenhum pedido em processamento" };
+  }
+  
+  return { title: "Display Produção", icon: Package, emptyText: "Nenhum pedido pendente" };
+};
+
 const KitchenDisplay = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [segmentSlug, setSegmentSlug] = useState<string | null>(null);
 
   useEffect(() => {
     fetchOrders();
@@ -55,11 +89,24 @@ const KitchenDisplay = () => {
 
       const { data: establishment } = await supabase
         .from("establishments")
-        .select("id")
+        .select("id, segment_id")
         .eq("owner_id", user.id)
         .single();
 
       if (!establishment) return;
+
+      // Buscar slug do segmento
+      if (establishment.segment_id) {
+        const { data: segment } = await supabase
+          .from("segments")
+          .select("slug")
+          .eq("id", establishment.segment_id)
+          .single();
+        
+        if (segment) {
+          setSegmentSlug(segment.slug);
+        }
+      }
 
       const { data } = await supabase
         .from("orders")
@@ -116,12 +163,15 @@ const KitchenDisplay = () => {
     return "text-red-500";
   };
 
+  const displayConfig = getDisplayConfig(segmentSlug);
+  const DisplayIcon = displayConfig.icon;
+
   return (
     <div className="min-h-screen bg-background p-4">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <ChefHat className="w-8 h-8 text-primary" />
-          <h1 className="text-2xl font-bold">Display Cozinha</h1>
+          <DisplayIcon className="w-8 h-8 text-primary" />
+          <h1 className="text-2xl font-bold">{displayConfig.title}</h1>
         </div>
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="text-lg px-4 py-2">
@@ -137,7 +187,7 @@ const KitchenDisplay = () => {
       ) : orders.length === 0 ? (
         <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
           <Utensils className="w-16 h-16 mb-4 opacity-20" />
-          <p className="text-xl">Nenhum pedido pendente</p>
+          <p className="text-xl">{displayConfig.emptyText}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
