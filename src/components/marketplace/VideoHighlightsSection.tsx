@@ -184,73 +184,65 @@ const VideoHighlightsSection = ({ highlights = defaultHighlights }: VideoHighlig
             )}
 
             {/* Content - Enhanced spacing and layout */}
-            <div className="absolute bottom-0 left-0 right-0 p-4 md:p-8 pb-8 md:pb-12">
-              <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
-                <div className="flex-1 max-w-lg">
-                  {currentHighlight.establishmentName && (
-                    <span className="inline-flex items-center gap-1.5 text-xs md:text-sm text-accent font-semibold mb-2 bg-black/50 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10">
-                      <Sparkles className="w-3 h-3" />
-                      {currentHighlight.establishmentName}
-                    </span>
-                  )}
-                  <h3 className="text-xl md:text-3xl font-bold text-white mb-2 drop-shadow-lg [text-shadow:_0_2px_12px_rgba(0,0,0,0.8)]">
-                    {currentHighlight.title}
-                  </h3>
-                  <p className="text-sm md:text-base text-white/90 mb-4 drop-shadow-md [text-shadow:_0_1px_8px_rgba(0,0,0,0.6)]">
-                    {currentHighlight.subtitle}
-                  </p>
-                  {currentHighlight.ctaText && (
-                    <Button className="btn-yellow gap-2 shadow-lg hover:shadow-yellow relative z-10">
-                      {currentHighlight.ctaText}
-                      <ChevronRight className="w-4 h-4" />
-                    </Button>
-                  )}
-                </div>
-
-                {/* Video Controls */}
-                {currentHighlight.videoUrl && (
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-white hover:bg-white/20 bg-black/40 backdrop-blur-md"
-                      onClick={togglePlay}
-                    >
-                      {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-white hover:bg-white/20 bg-black/40 backdrop-blur-md"
-                      onClick={toggleMute}
-                    >
-                      {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
-                    </Button>
-                  </div>
+            <div className="absolute bottom-0 left-0 right-0 p-4 md:p-8 flex flex-col">
+              {/* Partner Badge */}
+              {currentHighlight.establishmentName && (
+                <span className="inline-flex items-center gap-1.5 text-xs md:text-sm text-accent font-semibold mb-2 bg-black/50 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 w-fit">
+                  <Sparkles className="w-3 h-3" />
+                  {currentHighlight.establishmentName}
+                </span>
+              )}
+              
+              {/* Title and Subtitle - Prominent */}
+              <h3 className="text-2xl md:text-4xl font-bold text-white mb-2 drop-shadow-lg [text-shadow:_0_2px_12px_rgba(0,0,0,0.8)]">
+                {currentHighlight.title}
+              </h3>
+              <p className="text-sm md:text-lg text-white/95 mb-5 max-w-md drop-shadow-md [text-shadow:_0_1px_8px_rgba(0,0,0,0.6)]">
+                {currentHighlight.subtitle}
+              </p>
+              
+              {/* Buttons Row - Primary CTA prominent, secondary subtle */}
+              <div className="flex items-center gap-3">
+                {currentHighlight.ctaText && (
+                  <Button className="btn-yellow gap-2 shadow-lg hover:shadow-yellow text-base px-6 py-2.5">
+                    {currentHighlight.ctaText}
+                    <ChevronRight className="w-4 h-4" />
+                  </Button>
                 )}
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="text-white/80 hover:text-white hover:bg-white/10 text-sm"
+                >
+                  Saiba mais
+                </Button>
               </div>
             </div>
 
-            {/* Navigation Arrows */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 text-white hover:bg-white/20 bg-black/40 backdrop-blur-md opacity-0 group-hover:opacity-100 transition-opacity"
-              onClick={() => handleSlideChange((currentIndex - 1 + highlights.length) % highlights.length)}
-            >
-              <ChevronLeft className="w-6 h-6" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 text-white hover:bg-white/20 bg-black/40 backdrop-blur-md opacity-0 group-hover:opacity-100 transition-opacity"
-              onClick={() => handleSlideChange((currentIndex + 1) % highlights.length)}
-            >
-              <ChevronRight className="w-6 h-6" />
-            </Button>
+            {/* Video Controls - Small corner placement */}
+            {currentHighlight.videoUrl && (
+              <div className="absolute top-4 left-4 flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-white hover:bg-white/20 bg-black/40 backdrop-blur-md w-8 h-8"
+                  onClick={togglePlay}
+                >
+                  {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-white hover:bg-white/20 bg-black/40 backdrop-blur-md w-8 h-8"
+                  onClick={toggleMute}
+                >
+                  {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+                </Button>
+              </div>
+            )}
 
-            {/* Progress Bar - Mobile */}
-            <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20 md:hidden">
+            {/* Progress Bar - Bottom */}
+            <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20">
               <div 
                 className="h-full bg-primary transition-all duration-100 ease-linear"
                 style={{ width: `${progress}%` }}
@@ -259,66 +251,8 @@ const VideoHighlightsSection = ({ highlights = defaultHighlights }: VideoHighlig
           </div>
         </Card>
 
-        {/* Thumbnails Carousel */}
-        <div className="relative group/scroll hidden md:block">
-          <Button
-            variant="outline"
-            size="icon"
-            className="absolute -left-4 top-1/2 -translate-y-1/2 z-10 shadow-md opacity-0 group-hover/scroll:opacity-100 transition-opacity bg-card"
-            onClick={() => scroll("left")}
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </Button>
-
-          <div
-            ref={scrollRef}
-            {...handlers}
-            className={cn(
-              "flex gap-3 overflow-x-auto pb-2 select-none scrollbar-hide",
-              isDragging ? "cursor-grabbing" : "cursor-grab"
-            )}
-          >
-            {highlights.map((highlight, index) => (
-              <button
-                key={highlight.id}
-                onClick={() => !isDragging && handleSlideChange(index)}
-                className={cn(
-                  "flex-shrink-0 relative rounded-xl overflow-hidden transition-all duration-300",
-                  index === currentIndex 
-                    ? "ring-2 ring-primary ring-offset-2 ring-offset-background scale-105" 
-                    : "opacity-60 hover:opacity-100 hover:scale-102"
-                )}
-              >
-                <div className="w-28 md:w-36 aspect-video relative">
-                  <img
-                    src={highlight.thumbnailUrl}
-                    alt={highlight.title}
-                    className="w-full h-full object-cover"
-                    draggable={false}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                  {highlight.discount && (
-                    <Badge className="absolute bottom-1 left-1 bg-destructive text-[10px] px-1.5 py-0.5">
-                      {highlight.discount}
-                    </Badge>
-                  )}
-                </div>
-              </button>
-            ))}
-          </div>
-
-          <Button
-            variant="outline"
-            size="icon"
-            className="absolute -right-4 top-1/2 -translate-y-1/2 z-10 shadow-md opacity-0 group-hover/scroll:opacity-100 transition-opacity bg-card"
-            onClick={() => scroll("right")}
-          >
-            <ChevronRight className="w-5 h-5" />
-          </Button>
-        </div>
-
-        {/* Progress Dots with Active Progress - Desktop */}
-        <div className="hidden md:flex justify-center gap-2 mt-4">
+        {/* Progress Dots - No arrows, auto-advance only */}
+        <div className="flex justify-center gap-2 mt-4">
           {highlights.map((_, index) => (
             <button
               key={index}
@@ -326,7 +260,7 @@ const VideoHighlightsSection = ({ highlights = defaultHighlights }: VideoHighlig
               className={cn(
                 "h-2 rounded-full transition-all duration-300 overflow-hidden",
                 index === currentIndex 
-                  ? "w-12 bg-muted" 
+                  ? "w-10 bg-muted" 
                   : "w-2 bg-muted-foreground/30 hover:bg-muted-foreground/50"
               )}
             >
