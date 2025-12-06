@@ -53,9 +53,10 @@ const VilaTokBubble = () => {
     navigate("/vilatok");
   };
 
-  if (videos.length === 0) return null;
+  const hasVideos = videos.length > 0;
+  const currentVideo = hasVideos ? videos[currentIndex] : null;
 
-  const currentVideo = videos[currentIndex];
+  
 
   return (
     <button
@@ -86,7 +87,7 @@ const VilaTokBubble = () => {
             transition-all duration-300
             ${isAnimating ? 'scale-90 opacity-50' : 'scale-100 opacity-100'}
           `}>
-            {currentVideo.thumbnail_url ? (
+            {hasVideos && currentVideo?.thumbnail_url ? (
               <img
                 src={currentVideo.thumbnail_url}
                 alt={currentVideo.title || "VilaTok"}
