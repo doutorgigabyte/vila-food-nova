@@ -1,13 +1,14 @@
 import { useState, useEffect, useRef } from "react";
-import { Search, X, ArrowUpRight, Store, Package, Utensils } from "lucide-react";
+import { Search, X, ArrowUpRight, Store, Package, Utensils, MapPin, TrendingUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { getCategoryConfig } from "@/lib/categoryConfig";
 
 interface SearchResult {
   id: string;
-  type: "product" | "establishment" | "category";
+  type: "product" | "establishment" | "category" | "vila";
   name: string;
   description?: string;
   image_url?: string;
@@ -61,7 +62,7 @@ const SmartSearch = ({ isOpen, onClose }: SmartSearchProps) => {
     try {
       const searchResults: SearchResult[] = [];
 
-      // Search products
+      // Search products by name and description
       const { data: products } = await supabase
         .from("products")
         .select(`
@@ -72,8 +73,8 @@ const SmartSearch = ({ isOpen, onClose }: SmartSearchProps) => {
           establishments:establishment_id (slug)
         `)
         .eq("is_active", true)
-        .ilike("name", `%${query}%`)
-        .limit(5);
+        .or(`name.ilike.%${query}%,description.ilike.%${query}%`)
+        .limit(6);
 
       if (products) {
         products.forEach((p: any) => {
@@ -93,7 +94,7 @@ const SmartSearch = ({ isOpen, onClose }: SmartSearchProps) => {
         .from("establishments")
         .select("id, name, description, logo_url, slug")
         .eq("status", "active")
-        .ilike("name", `%${query}%`)
+        .or(`name.ilike.%${query}%,description.ilike.%${query}%`)
         .limit(5);
 
       if (establishments) {
@@ -105,6 +106,26 @@ const SmartSearch = ({ isOpen, onClose }: SmartSearchProps) => {
             description: e.description || undefined,
             image_url: e.logo_url || undefined,
             slug: e.slug,
+          });
+        });
+      }
+
+      // Search vilas
+      const { data: vilas } = await supabase
+        .from("vilas")
+        .select("id, name, slug, image_url")
+        .eq("is_active", true)
+        .ilike("name", `%${query}%`)
+        .limit(3);
+
+      if (vilas) {
+        vilas.forEach((v) => {
+          searchResults.push({
+            id: v.id,
+            type: "vila",
+            name: v.name,
+            image_url: v.image_url || undefined,
+            slug: v.slug,
           });
         });
       }
@@ -147,6 +168,8 @@ const SmartSearch = ({ isOpen, onClose }: SmartSearchProps) => {
       navigate(`/loja/${result.establishment_slug}`);
     } else if (result.type === "establishment" && result.slug) {
       navigate(`/loja/${result.slug}`);
+    } else if (result.type === "vila" && result.slug) {
+      navigate(`/vila/${result.slug}`);
     } else if (result.type === "category") {
       // Find matching main category
       const categoryMap: Record<string, string> = {
@@ -181,15 +204,56 @@ const SmartSearch = ({ isOpen, onClose }: SmartSearchProps) => {
   const getIcon = (type: string) => {
     switch (type) {
       case "product":
-        return <Package className="h-4 w-4 text-muted-foreground" />;
+        return <Package className="h-4 w-4 text-orange-500" />;
       case "establishment":
-        return <Store className="h-4 w-4 text-muted-foreground" />;
+        return <Store className="h-4 w-4 text-blue-500" />;
+      case "vila":
+        return <MapPin className="h-4 w-4 text-green-500" />;
       case "category":
-        return <Utensils className="h-4 w-4 text-muted-foreground" />;
+        return <Utensils className="h-4 w-4 text-purple-500" />;
       default:
         return <Search className="h-4 w-4 text-muted-foreground" />;
     }
   };
+
+  const getTypeLabel = (type: string) => {
+    switch (type) {
+      case "product":
+        return "Produto";
+      case "establishment":
+        return "Loja";
+      case "vila":
+        return "Vila";
+      case "category":
+        return "Categoria";
+      default:
+        return type;
+    }
+  };
+
+  const getTypeBadgeColor = (type: string) => {
+    switch (type) {
+      case "product":
+        return "bg-orange-100 text-orange-700";
+      case "establishment":
+        return "bg-blue-100 text-blue-700";
+      case "vila":
+        return "bg-green-100 text-green-700";
+      case "category":
+        return "bg-purple-100 text-purple-700";
+      default:
+        return "bg-muted text-muted-foreground";
+    }
+  };
+
+  // Popular categories to show when no search
+  const popularCategories = [
+    { id: "comida", name: "Comida", icon: "🍔" },
+    { id: "mercado", name: "Mercado", icon: "🛒" },
+    { id: "farmacia", name: "Farmácia", icon: "💊" },
+    { id: "compras", name: "Compras", icon: "🛍️" },
+    { id: "artesanato", name: "Artesanato", icon: "🎨" },
+  ];
 
   if (!isOpen) return null;
 
@@ -247,28 +311,55 @@ const SmartSearch = ({ isOpen, onClose }: SmartSearchProps) => {
               <button
                 key={`${result.type}-${result.id}`}
                 onClick={() => handleResultClick(result)}
-                className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors text-left"
+                className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-muted transition-colors text-left border border-border"
               >
                 {result.image_url ? (
                   <img
                     src={result.image_url}
                     alt={result.name}
-                    className="w-10 h-10 rounded-lg object-cover"
+                    className="w-12 h-12 rounded-lg object-cover"
                   />
                 ) : (
-                  <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
+                  <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center">
                     {getIcon(result.type)}
                   </div>
                 )}
                 
                 <div className="flex-1 min-w-0">
                   <p className="font-medium truncate">{result.name}</p>
-                  <p className="text-xs text-muted-foreground capitalize">{result.type}</p>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${getTypeBadgeColor(result.type)}`}>
+                    {getTypeLabel(result.type)}
+                  </span>
                 </div>
                 
                 <ArrowUpRight className="h-4 w-4 text-muted-foreground shrink-0" />
               </button>
             ))}
+          </div>
+        )}
+
+        {/* Popular categories when no search */}
+        {!loading && searchTerm.length < 2 && (
+          <div className="mb-6">
+            <div className="flex items-center gap-2 mb-3">
+              <TrendingUp className="h-4 w-4 text-primary" />
+              <h3 className="text-sm font-medium">Categorias populares</h3>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              {popularCategories.map((cat) => (
+                <button
+                  key={cat.id}
+                  onClick={() => {
+                    navigate(`/categoria/${cat.id}`);
+                    onClose();
+                  }}
+                  className="flex flex-col items-center gap-1 p-3 rounded-xl bg-muted hover:bg-muted/80 transition-colors"
+                >
+                  <span className="text-2xl">{cat.icon}</span>
+                  <span className="text-xs font-medium">{cat.name}</span>
+                </button>
+              ))}
+            </div>
           </div>
         )}
 

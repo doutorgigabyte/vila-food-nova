@@ -60,7 +60,7 @@ const VilaTokBubble = () => {
   return (
     <button
       onClick={handleClick}
-      className="fixed bottom-24 right-4 z-40 group"
+      className="fixed bottom-[76px] right-4 z-40 group"
       aria-label="Ver VilaTok Stories"
     >
       {/* Outer glow ring - Stories style */}
