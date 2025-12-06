@@ -238,7 +238,9 @@ const EstablishmentDashboard = () => {
           <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
             {getMenuItems(isSuperAdmin ? establishment?.slug : undefined).map((item) => {
               const Icon = item.icon;
-              const badgeValue = item.badgeKey ? stats[item.badgeKey as keyof typeof stats] : null;
+              const badgeValue = item.badgeKey && item.badgeKey === 'pendingOrders' 
+                ? stats.pendingOrders 
+                : null;
               return (
                 <Link
                   key={item.label}
@@ -251,7 +253,7 @@ const EstablishmentDashboard = () => {
                 >
                   <Icon className="w-5 h-5" />
                   <span className="flex-1">{item.label}</span>
-                  {badgeValue && badgeValue > 0 && (
+                  {badgeValue !== null && badgeValue > 0 && (
                     <Badge variant="destructive" className="h-5 min-w-5 flex items-center justify-center text-xs">
                       {badgeValue}
                     </Badge>
@@ -393,6 +395,67 @@ const EstablishmentDashboard = () => {
             </Card>
           </div>
 
+          {/* Order Sources Overview */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Origem dos Pedidos (Mês)</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-blue-500" />
+                      <span className="text-sm">Cardápio Digital</span>
+                    </div>
+                    <span className="font-medium">{stats.ordersBySource.direct}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-purple-500" />
+                      <span className="text-sm">Marketplace</span>
+                    </div>
+                    <span className="font-medium">{stats.ordersBySource.marketplace}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-green-500" />
+                      <span className="text-sm">PDV</span>
+                    </div>
+                    <span className="font-medium">{stats.ordersBySource.pdv}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-emerald-500" />
+                      <span className="text-sm">WhatsApp</span>
+                    </div>
+                    <span className="font-medium">{stats.ordersBySource.whatsapp}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Taxas (Mês)</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Taxa Marketplace (5%)</span>
+                    {loading ? (
+                      <Skeleton className="h-5 w-20" />
+                    ) : (
+                      <span className="font-medium text-primary">R$ {stats.platformFees.toFixed(2)}</span>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Pedidos do marketplace incluem taxa de 5% sobre o valor
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
           {/* Pending Orders */}
           <Card>
             <CardHeader className="pb-3">
