@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 
-export type UploadType = 'products' | 'establishments' | 'categories' | 'banners' | 'avatars';
+export type UploadType = 'products' | 'establishments' | 'categories' | 'banners' | 'avatars' | 'videos';
 
 interface UploadResult {
   url: string;

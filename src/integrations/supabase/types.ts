@@ -872,6 +872,75 @@ export type Database = {
           },
         ]
       }
+      establishment_videos: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          duration: number | null
+          establishment_id: string
+          id: string
+          is_active: boolean | null
+          likes_count: number | null
+          product_id: string | null
+          shares_count: number | null
+          sort_order: number | null
+          thumbnail_url: string | null
+          title: string | null
+          updated_at: string | null
+          video_url: string
+          views_count: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          duration?: number | null
+          establishment_id: string
+          id?: string
+          is_active?: boolean | null
+          likes_count?: number | null
+          product_id?: string | null
+          shares_count?: number | null
+          sort_order?: number | null
+          thumbnail_url?: string | null
+          title?: string | null
+          updated_at?: string | null
+          video_url: string
+          views_count?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          duration?: number | null
+          establishment_id?: string
+          id?: string
+          is_active?: boolean | null
+          likes_count?: number | null
+          product_id?: string | null
+          shares_count?: number | null
+          sort_order?: number | null
+          thumbnail_url?: string | null
+          title?: string | null
+          updated_at?: string | null
+          video_url?: string
+          views_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "establishment_videos_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "establishment_videos_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       establishments: {
         Row: {
           accepts_delivery: boolean | null
@@ -1445,6 +1514,7 @@ export type Database = {
           is_active: boolean | null
           max_orders: number | null
           max_products: number | null
+          max_videos: number | null
           name: string
           price: number
           updated_at: string | null
@@ -1458,6 +1528,7 @@ export type Database = {
           is_active?: boolean | null
           max_orders?: number | null
           max_products?: number | null
+          max_videos?: number | null
           name: string
           price?: number
           updated_at?: string | null
@@ -1471,6 +1542,7 @@ export type Database = {
           is_active?: boolean | null
           max_orders?: number | null
           max_products?: number | null
+          max_videos?: number | null
           name?: string
           price?: number
           updated_at?: string | null
@@ -1915,6 +1987,38 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      video_likes: {
+        Row: {
+          created_at: string | null
+          id: string
+          session_id: string | null
+          user_id: string | null
+          video_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          session_id?: string | null
+          user_id?: string | null
+          video_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          session_id?: string | null
+          user_id?: string | null
+          video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_likes_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "establishment_videos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       vilas: {
         Row: {
