@@ -28,7 +28,10 @@ import {
   Minimize2,
   Grid3X3,
   LayoutGrid,
-  Package
+  Package,
+  ChefHat,
+  Percent,
+  Calculator
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -102,6 +105,7 @@ const PDV = () => {
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'pix' | 'credit_card' | 'debit_card'>('cash');
   const [observations, setObservations] = useState("");
   const [discount, setDiscount] = useState(0);
+  const [tax, setTax] = useState(0);
   const [deliveryFee, setDeliveryFee] = useState(0);
   const [changeFor, setChangeFor] = useState<number | null>(null);
   
@@ -228,6 +232,7 @@ const PDV = () => {
   const clearCart = () => {
     setCart([]);
     setDiscount(0);
+    setTax(0);
     setDeliveryFee(0);
     setObservations("");
     setCustomerName("");
@@ -242,7 +247,8 @@ const PDV = () => {
     return sum + (price * item.quantity);
   }, 0);
 
-  const total = subtotal - discount + (orderType === 'delivery' ? deliveryFee : 0);
+  const taxAmount = (subtotal * tax) / 100;
+  const total = subtotal + taxAmount - discount + (orderType === 'delivery' ? deliveryFee : 0);
 
   // Fullscreen toggle
   const toggleFullscreen = async () => {
@@ -573,66 +579,373 @@ const PDV = () => {
   }
 
   return (
-    <div className="h-[100dvh] bg-background flex flex-col lg:flex-row overflow-hidden">
+    <div className="h-[100dvh] bg-background flex flex-col overflow-hidden">
       <DragGhost />
       
-      {/* Left Panel - Products (scrollable) */}
-      <div className={`flex-1 flex flex-col min-h-0 overflow-hidden ${tokenMode ? 'h-[60dvh] lg:h-auto' : ''}`}>
-        {/* Header */}
-        <header className="bg-card border-b border-border p-3 md:p-4">
-          <div className="flex items-center justify-between gap-2 mb-3">
-            <div className="flex items-center gap-2 min-w-0">
-              <Link to={`/painel/${slug}`}>
-                <Button variant="ghost" size="icon" className="shrink-0">
-                  <ArrowLeft className="w-5 h-5" />
+      {/* Header */}
+      <header className="bg-card border-b border-border p-3 shrink-0">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <Link to={`/painel/${slug}`}>
+              <Button variant="ghost" size="icon" className="shrink-0">
+                <ArrowLeft className="w-5 h-5" />
+              </Button>
+            </Link>
+            <div className="min-w-0">
+              <h1 className="text-lg md:text-xl font-bold truncate">PDV</h1>
+              <p className="text-xs text-muted-foreground truncate">{establishment.name}</p>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <Link to={`/painel/${slug}/cozinha`}>
+              <Button variant="outline" size="sm" className="hidden sm:flex">
+                <ChefHat className="w-4 h-4 mr-1" />
+                Cozinha
+              </Button>
+            </Link>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setTokenMode(!tokenMode)}
+              title={tokenMode ? 'Modo Desktop' : 'Modo Token'}
+            >
+              {tokenMode ? <LayoutGrid className="w-4 h-4" /> : <Grid3X3 className="w-4 h-4" />}
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={toggleFullscreen}
+              title={isFullscreen ? 'Sair Fullscreen' : 'Fullscreen'}
+            >
+              {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+            </Button>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content - 3 Columns */}
+      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden min-h-0">
+        
+        {/* Left Panel - Cart (Fixed) */}
+        <div 
+          ref={dropZoneRef}
+          className={`bg-card border-border flex flex-col shrink-0 order-last lg:order-first h-[40dvh] lg:h-auto lg:w-[320px] xl:w-[360px] border-t lg:border-t-0 lg:border-r ${
+            dragState.isDragging ? 'ring-2 ring-primary ring-dashed bg-primary/5' : ''
+          }`}
+          onDragOver={handlers.onDragOver}
+          onDrop={handlers.onDrop}
+        >
+          {/* Cart Header */}
+          <div className="p-3 border-b border-border shrink-0">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="font-bold flex items-center gap-2 text-sm">
+                <ShoppingCart className="w-4 h-4" />
+                Carrinho
+                {cart.length > 0 && (
+                  <Badge variant="secondary" className="text-xs">{cart.reduce((sum, item) => sum + item.quantity, 0)}</Badge>
+                )}
+              </h2>
+              {cart.length > 0 && (
+                <Button variant="ghost" size="sm" onClick={clearCart} className="h-7 text-xs">
+                  <Trash2 className="w-3 h-3 mr-1" />
+                  Limpar
                 </Button>
-              </Link>
-              <div className="min-w-0">
-                <h1 className="text-lg md:text-xl font-bold truncate">PDV</h1>
-                <p className="text-xs text-muted-foreground truncate">{establishment.name}</p>
+              )}
+            </div>
+
+            {/* Order Type */}
+            <div className="grid grid-cols-3 gap-1">
+              <Button
+                variant={orderType === 'takeaway' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setOrderType('takeaway')}
+                className="text-xs h-8"
+              >
+                Retirada
+              </Button>
+              <Button
+                variant={orderType === 'delivery' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setOrderType('delivery')}
+                className="text-xs h-8"
+              >
+                <Truck className="w-3 h-3 mr-1" />
+                Entrega
+              </Button>
+              <Button
+                variant={orderType === 'table' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setOrderType('table')}
+                className="text-xs h-8"
+              >
+                Mesa
+              </Button>
+            </div>
+
+            {orderType === 'table' && (
+              <Input
+                placeholder="Nº da mesa"
+                className="mt-2 h-8 text-sm"
+                value={tableNumber}
+                onChange={(e) => setTableNumber(e.target.value)}
+              />
+            )}
+          </div>
+
+          {/* Cart Items */}
+          <div className="flex-1 overflow-y-auto p-2 space-y-1 min-h-0">
+            {cart.length === 0 ? (
+              <div className="text-center py-8">
+                <ShoppingCart className="w-12 h-12 mx-auto text-muted-foreground/30 mb-2" />
+                <p className="text-sm text-muted-foreground">Arraste produtos aqui</p>
+                <p className="text-xs text-muted-foreground">ou clique para adicionar</p>
+              </div>
+            ) : (
+              cart.map(item => (
+                <div key={item.id} className="flex gap-2 p-2 bg-muted/50 rounded-lg">
+                  <div className="w-10 h-10 rounded bg-muted overflow-hidden flex-shrink-0">
+                    {item.image_url ? (
+                      <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-sm">🍽️</div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-medium text-xs truncate">{item.name}</h4>
+                    <p className="text-primary font-bold text-xs">
+                      R$ {((item.promotional_price || item.price) * item.quantity).toFixed(2)}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-0.5">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="w-6 h-6"
+                      onClick={() => updateQuantity(item.id, -1)}
+                    >
+                      <Minus className="w-3 h-3" />
+                    </Button>
+                    <span className="w-5 text-center font-medium text-xs">{item.quantity}</span>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="w-6 h-6"
+                      onClick={() => updateQuantity(item.id, 1)}
+                    >
+                      <Plus className="w-3 h-3" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="w-6 h-6 text-destructive"
+                      onClick={() => removeFromCart(item.id)}
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </Button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Cart Footer - Calculations */}
+          <div className="border-t border-border p-3 space-y-2 shrink-0">
+            {/* Customer */}
+            <Button 
+              variant="outline" 
+              className="w-full justify-start text-xs h-8"
+              onClick={() => setShowCustomerModal(true)}
+            >
+              <User className="w-3 h-3 mr-1 shrink-0" />
+              <span className="truncate">{customerName || 'Adicionar cliente'}</span>
+            </Button>
+
+            {/* Tax & Discount Row */}
+            <div className="grid grid-cols-2 gap-2">
+              <div className="flex items-center gap-1">
+                <Percent className="w-3 h-3 text-muted-foreground shrink-0" />
+                <Input
+                  type="number"
+                  min="0"
+                  max="100"
+                  className="h-7 text-xs"
+                  value={tax || ''}
+                  onChange={(e) => setTax(parseFloat(e.target.value) || 0)}
+                  placeholder="Imposto %"
+                />
+              </div>
+              <div className="flex items-center gap-1">
+                <Calculator className="w-3 h-3 text-muted-foreground shrink-0" />
+                <Input
+                  type="number"
+                  min="0"
+                  className="h-7 text-xs"
+                  value={discount || ''}
+                  onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)}
+                  placeholder="Desconto R$"
+                />
               </div>
             </div>
-            
-            <div className="flex items-center gap-2">
-              <Button
+
+            {orderType === 'delivery' && (
+              <div className="flex items-center gap-1">
+                <Truck className="w-3 h-3 text-muted-foreground shrink-0" />
+                <Input
+                  type="number"
+                  min="0"
+                  className="h-7 text-xs flex-1"
+                  value={deliveryFee || ''}
+                  onChange={(e) => setDeliveryFee(parseFloat(e.target.value) || 0)}
+                  placeholder="Taxa entrega R$"
+                />
+              </div>
+            )}
+
+            {/* Totals */}
+            <div className="space-y-0.5 text-xs bg-muted/50 rounded-lg p-2">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Subtotal:</span>
+                <span>R$ {subtotal.toFixed(2)}</span>
+              </div>
+              {tax > 0 && (
+                <div className="flex justify-between text-muted-foreground">
+                  <span>Imposto ({tax}%):</span>
+                  <span>+R$ {taxAmount.toFixed(2)}</span>
+                </div>
+              )}
+              {discount > 0 && (
+                <div className="flex justify-between text-green-600">
+                  <span>Desconto:</span>
+                  <span>-R$ {discount.toFixed(2)}</span>
+                </div>
+              )}
+              {orderType === 'delivery' && deliveryFee > 0 && (
+                <div className="flex justify-between text-muted-foreground">
+                  <span>Entrega:</span>
+                  <span>+R$ {deliveryFee.toFixed(2)}</span>
+                </div>
+              )}
+              <div className="flex justify-between font-bold text-base pt-1 border-t border-border">
+                <span>Total:</span>
+                <span className="text-primary">R$ {total.toFixed(2)}</span>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="grid grid-cols-2 gap-2">
+              <Button 
                 variant="outline"
-                size="icon"
-                onClick={() => setTokenMode(!tokenMode)}
-                title={tokenMode ? 'Modo Desktop' : 'Modo Token'}
+                className="h-10 text-xs" 
+                disabled={cart.length === 0}
+                onClick={() => setShowWhatsAppModal(true)}
               >
-                {tokenMode ? <LayoutGrid className="w-4 h-4" /> : <Grid3X3 className="w-4 h-4" />}
+                <MessageCircle className="w-4 h-4 mr-1" />
+                WhatsApp
               </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={toggleFullscreen}
-                title={isFullscreen ? 'Sair Fullscreen' : 'Fullscreen'}
+              <Button 
+                className="h-10 text-xs" 
+                disabled={cart.length === 0}
+                onClick={() => setShowPaymentModal(true)}
               >
-                {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+                <Receipt className="w-4 h-4 mr-1" />
+                Finalizar
               </Button>
             </div>
           </div>
+        </div>
 
+        {/* Center Panel - Products (Scrollable) */}
+        <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
           {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar produto..."
-              className={`pl-10 ${tokenMode ? 'h-12 text-lg' : ''}`}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+          <div className="bg-card border-b border-border p-3 shrink-0">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar produto..."
+                className={`pl-10 ${tokenMode ? 'h-12 text-lg' : ''}`}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
           </div>
-        </header>
 
-        {/* Categories */}
-        <div className="bg-card border-b border-border p-3 overflow-x-auto">
+          {/* Products Grid - Scrollable */}
+          <div className="flex-1 p-3 overflow-y-auto min-h-0">
+            {filteredProducts.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full text-center">
+                <Package className="h-12 w-12 text-muted-foreground/50 mb-2" />
+                <p className="text-muted-foreground">Nenhum produto encontrado</p>
+              </div>
+            ) : (
+              <div className={`grid gap-3 ${tokenMode ? 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5' : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6'}`}>
+                {filteredProducts.map(product => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Right Panel - Categories (Fixed) */}
+        <div className="hidden lg:flex flex-col w-[180px] xl:w-[200px] bg-card border-l border-border shrink-0">
+          <div className="p-3 border-b border-border">
+            <h3 className="font-semibold text-sm">Categorias</h3>
+          </div>
+          <div className="flex-1 overflow-y-auto p-2 space-y-1">
+            {/* All Products */}
+            <button
+              onClick={() => setSelectedCategory(null)}
+              className={`w-full flex items-center gap-2 p-2 rounded-lg text-left transition-colors ${
+                selectedCategory === null 
+                  ? 'bg-primary text-primary-foreground' 
+                  : 'hover:bg-muted'
+              }`}
+            >
+              <div className="w-10 h-10 rounded-lg bg-muted overflow-hidden flex items-center justify-center shrink-0">
+                <Package className="w-5 h-5 text-muted-foreground" />
+              </div>
+              <span className="text-sm font-medium truncate">Todos</span>
+            </button>
+
+            {/* Category List */}
+            {categories.map(category => (
+              <button
+                key={category.id}
+                onClick={() => setSelectedCategory(category.id)}
+                className={`w-full flex items-center gap-2 p-2 rounded-lg text-left transition-colors ${
+                  selectedCategory === category.id 
+                    ? 'bg-primary text-primary-foreground' 
+                    : 'hover:bg-muted'
+                }`}
+              >
+                <div className="w-10 h-10 rounded-lg bg-muted overflow-hidden shrink-0">
+                  {category.image_url ? (
+                    <img 
+                      src={category.image_url} 
+                      alt={category.name} 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-lg">
+                      📁
+                    </div>
+                  )}
+                </div>
+                <span className="text-sm font-medium truncate">{category.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Mobile Categories - Horizontal */}
+        <div className="lg:hidden bg-card border-t border-border p-2 overflow-x-auto shrink-0 order-first">
           <div className="flex gap-2">
             <Button
               variant={selectedCategory === null ? "default" : "outline"}
-              size={tokenMode ? "lg" : "sm"}
+              size="sm"
               onClick={() => setSelectedCategory(null)}
-              className={tokenMode ? 'text-base px-6' : ''}
+              className={tokenMode ? 'text-base px-4' : ''}
             >
               Todos
             </Button>
@@ -640,238 +953,13 @@ const PDV = () => {
               <Button
                 key={category.id}
                 variant={selectedCategory === category.id ? "default" : "outline"}
-                size={tokenMode ? "lg" : "sm"}
+                size="sm"
                 onClick={() => setSelectedCategory(category.id)}
-                className={`whitespace-nowrap ${tokenMode ? 'text-base px-6' : ''}`}
+                className={`whitespace-nowrap ${tokenMode ? 'text-base px-4' : ''}`}
               >
                 {category.name}
               </Button>
             ))}
-          </div>
-        </div>
-
-        {/* Products Grid - Scrollable */}
-        <div className="flex-1 p-3 md:p-4 overflow-y-auto min-h-0">
-          {filteredProducts.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-center">
-              <Package className="h-12 w-12 text-muted-foreground/50 mb-2" />
-              <p className="text-muted-foreground">Nenhum produto encontrado</p>
-            </div>
-          ) : (
-            <div className={`grid gap-3 md:gap-4 ${gridCols}`}>
-              {filteredProducts.map(product => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Right Panel - Cart (Drop Zone) - Fixed on screen */}
-      <div 
-        ref={dropZoneRef}
-        className={`bg-card border-border flex flex-col shrink-0 h-[40dvh] lg:h-auto lg:w-[380px] xl:w-[420px] border-t lg:border-t-0 lg:border-l ${
-          tokenMode ? 'lg:w-96' : ''
-        } ${dragState.isDragging ? 'ring-2 ring-primary ring-dashed bg-primary/5' : ''}`}
-        onDragOver={handlers.onDragOver}
-        onDrop={handlers.onDrop}
-      >
-        {/* Cart Header */}
-        <div className="p-3 md:p-4 border-b border-border shrink-0">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="font-bold flex items-center gap-2">
-              <ShoppingCart className="w-5 h-5" />
-              Carrinho
-              {cart.length > 0 && (
-                <Badge variant="secondary">{cart.reduce((sum, item) => sum + item.quantity, 0)}</Badge>
-              )}
-            </h2>
-            {cart.length > 0 && (
-              <Button variant="ghost" size="sm" onClick={clearCart}>
-                <Trash2 className="w-4 h-4 mr-1" />
-                Limpar
-              </Button>
-            )}
-          </div>
-
-          {/* Order Type */}
-          <div className="grid grid-cols-3 gap-2">
-            <Button
-              variant={orderType === 'takeaway' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setOrderType('takeaway')}
-              className={`text-xs ${tokenMode ? 'h-10' : ''}`}
-            >
-              Retirada
-            </Button>
-            <Button
-              variant={orderType === 'delivery' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setOrderType('delivery')}
-              className={`text-xs ${tokenMode ? 'h-10' : ''}`}
-            >
-              <Truck className="w-3 h-3 mr-1" />
-              Delivery
-            </Button>
-            <Button
-              variant={orderType === 'table' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setOrderType('table')}
-              className={`text-xs ${tokenMode ? 'h-10' : ''}`}
-            >
-              Mesa
-            </Button>
-          </div>
-
-          {orderType === 'table' && (
-            <Input
-              placeholder="Número da mesa"
-              className="mt-2"
-              value={tableNumber}
-              onChange={(e) => setTableNumber(e.target.value)}
-            />
-          )}
-        </div>
-
-        {/* Cart Items */}
-        <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-2">
-          {cart.length === 0 ? (
-            <div className="text-center py-6">
-              <ShoppingCart className={`mx-auto text-muted-foreground mb-2 ${tokenMode ? 'w-16 h-16' : 'w-12 h-12'}`} />
-              <p className="text-muted-foreground">Arraste produtos aqui</p>
-              <p className="text-sm text-muted-foreground">ou clique para adicionar</p>
-            </div>
-          ) : (
-            cart.map(item => (
-              <div key={item.id} className="flex gap-2 p-2 bg-muted/50 rounded-lg">
-                <div className="w-12 h-12 rounded-lg bg-muted overflow-hidden flex-shrink-0">
-                  {item.image_url ? (
-                    <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-lg">🍽️</div>
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="font-medium text-sm truncate">{item.name}</h4>
-                  <p className="text-primary font-bold text-sm">
-                    R$ {((item.promotional_price || item.price) * item.quantity).toFixed(2)}
-                  </p>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="w-7 h-7"
-                    onClick={() => updateQuantity(item.id, -1)}
-                  >
-                    <Minus className="w-3 h-3" />
-                  </Button>
-                  <span className="w-6 text-center font-medium text-sm">{item.quantity}</span>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="w-7 h-7"
-                    onClick={() => updateQuantity(item.id, 1)}
-                  >
-                    <Plus className="w-3 h-3" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="w-7 h-7 text-destructive"
-                    onClick={() => removeFromCart(item.id)}
-                  >
-                    <Trash2 className="w-3 h-3" />
-                  </Button>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-
-        {/* Cart Footer */}
-        <div className="border-t border-border p-3 md:p-4 space-y-2 shrink-0">
-          {/* Customer & Delivery */}
-          <div className="flex gap-2">
-            <Button 
-              variant="outline" 
-              className="flex-1 justify-start text-xs"
-              onClick={() => setShowCustomerModal(true)}
-            >
-              <User className="w-4 h-4 mr-1 shrink-0" />
-              <span className="truncate">{customerName || 'Cliente'}</span>
-            </Button>
-            {orderType === 'delivery' && (
-              <div className="flex items-center gap-1">
-                <Label className="text-xs shrink-0">Frete:</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  className="w-20 h-9"
-                  value={deliveryFee || ''}
-                  onChange={(e) => setDeliveryFee(parseFloat(e.target.value) || 0)}
-                  placeholder="0"
-                />
-              </div>
-            )}
-          </div>
-
-          {/* Discount */}
-          <div className="flex items-center gap-2">
-            <Label className="text-xs shrink-0">Desconto:</Label>
-            <Input
-              type="number"
-              min="0"
-              className="w-20 h-9"
-              value={discount || ''}
-              onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)}
-              placeholder="0"
-            />
-          </div>
-
-          {/* Totals */}
-          <div className="space-y-1 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Subtotal:</span>
-              <span>R$ {subtotal.toFixed(2)}</span>
-            </div>
-            {discount > 0 && (
-              <div className="flex justify-between text-green-600">
-                <span>Desconto:</span>
-                <span>-R$ {discount.toFixed(2)}</span>
-              </div>
-            )}
-            {orderType === 'delivery' && deliveryFee > 0 && (
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Frete:</span>
-                <span>R$ {deliveryFee.toFixed(2)}</span>
-              </div>
-            )}
-            <div className="flex justify-between font-bold text-lg pt-1 border-t">
-              <span>Total:</span>
-              <span>R$ {total.toFixed(2)}</span>
-            </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="grid grid-cols-2 gap-2">
-            <Button 
-              variant="outline"
-              className={`${tokenMode ? 'h-12' : 'h-10'}`} 
-              disabled={cart.length === 0}
-              onClick={() => setShowWhatsAppModal(true)}
-            >
-              <MessageCircle className="w-4 h-4 mr-1" />
-              WhatsApp
-            </Button>
-            <Button 
-              className={`${tokenMode ? 'h-12' : 'h-10'}`} 
-              disabled={cart.length === 0}
-              onClick={() => setShowPaymentModal(true)}
-            >
-              <Receipt className="w-4 h-4 mr-1" />
-              Finalizar
-            </Button>
           </div>
         </div>
       </div>
