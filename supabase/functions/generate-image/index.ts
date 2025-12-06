@@ -232,8 +232,8 @@ Do not include any text in the image.`;
     console.log(`Generating image for ${type}: ${name}`);
     console.log(`Prompt: ${prompt}`);
 
-    // Call Google Gemini API directly for image generation (Free tier model)
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GOOGLE_API_KEY}`;
+    // Call Google Gemini API directly for image generation (2.0 Flash - Free tier with image gen)
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GOOGLE_API_KEY}`;
     
     const aiResponse = await fetch(geminiUrl, {
       method: 'POST',
