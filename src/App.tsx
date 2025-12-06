@@ -75,7 +75,7 @@ import CategoryPage from "./pages/CategoryPage";
 import Menu from "./pages/Menu";
 import Favorites from "./pages/Favorites";
 import ProductsListing from "./pages/ProductsListing";
-
+import AIAnalysisDashboard from "./pages/dashboard/AIAnalysisDashboard";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -135,6 +135,7 @@ const App = () => (
               <Route path="/painel/:slug/pagamentos" element={<PaymentsManagement />} />
               <Route path="/painel/:slug/videos" element={<VideosManagement />} />
               <Route path="/painel/:slug/stories" element={<StoriesManagement />} />
+              <Route path="/painel/:slug/analise-ia" element={<AIAnalysisDashboard />} />
               {/* Routes without slug for establishment owners */}
               <Route path="/painel/produtos" element={<ProductsManagement />} />
               <Route path="/painel/categorias" element={<CategoriesManagement />} />
@@ -162,6 +163,7 @@ const App = () => (
               <Route path="/painel/fornecedores" element={<SuppliersManagement />} />
               <Route path="/painel/pagamentos" element={<PaymentsManagement />} />
               <Route path="/painel/stories" element={<StoriesManagement />} />
+              <Route path="/painel/analise-ia" element={<AIAnalysisDashboard />} />
               <Route path="/dashboard/mercadopago/callback" element={<MercadoPagoCallback />} />
               {/* Admin routes */}
               <Route path="/admin" element={<ProtectedAdminRoute><AdminDashboard /></ProtectedAdminRoute>} />
