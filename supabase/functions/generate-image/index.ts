@@ -232,8 +232,9 @@ Do not include any text in the image.`;
     console.log(`Generating image for ${type}: ${name}`);
     console.log(`Prompt: ${prompt}`);
 
-    // Call Google Gemini API directly for image generation (2.0 Flash - Free tier with image gen)
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GOOGLE_API_KEY}`;
+    // Call Google Gemini API directly for image generation (gemini-2.5-flash-image - "Nano Banana")
+    const model = 'gemini-2.5-flash-preview-05-20';
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GOOGLE_API_KEY}`;
     
     const aiResponse = await fetch(geminiUrl, {
       method: 'POST',
@@ -249,7 +250,9 @@ Do not include any text in the image.`;
           }
         ],
         generationConfig: {
-          responseModalities: ["TEXT", "IMAGE"]
+          responseModalities: ["IMAGE"],
+          candidateCount: 1,
+          temperature: 0.9
         }
       }),
     });
