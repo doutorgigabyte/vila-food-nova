@@ -71,3 +71,6 @@ verify_jwt = false
 
 [functions.ai-health-check]
 verify_jwt = false
+
+[functions.mercadopago-point]
+verify_jwt = false
