@@ -25,14 +25,14 @@ const EstablishmentCard = ({
 
   if (variant === "compact") {
     return (
-      <Link to={`/loja/${est.slug}`} className={cn("block", className)}>
-        <Card className="overflow-hidden hover:shadow-elevated transition-all group h-full">
+      <Link to={`/loja/${est.slug}`} className={cn("block snap-center", className)}>
+        <Card className="overflow-hidden hover:shadow-lg transition-all group h-full rounded-3xl border-0 shadow-md">
           <div className="relative h-32 bg-muted">
             {est.banner_url ? (
               <img
                 src={est.banner_url}
                 alt={est.name}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                 draggable={false}
               />
             ) : (
@@ -43,17 +43,17 @@ const EstablishmentCard = ({
             
             {!est.is_open && (
               <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center">
-                <Badge variant="secondary" className="text-sm">Fechado</Badge>
+                <Badge variant="secondary" className="text-sm rounded-full">Fechado</Badge>
                 <span className="text-xs text-muted-foreground mt-1">Abre às 18:00</span>
               </div>
             )}
             
             {est.is_open && (
-              <Badge className="absolute top-2 left-2 bg-green-500 text-xs">Aberto</Badge>
+              <Badge className="absolute top-3 left-3 bg-green-500 text-xs rounded-full shadow-md">Aberto</Badge>
             )}
             
             {isNew && (
-              <Badge className="absolute top-2 left-2 bg-accent text-accent-foreground text-xs font-bold">
+              <Badge className="absolute top-3 left-3 bg-accent text-accent-foreground text-xs font-bold rounded-full shadow-md">
                 NOVO
               </Badge>
             )}
@@ -61,14 +61,14 @@ const EstablishmentCard = ({
             <Button 
               variant="ghost" 
               size="icon" 
-              className="absolute top-2 right-2 w-8 h-8 bg-card/80 backdrop-blur-sm hover:bg-card text-muted-foreground hover:text-destructive"
+              className="absolute top-3 right-3 w-9 h-9 bg-card/80 backdrop-blur-sm hover:bg-card text-muted-foreground hover:text-destructive rounded-full shadow-md active:scale-95"
               onClick={(e) => e.preventDefault()}
             >
               <Heart className="w-4 h-4" />
             </Button>
           </div>
           
-          <CardContent className="p-3">
+          <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-1">
               <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
               <span className="font-medium text-sm">4.5</span>
@@ -86,14 +86,14 @@ const EstablishmentCard = ({
 
   if (variant === "featured") {
     return (
-      <Link to={`/loja/${est.slug}`} className={cn("block", className)}>
-        <Card className="overflow-hidden hover:shadow-elevated transition-all group h-full border-2 border-transparent hover:border-primary/20">
+      <Link to={`/loja/${est.slug}`} className={cn("block snap-center", className)}>
+        <Card className="overflow-hidden hover:shadow-lg transition-all group h-full rounded-3xl border-0 shadow-md hover:shadow-xl">
           <div className="relative h-36 md:h-44 bg-muted">
             {est.banner_url ? (
               <img
                 src={est.banner_url}
                 alt={est.name}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                 draggable={false}
               />
             ) : (
@@ -106,7 +106,7 @@ const EstablishmentCard = ({
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
             
             {/* Logo */}
-            <div className="absolute bottom-3 left-3 w-14 h-14 rounded-xl border-2 border-card bg-card shadow-lg overflow-hidden">
+            <div className="absolute bottom-3 left-3 w-14 h-14 rounded-2xl border-2 border-card bg-card shadow-lg overflow-hidden">
               {est.logo_url ? (
                 <img src={est.logo_url} alt={est.name} className="w-full h-full object-cover" draggable={false} />
               ) : (
@@ -125,7 +125,7 @@ const EstablishmentCard = ({
             </div>
             
             {isNew && (
-              <Badge className="absolute top-3 left-3 bg-accent text-accent-foreground text-xs font-bold shadow-md">
+              <Badge className="absolute top-3 left-3 bg-accent text-accent-foreground text-xs font-bold shadow-md rounded-full">
                 NOVO
               </Badge>
             )}
@@ -133,7 +133,7 @@ const EstablishmentCard = ({
             <Button 
               variant="ghost" 
               size="icon" 
-              className="absolute top-3 right-3 w-8 h-8 bg-card/80 backdrop-blur-sm hover:bg-card text-muted-foreground hover:text-destructive"
+              className="absolute top-3 right-3 w-9 h-9 bg-card/80 backdrop-blur-sm hover:bg-card text-muted-foreground hover:text-destructive rounded-full shadow-md active:scale-95"
               onClick={(e) => e.preventDefault()}
             >
               <Heart className="w-4 h-4" />
@@ -156,7 +156,7 @@ const EstablishmentCard = ({
               </div>
               
               {showVisitButton && (
-                <Button size="sm" className="gap-1 shadow-md">
+                <Button size="sm" className="gap-1 shadow-md rounded-full active:scale-95">
                   Visitar <ChevronRight className="w-4 h-4" />
                 </Button>
               )}
@@ -164,17 +164,17 @@ const EstablishmentCard = ({
             
             <div className="flex items-center gap-2 mt-3">
               {est.accepts_delivery && (
-                <Badge variant="outline" className="text-xs">Delivery</Badge>
+                <Badge variant="outline" className="text-xs rounded-full">Delivery</Badge>
               )}
               {est.accepts_pickup && (
-                <Badge variant="outline" className="text-xs">Retirada</Badge>
+                <Badge variant="outline" className="text-xs rounded-full">Retirada</Badge>
               )}
               {est.is_open ? (
-                <Badge className="bg-green-500/10 text-green-600 border-green-500/20 text-xs ml-auto">
+                <Badge className="bg-green-500/10 text-green-600 border-green-500/20 text-xs ml-auto rounded-full">
                   Aberto agora
                 </Badge>
               ) : (
-                <Badge variant="secondary" className="text-xs ml-auto">Fechado</Badge>
+                <Badge variant="secondary" className="text-xs ml-auto rounded-full">Fechado</Badge>
               )}
             </div>
           </CardContent>
@@ -185,14 +185,14 @@ const EstablishmentCard = ({
 
   // Default variant
   return (
-    <Link to={`/loja/${est.slug}`} className={cn("block", className)}>
-      <Card className="overflow-hidden hover:shadow-elevated transition-all group h-full">
+    <Link to={`/loja/${est.slug}`} className={cn("block snap-center", className)}>
+      <Card className="overflow-hidden hover:shadow-lg transition-all group h-full rounded-3xl border-0 shadow-md">
         <div className="relative h-40 bg-muted">
           {est.banner_url ? (
             <img
               src={est.banner_url}
               alt={est.name}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
               draggable={false}
             />
           ) : (
@@ -203,25 +203,25 @@ const EstablishmentCard = ({
           
           {!est.is_open && (
             <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center">
-              <Badge variant="secondary" className="text-sm">Fechado</Badge>
+              <Badge variant="secondary" className="text-sm rounded-full">Fechado</Badge>
             </div>
           )}
           
           <Button 
             variant="ghost" 
             size="icon" 
-            className="absolute top-2 right-2 w-8 h-8 bg-card/80 backdrop-blur-sm hover:bg-card text-muted-foreground hover:text-destructive"
+            className="absolute top-3 right-3 w-9 h-9 bg-card/80 backdrop-blur-sm hover:bg-card text-muted-foreground hover:text-destructive rounded-full shadow-md active:scale-95"
             onClick={(e) => e.preventDefault()}
           >
             <Heart className="w-4 h-4" />
           </Button>
 
           {est.is_open && (
-            <Badge className="absolute top-2 left-2 bg-green-500">Aberto</Badge>
+            <Badge className="absolute top-3 left-3 bg-green-500 rounded-full shadow-md">Aberto</Badge>
           )}
           
           {isNew && (
-            <Badge className="absolute top-2 left-16 bg-accent text-accent-foreground font-bold">
+            <Badge className="absolute top-3 left-[4.5rem] bg-accent text-accent-foreground font-bold rounded-full shadow-md">
               NOVO
             </Badge>
           )}
@@ -229,7 +229,7 @@ const EstablishmentCard = ({
         
         <CardContent className="p-4">
           <div className="flex items-start gap-3">
-            <div className="w-12 h-12 rounded-full border-2 border-background -mt-8 relative z-10 shadow-md overflow-hidden bg-card flex-shrink-0">
+            <div className="w-12 h-12 rounded-xl border-2 border-background -mt-8 relative z-10 shadow-lg overflow-hidden bg-card flex-shrink-0">
               {est.logo_url ? (
                 <img src={est.logo_url} alt={est.name} className="w-full h-full object-cover" draggable={false} />
               ) : (
@@ -269,10 +269,10 @@ const EstablishmentCard = ({
             )}
             <div className="flex gap-1 ml-auto">
               {est.accepts_delivery && (
-                <Badge variant="outline" className="text-xs py-0">Delivery</Badge>
+                <Badge variant="outline" className="text-xs py-0 rounded-full">Delivery</Badge>
               )}
               {est.accepts_pickup && (
-                <Badge variant="outline" className="text-xs py-0">Retirada</Badge>
+                <Badge variant="outline" className="text-xs py-0 rounded-full">Retirada</Badge>
               )}
             </div>
           </div>

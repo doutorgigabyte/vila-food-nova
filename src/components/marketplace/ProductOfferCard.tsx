@@ -37,10 +37,10 @@ const ProductOfferCard = ({ product, variant = "default", className }: ProductOf
   return (
     <Link 
       to={`/loja/${product.establishment?.slug || ''}`}
-      className={cn("block", className)}
+      className={cn("block snap-center", className)}
     >
       <Card className={cn(
-        "overflow-hidden group/card hover:shadow-lg transition-all relative",
+        "overflow-hidden group/card hover:shadow-lg transition-all relative rounded-3xl border-0 shadow-md",
         variant === "large" ? "w-56 md:w-64" : "w-44 md:w-52"
       )}>
         <div className={cn(
@@ -51,7 +51,7 @@ const ProductOfferCard = ({ product, variant = "default", className }: ProductOf
             <img
               src={product.image_url}
               alt={product.name}
-              className="w-full h-full object-cover group-hover/card:scale-105 transition-transform duration-300"
+              className="w-full h-full object-cover group-hover/card:scale-110 transition-transform duration-500"
               draggable={false}
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
@@ -59,7 +59,7 @@ const ProductOfferCard = ({ product, variant = "default", className }: ProductOf
               }}
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center">
+            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">
               <span className="text-4xl opacity-30">🍽️</span>
             </div>
           )}
@@ -75,7 +75,7 @@ const ProductOfferCard = ({ product, variant = "default", className }: ProductOf
           
           {/* Discount badge */}
           {discount && isAvailable && (
-            <Badge className="absolute top-2 left-2 bg-destructive text-destructive-foreground font-bold px-2 py-1 text-sm shadow-md">
+            <Badge className="absolute top-3 left-3 bg-destructive text-destructive-foreground font-bold px-2.5 py-1 text-sm shadow-lg rounded-full">
               {discount}% OFF
             </Badge>
           )}
@@ -84,7 +84,7 @@ const ProductOfferCard = ({ product, variant = "default", className }: ProductOf
           <Button 
             variant="ghost" 
             size="icon" 
-            className="absolute top-2 right-2 w-8 h-8 bg-card/80 backdrop-blur-sm hover:bg-card text-muted-foreground hover:text-destructive transition-colors"
+            className="absolute top-3 right-3 w-9 h-9 bg-card/80 backdrop-blur-sm hover:bg-card text-muted-foreground hover:text-destructive transition-colors rounded-full shadow-md active:scale-95"
             onClick={(e) => e.preventDefault()}
           >
             <Heart className="w-4 h-4" />
@@ -94,7 +94,7 @@ const ProductOfferCard = ({ product, variant = "default", className }: ProductOf
           {isAvailable && (
             <Button 
               size="icon" 
-              className="absolute bottom-2 right-2 w-9 h-9 rounded-full shadow-lg bg-primary hover:bg-primary/90"
+              className="absolute bottom-3 right-3 w-10 h-10 rounded-full shadow-lg bg-primary hover:bg-primary/90 active:scale-95 transition-transform"
               onClick={(e) => e.preventDefault()}
             >
               <Plus className="w-5 h-5" />
@@ -102,11 +102,11 @@ const ProductOfferCard = ({ product, variant = "default", className }: ProductOf
           )}
         </div>
         
-        <CardContent className="p-3">
+        <CardContent className="p-4">
           <p className="text-xs text-muted-foreground truncate mb-1">
             {product.establishment?.name || 'Estabelecimento'}
           </p>
-          <h3 className="font-medium text-sm truncate">
+          <h3 className="font-semibold text-sm truncate">
             {product.name}
           </h3>
           

@@ -1,5 +1,4 @@
-import { useState, useEffect } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
 
 interface Banner {
   id: string;
@@ -14,23 +13,59 @@ interface StoreBannersProps {
 }
 
 export const StoreBanners = ({ banners, primaryColor }: StoreBannersProps) => {
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
 
-  // Auto slide
+  // Track scroll position
+  useEffect(() => {
+    const container = scrollRef.current;
+    if (!container || banners.length <= 1) return;
+
+    const handleScroll = () => {
+      const scrollLeft = container.scrollLeft;
+      const itemWidth = container.offsetWidth * 0.85 + 12; // width + gap
+      const newIndex = Math.round(scrollLeft / itemWidth);
+      setActiveIndex(Math.min(newIndex, banners.length - 1));
+    };
+
+    container.addEventListener('scroll', handleScroll, { passive: true });
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, [banners.length]);
+
+  // Auto-scroll
   useEffect(() => {
     if (banners.length <= 1) return;
+    const container = scrollRef.current;
+    if (!container) return;
+
     const interval = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % banners.length);
+      const nextIndex = (activeIndex + 1) % banners.length;
+      const itemWidth = container.offsetWidth * 0.85 + 12;
+      container.scrollTo({
+        left: nextIndex * itemWidth,
+        behavior: 'smooth',
+      });
     }, 5000);
+
     return () => clearInterval(interval);
-  }, [banners.length]);
+  }, [banners.length, activeIndex]);
+
+  const scrollToIndex = (index: number) => {
+    const container = scrollRef.current;
+    if (!container) return;
+    const itemWidth = container.offsetWidth * 0.85 + 12;
+    container.scrollTo({
+      left: index * itemWidth,
+      behavior: 'smooth',
+    });
+  };
 
   if (banners.length === 0) {
     // Show promotional placeholder
     return (
       <div className="mx-4 my-4">
         <div 
-          className="relative h-36 md:h-48 rounded-xl overflow-hidden shadow-lg"
+          className="relative h-36 md:h-48 rounded-3xl overflow-hidden shadow-lg"
           style={{ 
             background: primaryColor 
               ? `linear-gradient(135deg, ${primaryColor} 0%, ${primaryColor}cc 100%)`
@@ -61,64 +96,79 @@ export const StoreBanners = ({ banners, primaryColor }: StoreBannersProps) => {
   }
 
   return (
-    <div className="mx-4 my-4 relative">
-      <div className="relative h-36 md:h-48 rounded-xl overflow-hidden shadow-lg">
+    <div className="my-4 relative">
+      {/* Native iOS-style scroll container */}
+      <div
+        ref={scrollRef}
+        className="flex gap-3 overflow-x-auto snap-x snap-mandatory px-4"
+        style={{
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none',
+          WebkitOverflowScrolling: 'touch',
+        }}
+      >
         {banners.map((banner, index) => (
           <div
             key={banner.id}
-            className={`absolute inset-0 transition-opacity duration-500 ${
-              index === currentIndex ? "opacity-100" : "opacity-0"
-            }`}
+            className={`
+              relative flex-shrink-0 w-[85vw] max-w-lg h-36 md:h-48
+              snap-center rounded-3xl overflow-hidden shadow-lg
+              transition-all duration-300 ease-out
+              ${activeIndex === index ? 'scale-100 opacity-100' : 'scale-[0.95] opacity-70'}
+            `}
           >
             {banner.link_url ? (
-              <a href={banner.link_url} target="_blank" rel="noopener noreferrer">
+              <a href={banner.link_url} target="_blank" rel="noopener noreferrer" className="block w-full h-full">
                 <img
                   src={banner.image_url}
                   alt={banner.title || "Banner"}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
+                  draggable={false}
                 />
               </a>
             ) : (
               <img
                 src={banner.image_url}
                 alt={banner.title || "Banner"}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
+                draggable={false}
               />
+            )}
+            
+            {/* Title overlay */}
+            {banner.title && (
+              <>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
+                <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
+                  <h3 className="font-semibold text-lg">{banner.title}</h3>
+                </div>
+              </>
             )}
           </div>
         ))}
-        
-        {/* Navigation */}
-        {banners.length > 1 && (
-          <>
-            <button
-              onClick={() => setCurrentIndex((prev) => (prev - 1 + banners.length) % banners.length)}
-              className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/50 rounded-full flex items-center justify-center text-white hover:bg-black/70 transition-colors"
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-            <button
-              onClick={() => setCurrentIndex((prev) => (prev + 1) % banners.length)}
-              className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/50 rounded-full flex items-center justify-center text-white hover:bg-black/70 transition-colors"
-            >
-              <ChevronRight className="w-5 h-5" />
-            </button>
-            
-            {/* Dots */}
-            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
-              {banners.map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => setCurrentIndex(index)}
-                  className={`w-2 h-2 rounded-full transition-all ${
-                    index === currentIndex ? "bg-white w-4" : "bg-white/50"
-                  }`}
-                />
-              ))}
-            </div>
-          </>
-        )}
+        {/* End padding for last item */}
+        <div className="flex-shrink-0 w-4" />
       </div>
+      
+      {/* iOS-style dot indicators */}
+      {banners.length > 1 && (
+        <div className="flex justify-center gap-2 mt-3">
+          {banners.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => scrollToIndex(index)}
+              className={`
+                h-2 rounded-full transition-all duration-300 ease-out
+                ${activeIndex === index 
+                  ? 'w-6 bg-primary' 
+                  : 'w-2 bg-muted-foreground/30 hover:bg-muted-foreground/50'
+                }
+              `}
+              aria-label={`Go to slide ${index + 1}`}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 };
