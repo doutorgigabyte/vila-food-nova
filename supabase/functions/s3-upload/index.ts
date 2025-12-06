@@ -175,11 +175,10 @@ serve(async (req) => {
     const canonicalHeaders = 
       `content-type:${contentType}\n` +
       `host:${host}\n` +
-      `x-amz-acl:public-read\n` +
       `x-amz-content-sha256:${payloadHash}\n` +
       `x-amz-date:${amzDate}\n`;
     
-    const signedHeaders = 'content-type;host;x-amz-acl;x-amz-content-sha256;x-amz-date';
+    const signedHeaders = 'content-type;host;x-amz-content-sha256;x-amz-date';
     
     const canonicalRequest = 
       `${method}\n${canonicalUri}\n${canonicalQuerystring}\n${canonicalHeaders}\n${signedHeaders}\n${payloadHash}`;
@@ -205,7 +204,6 @@ serve(async (req) => {
       method: 'PUT',
       headers: {
         'Content-Type': contentType,
-        'x-amz-acl': 'public-read',
         'x-amz-content-sha256': payloadHash,
         'x-amz-date': amzDate,
         'Authorization': authorizationHeader,
