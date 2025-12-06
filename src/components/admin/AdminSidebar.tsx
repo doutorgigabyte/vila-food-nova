@@ -25,7 +25,9 @@ import {
   Rocket,
   Database,
   Heart,
-  Tag
+  Tag,
+  UserCheck,
+  Image
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import logo from "@/assets/logo.png";
@@ -46,6 +48,7 @@ const navItems: NavItem[] = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/admin" },
   { icon: Building2, label: "Estabelecimentos", href: "/admin/estabelecimentos" },
   { icon: Users, label: "Usuários", href: "/admin/usuarios" },
+  { icon: UserCheck, label: "Afiliados", href: "/admin/afiliados" },
   { 
     icon: MapPin, 
     label: "Localidades",
@@ -83,6 +86,7 @@ const navItems: NavItem[] = [
       { icon: Heart, label: "Health Check", href: "/admin/health" },
       { icon: Rocket, label: "Roadmap", href: "/admin/roadmap" },
       { icon: Database, label: "Migração", href: "/admin/migracao" },
+      { icon: Image, label: "Preencher Imagens", href: "/admin/preencher-imagens" },
     ]
   },
   { icon: Settings, label: "Configurações", href: "/admin/configuracoes" },

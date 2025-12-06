@@ -79,6 +79,7 @@ import Favorites from "./pages/Favorites";
 import ProductsListing from "./pages/ProductsListing";
 import ProductDetail from "./pages/ProductDetail";
 import AIAnalysisDashboard from "./pages/dashboard/AIAnalysisDashboard";
+import EstablishmentSettings from "./pages/dashboard/EstablishmentSettings";
 import { OrderSourceProvider } from "./hooks/useOrderSource";
 // Affiliate pages
 import AffiliateReferrals from "./pages/affiliate/AffiliateReferrals";
@@ -86,6 +87,9 @@ import AffiliateCommissions from "./pages/affiliate/AffiliateCommissions";
 import AffiliateVouchers from "./pages/affiliate/AffiliateVouchers";
 import AffiliateReports from "./pages/affiliate/AffiliateReports";
 import AffiliateSettings from "./pages/affiliate/AffiliateSettings";
+// Admin settings
+import AdminSettings from "./pages/admin/AdminSettings";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -148,6 +152,7 @@ const App = () => (
               <Route path="/painel/:slug/videos" element={<VideosManagement />} />
               <Route path="/painel/:slug/stories" element={<StoriesManagement />} />
               <Route path="/painel/:slug/analise-ia" element={<AIAnalysisDashboard />} />
+              <Route path="/painel/:slug/configuracoes" element={<EstablishmentSettings />} />
               {/* Routes without slug for establishment owners */}
               <Route path="/painel/produtos" element={<ProductsManagement />} />
               <Route path="/painel/categorias" element={<CategoriesManagement />} />
@@ -176,6 +181,7 @@ const App = () => (
               <Route path="/painel/pagamentos" element={<PaymentsManagement />} />
               <Route path="/painel/stories" element={<StoriesManagement />} />
               <Route path="/painel/analise-ia" element={<AIAnalysisDashboard />} />
+              <Route path="/painel/configuracoes" element={<EstablishmentSettings />} />
               <Route path="/dashboard/mercadopago/callback" element={<MercadoPagoCallback />} />
               {/* Admin routes */}
               <Route path="/admin" element={<ProtectedAdminRoute><AdminDashboard /></ProtectedAdminRoute>} />
@@ -198,6 +204,7 @@ const App = () => (
               <Route path="/admin/roadmap" element={<ProtectedAdminRoute><Roadmap /></ProtectedAdminRoute>} />
               <Route path="/admin/health" element={<ProtectedAdminRoute><SystemHealthCheck /></ProtectedAdminRoute>} />
               <Route path="/admin/preencher-imagens" element={<ProtectedAdminRoute><ImageFillManager /></ProtectedAdminRoute>} />
+              <Route path="/admin/configuracoes" element={<ProtectedAdminRoute><AdminSettings /></ProtectedAdminRoute>} />
               {/* Affiliate routes */}
               <Route path="/afiliado" element={<AffiliateDashboard />} />
               <Route path="/afiliado/indicacoes" element={<AffiliateReferrals />} />
