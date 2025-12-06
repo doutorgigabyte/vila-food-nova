@@ -1664,6 +1664,104 @@ export type Database = {
           },
         ]
       }
+      notification_preferences: {
+        Row: {
+          created_at: string | null
+          disabled_types: string[] | null
+          id: string
+          quiet_hours_end: string | null
+          quiet_hours_start: string | null
+          sound_enabled: boolean | null
+          updated_at: string | null
+          user_id: string
+          vibration_enabled: boolean | null
+          volume: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          disabled_types?: string[] | null
+          id?: string
+          quiet_hours_end?: string | null
+          quiet_hours_start?: string | null
+          sound_enabled?: boolean | null
+          updated_at?: string | null
+          user_id: string
+          vibration_enabled?: boolean | null
+          volume?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          disabled_types?: string[] | null
+          id?: string
+          quiet_hours_end?: string | null
+          quiet_hours_start?: string | null
+          sound_enabled?: boolean | null
+          updated_at?: string | null
+          user_id?: string
+          vibration_enabled?: boolean | null
+          volume?: number | null
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          created_at: string | null
+          data: Json | null
+          establishment_id: string | null
+          expires_at: string | null
+          id: string
+          is_dismissed: boolean | null
+          is_read: boolean | null
+          message: string | null
+          priority: Database["public"]["Enums"]["notification_priority"]
+          read_at: string | null
+          target_roles: string[] | null
+          title: string
+          type: Database["public"]["Enums"]["notification_type"]
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          data?: Json | null
+          establishment_id?: string | null
+          expires_at?: string | null
+          id?: string
+          is_dismissed?: boolean | null
+          is_read?: boolean | null
+          message?: string | null
+          priority?: Database["public"]["Enums"]["notification_priority"]
+          read_at?: string | null
+          target_roles?: string[] | null
+          title: string
+          type: Database["public"]["Enums"]["notification_type"]
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          data?: Json | null
+          establishment_id?: string | null
+          expires_at?: string | null
+          id?: string
+          is_dismissed?: boolean | null
+          is_read?: boolean | null
+          message?: string | null
+          priority?: Database["public"]["Enums"]["notification_priority"]
+          read_at?: string | null
+          target_roles?: string[] | null
+          title?: string
+          type?: Database["public"]["Enums"]["notification_type"]
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       orders: {
         Row: {
           cancellation_reason: string | null
@@ -3009,6 +3107,26 @@ export type Database = {
         | "driver"
       delivery_type: "delivery" | "pickup" | "table" | "other"
       establishment_status: "active" | "inactive" | "suspended" | "pending"
+      notification_priority: "critical" | "high" | "medium" | "low"
+      notification_type:
+        | "new_order"
+        | "order_confirmed"
+        | "order_preparing"
+        | "order_ready"
+        | "order_out_for_delivery"
+        | "order_delivered"
+        | "order_cancelled"
+        | "payment_received"
+        | "payment_failed"
+        | "low_stock"
+        | "new_delivery"
+        | "delivery_assigned"
+        | "delivery_completed"
+        | "system_alert"
+        | "maintenance"
+        | "new_review"
+        | "new_customer"
+        | "table_call"
       order_status:
         | "pending"
         | "confirmed"
@@ -3158,6 +3276,27 @@ export const Constants = {
       ],
       delivery_type: ["delivery", "pickup", "table", "other"],
       establishment_status: ["active", "inactive", "suspended", "pending"],
+      notification_priority: ["critical", "high", "medium", "low"],
+      notification_type: [
+        "new_order",
+        "order_confirmed",
+        "order_preparing",
+        "order_ready",
+        "order_out_for_delivery",
+        "order_delivered",
+        "order_cancelled",
+        "payment_received",
+        "payment_failed",
+        "low_stock",
+        "new_delivery",
+        "delivery_assigned",
+        "delivery_completed",
+        "system_alert",
+        "maintenance",
+        "new_review",
+        "new_customer",
+        "table_call",
+      ],
       order_status: [
         "pending",
         "confirmed",

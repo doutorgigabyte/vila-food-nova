@@ -36,6 +36,7 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import AdminEstablishmentSwitcher from "@/components/admin/AdminEstablishmentSwitcher";
+import NotificationCenter from "@/components/notifications/NotificationCenter";
 
 interface DashboardSidebarProps {
   isOpen: boolean;
@@ -135,14 +136,17 @@ const DashboardSidebar = ({
               </Badge>
             </div>
           </Link>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="lg:hidden shrink-0"
-            onClick={onClose}
-          >
-            <X className="w-5 h-5" />
-          </Button>
+          <div className="flex items-center gap-1">
+            <NotificationCenter />
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="lg:hidden shrink-0"
+              onClick={onClose}
+            >
+              <X className="w-5 h-5" />
+            </Button>
+          </div>
         </div>
 
         {/* Super Admin Switcher */}
