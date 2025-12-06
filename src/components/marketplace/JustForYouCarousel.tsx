@@ -7,7 +7,8 @@ import { Link } from "react-router-dom";
 
 const JustForYouCarousel = () => {
   const { products, loading } = useProducts(10);
-  const [currentIndex, setCurrentIndex] = useState(1);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isAnimating, setIsAnimating] = useState(false);
 
   // Filter products with images
   const carouselItems = products
@@ -18,20 +19,26 @@ const JustForYouCarousel = () => {
     if (carouselItems.length <= 1) return;
 
     const interval = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % carouselItems.length);
+      handleNext();
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [carouselItems.length]);
+  }, [carouselItems.length, currentIndex]);
 
-  const goToPrev = () => {
+  const handlePrev = () => {
+    if (isAnimating) return;
+    setIsAnimating(true);
     setCurrentIndex((prev) => 
       prev === 0 ? carouselItems.length - 1 : prev - 1
     );
+    setTimeout(() => setIsAnimating(false), 600);
   };
 
-  const goToNext = () => {
+  const handleNext = () => {
+    if (isAnimating) return;
+    setIsAnimating(true);
     setCurrentIndex((prev) => (prev + 1) % carouselItems.length);
+    setTimeout(() => setIsAnimating(false), 600);
   };
 
   if (loading || carouselItems.length < 3) {
@@ -40,6 +47,39 @@ const JustForYouCarousel = () => {
 
   const getItemIndex = (offset: number) => {
     return (currentIndex + offset + carouselItems.length) % carouselItems.length;
+  };
+
+  // Calculate 3D transform values based on position
+  const getTransformStyle = (offset: number) => {
+    const isCenter = offset === 0;
+    const isLeft = offset === -1;
+    const isRight = offset === 1;
+    
+    if (isCenter) {
+      return {
+        transform: 'translateX(0) translateZ(0) rotateY(0deg) scale(1)',
+        zIndex: 10,
+        opacity: 1,
+      };
+    }
+    
+    if (isLeft) {
+      return {
+        transform: 'translateX(-70%) translateZ(-150px) rotateY(25deg) scale(0.8)',
+        zIndex: 5,
+        opacity: 0.7,
+      };
+    }
+    
+    if (isRight) {
+      return {
+        transform: 'translateX(70%) translateZ(-150px) rotateY(-25deg) scale(0.8)',
+        zIndex: 5,
+        opacity: 0.7,
+      };
+    }
+    
+    return {};
   };
 
   return (
@@ -60,62 +100,85 @@ const JustForYouCarousel = () => {
           </div>
         </div>
 
-        <div className="relative flex items-center justify-center h-64 md:h-80">
+        {/* 3D Carousel Container */}
+        <div 
+          className="relative flex items-center justify-center h-64 md:h-80"
+          style={{ perspective: '1000px' }}
+        >
           {/* Navigation buttons */}
           <Button
             variant="outline"
             size="icon"
-            className="absolute left-0 z-20 shadow-lg bg-card hidden md:flex"
-            onClick={goToPrev}
+            className="absolute left-0 z-20 shadow-lg bg-card hidden md:flex hover:scale-110 transition-transform"
+            onClick={handlePrev}
           >
             <ChevronLeft className="w-5 h-5" />
           </Button>
 
-          {/* Carousel items */}
-          <div className="relative flex items-center justify-center w-full h-full">
+          {/* 3D Carousel Stage */}
+          <div 
+            className="relative flex items-center justify-center w-full h-full"
+            style={{ transformStyle: 'preserve-3d' }}
+          >
             {[-1, 0, 1].map((offset) => {
               const itemIndex = getItemIndex(offset);
               const item = carouselItems[itemIndex];
               const isCenter = offset === 0;
+              const styles = getTransformStyle(offset);
 
               return (
-                <Link
+                <div
                   key={`${item.id}-${offset}`}
-                  to={`/loja/${item.establishment?.slug || ''}`}
                   className={cn(
-                    "absolute transition-all duration-500 ease-out rounded-2xl overflow-hidden shadow-lg",
-                    isCenter 
-                      ? "z-10 scale-100 opacity-100 w-64 md:w-80 h-48 md:h-64" 
-                      : "z-0 scale-75 opacity-60 w-48 md:w-64 h-36 md:h-48",
-                    offset === -1 && "-translate-x-[60%] md:-translate-x-[70%]",
-                    offset === 1 && "translate-x-[60%] md:translate-x-[70%]"
+                    "absolute transition-all duration-600 ease-out rounded-2xl overflow-hidden shadow-2xl",
+                    "w-64 md:w-80 h-48 md:h-64",
+                    isCenter && "cursor-pointer"
                   )}
-                  onClick={(e) => !isCenter && e.preventDefault()}
+                  style={{
+                    ...styles,
+                    transitionDuration: '600ms',
+                    transitionTimingFunction: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
+                    backfaceVisibility: 'hidden',
+                  }}
+                  onClick={() => {
+                    if (!isCenter) {
+                      if (offset === -1) handlePrev();
+                      if (offset === 1) handleNext();
+                    }
+                  }}
                 >
-                  <div className="relative w-full h-full">
-                    <img
-                      src={item.image_url || ''}
-                      alt={item.name}
-                      className="w-full h-full object-cover"
-                      draggable={false}
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-                    
-                    {isCenter && (
-                      <div className="absolute bottom-0 left-0 right-0 p-4">
-                        <p className="text-xs text-white/80 mb-1">
-                          {item.establishment?.name}
-                        </p>
-                        <h3 className="font-bold text-white text-lg truncate">
-                          {item.name}
-                        </h3>
-                        <p className="text-accent font-bold">
-                          R$ {(item.promotional_price || item.price).toFixed(2)}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </Link>
+                  <Link
+                    to={isCenter ? `/loja/${item.establishment?.slug || ''}` : '#'}
+                    className="block w-full h-full"
+                    onClick={(e) => !isCenter && e.preventDefault()}
+                  >
+                    <div className="relative w-full h-full">
+                      <img
+                        src={item.image_url || ''}
+                        alt={item.name}
+                        className="w-full h-full object-cover"
+                        draggable={false}
+                      />
+                      {/* Reflection effect */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/10" />
+                      <div className="absolute inset-0 bg-gradient-to-r from-black/30 via-transparent to-black/30" />
+                      
+                      {isCenter && (
+                        <div className="absolute bottom-0 left-0 right-0 p-4 transform transition-transform duration-300">
+                          <p className="text-xs text-white/80 mb-1 drop-shadow">
+                            {item.establishment?.name}
+                          </p>
+                          <h3 className="font-bold text-white text-lg truncate drop-shadow-lg">
+                            {item.name}
+                          </h3>
+                          <p className="text-accent font-bold drop-shadow">
+                            R$ {(item.promotional_price || item.price).toFixed(2)}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </Link>
+                </div>
               );
             })}
           </div>
@@ -123,11 +186,18 @@ const JustForYouCarousel = () => {
           <Button
             variant="outline"
             size="icon"
-            className="absolute right-0 z-20 shadow-lg bg-card hidden md:flex"
-            onClick={goToNext}
+            className="absolute right-0 z-20 shadow-lg bg-card hidden md:flex hover:scale-110 transition-transform"
+            onClick={handleNext}
           >
             <ChevronRight className="w-5 h-5" />
           </Button>
+        </div>
+
+        {/* Touch swipe hint for mobile */}
+        <div className="flex items-center justify-center gap-3 mt-2 md:hidden text-muted-foreground">
+          <ChevronLeft className="w-4 h-4 animate-pulse" />
+          <span className="text-xs">Deslize para navegar</span>
+          <ChevronRight className="w-4 h-4 animate-pulse" />
         </div>
 
         {/* Dots indicator */}
@@ -135,12 +205,16 @@ const JustForYouCarousel = () => {
           {carouselItems.map((_, index) => (
             <button
               key={index}
-              onClick={() => setCurrentIndex(index)}
+              onClick={() => {
+                setIsAnimating(true);
+                setCurrentIndex(index);
+                setTimeout(() => setIsAnimating(false), 600);
+              }}
               className={cn(
-                "w-2 h-2 rounded-full transition-all",
+                "h-2 rounded-full transition-all duration-300",
                 index === currentIndex 
-                  ? "bg-primary w-6" 
-                  : "bg-muted-foreground/30 hover:bg-muted-foreground/50"
+                  ? "bg-primary w-8" 
+                  : "bg-muted-foreground/30 hover:bg-muted-foreground/50 w-2"
               )}
             />
           ))}

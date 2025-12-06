@@ -141,20 +141,27 @@ interface MainCategoriesGridProps {
 const MainCategoriesGrid = ({ selectedCategory, onCategorySelect }: MainCategoriesGridProps) => {
   const navigate = useNavigate();
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
 
   const handleCategoryClick = (categoryId: string) => {
     navigate(`/categoria/${categoryId}`);
   };
 
   const toggleExpand = () => {
+    setIsAnimating(true);
     setIsExpanded(!isExpanded);
+    // Reset animation state after animation completes
+    setTimeout(() => setIsAnimating(false), 600);
   };
 
   return (
     <section className="py-3 md:py-6 bg-gradient-to-b from-primary/5 to-transparent">
       <div className="container mx-auto px-4">
         {/* Miniature View (Collapsed) */}
-        {!isExpanded && (
+        <div className={cn(
+          "overflow-hidden transition-all duration-500 ease-out",
+          isExpanded ? "max-h-0 opacity-0" : "max-h-32 opacity-100"
+        )}>
           <div className="flex items-center gap-2">
             {/* Scrollable mini icons */}
             <div className="flex-1 overflow-x-auto scrollbar-hide">
@@ -205,91 +212,96 @@ const MainCategoriesGrid = ({ selectedCategory, onCategorySelect }: MainCategori
             {/* Expand Button */}
             <button
               onClick={toggleExpand}
-              className="shrink-0 w-10 h-10 rounded-full bg-muted/80 flex items-center justify-center hover:bg-muted transition-colors touch-feedback active:scale-95"
+              className="shrink-0 w-10 h-10 rounded-full bg-muted/80 flex items-center justify-center hover:bg-muted transition-all touch-feedback active:scale-95 hover:scale-110"
             >
-              <ChevronDown className="w-5 h-5 text-muted-foreground" />
+              <ChevronDown className="w-5 h-5 text-muted-foreground transition-transform" />
             </button>
           </div>
-        )}
+        </div>
 
         {/* Expanded View */}
-        {isExpanded && (
-          <div className="animate-fade-up">
-            {/* Header with close button */}
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg md:text-xl font-bold">
-                O que você procura hoje?
-              </h2>
-              <button
-                onClick={toggleExpand}
-                className="w-8 h-8 rounded-full bg-muted/80 flex items-center justify-center hover:bg-muted transition-colors touch-feedback active:scale-95"
-              >
-                <X className="w-4 h-4 text-muted-foreground" />
-              </button>
-            </div>
-            
-            {/* Full Grid */}
-            <div className="grid grid-cols-3 md:grid-cols-6 gap-3 md:gap-4">
-              {mainCategories.map((category) => {
-                const IconComponent = category.icon;
-                const isSelected = selectedCategory === category.id;
-                
-                return (
-                  <button
-                    key={category.id}
-                    onClick={() => handleCategoryClick(category.id)}
-                    className={cn(
-                      "flex flex-col items-center justify-center p-4 md:p-6 rounded-2xl transition-all duration-300 touch-feedback",
-                      "border-2 hover:shadow-lg active:scale-95",
-                      isSelected 
-                        ? "border-primary bg-primary/5 shadow-md" 
-                        : `border-transparent ${category.bgColor} hover:border-primary/30`
-                    )}
-                  >
-                    <div className={cn(
-                      "w-14 h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center mb-2 md:mb-3 transition-transform overflow-hidden",
-                      isSelected ? "scale-110" : "",
-                      category.bgColor
-                    )}>
-                      {category.imageUrl ? (
-                        <img 
-                          src={category.imageUrl} 
-                          alt={category.name}
-                          className="w-full h-full object-cover"
-                          draggable={false}
-                        />
-                      ) : (
-                        <IconComponent className={cn("w-7 h-7 md:w-8 md:h-8", category.iconColor)} />
-                      )}
-                    </div>
-                    <span className={cn(
-                      "text-xs md:text-sm font-semibold text-center",
-                      isSelected ? "text-primary" : "text-foreground"
-                    )}>
-                      {category.name}
-                    </span>
-                    {category.description && (
-                      <span className="text-[10px] text-muted-foreground text-center mt-0.5 hidden md:block">
-                        {category.description}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-            
-            {/* Collapse button at bottom */}
-            <div className="flex justify-center mt-4">
-              <button
-                onClick={toggleExpand}
-                className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors touch-feedback"
-              >
-                <ChevronUp className="w-4 h-4" />
-                Fechar
-              </button>
-            </div>
+        <div className={cn(
+          "overflow-hidden transition-all duration-500 ease-out",
+          isExpanded ? "max-h-[600px] opacity-100" : "max-h-0 opacity-0"
+        )}>
+          {/* Header with close button */}
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg md:text-xl font-bold animate-fade-up">
+              O que você procura hoje?
+            </h2>
+            <button
+              onClick={toggleExpand}
+              className="w-8 h-8 rounded-full bg-muted/80 flex items-center justify-center hover:bg-muted transition-all touch-feedback active:scale-95 hover:rotate-90 duration-300"
+            >
+              <X className="w-4 h-4 text-muted-foreground" />
+            </button>
           </div>
-        )}
+          
+          {/* Full Grid with Elastic Animation */}
+          <div className="grid grid-cols-3 md:grid-cols-6 gap-3 md:gap-4">
+            {mainCategories.map((category, index) => {
+              const IconComponent = category.icon;
+              const isSelected = selectedCategory === category.id;
+              
+              return (
+                <button
+                  key={category.id}
+                  onClick={() => handleCategoryClick(category.id)}
+                  style={{
+                    animationDelay: isExpanded && isAnimating ? `${index * 50}ms` : '0ms',
+                  }}
+                  className={cn(
+                    "flex flex-col items-center justify-center p-4 md:p-6 rounded-2xl transition-all duration-300 touch-feedback",
+                    "border-2 hover:shadow-lg active:scale-95",
+                    isSelected 
+                      ? "border-primary bg-primary/5 shadow-md" 
+                      : `border-transparent ${category.bgColor} hover:border-primary/30`,
+                    isExpanded && isAnimating && "animate-rubber-band"
+                  )}
+                >
+                  <div className={cn(
+                    "w-14 h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center mb-2 md:mb-3 transition-transform overflow-hidden",
+                    isSelected ? "scale-110" : "",
+                    category.bgColor
+                  )}>
+                    {category.imageUrl ? (
+                      <img 
+                        src={category.imageUrl} 
+                        alt={category.name}
+                        className="w-full h-full object-cover"
+                        draggable={false}
+                      />
+                    ) : (
+                      <IconComponent className={cn("w-7 h-7 md:w-8 md:h-8", category.iconColor)} />
+                    )}
+                  </div>
+                  <span className={cn(
+                    "text-xs md:text-sm font-semibold text-center",
+                    isSelected ? "text-primary" : "text-foreground"
+                  )}>
+                    {category.name}
+                  </span>
+                  {category.description && (
+                    <span className="text-[10px] text-muted-foreground text-center mt-0.5 hidden md:block">
+                      {category.description}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+          
+          {/* Collapse button at bottom */}
+          <div className="flex justify-center mt-4">
+            <button
+              onClick={toggleExpand}
+              className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors touch-feedback group"
+            >
+              <ChevronUp className="w-4 h-4 group-hover:-translate-y-1 transition-transform" />
+              Fechar
+            </button>
+          </div>
+        </div>
       </div>
     </section>
   );

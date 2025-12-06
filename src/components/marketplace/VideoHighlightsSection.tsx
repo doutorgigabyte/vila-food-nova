@@ -3,6 +3,7 @@ import { Play, Pause, Volume2, VolumeX, ChevronRight, Sparkles, ChevronLeft, Cro
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { useDragScroll } from "@/hooks/useDragScroll";
 import { cn } from "@/lib/utils";
 
@@ -73,21 +74,33 @@ const VideoHighlightsSection = ({ highlights = defaultHighlights }: VideoHighlig
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
+  const [progress, setProgress] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
   const { scrollRef, isDragging, handlers, scroll } = useDragScroll();
 
   const currentHighlight = highlights[currentIndex];
 
-  // Auto-advance carousel
+  // Auto-advance carousel with progress bar
   useEffect(() => {
     if (isPlaying) return;
     
-    const interval = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % highlights.length);
-    }, 6000);
+    const duration = 6000;
+    const interval = 50;
+    let elapsed = 0;
+    
+    const timer = setInterval(() => {
+      elapsed += interval;
+      setProgress((elapsed / duration) * 100);
+      
+      if (elapsed >= duration) {
+        setCurrentIndex((prev) => (prev + 1) % highlights.length);
+        elapsed = 0;
+        setProgress(0);
+      }
+    }, interval);
 
-    return () => clearInterval(interval);
-  }, [highlights.length, isPlaying]);
+    return () => clearInterval(timer);
+  }, [highlights.length, isPlaying, currentIndex]);
 
   const togglePlay = () => {
     if (videoRef.current) {
@@ -105,6 +118,11 @@ const VideoHighlightsSection = ({ highlights = defaultHighlights }: VideoHighlig
       videoRef.current.muted = !isMuted;
       setIsMuted(!isMuted);
     }
+  };
+
+  const handleSlideChange = (index: number) => {
+    setCurrentIndex(index);
+    setProgress(0);
   };
 
   return (
@@ -154,34 +172,35 @@ const VideoHighlightsSection = ({ highlights = defaultHighlights }: VideoHighlig
               />
             )}
 
-            {/* Gradient Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
+            {/* Gradient Overlay - Enhanced for better text readability */}
+            <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/50 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
 
-            {/* Discount Badge */}
+            {/* Discount Badge - Repositioned to avoid overlap */}
             {currentHighlight.discount && (
-              <Badge className="absolute top-4 right-4 md:top-6 md:right-6 bg-destructive text-destructive-foreground font-bold text-sm md:text-base px-3 py-1.5 shadow-lg">
+              <Badge className="absolute top-4 right-4 md:top-6 md:right-6 bg-destructive text-destructive-foreground font-bold text-sm md:text-base px-3 py-1.5 shadow-lg z-20">
                 {currentHighlight.discount}
               </Badge>
             )}
 
-            {/* Content */}
-            <div className="absolute bottom-0 left-0 right-0 p-4 md:p-8">
-              <div className="flex items-end justify-between">
+            {/* Content - Enhanced spacing and layout */}
+            <div className="absolute bottom-0 left-0 right-0 p-4 md:p-8 pb-8 md:pb-12">
+              <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
                 <div className="flex-1 max-w-lg">
                   {currentHighlight.establishmentName && (
-                    <span className="inline-flex items-center gap-1.5 text-xs md:text-sm text-accent font-semibold mb-2 bg-black/30 backdrop-blur-sm px-2 py-1 rounded-full">
+                    <span className="inline-flex items-center gap-1.5 text-xs md:text-sm text-accent font-semibold mb-2 bg-black/50 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10">
                       <Sparkles className="w-3 h-3" />
                       {currentHighlight.establishmentName}
                     </span>
                   )}
-                  <h3 className="text-xl md:text-3xl font-bold text-white mb-2 drop-shadow-md">
+                  <h3 className="text-xl md:text-3xl font-bold text-white mb-2 drop-shadow-lg [text-shadow:_0_2px_12px_rgba(0,0,0,0.8)]">
                     {currentHighlight.title}
                   </h3>
-                  <p className="text-sm md:text-base text-white/90 mb-4 drop-shadow">
+                  <p className="text-sm md:text-base text-white/90 mb-4 drop-shadow-md [text-shadow:_0_1px_8px_rgba(0,0,0,0.6)]">
                     {currentHighlight.subtitle}
                   </p>
                   {currentHighlight.ctaText && (
-                    <Button className="btn-yellow gap-2 shadow-lg hover:shadow-yellow">
+                    <Button className="btn-yellow gap-2 shadow-lg hover:shadow-yellow relative z-10">
                       {currentHighlight.ctaText}
                       <ChevronRight className="w-4 h-4" />
                     </Button>
@@ -194,7 +213,7 @@ const VideoHighlightsSection = ({ highlights = defaultHighlights }: VideoHighlig
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="text-white hover:bg-white/20 bg-black/30 backdrop-blur-sm"
+                      className="text-white hover:bg-white/20 bg-black/40 backdrop-blur-md"
                       onClick={togglePlay}
                     >
                       {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
@@ -202,7 +221,7 @@ const VideoHighlightsSection = ({ highlights = defaultHighlights }: VideoHighlig
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="text-white hover:bg-white/20 bg-black/30 backdrop-blur-sm"
+                      className="text-white hover:bg-white/20 bg-black/40 backdrop-blur-md"
                       onClick={toggleMute}
                     >
                       {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
@@ -216,31 +235,26 @@ const VideoHighlightsSection = ({ highlights = defaultHighlights }: VideoHighlig
             <Button
               variant="ghost"
               size="icon"
-              className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 text-white hover:bg-white/20 bg-black/30 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity"
-              onClick={() => setCurrentIndex((prev) => (prev - 1 + highlights.length) % highlights.length)}
+              className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 text-white hover:bg-white/20 bg-black/40 backdrop-blur-md opacity-0 group-hover:opacity-100 transition-opacity"
+              onClick={() => handleSlideChange((currentIndex - 1 + highlights.length) % highlights.length)}
             >
               <ChevronLeft className="w-6 h-6" />
             </Button>
             <Button
               variant="ghost"
               size="icon"
-              className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 text-white hover:bg-white/20 bg-black/30 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity"
-              onClick={() => setCurrentIndex((prev) => (prev + 1) % highlights.length)}
+              className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 text-white hover:bg-white/20 bg-black/40 backdrop-blur-md opacity-0 group-hover:opacity-100 transition-opacity"
+              onClick={() => handleSlideChange((currentIndex + 1) % highlights.length)}
             >
               <ChevronRight className="w-6 h-6" />
             </Button>
 
-            {/* Progress indicators */}
-            <div className="absolute bottom-0 left-0 right-0 flex gap-1 p-2 md:hidden">
-              {highlights.map((_, index) => (
-                <div
-                  key={index}
-                  className={cn(
-                    "h-1 flex-1 rounded-full transition-all",
-                    index === currentIndex ? "bg-white" : "bg-white/30"
-                  )}
-                />
-              ))}
+            {/* Progress Bar - Mobile */}
+            <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20 md:hidden">
+              <div 
+                className="h-full bg-primary transition-all duration-100 ease-linear"
+                style={{ width: `${progress}%` }}
+              />
             </div>
           </div>
         </Card>
@@ -259,15 +273,15 @@ const VideoHighlightsSection = ({ highlights = defaultHighlights }: VideoHighlig
           <div
             ref={scrollRef}
             {...handlers}
-            className={`flex gap-3 overflow-x-auto scrollbar-hide scroll-smooth pb-2 select-none ${
+            className={cn(
+              "flex gap-3 overflow-x-auto pb-2 select-none scrollbar-hide",
               isDragging ? "cursor-grabbing" : "cursor-grab"
-            }`}
-            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            )}
           >
             {highlights.map((highlight, index) => (
               <button
                 key={highlight.id}
-                onClick={() => !isDragging && setCurrentIndex(index)}
+                onClick={() => !isDragging && handleSlideChange(index)}
                 className={cn(
                   "flex-shrink-0 relative rounded-xl overflow-hidden transition-all duration-300",
                   index === currentIndex 
@@ -303,19 +317,26 @@ const VideoHighlightsSection = ({ highlights = defaultHighlights }: VideoHighlig
           </Button>
         </div>
 
-        {/* Dots indicator - Desktop */}
+        {/* Progress Dots with Active Progress - Desktop */}
         <div className="hidden md:flex justify-center gap-2 mt-4">
           {highlights.map((_, index) => (
             <button
               key={index}
-              onClick={() => setCurrentIndex(index)}
+              onClick={() => handleSlideChange(index)}
               className={cn(
-                "h-2 rounded-full transition-all duration-300",
+                "h-2 rounded-full transition-all duration-300 overflow-hidden",
                 index === currentIndex 
-                  ? "w-8 bg-primary" 
+                  ? "w-12 bg-muted" 
                   : "w-2 bg-muted-foreground/30 hover:bg-muted-foreground/50"
               )}
-            />
+            >
+              {index === currentIndex && (
+                <div 
+                  className="h-full bg-primary transition-all duration-100 ease-linear"
+                  style={{ width: `${progress}%` }}
+                />
+              )}
+            </button>
           ))}
         </div>
       </div>
