@@ -63,6 +63,7 @@ import AdvancedFinanceManagement from "./pages/dashboard/AdvancedFinanceManageme
 import SuppliersManagement from "./pages/dashboard/SuppliersManagement";
 import PaymentsManagement from "./pages/dashboard/PaymentsManagement";
 import DataMigration from "./pages/admin/DataMigration";
+import ExternalDataMigration from "./pages/admin/ExternalDataMigration";
 import Roadmap from "./pages/admin/Roadmap";
 import SystemHealthCheck from "./pages/admin/SystemHealthCheck";
 
@@ -160,6 +161,7 @@ const App = () => (
               <Route path="/admin/pedidos" element={<ProtectedAdminRoute><AdminOrdersManagement /></ProtectedAdminRoute>} />
               <Route path="/admin/vouchers" element={<ProtectedAdminRoute><AdminVouchersManagement /></ProtectedAdminRoute>} />
               <Route path="/admin/migracao" element={<DataMigration />} />
+              <Route path="/admin/migracao-externa" element={<ProtectedAdminRoute><ExternalDataMigration /></ProtectedAdminRoute>} />
               <Route path="/admin/roadmap" element={<ProtectedAdminRoute><Roadmap /></ProtectedAdminRoute>} />
               <Route path="/admin/health" element={<ProtectedAdminRoute><SystemHealthCheck /></ProtectedAdminRoute>} />
               <Route path="/afiliado" element={<AffiliateDashboard />} />
