@@ -106,11 +106,31 @@
 @layer base {
   * {
     @apply border-border;
+    /* App-like mode: disable text selection globally */
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    /* Prevent touch callouts on iOS */
+    -webkit-touch-callout: none;
+  }
+
+  /* Allow text selection in form inputs */
+  input, textarea, [contenteditable="true"] {
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
   }
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
     font-family: 'Inter', system-ui, sans-serif;
+    /* App-like touch behavior */
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    /* Prevent overscroll bounce on iOS */
+    overscroll-behavior: none;
   }
 
   h1, h2, h3, h4, h5, h6 {
