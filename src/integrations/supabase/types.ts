@@ -2078,12 +2078,15 @@ export type Database = {
           audio_enabled: boolean | null
           auto_response_enabled: boolean | null
           created_at: string | null
+          description: string | null
           establishment_id: string
           evolution_api_key: string | null
           evolution_api_url: string | null
           id: string
           instance_id: string | null
           instance_name: string | null
+          instance_type: string | null
+          phone_number: string | null
           pix_enabled: boolean | null
           qr_code: string | null
           status: string | null
@@ -2097,12 +2100,15 @@ export type Database = {
           audio_enabled?: boolean | null
           auto_response_enabled?: boolean | null
           created_at?: string | null
+          description?: string | null
           establishment_id: string
           evolution_api_key?: string | null
           evolution_api_url?: string | null
           id?: string
           instance_id?: string | null
           instance_name?: string | null
+          instance_type?: string | null
+          phone_number?: string | null
           pix_enabled?: boolean | null
           qr_code?: string | null
           status?: string | null
@@ -2116,12 +2122,15 @@ export type Database = {
           audio_enabled?: boolean | null
           auto_response_enabled?: boolean | null
           created_at?: string | null
+          description?: string | null
           establishment_id?: string
           evolution_api_key?: string | null
           evolution_api_url?: string | null
           id?: string
           instance_id?: string | null
           instance_name?: string | null
+          instance_type?: string | null
+          phone_number?: string | null
           pix_enabled?: boolean | null
           qr_code?: string | null
           status?: string | null
