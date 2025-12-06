@@ -1,0 +1,418 @@
+import { useState, useEffect, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "./useAuth";
+import { useUserRole, EstablishmentRole } from "./useUserRole";
+import { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
+
+export type NotificationType = 
+  | 'new_order'
+  | 'order_confirmed'
+  | 'order_preparing'
+  | 'order_ready'
+  | 'order_out_for_delivery'
+  | 'order_delivered'
+  | 'order_cancelled'
+  | 'payment_received'
+  | 'payment_failed'
+  | 'low_stock'
+  | 'new_delivery'
+  | 'delivery_assigned'
+  | 'delivery_completed'
+  | 'system_alert'
+  | 'maintenance'
+  | 'new_review'
+  | 'new_customer'
+  | 'table_call';
+
+export type NotificationPriority = 'critical' | 'high' | 'medium' | 'low';
+
+export interface Notification {
+  id: string;
+  establishment_id: string | null;
+  user_id: string | null;
+  type: NotificationType;
+  priority: NotificationPriority;
+  title: string;
+  message: string | null;
+  data: Record<string, any>;
+  is_read: boolean;
+  is_dismissed: boolean;
+  target_roles: string[];
+  created_at: string;
+  read_at: string | null;
+  expires_at: string | null;
+}
+
+export interface NotificationConfig {
+  type: NotificationType;
+  title: string;
+  hasSound: boolean;
+  soundFile: string;
+  priority: NotificationPriority;
+  targetRoles: EstablishmentRole[];
+  showModal: boolean;
+  vibrate: boolean;
+}
+
+// Configuração de cada tipo de notificação
+export const NOTIFICATION_CONFIG: Record<NotificationType, NotificationConfig> = {
+  new_order: {
+    type: 'new_order',
+    title: 'Novo Pedido!',
+    hasSound: true,
+    soundFile: 'new-order.mp3',
+    priority: 'critical',
+    targetRoles: ['manager', 'cashier', 'attendant'],
+    showModal: true,
+    vibrate: true,
+  },
+  order_confirmed: {
+    type: 'order_confirmed',
+    title: 'Pedido Confirmado',
+    hasSound: true,
+    soundFile: 'success.mp3',
+    priority: 'medium',
+    targetRoles: ['manager', 'cashier'],
+    showModal: false,
+    vibrate: false,
+  },
+  order_preparing: {
+    type: 'order_preparing',
+    title: 'Pedido em Preparo',
+    hasSound: true,
+    soundFile: 'preparing.mp3',
+    priority: 'medium',
+    targetRoles: ['manager', 'cashier', 'waiter'],
+    showModal: false,
+    vibrate: false,
+  },
+  order_ready: {
+    type: 'order_ready',
+    title: 'Pedido Pronto!',
+    hasSound: true,
+    soundFile: 'order-ready.mp3',
+    priority: 'high',
+    targetRoles: ['manager', 'cashier', 'waiter', 'delivery'],
+    showModal: true,
+    vibrate: true,
+  },
+  order_out_for_delivery: {
+    type: 'order_out_for_delivery',
+    title: 'Pedido Saiu para Entrega',
+    hasSound: true,
+    soundFile: 'delivery.mp3',
+    priority: 'medium',
+    targetRoles: ['manager', 'cashier'],
+    showModal: false,
+    vibrate: false,
+  },
+  order_delivered: {
+    type: 'order_delivered',
+    title: 'Pedido Entregue',
+    hasSound: true,
+    soundFile: 'success.mp3',
+    priority: 'low',
+    targetRoles: ['manager', 'cashier'],
+    showModal: false,
+    vibrate: false,
+  },
+  order_cancelled: {
+    type: 'order_cancelled',
+    title: 'Pedido Cancelado',
+    hasSound: true,
+    soundFile: 'error.mp3',
+    priority: 'high',
+    targetRoles: ['manager', 'cashier'],
+    showModal: true,
+    vibrate: true,
+  },
+  payment_received: {
+    type: 'payment_received',
+    title: 'Pagamento Recebido',
+    hasSound: true,
+    soundFile: 'payment.mp3',
+    priority: 'medium',
+    targetRoles: ['manager', 'cashier'],
+    showModal: false,
+    vibrate: false,
+  },
+  payment_failed: {
+    type: 'payment_failed',
+    title: 'Falha no Pagamento',
+    hasSound: true,
+    soundFile: 'error.mp3',
+    priority: 'high',
+    targetRoles: ['manager', 'cashier'],
+    showModal: true,
+    vibrate: true,
+  },
+  low_stock: {
+    type: 'low_stock',
+    title: 'Estoque Baixo',
+    hasSound: true,
+    soundFile: 'alert.mp3',
+    priority: 'medium',
+    targetRoles: ['manager'],
+    showModal: false,
+    vibrate: false,
+  },
+  new_delivery: {
+    type: 'new_delivery',
+    title: 'Nova Entrega Disponível',
+    hasSound: true,
+    soundFile: 'new-order.mp3',
+    priority: 'critical',
+    targetRoles: ['delivery'],
+    showModal: true,
+    vibrate: true,
+  },
+  delivery_assigned: {
+    type: 'delivery_assigned',
+    title: 'Entrega Atribuída',
+    hasSound: true,
+    soundFile: 'success.mp3',
+    priority: 'high',
+    targetRoles: ['delivery'],
+    showModal: true,
+    vibrate: true,
+  },
+  delivery_completed: {
+    type: 'delivery_completed',
+    title: 'Entrega Concluída',
+    hasSound: true,
+    soundFile: 'success.mp3',
+    priority: 'medium',
+    targetRoles: ['manager', 'cashier', 'delivery'],
+    showModal: false,
+    vibrate: false,
+  },
+  system_alert: {
+    type: 'system_alert',
+    title: 'Alerta do Sistema',
+    hasSound: true,
+    soundFile: 'alert.mp3',
+    priority: 'high',
+    targetRoles: ['manager'],
+    showModal: true,
+    vibrate: true,
+  },
+  maintenance: {
+    type: 'maintenance',
+    title: 'Manutenção Programada',
+    hasSound: false,
+    soundFile: '',
+    priority: 'low',
+    targetRoles: ['manager'],
+    showModal: false,
+    vibrate: false,
+  },
+  new_review: {
+    type: 'new_review',
+    title: 'Nova Avaliação',
+    hasSound: true,
+    soundFile: 'notification.mp3',
+    priority: 'low',
+    targetRoles: ['manager'],
+    showModal: false,
+    vibrate: false,
+  },
+  new_customer: {
+    type: 'new_customer',
+    title: 'Novo Cliente',
+    hasSound: false,
+    soundFile: '',
+    priority: 'low',
+    targetRoles: ['manager'],
+    showModal: false,
+    vibrate: false,
+  },
+  table_call: {
+    type: 'table_call',
+    title: 'Chamada de Mesa',
+    hasSound: true,
+    soundFile: 'table-call.mp3',
+    priority: 'critical',
+    targetRoles: ['waiter', 'attendant'],
+    showModal: true,
+    vibrate: true,
+  },
+};
+
+export const useNotifications = (establishmentId?: string) => {
+  const { user } = useAuth();
+  const { establishmentRole, appRole } = useUserRole();
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  // Buscar notificações iniciais
+  const fetchNotifications = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      let query = supabase
+        .from('notifications')
+        .select('*')
+        .eq('is_dismissed', false)
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (establishmentId) {
+        query = query.eq('establishment_id', establishmentId);
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+
+      // Filtrar por role do usuário
+      const filteredNotifications = (data || []).filter((n: any) => {
+        // Super admin vê tudo
+        if (appRole === 'super_admin') return true;
+        
+        // Se não tem target_roles, é para todos
+        if (!n.target_roles || n.target_roles.length === 0) return true;
+        
+        // Verificar se o role do usuário está nos target_roles
+        if (establishmentRole && n.target_roles.includes(establishmentRole)) return true;
+        
+        // Owner (manager) vê tudo do estabelecimento
+        if (establishmentRole === 'manager') return true;
+        
+        return false;
+      }) as Notification[];
+
+      setNotifications(filteredNotifications);
+      setUnreadCount(filteredNotifications.filter(n => !n.is_read).length);
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [user, establishmentId, appRole, establishmentRole]);
+
+  // Marcar como lida
+  const markAsRead = useCallback(async (notificationId: string) => {
+    const { error } = await supabase
+      .from('notifications')
+      .update({ is_read: true, read_at: new Date().toISOString() })
+      .eq('id', notificationId);
+
+    if (!error) {
+      setNotifications(prev => 
+        prev.map(n => n.id === notificationId ? { ...n, is_read: true } : n)
+      );
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    }
+  }, []);
+
+  // Marcar todas como lidas
+  const markAllAsRead = useCallback(async () => {
+    if (!establishmentId) return;
+
+    const { error } = await supabase
+      .from('notifications')
+      .update({ is_read: true, read_at: new Date().toISOString() })
+      .eq('establishment_id', establishmentId)
+      .eq('is_read', false);
+
+    if (!error) {
+      setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+      setUnreadCount(0);
+    }
+  }, [establishmentId]);
+
+  // Dispensar notificação
+  const dismissNotification = useCallback(async (notificationId: string) => {
+    const { error } = await supabase
+      .from('notifications')
+      .update({ is_dismissed: true })
+      .eq('id', notificationId);
+
+    if (!error) {
+      setNotifications(prev => prev.filter(n => n.id !== notificationId));
+      setUnreadCount(prev => {
+        const notification = notifications.find(n => n.id === notificationId);
+        return notification && !notification.is_read ? Math.max(0, prev - 1) : prev;
+      });
+    }
+  }, [notifications]);
+
+  // Criar notificação
+  const createNotification = useCallback(async (
+    type: NotificationType,
+    title: string,
+    message?: string,
+    data?: Record<string, any>,
+    targetEstablishmentId?: string
+  ) => {
+    const config = NOTIFICATION_CONFIG[type];
+    
+    const { error } = await supabase
+      .from('notifications')
+      .insert({
+        establishment_id: targetEstablishmentId || establishmentId,
+        type,
+        priority: config.priority,
+        title,
+        message,
+        data: data || {},
+        target_roles: config.targetRoles,
+      });
+
+    if (error) {
+      console.error('Error creating notification:', error);
+    }
+  }, [establishmentId]);
+
+  // Realtime subscription
+  useEffect(() => {
+    if (!user) return;
+
+    fetchNotifications();
+
+    // Criar canal para realtime
+    const channel = supabase
+      .channel('notifications-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: establishmentId ? `establishment_id=eq.${establishmentId}` : undefined,
+        },
+        (payload: RealtimePostgresChangesPayload<Notification>) => {
+          const newNotification = payload.new as Notification;
+          
+          // Verificar se o usuário deve receber esta notificação
+          const shouldReceive = 
+            appRole === 'super_admin' ||
+            !newNotification.target_roles?.length ||
+            (establishmentRole && newNotification.target_roles.includes(establishmentRole)) ||
+            establishmentRole === 'manager';
+
+          if (shouldReceive) {
+            setNotifications(prev => [newNotification, ...prev]);
+            setUnreadCount(prev => prev + 1);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, establishmentId, appRole, establishmentRole, fetchNotifications]);
+
+  return {
+    notifications,
+    unreadCount,
+    loading,
+    markAsRead,
+    markAllAsRead,
+    dismissNotification,
+    createNotification,
+    refetch: fetchNotifications,
+  };
+};

@@ -346,3 +346,30 @@
     box-shadow: 0 0 40px hsl(4 85% 50% / 0.5);
   }
 }
+
+@keyframes shrink-width {
+  from {
+    width: 100%;
+  }
+  to {
+    width: 0%;
+  }
+}
+
+@keyframes gradient {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.animate-shrink-width {
+  animation: shrink-width linear forwards;
+}
+
+.animate-gradient {
+  background-size: 200% 200%;
+  animation: gradient 2s ease infinite;
+}

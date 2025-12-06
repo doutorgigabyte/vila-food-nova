@@ -81,6 +81,7 @@ import ProductDetail from "./pages/ProductDetail";
 import AIAnalysisDashboard from "./pages/dashboard/AIAnalysisDashboard";
 import EstablishmentSettings from "./pages/dashboard/EstablishmentSettings";
 import { OrderSourceProvider } from "./hooks/useOrderSource";
+import { NotificationProvider } from "./components/notifications/NotificationProvider";
 // Affiliate pages
 import AffiliateReferrals from "./pages/affiliate/AffiliateReferrals";
 import AffiliateCommissions from "./pages/affiliate/AffiliateCommissions";
@@ -100,11 +101,12 @@ const App = () => (
       <AdminAccessProvider>
         <OrderSourceProvider>
           <CartProvider>
-            <TooltipProvider>
-              <Toaster />
-              <Sonner />
-              <PWAInstallPrompt />
-            <BrowserRouter>
+            <NotificationProvider>
+              <TooltipProvider>
+                <Toaster />
+                <Sonner />
+                <PWAInstallPrompt />
+              <BrowserRouter>
               <Routes>
                 <Route path="/" element={<Index />} />
               <Route path="/conheca" element={<Conheca />} />
@@ -219,8 +221,9 @@ const App = () => (
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
-          </BrowserRouter>
-            </TooltipProvider>
+            </BrowserRouter>
+              </TooltipProvider>
+            </NotificationProvider>
           </CartProvider>
         </OrderSourceProvider>
       </AdminAccessProvider>
