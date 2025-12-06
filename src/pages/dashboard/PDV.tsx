@@ -457,6 +457,11 @@ const PDV = () => {
     }
   };
 
+  // Calculate grid columns based on mode
+  const gridCols = tokenMode 
+    ? 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4' 
+    : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4';
+
   // Product card with drag support
   const ProductCard = ({ product }: { product: Product }) => {
     const cardSize = tokenMode ? 'min-h-[140px]' : '';
@@ -567,11 +572,11 @@ const PDV = () => {
   }
 
   return (
-    <div className={`min-h-[100dvh] bg-background flex flex-col ${tokenMode ? '' : 'lg:flex-row'}`}>
+    <div className="min-h-[100dvh] bg-background flex flex-col lg:flex-row">
       <DragGhost />
       
       {/* Left Panel - Products */}
-      <div className={`flex-1 flex flex-col ${tokenMode ? 'h-[60dvh]' : ''}`}>
+      <div className={`flex-1 flex flex-col overflow-hidden ${tokenMode ? 'max-h-[60dvh] lg:max-h-none' : ''}`}>
         {/* Header */}
         <header className="bg-card border-b border-border p-3 md:p-4">
           <div className="flex items-center justify-between gap-2 mb-3">
@@ -651,11 +656,7 @@ const PDV = () => {
               <p className="text-muted-foreground">Nenhum produto encontrado</p>
             </div>
           ) : (
-            <div className={`grid gap-3 md:gap-4 ${
-              tokenMode 
-                ? 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4' 
-                : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
-            }`}>
+            <div className={`grid gap-3 md:gap-4 ${gridCols}`}>
               {filteredProducts.map(product => (
                 <ProductCard key={product.id} product={product} />
               ))}
@@ -667,10 +668,10 @@ const PDV = () => {
       {/* Right Panel - Cart (Drop Zone) */}
       <div 
         ref={dropZoneRef}
-        className={`bg-card border-l border-border flex flex-col transition-all ${
+        className={`bg-card border-border flex flex-col transition-all shrink-0 ${
           tokenMode 
-            ? 'h-[40dvh] border-t border-l-0' 
-            : 'w-full lg:w-96'
+            ? 'h-[40dvh] border-t lg:h-auto lg:w-96 lg:border-t-0 lg:border-l' 
+            : 'w-full lg:w-[380px] xl:w-[420px] border-t lg:border-t-0 lg:border-l'
         } ${dragState.isDragging ? 'ring-2 ring-primary ring-dashed bg-primary/5' : ''}`}
         onDragOver={handlers.onDragOver}
         onDrop={handlers.onDrop}
