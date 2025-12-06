@@ -1,14 +1,20 @@
 import { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useProducts } from "@/hooks/useProducts";
+import { useProductsByMainCategory } from "@/hooks/useProducts";
 import { cn } from "@/lib/utils";
 import { Link } from "react-router-dom";
+import { getCategoryTheme } from "@/lib/categoryThemes";
 
-const JustForYouCarousel = () => {
-  const { products, loading } = useProducts(10);
+interface JustForYouCarouselProps {
+  mainCategory?: string | null;
+}
+
+const JustForYouCarousel = ({ mainCategory }: JustForYouCarouselProps) => {
+  const { products, loading } = useProductsByMainCategory(mainCategory || null, 10);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
+  const theme = getCategoryTheme(mainCategory || null);
 
   // Filter products with images
   const carouselItems = products
@@ -83,19 +89,22 @@ const JustForYouCarousel = () => {
   };
 
   return (
-    <section className="py-8 md:py-12 overflow-hidden">
+    <section className={cn(
+      "py-8 md:py-12 overflow-hidden",
+      mainCategory && `bg-gradient-to-b ${theme.bgGradient}`
+    )}>
       <div className="container mx-auto px-4">
         <div className="flex items-center gap-3 mb-6">
           <div className="p-2 bg-accent/20 rounded-lg hidden md:flex">
-            <Sparkles className="w-5 h-5 text-accent-foreground" />
+            <Sparkles className={cn("w-5 h-5", theme.accentColor || "text-accent-foreground")} />
           </div>
           <div>
             <h2 className="text-lg md:text-xl font-bold text-foreground flex items-center gap-2">
-              Só Pra Você
-              <Sparkles className="w-4 h-4 text-accent md:hidden" />
+              {theme.forYouTitle}
+              <Sparkles className={cn("w-4 h-4 md:hidden", theme.accentColor || "text-accent")} />
             </h2>
             <p className="text-xs md:text-sm text-muted-foreground hidden md:block">
-              Recomendações personalizadas baseadas no seu gosto
+              {theme.forYouSubtitle}
             </p>
           </div>
         </div>
@@ -171,7 +180,7 @@ const JustForYouCarousel = () => {
                           <h3 className="font-bold text-white text-lg truncate drop-shadow-lg">
                             {item.name}
                           </h3>
-                          <p className="text-accent font-bold drop-shadow">
+                          <p className={cn("font-bold drop-shadow", theme.accentColor || "text-accent")}>
                             R$ {(item.promotional_price || item.price).toFixed(2)}
                           </p>
                         </div>

@@ -4,23 +4,21 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useProducts } from "@/hooks/useProducts";
+import { useProductsByMainCategory } from "@/hooks/useProducts";
 import { useEstablishments } from "@/hooks/useEstablishment";
 import { useDragScroll } from "@/hooks/useDragScroll";
 import { cn } from "@/lib/utils";
+import { getCategoryTheme } from "@/lib/categoryThemes";
 
 interface TrendingProductsProps {
-  title?: string;
-  subtitle?: string;
+  mainCategory?: string | null;
 }
 
-const TrendingProducts = ({ 
-  title = "Tendências do Dia",
-  subtitle = "Aqui está o que você pode gostar de provar"
-}: TrendingProductsProps) => {
+const TrendingProducts = ({ mainCategory }: TrendingProductsProps) => {
   const { scrollRef, isDragging, handlers, scroll } = useDragScroll();
-  const { products, loading: productsLoading } = useProducts(12);
+  const { products, loading: productsLoading } = useProductsByMainCategory(mainCategory || null, 12);
   const { establishments, loading: establishmentsLoading } = useEstablishments();
+  const theme = getCategoryTheme(mainCategory || null);
 
   const loading = productsLoading || establishmentsLoading;
   const hasProducts = products.length > 0;
@@ -60,19 +58,24 @@ const TrendingProducts = ({
   // Se tem produtos, mostrar produtos
   if (hasProducts) {
     return (
-      <section className="py-6 md:py-8 bg-muted/30">
+      <section className={cn(
+        "py-6 md:py-8",
+        mainCategory ? `bg-gradient-to-b ${theme.bgGradient}` : "bg-muted/30"
+      )}>
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between mb-4 md:mb-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-orange-100 rounded-xl hidden md:flex">
+              <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-xl hidden md:flex">
                 <Flame className="w-5 h-5 text-orange-500" />
               </div>
               <div>
                 <h2 className="text-lg md:text-xl font-bold text-foreground flex items-center gap-2">
-                  {title}
+                  {theme.trendingTitle}
                   <Flame className="w-4 h-4 text-orange-500 md:hidden" />
                 </h2>
-                <p className="text-xs md:text-sm text-muted-foreground hidden md:block">{subtitle}</p>
+                <p className="text-xs md:text-sm text-muted-foreground hidden md:block">
+                  {theme.trendingSubtitle}
+                </p>
               </div>
             </div>
           </div>
@@ -122,7 +125,7 @@ const TrendingProducts = ({
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">
-                            <span className="text-4xl opacity-30">🍽️</span>
+                            <span className="text-4xl opacity-30">{theme.icon}</span>
                           </div>
                         )}
                         
@@ -201,15 +204,17 @@ const TrendingProducts = ({
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between mb-4 md:mb-6">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-orange-100 rounded-xl hidden md:flex">
+            <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-xl hidden md:flex">
               <Flame className="w-5 h-5 text-orange-500" />
             </div>
             <div>
               <h2 className="text-lg md:text-xl font-bold text-foreground flex items-center gap-2">
-                {title}
+                {theme.trendingTitle}
                 <Flame className="w-4 h-4 text-orange-500 md:hidden" />
               </h2>
-              <p className="text-xs md:text-sm text-muted-foreground hidden md:block">{subtitle}</p>
+              <p className="text-xs md:text-sm text-muted-foreground hidden md:block">
+                {theme.trendingSubtitle}
+              </p>
             </div>
           </div>
         </div>
