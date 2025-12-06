@@ -80,6 +80,12 @@ import ProductsListing from "./pages/ProductsListing";
 import ProductDetail from "./pages/ProductDetail";
 import AIAnalysisDashboard from "./pages/dashboard/AIAnalysisDashboard";
 import { OrderSourceProvider } from "./hooks/useOrderSource";
+// Affiliate pages
+import AffiliateReferrals from "./pages/affiliate/AffiliateReferrals";
+import AffiliateCommissions from "./pages/affiliate/AffiliateCommissions";
+import AffiliateVouchers from "./pages/affiliate/AffiliateVouchers";
+import AffiliateReports from "./pages/affiliate/AffiliateReports";
+import AffiliateSettings from "./pages/affiliate/AffiliateSettings";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -192,7 +198,13 @@ const App = () => (
               <Route path="/admin/roadmap" element={<ProtectedAdminRoute><Roadmap /></ProtectedAdminRoute>} />
               <Route path="/admin/health" element={<ProtectedAdminRoute><SystemHealthCheck /></ProtectedAdminRoute>} />
               <Route path="/admin/preencher-imagens" element={<ProtectedAdminRoute><ImageFillManager /></ProtectedAdminRoute>} />
+              {/* Affiliate routes */}
               <Route path="/afiliado" element={<AffiliateDashboard />} />
+              <Route path="/afiliado/indicacoes" element={<AffiliateReferrals />} />
+              <Route path="/afiliado/comissoes" element={<AffiliateCommissions />} />
+              <Route path="/afiliado/vouchers" element={<AffiliateVouchers />} />
+              <Route path="/afiliado/relatorios" element={<AffiliateReports />} />
+              <Route path="/afiliado/configuracoes" element={<AffiliateSettings />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
