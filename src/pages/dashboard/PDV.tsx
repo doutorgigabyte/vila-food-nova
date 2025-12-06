@@ -27,7 +27,8 @@ import {
   Maximize2,
   Minimize2,
   Grid3X3,
-  LayoutGrid
+  LayoutGrid,
+  Package
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -572,11 +573,11 @@ const PDV = () => {
   }
 
   return (
-    <div className="min-h-[100dvh] bg-background flex flex-col lg:flex-row">
+    <div className="h-[100dvh] bg-background flex flex-col lg:flex-row overflow-hidden">
       <DragGhost />
       
-      {/* Left Panel - Products */}
-      <div className={`flex-1 flex flex-col overflow-hidden ${tokenMode ? 'max-h-[60dvh] lg:max-h-none' : ''}`}>
+      {/* Left Panel - Products (scrollable) */}
+      <div className={`flex-1 flex flex-col min-h-0 overflow-hidden ${tokenMode ? 'h-[60dvh] lg:h-auto' : ''}`}>
         {/* Header */}
         <header className="bg-card border-b border-border p-3 md:p-4">
           <div className="flex items-center justify-between gap-2 mb-3">
@@ -649,10 +650,11 @@ const PDV = () => {
           </div>
         </div>
 
-        {/* Products Grid */}
-        <div className="flex-1 p-3 md:p-4 overflow-y-auto">
+        {/* Products Grid - Scrollable */}
+        <div className="flex-1 p-3 md:p-4 overflow-y-auto min-h-0">
           {filteredProducts.length === 0 ? (
-            <div className="text-center py-12">
+            <div className="flex flex-col items-center justify-center h-full text-center">
+              <Package className="h-12 w-12 text-muted-foreground/50 mb-2" />
               <p className="text-muted-foreground">Nenhum produto encontrado</p>
             </div>
           ) : (
@@ -665,13 +667,11 @@ const PDV = () => {
         </div>
       </div>
 
-      {/* Right Panel - Cart (Drop Zone) */}
+      {/* Right Panel - Cart (Drop Zone) - Fixed on screen */}
       <div 
         ref={dropZoneRef}
-        className={`bg-card border-border flex flex-col transition-all shrink-0 ${
-          tokenMode 
-            ? 'h-[40dvh] border-t lg:h-auto lg:w-96 lg:border-t-0 lg:border-l' 
-            : 'w-full lg:w-[380px] xl:w-[420px] border-t lg:border-t-0 lg:border-l'
+        className={`bg-card border-border flex flex-col shrink-0 h-[40dvh] lg:h-auto lg:w-[380px] xl:w-[420px] border-t lg:border-t-0 lg:border-l ${
+          tokenMode ? 'lg:w-96' : ''
         } ${dragState.isDragging ? 'ring-2 ring-primary ring-dashed bg-primary/5' : ''}`}
         onDragOver={handlers.onDragOver}
         onDrop={handlers.onDrop}
