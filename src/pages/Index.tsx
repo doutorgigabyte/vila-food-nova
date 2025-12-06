@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useEstablishments } from "@/hooks/useEstablishment";
 import MarketplaceHeader from "@/components/marketplace/MarketplaceHeader";
 import MainCategoriesGrid from "@/components/marketplace/MainCategoriesGrid";
-import CategoriesCarousel from "@/components/marketplace/CategoriesCarousel";
+import SubcategoriesCarousel from "@/components/marketplace/SubcategoriesCarousel";
 import PromoBanners from "@/components/marketplace/PromoBanners";
 import HighlightsSection from "@/components/marketplace/HighlightsSection";
 import TrendingProducts from "@/components/marketplace/TrendingProducts";
@@ -69,11 +69,11 @@ const Index = () => {
           onCategorySelect={handleMainCategorySelect}
         />
 
-        {/* Subcategories carousel - filtered by main category if selected */}
-        <CategoriesCarousel 
+        {/* Subcategories carousel - shows when main category is selected */}
+        <SubcategoriesCarousel 
           mainCategory={selectedMainCategory}
-          selectedCategory={selectedSubcategory}
-          onCategoryClick={(id) => setSelectedSubcategory(selectedSubcategory === id ? null : id)}
+          selectedSubcategory={selectedSubcategory}
+          onSubcategoryClick={setSelectedSubcategory}
         />
 
         {/* Promotional Banners */}
