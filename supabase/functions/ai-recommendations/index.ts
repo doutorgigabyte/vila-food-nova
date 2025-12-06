@@ -28,6 +28,29 @@ serve(async (req) => {
   try {
     const { establishment_id, cart_items, limit = 3 }: RecommendationRequest = await req.json();
     
+    // Input validation to prevent abuse
+    if (!establishment_id || typeof establishment_id !== 'string') {
+      return new Response(
+        JSON.stringify({ error: "establishment_id inválido" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    
+    if (!Array.isArray(cart_items) || cart_items.length === 0) {
+      return new Response(
+        JSON.stringify({ error: "cart_items deve ser um array não vazio" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    
+    // Limit cart items to prevent large payload abuse
+    if (cart_items.length > 50) {
+      return new Response(
+        JSON.stringify({ error: "Máximo de 50 itens no carrinho" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
