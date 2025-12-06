@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useEstablishments } from "@/hooks/useEstablishment";
 import MarketplaceHeader from "@/components/marketplace/MarketplaceHeader";
 import MainCategoriesGrid from "@/components/marketplace/MainCategoriesGrid";
+import PlatformBannerSlider from "@/components/marketplace/PlatformBannerSlider";
 import SubcategoriesBar from "@/components/marketplace/SubcategoriesBar";
 import CategoriesCarousel from "@/components/marketplace/CategoriesCarousel";
 import PromoBanners from "@/components/marketplace/PromoBanners";
@@ -65,6 +66,9 @@ const Marketplace = () => {
           selectedCategory={selectedMainCategory}
           onCategorySelect={handleMainCategorySelect}
         />
+
+        {/* Platform Banner Slider */}
+        <PlatformBannerSlider />
 
         {/* Subcategories Bar - only shows when a main category is selected */}
         {selectedMainCategory && (
