@@ -162,10 +162,10 @@ async function generateImageWithGemini(prompt: string): Promise<Uint8Array> {
     throw new Error('GOOGLE_API_KEY not configured');
   }
 
-  // Use gemini-2.0-flash-preview-image-generation which supports image output
+  // Correct models for image generation (Nano Banana)
   const models = [
-    'gemini-2.0-flash-preview-image-generation',
-    'gemini-2.0-flash-exp'
+    'gemini-2.5-flash-image',       // Nano Banana - fast image generation
+    'gemini-3-pro-image-preview'    // Nano Banana Pro - high quality fallback
   ];
   
   for (const model of models) {
@@ -173,47 +173,50 @@ async function generateImageWithGemini(prompt: string): Promise<Uint8Array> {
     
     console.log(`Trying Gemini model: ${model}`);
     
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{ text: `Generate an image: ${prompt}` }]
-        }],
-        generationConfig: {
-          responseModalities: ["IMAGE", "TEXT"],
-          temperature: 1.0
-        }
-      }),
-    });
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{ text: prompt }]
+          }]
+        }),
+      });
 
-    if (response.ok) {
-      const data = await response.json();
-      console.log('Gemini response structure:', JSON.stringify(data).substring(0, 500));
-      
-      // Extract image from response - check for inline_data in parts
-      const parts = data.candidates?.[0]?.content?.parts || [];
-      for (const part of parts) {
-        if (part.inlineData?.mimeType?.startsWith('image/')) {
-          const base64Image = part.inlineData.data;
-          console.log(`Image generated successfully with ${model}`);
-          const binaryString = atob(base64Image);
-          const bytes = new Uint8Array(binaryString.length);
-          for (let i = 0; i < binaryString.length; i++) {
-            bytes[i] = binaryString.charCodeAt(i);
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Gemini response received, extracting image...');
+        
+        // Extract image from response - check for inlineData in parts
+        const parts = data.candidates?.[0]?.content?.parts || [];
+        for (const part of parts) {
+          if (part.inlineData?.mimeType?.startsWith('image/')) {
+            const base64Image = part.inlineData.data;
+            console.log(`✅ Image generated successfully with ${model}`);
+            const binaryString = atob(base64Image);
+            const bytes = new Uint8Array(binaryString.length);
+            for (let i = 0; i < binaryString.length; i++) {
+              bytes[i] = binaryString.charCodeAt(i);
+            }
+            return bytes;
           }
-          return bytes;
+        }
+        
+        console.log(`No image found in ${model} response parts:`, parts.map((p: Record<string, unknown>) => Object.keys(p)));
+      } else {
+        const errorText = await response.text();
+        console.log(`Model ${model} failed: ${response.status} - ${errorText.substring(0, 300)}`);
+        
+        if (response.status === 429) {
+          throw new Error('RATE_LIMIT');
         }
       }
-      
-      console.log(`No image in ${model} response`);
-    }
-    
-    const errorText = await response.text();
-    console.log(`Model ${model} failed: ${response.status} - ${errorText.substring(0, 300)}`);
-    
-    if (response.status === 429) {
-      throw new Error('RATE_LIMIT');
+    } catch (fetchError) {
+      if (fetchError instanceof Error && fetchError.message === 'RATE_LIMIT') {
+        throw fetchError;
+      }
+      console.log(`Model ${model} fetch error:`, fetchError);
     }
   }
 
