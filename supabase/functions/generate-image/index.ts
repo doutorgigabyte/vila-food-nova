@@ -162,11 +162,11 @@ async function generateImageWithGemini(prompt: string, aspectRatio: string = '1:
     throw new Error('GOOGLE_API_KEY not configured');
   }
 
-  // Gemini 2.0 Flash with image generation capability
-  const model = 'gemini-2.0-flash-exp-image-generation';
+  // Gemini 2.0 Flash Experimental with image generation
+  const model = 'gemini-2.0-flash-exp';
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GOOGLE_API_KEY}`;
   
-  console.log(`Generating image with Gemini 2.0 Flash (${aspectRatio})...`);
+  console.log(`Generating image with Gemini 2.0 Flash Exp (${aspectRatio})...`);
   
   const response = await fetch(url, {
     method: 'POST',
@@ -175,13 +175,12 @@ async function generateImageWithGemini(prompt: string, aspectRatio: string = '1:
       contents: [
         {
           parts: [
-            { text: prompt }
+            { text: `Generate an image: ${prompt}` }
           ]
         }
       ],
       generationConfig: {
-        responseModalities: ["IMAGE", "TEXT"],
-        responseMimeType: "image/png"
+        responseModalities: ["IMAGE", "TEXT"]
       }
     }),
   });
@@ -198,6 +197,7 @@ async function generateImageWithGemini(prompt: string, aspectRatio: string = '1:
   }
 
   const data = await response.json();
+  console.log('Gemini response structure:', JSON.stringify(data).substring(0, 300));
   
   // Gemini returns image in: candidates[0].content.parts[].inlineData.data
   const parts = data.candidates?.[0]?.content?.parts || [];
