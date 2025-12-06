@@ -6,9 +6,9 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Projeto externo com dados em português
+// Projeto externo com dados em português - usando service_role para bypass RLS
 const EXTERNAL_SUPABASE_URL = "https://yaiityqznznclrxqpjtm.supabase.co";
-const EXTERNAL_SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlhaWl0eXF6bnpuY2xyeHFwanRtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4NTc2NDQsImV4cCI6MjA4MDQzMzY0NH0.g8KBaSX_tpyFfi0q-Gw6s3Vh1Fxg5vCLNmlAYmmG-00";
+const EXTERNAL_SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlhaWl0eXF6bnpuY2xyeHFwanRtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NDg1NzY0NCwiZXhwIjoyMDgwNDMzNjQ0fQ.Z8PVIgstF6BlAAhLEXdDb5sh73Z8ApZTa6Q2exO1VNE";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
