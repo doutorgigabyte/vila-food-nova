@@ -47,6 +47,7 @@ const CategoryPage = () => {
             name,
             slug,
             logo_url,
+            banner_url,
             description,
             is_open,
             avg_delivery_time,
