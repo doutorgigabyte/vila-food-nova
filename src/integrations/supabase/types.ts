@@ -1399,6 +1399,42 @@ export type Database = {
           },
         ]
       }
+      payment_sandbox_accounts: {
+        Row: {
+          account_type: string
+          country: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          user_id: string
+          username: string | null
+        }
+        Insert: {
+          account_type: string
+          country?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          user_id: string
+          username?: string | null
+        }
+        Update: {
+          account_type?: string
+          country?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          user_id?: string
+          username?: string | null
+        }
+        Relationships: []
+      }
       plans: {
         Row: {
           billing_period: string | null
