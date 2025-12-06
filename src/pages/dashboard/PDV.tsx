@@ -53,6 +53,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useDragToCart } from "@/hooks/useDragToCart";
+import { PDVPaymentModal } from "@/components/pdv/PDVPaymentModal";
 import type { Json } from "@/integrations/supabase/types";
 
 interface Category {
@@ -84,6 +85,8 @@ interface Establishment {
   mercado_pago_token: string | null;
   delivery_base_fee: number | null;
   delivery_fee_per_km: number | null;
+  point_terminal_id: string | null;
+  point_device_name: string | null;
 }
 
 const PDV = () => {
@@ -182,7 +185,7 @@ const PDV = () => {
       // Fetch establishment by slug
       const { data: estData, error: estError } = await supabase
         .from('establishments')
-        .select('id, name, whatsapp, pix_key, mercado_pago_token, delivery_base_fee, delivery_fee_per_km')
+        .select('id, name, whatsapp, pix_key, mercado_pago_token, delivery_base_fee, delivery_fee_per_km, point_terminal_id, point_device_name')
         .eq('slug', slug)
         .single();
 
@@ -1179,104 +1182,20 @@ const PDV = () => {
         </ResizablePanelGroup>
       </div>
 
-      {/* Payment Modal */}
-      <Dialog open={showPaymentModal} onOpenChange={setShowPaymentModal}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Finalizar Venda</DialogTitle>
-            <DialogDescription>
-              Total: <span className="font-bold text-foreground text-xl">R$ {total.toFixed(2)}</span>
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            {/* Payment Method */}
-            <div>
-              <Label className="mb-2 block">Forma de Pagamento</Label>
-              <RadioGroup value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as any)}>
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="flex items-center space-x-2 p-3 border rounded-lg cursor-pointer hover:bg-muted"
-                       onClick={() => setPaymentMethod('cash')}>
-                    <RadioGroupItem value="cash" id="cash" />
-                    <Label htmlFor="cash" className="cursor-pointer flex items-center gap-2">
-                      <Banknote className="w-4 h-4" />
-                      Dinheiro
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2 p-3 border rounded-lg cursor-pointer hover:bg-muted"
-                       onClick={() => setPaymentMethod('pix')}>
-                    <RadioGroupItem value="pix" id="pix" />
-                    <Label htmlFor="pix" className="cursor-pointer flex items-center gap-2">
-                      <Smartphone className="w-4 h-4" />
-                      PIX
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2 p-3 border rounded-lg cursor-pointer hover:bg-muted"
-                       onClick={() => setPaymentMethod('credit_card')}>
-                    <RadioGroupItem value="credit_card" id="credit_card" />
-                    <Label htmlFor="credit_card" className="cursor-pointer flex items-center gap-2">
-                      <CreditCard className="w-4 h-4" />
-                      Crédito
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2 p-3 border rounded-lg cursor-pointer hover:bg-muted"
-                       onClick={() => setPaymentMethod('debit_card')}>
-                    <RadioGroupItem value="debit_card" id="debit_card" />
-                    <Label htmlFor="debit_card" className="cursor-pointer flex items-center gap-2">
-                      <CreditCard className="w-4 h-4" />
-                      Débito
-                    </Label>
-                  </div>
-                </div>
-              </RadioGroup>
-            </div>
-
-            {/* Change For (if cash) */}
-            {paymentMethod === 'cash' && (
-              <div>
-                <Label className="mb-2 block">Troco para</Label>
-                <Input
-                  type="number"
-                  placeholder="R$ 0,00"
-                  value={changeFor || ''}
-                  onChange={(e) => setChangeFor(parseFloat(e.target.value) || null)}
-                />
-                {changeFor && changeFor > total && (
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Troco: R$ {(changeFor - total).toFixed(2)}
-                  </p>
-                )}
-              </div>
-            )}
-
-            {/* Observations */}
-            <div>
-              <Label className="mb-2 block">Observações</Label>
-              <Textarea
-                placeholder="Observações do pedido..."
-                value={observations}
-                onChange={(e) => setObservations(e.target.value)}
-              />
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowPaymentModal(false)}>
-              Cancelar
-            </Button>
-            <Button onClick={processOrder} disabled={processingOrder}>
-              {processingOrder ? (
-                <>Processando...</>
-              ) : (
-                <>
-                  <Check className="w-4 h-4 mr-2" />
-                  Confirmar Venda
-                </>
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Payment Modal - New Version with PIX QR, Cash Change, Terminal */}
+      <PDVPaymentModal
+        open={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+        onSuccess={(method, paymentId) => {
+          setPaymentMethod(method as any);
+          processOrder();
+        }}
+        total={total}
+        establishmentId={establishment?.id || ''}
+        establishmentName={establishment?.name || ''}
+        hasTerminal={!!establishment?.point_terminal_id}
+        hasMercadoPago={!!establishment?.mercado_pago_token || !!establishment?.pix_key}
+      />
 
       {/* Customer Modal */}
       <Dialog open={showCustomerModal} onOpenChange={setShowCustomerModal}>

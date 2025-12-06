@@ -1105,6 +1105,8 @@ export type Database = {
           phone: string | null
           pix_key: string | null
           plan_id: string | null
+          point_device_name: string | null
+          point_terminal_id: string | null
           primary_color: string | null
           secondary_color: string | null
           segment_id: string | null
@@ -1150,6 +1152,8 @@ export type Database = {
           phone?: string | null
           pix_key?: string | null
           plan_id?: string | null
+          point_device_name?: string | null
+          point_terminal_id?: string | null
           primary_color?: string | null
           secondary_color?: string | null
           segment_id?: string | null
@@ -1195,6 +1199,8 @@ export type Database = {
           phone?: string | null
           pix_key?: string | null
           plan_id?: string | null
+          point_device_name?: string | null
+          point_terminal_id?: string | null
           primary_color?: string | null
           secondary_color?: string | null
           segment_id?: string | null
