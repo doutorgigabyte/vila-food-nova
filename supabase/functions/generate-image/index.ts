@@ -188,9 +188,9 @@ serve(async (req) => {
   try {
     const { type, id, name, establishmentId } = await req.json();
     
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY not configured');
+    const GOOGLE_API_KEY = Deno.env.get('GOOGLE_API_KEY');
+    if (!GOOGLE_API_KEY) {
+      throw new Error('GOOGLE_API_KEY not configured');
     }
 
     // Generate prompt based on type with enhanced prompts
@@ -232,28 +232,32 @@ Do not include any text in the image.`;
     console.log(`Generating image for ${type}: ${name}`);
     console.log(`Prompt: ${prompt}`);
 
-    // Call Lovable AI Gateway for image generation
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    // Call Google Gemini API directly for image generation
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GOOGLE_API_KEY}`;
+    
+    const aiResponse = await fetch(geminiUrl, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash-image-preview',
-        messages: [
+        contents: [
           {
-            role: 'user',
-            content: prompt
+            parts: [
+              { text: prompt }
+            ]
           }
         ],
-        modalities: ['image', 'text']
+        generationConfig: {
+          responseModalities: ["image", "text"],
+          responseMimeType: "image/png"
+        }
       }),
     });
 
     if (!aiResponse.ok) {
       const errorText = await aiResponse.text();
-      console.error('Lovable AI error:', aiResponse.status, errorText);
+      console.error('Gemini API error:', aiResponse.status, errorText);
       
       if (aiResponse.status === 429) {
         return new Response(JSON.stringify({ 
@@ -265,39 +269,31 @@ Do not include any text in the image.`;
         });
       }
       
-      if (aiResponse.status === 402) {
-        return new Response(JSON.stringify({ 
-          error: 'AI credits exhausted. Please add credits to your workspace.'
-        }), {
-          status: 402,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-      
-      throw new Error(`Lovable AI error: ${aiResponse.status} - ${errorText}`);
+      throw new Error(`Gemini API error: ${aiResponse.status} - ${errorText}`);
     }
 
     const aiData = await aiResponse.json();
-    console.log('Lovable AI Response received, extracting image...');
+    console.log('Gemini API Response received, extracting image...');
 
-    // Extract image from Lovable AI response
-    // Format: { choices: [{ message: { images: [{ image_url: { url: "data:image/png;base64,..." } }] } }] }
+    // Extract image from Gemini response
+    // Format: { candidates: [{ content: { parts: [{ inlineData: { mimeType: "image/png", data: "base64..." } }] } }] }
     let imageBase64: string | undefined;
     
-    const images = aiData.choices?.[0]?.message?.images;
-    if (images && images.length > 0) {
-      const imageUrl = images[0]?.image_url?.url;
-      if (imageUrl && imageUrl.startsWith('data:image')) {
-        // Extract base64 from data URL
-        const base64Match = imageUrl.match(/^data:image\/\w+;base64,(.+)$/);
-        if (base64Match && base64Match[1]) {
-          imageBase64 = base64Match[1];
+    const candidates = aiData.candidates;
+    if (candidates && candidates.length > 0) {
+      const parts = candidates[0]?.content?.parts;
+      if (parts) {
+        for (const part of parts) {
+          if (part.inlineData && part.inlineData.data) {
+            imageBase64 = part.inlineData.data;
+            break;
+          }
         }
       }
     }
     
     if (imageBase64) {
-      console.log('Found image in Lovable AI response, base64 length:', imageBase64.length);
+      console.log('Found image in Gemini response, base64 length:', imageBase64.length);
     }
 
     if (!imageBase64) {
