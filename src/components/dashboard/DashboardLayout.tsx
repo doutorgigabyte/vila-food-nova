@@ -1,6 +1,6 @@
 import { useState, ReactNode } from "react";
 import { Button } from "@/components/ui/button";
-import { Bell, Settings, Menu } from "lucide-react";
+import { Bell, Menu } from "lucide-react";
 import DashboardSidebar from "./DashboardSidebar";
 
 interface DashboardLayoutProps {
@@ -8,23 +8,37 @@ interface DashboardLayoutProps {
   title: string;
   storeOpen?: boolean;
   onToggleStore?: () => void;
+  establishment?: {
+    id: string;
+    name: string;
+    slug: string;
+    logo_url?: string | null;
+  } | null;
 }
 
-const DashboardLayout = ({ children, title, storeOpen = true, onToggleStore }: DashboardLayoutProps) => {
+const DashboardLayout = ({ 
+  children, 
+  title, 
+  storeOpen = true, 
+  onToggleStore,
+  establishment 
+}: DashboardLayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="min-h-screen bg-muted/30 flex w-full">
       <DashboardSidebar 
         isOpen={sidebarOpen} 
         onClose={() => setSidebarOpen(false)}
         storeOpen={storeOpen}
         onToggleStore={onToggleStore}
+        establishment={establishment}
       />
 
       <main className="flex-1 lg:ml-64">
-        <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b border-border">
-          <div className="flex items-center justify-between px-4 py-3">
+        {/* Header */}
+        <header className="sticky top-0 z-40 bg-background border-b border-border">
+          <div className="flex items-center justify-between px-4 md:px-6 py-4">
             <div className="flex items-center gap-3">
               <Button 
                 variant="ghost" 
@@ -34,25 +48,24 @@ const DashboardLayout = ({ children, title, storeOpen = true, onToggleStore }: D
               >
                 <Menu className="w-5 h-5" />
               </Button>
-              <h1 className="text-lg font-semibold">{title}</h1>
+              <h1 className="text-xl font-semibold">{title}</h1>
             </div>
             <div className="flex items-center gap-2">
               <Button variant="ghost" size="icon" className="relative">
                 <Bell className="w-5 h-5" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
-              </Button>
-              <Button variant="ghost" size="icon">
-                <Settings className="w-5 h-5" />
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-primary rounded-full" />
               </Button>
             </div>
           </div>
         </header>
 
+        {/* Content */}
         <div className="p-4 md:p-6 space-y-6">
           {children}
         </div>
       </main>
 
+      {/* Mobile overlay */}
       {sidebarOpen && (
         <div 
           className="fixed inset-0 bg-black/50 z-40 lg:hidden"
