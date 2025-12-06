@@ -116,20 +116,43 @@ const SystemHealthCheck = () => {
       });
     }
 
-    // 5. Check Images (S3/CloudFront)
+    // 5. Check Images (S3/CloudFront) - check multiple sources
     try {
-      const { data } = await supabase
-        .from('products')
-        .select('image_url')
-        .not('image_url', 'is', null)
-        .limit(1)
-        .single();
+      // Check products, establishments and categories for S3/CloudFront URLs
+      const [productsResult, establishmentsResult, categoriesResult] = await Promise.all([
+        supabase.from('products').select('image_url').not('image_url', 'is', null).limit(50),
+        supabase.from('establishments').select('logo_url, banner_url').limit(20),
+        supabase.from('categories').select('image_url').not('image_url', 'is', null).limit(20)
+      ]);
+
+      const allUrls: string[] = [];
       
-      const hasCloudFront = data?.image_url?.includes('cloudfront') || data?.image_url?.includes('s3');
+      productsResult.data?.forEach(p => p.image_url && allUrls.push(p.image_url));
+      establishmentsResult.data?.forEach(e => {
+        e.logo_url && allUrls.push(e.logo_url);
+        e.banner_url && allUrls.push(e.banner_url);
+      });
+      categoriesResult.data?.forEach(c => c.image_url && allUrls.push(c.image_url));
+
+      const s3Urls = allUrls.filter(url => 
+        url.includes('cloudfront') || 
+        url.includes('s3.') || 
+        url.includes('amazonaws.com') ||
+        url.includes('_uploads/')
+      );
+
+      const s3Percentage = allUrls.length > 0 ? Math.round((s3Urls.length / allUrls.length) * 100) : 0;
+      const isFullyConfigured = s3Percentage >= 80;
+      const isPartiallyConfigured = s3Percentage > 0;
+
       results.push({
         name: 'Armazenamento de Imagens (S3)',
-        status: hasCloudFront ? 'success' : 'warning',
-        message: hasCloudFront ? 'CloudFront configurado' : 'Usando storage local',
+        status: isFullyConfigured ? 'success' : (isPartiallyConfigured ? 'warning' : 'error'),
+        message: isFullyConfigured 
+          ? `CloudFront configurado (${s3Percentage}% das ${allUrls.length} imagens)`
+          : isPartiallyConfigured 
+            ? `Parcialmente configurado (${s3Percentage}% - ${s3Urls.length}/${allUrls.length} imagens)`
+            : 'Usando storage local',
         icon: Image
       });
     } catch (e) {
