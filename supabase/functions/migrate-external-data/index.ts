@@ -95,6 +95,212 @@ serve(async (req) => {
       );
     }
 
+    if (action === "debug_mapping") {
+      // Verificar estrutura do id_mapping e estabelecimentos
+      const { data: idMapping } = await externalClient
+        .from("id_mapping")
+        .select("*");
+      
+      const { data: extEstabelecimentos } = await externalClient
+        .from("estabelecimentos")
+        .select("id, nome, slug")
+        .limit(10);
+
+      const { data: extCategorias } = await externalClient
+        .from("categorias")
+        .select("id, nome, rel_estabelecimentos_id, establishment_id")
+        .limit(10);
+
+      const { data: extProdutos } = await externalClient
+        .from("produtos")
+        .select("id, nome, rel_estabelecimentos_id, establishment_id, rel_categorias_id, category_id")
+        .limit(10);
+
+      // Verificar estabelecimentos no projeto atual
+      const { data: currentEstabelecimentos } = await currentClient
+        .from("establishments")
+        .select("id, name, slug")
+        .limit(50);
+
+      // Agrupar id_mapping por table_name
+      const mappingByTable: Record<string, any[]> = {};
+      for (const m of idMapping ?? []) {
+        if (!mappingByTable[m.table_name]) {
+          mappingByTable[m.table_name] = [];
+        }
+        mappingByTable[m.table_name].push(m);
+      }
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          debug: {
+            id_mapping_total: idMapping?.length ?? 0,
+            id_mapping_by_table: Object.fromEntries(
+              Object.entries(mappingByTable).map(([k, v]) => [k, { count: v.length, sample: v.slice(0, 3) }])
+            ),
+            external_estabelecimentos: extEstabelecimentos,
+            external_categorias: extCategorias,
+            external_produtos: extProdutos,
+            current_establishments: currentEstabelecimentos,
+          },
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (action === "migrate_by_slug") {
+      // Estratégia alternativa: mapear por slug ao invés de id_mapping
+      console.log("Starting migration by slug...");
+
+      // Buscar estabelecimentos externos
+      const { data: extEstabelecimentos } = await externalClient
+        .from("estabelecimentos")
+        .select("*");
+
+      // Buscar estabelecimentos atuais
+      const { data: currentEstablishments } = await currentClient
+        .from("establishments")
+        .select("id, slug");
+
+      // Criar mapa de slug -> novo ID
+      const slugToNewId = new Map(currentEstablishments?.map(e => [e.slug, e.id]) ?? []);
+      
+      // Criar mapa de ID externo -> novo ID (baseado no slug)
+      const extIdToNewId = new Map<string, string>();
+      for (const ext of extEstabelecimentos ?? []) {
+        const newId = slugToNewId.get(ext.slug);
+        if (newId) {
+          extIdToNewId.set(String(ext.id), newId);
+        }
+      }
+
+      console.log(`Mapped ${extIdToNewId.size} establishments by slug`);
+
+      // Buscar categorias externas
+      const { data: extCategorias } = await externalClient
+        .from("categorias")
+        .select("*");
+
+      // Migrar categorias
+      const categoryResults: any[] = [];
+      const oldCatToNewCat = new Map<string, string>();
+
+      for (const cat of extCategorias ?? []) {
+        const extEstId = String(cat.rel_estabelecimentos_id ?? cat.establishment_id);
+        const newEstId = extIdToNewId.get(extEstId);
+
+        if (!newEstId) {
+          categoryResults.push({ 
+            id: cat.id, 
+            name: cat.nome ?? cat.name, 
+            status: "skipped", 
+            reason: `establishment ${extEstId} not mapped`,
+            extEstId
+          });
+          continue;
+        }
+
+        const categoryData = {
+          establishment_id: newEstId,
+          name: cat.nome ?? cat.name,
+          description: cat.descricao ?? cat.description,
+          image_url: cat.imagem ?? cat.image_url,
+          sort_order: cat.ordem ?? cat.sort_order ?? 0,
+          is_active: cat.ativo !== false && cat.is_active !== false,
+        };
+
+        const { data, error } = await currentClient
+          .from("categories")
+          .insert(categoryData)
+          .select()
+          .single();
+
+        if (error) {
+          categoryResults.push({ id: cat.id, name: categoryData.name, status: "error", error: error.message });
+        } else {
+          categoryResults.push({ id: cat.id, name: categoryData.name, status: "success", new_id: data.id });
+          oldCatToNewCat.set(String(cat.id), data.id);
+        }
+      }
+
+      // Buscar produtos externos
+      const { data: extProdutos } = await externalClient
+        .from("produtos")
+        .select("*");
+
+      // Migrar produtos
+      const productResults: any[] = [];
+
+      for (const prod of extProdutos ?? []) {
+        const extEstId = String(prod.rel_estabelecimentos_id ?? prod.establishment_id);
+        const newEstId = extIdToNewId.get(extEstId);
+
+        if (!newEstId) {
+          productResults.push({ 
+            id: prod.id, 
+            name: prod.nome ?? prod.name, 
+            status: "skipped", 
+            reason: `establishment ${extEstId} not mapped`
+          });
+          continue;
+        }
+
+        const extCatId = String(prod.rel_categorias_id ?? prod.category_id ?? "");
+        const newCatId = oldCatToNewCat.get(extCatId) || null;
+
+        const productData = {
+          establishment_id: newEstId,
+          category_id: newCatId,
+          name: prod.nome ?? prod.name,
+          description: prod.descricao ?? prod.description,
+          price: parseFloat(prod.valor ?? prod.price ?? 0),
+          promotional_price: prod.valor_promocional ? parseFloat(prod.valor_promocional) : null,
+          image_url: prod.destaque ?? prod.image_url,
+          is_active: prod.visible !== false && prod.is_active !== false,
+          is_featured: prod.is_featured === true,
+          stock_quantity: null,
+          preparation_time: 30,
+          variations: [],
+          additionals: [],
+        };
+
+        const { data, error } = await currentClient
+          .from("products")
+          .insert(productData)
+          .select()
+          .single();
+
+        if (error) {
+          productResults.push({ id: prod.id, name: productData.name, status: "error", error: error.message });
+        } else {
+          productResults.push({ id: prod.id, name: productData.name, status: "success", new_id: data.id });
+        }
+      }
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          establishment_mappings: extIdToNewId.size,
+          categories: {
+            total: extCategorias?.length ?? 0,
+            success: categoryResults.filter(r => r.status === "success").length,
+            skipped: categoryResults.filter(r => r.status === "skipped").length,
+            errors: categoryResults.filter(r => r.status === "error").length,
+            results: categoryResults,
+          },
+          products: {
+            total: extProdutos?.length ?? 0,
+            success: productResults.filter(r => r.status === "success").length,
+            skipped: productResults.filter(r => r.status === "skipped").length,
+            errors: productResults.filter(r => r.status === "error").length,
+            results: productResults,
+          },
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     if (action === "migrate_categories") {
       // Buscar categorias do projeto externo
       const { data: categorias, error: catError } = await externalClient

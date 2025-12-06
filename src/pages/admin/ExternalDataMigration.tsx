@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Database, RefreshCw, CheckCircle, XCircle, AlertCircle } from "lucide-react";
+import { ArrowLeft, Database, RefreshCw, CheckCircle, XCircle, AlertCircle, Bug, Zap } from "lucide-react";
 import { Link } from "react-router-dom";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -15,6 +15,7 @@ interface MigrationResult {
   reason?: string;
   error?: string;
   new_id?: string;
+  extEstId?: string;
 }
 
 interface ExternalData {
@@ -27,10 +28,12 @@ interface ExternalData {
 export default function ExternalDataMigration() {
   const [loading, setLoading] = useState<string | null>(null);
   const [externalData, setExternalData] = useState<ExternalData | null>(null);
+  const [debugData, setDebugData] = useState<any>(null);
   const [migrationResults, setMigrationResults] = useState<{
     categories?: MigrationResult[];
     products?: MigrationResult[];
   }>({});
+  const [slugMigrationResult, setSlugMigrationResult] = useState<any>(null);
 
   const runAction = async (action: string) => {
     setLoading(action);
@@ -44,6 +47,14 @@ export default function ExternalDataMigration() {
       if (action === "check_external" || action === "get_all_external_data") {
         setExternalData(data.data);
         toast.success("Dados externos carregados!");
+      } else if (action === "debug_mapping") {
+        setDebugData(data.debug);
+        toast.success("Debug carregado!");
+      } else if (action === "migrate_by_slug") {
+        setSlugMigrationResult(data);
+        const catSuccess = data.categories?.success ?? 0;
+        const prodSuccess = data.products?.success ?? 0;
+        toast.success(`Migração: ${catSuccess} categorias, ${prodSuccess} produtos`);
       } else if (action === "migrate_categories") {
         setMigrationResults(prev => ({ ...prev, categories: data.results }));
         toast.success(`Migração de categorias: ${data.results?.filter((r: MigrationResult) => r.status === "success").length}/${data.total} sucesso`);
@@ -99,7 +110,7 @@ export default function ExternalDataMigration() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <Button
                 onClick={() => runAction("check_external")}
                 disabled={loading !== null}
@@ -114,6 +125,15 @@ export default function ExternalDataMigration() {
               >
                 {loading === "get_all_external_data" && <RefreshCw className="w-4 h-4 mr-2 animate-spin" />}
                 Carregar Todos os Dados
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => runAction("debug_mapping")}
+                disabled={loading !== null}
+              >
+                {loading === "debug_mapping" && <RefreshCw className="w-4 h-4 mr-2 animate-spin" />}
+                <Bug className="w-4 h-4 mr-2" />
+                Debug Mapeamentos
               </Button>
             </div>
 
@@ -158,27 +178,129 @@ export default function ExternalDataMigration() {
               </div>
             )}
 
-            {externalData?.id_mapping?.sample && externalData.id_mapping.sample.length > 0 && (
-              <div className="mt-4">
-                <h4 className="font-medium mb-2">Amostra de Mapeamentos:</h4>
+            {debugData && (
+              <div className="mt-4 space-y-4">
+                <h4 className="font-medium">Debug - Mapeamentos por Tabela:</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {Object.entries(debugData.id_mapping_by_table || {}).map(([table, info]: [string, any]) => (
+                    <Card key={table}>
+                      <CardContent className="pt-4">
+                        <div className="font-medium">{table}: {info.count} mapeamentos</div>
+                        <pre className="text-xs mt-2 bg-muted p-2 rounded overflow-auto max-h-32">
+                          {JSON.stringify(info.sample, null, 2)}
+                        </pre>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+                
+                <h4 className="font-medium mt-4">Estabelecimentos no Projeto Atual:</h4>
                 <ScrollArea className="h-40 border rounded p-2">
-                  <pre className="text-xs">{JSON.stringify(externalData.id_mapping.sample, null, 2)}</pre>
+                  <pre className="text-xs">{JSON.stringify(debugData.current_establishments, null, 2)}</pre>
+                </ScrollArea>
+
+                <h4 className="font-medium mt-4">Amostra Produtos Externos (campos de relacionamento):</h4>
+                <ScrollArea className="h-40 border rounded p-2">
+                  <pre className="text-xs">{JSON.stringify(debugData.external_produtos, null, 2)}</pre>
                 </ScrollArea>
               </div>
             )}
           </CardContent>
         </Card>
 
-        {/* Step 2: Migrate Categories */}
-        <Card>
+        {/* Migração por Slug (Recomendado) */}
+        <Card className="border-green-500 border-2">
           <CardHeader>
-            <CardTitle>Passo 2: Migrar Categorias</CardTitle>
+            <CardTitle className="flex items-center gap-2 text-green-600">
+              <Zap className="h-5 w-5" />
+              Migração Automática por Slug (Recomendado)
+            </CardTitle>
             <CardDescription>
-              Transferir categorias usando o mapeamento de IDs
+              Mapeia estabelecimentos pelo slug e migra tudo de uma vez
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <Button
+              onClick={() => runAction("migrate_by_slug")}
+              disabled={loading !== null}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              {loading === "migrate_by_slug" && <RefreshCw className="w-4 h-4 mr-2 animate-spin" />}
+              <Zap className="w-4 h-4 mr-2" />
+              Migrar Tudo por Slug
+            </Button>
+
+            {slugMigrationResult && (
+              <div className="mt-4 space-y-4">
+                <div className="flex gap-4">
+                  <Badge variant="outline">
+                    {slugMigrationResult.establishment_mappings} estabelecimentos mapeados
+                  </Badge>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-lg">Categorias</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex gap-4 mb-2">
+                        <span className="text-sm text-green-600">✓ {slugMigrationResult.categories?.success}</span>
+                        <span className="text-sm text-yellow-600">⊘ {slugMigrationResult.categories?.skipped}</span>
+                        <span className="text-sm text-red-600">✗ {slugMigrationResult.categories?.errors}</span>
+                      </div>
+                      <ScrollArea className="h-40 border rounded">
+                        <div className="p-2 space-y-1">
+                          {slugMigrationResult.categories?.results?.slice(0, 50).map((result: MigrationResult, idx: number) => (
+                            <div key={idx} className="flex items-center justify-between text-xs py-1 border-b">
+                              <span className="truncate max-w-[150px]">{result.name || result.id}</span>
+                              {getStatusBadge(result.status)}
+                            </div>
+                          ))}
+                        </div>
+                      </ScrollArea>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-lg">Produtos</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex gap-4 mb-2">
+                        <span className="text-sm text-green-600">✓ {slugMigrationResult.products?.success}</span>
+                        <span className="text-sm text-yellow-600">⊘ {slugMigrationResult.products?.skipped}</span>
+                        <span className="text-sm text-red-600">✗ {slugMigrationResult.products?.errors}</span>
+                      </div>
+                      <ScrollArea className="h-40 border rounded">
+                        <div className="p-2 space-y-1">
+                          {slugMigrationResult.products?.results?.slice(0, 50).map((result: MigrationResult, idx: number) => (
+                            <div key={idx} className="flex items-center justify-between text-xs py-1 border-b">
+                              <span className="truncate max-w-[150px]">{result.name || result.id}</span>
+                              {getStatusBadge(result.status)}
+                            </div>
+                          ))}
+                        </div>
+                      </ScrollArea>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Step 2: Migrate Categories (via id_mapping) */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Passo 2: Migrar Categorias (via id_mapping)</CardTitle>
+            <CardDescription>
+              Transferir categorias usando o mapeamento de IDs existente
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Button
+              variant="outline"
               onClick={() => runAction("migrate_categories")}
               disabled={loading !== null}
             >
@@ -218,16 +340,17 @@ export default function ExternalDataMigration() {
           </CardContent>
         </Card>
 
-        {/* Step 3: Migrate Products */}
+        {/* Step 3: Migrate Products (via id_mapping) */}
         <Card>
           <CardHeader>
-            <CardTitle>Passo 3: Migrar Produtos</CardTitle>
+            <CardTitle>Passo 3: Migrar Produtos (via id_mapping)</CardTitle>
             <CardDescription>
-              Transferir produtos usando o mapeamento de IDs
+              Transferir produtos usando o mapeamento de IDs existente
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <Button
+              variant="outline"
               onClick={() => runAction("migrate_products")}
               disabled={loading !== null}
             >
