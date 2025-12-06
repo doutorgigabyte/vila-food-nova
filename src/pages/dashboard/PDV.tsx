@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { Link, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { 
@@ -16,12 +16,18 @@ import {
   CreditCard,
   Banknote,
   Smartphone,
-  Printer,
   X,
   Check,
   Receipt,
-  Users,
-  Calculator
+  MessageCircle,
+  Send,
+  Truck,
+  MapPin,
+  GripVertical,
+  Maximize2,
+  Minimize2,
+  Grid3X3,
+  LayoutGrid
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -32,16 +38,11 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { useDragToCart } from "@/hooks/useDragToCart";
 import type { Json } from "@/integrations/supabase/types";
 
 interface Category {
@@ -65,14 +66,21 @@ interface CartItem extends Product {
   notes?: string;
 }
 
-interface Customer {
+interface Establishment {
   id: string;
   name: string;
-  phone: string | null;
-  email: string | null;
+  whatsapp: string | null;
+  pix_key: string | null;
+  mercado_pago_token: string | null;
+  delivery_base_fee: number | null;
+  delivery_fee_per_km: number | null;
 }
 
 const PDV = () => {
+  const { slug } = useParams<{ slug: string }>();
+  const isMobile = useIsMobile();
+  
+  const [establishment, setEstablishment] = useState<Establishment | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -80,43 +88,108 @@ const PDV = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   
+  // Mode toggle
+  const [tokenMode, setTokenMode] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  
   // Order settings
   const [orderType, setOrderType] = useState<'takeaway' | 'delivery' | 'table'>('takeaway');
   const [tableNumber, setTableNumber] = useState("");
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
+  const [customerAddress, setCustomerAddress] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'pix' | 'credit_card' | 'debit_card'>('cash');
   const [observations, setObservations] = useState("");
   const [discount, setDiscount] = useState(0);
+  const [deliveryFee, setDeliveryFee] = useState(0);
   const [changeFor, setChangeFor] = useState<number | null>(null);
   
   // Modals
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showCustomerModal, setShowCustomerModal] = useState(false);
+  const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
   const [processingOrder, setProcessingOrder] = useState(false);
+  const [generatingPix, setGeneratingPix] = useState(false);
 
-  // Mock establishment ID - in production, get from auth context
-  const establishmentId = "00000000-0000-0000-0000-000000000000";
-
-  useEffect(() => {
-    fetchData();
+  // Drag and drop
+  const addToCart = useCallback((product: Product) => {
+    setCart(prev => {
+      const existing = prev.find(item => item.id === product.id);
+      if (existing) {
+        return prev.map(item => 
+          item.id === product.id 
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        );
+      }
+      return [...prev, { ...product, quantity: 1 }];
+    });
+    
+    // Sound feedback
+    try {
+      const audio = new Audio('/sounds/add.mp3');
+      audio.volume = 0.3;
+      audio.play().catch(() => {});
+    } catch {}
+    
+    // Vibration feedback
+    if (navigator.vibrate) {
+      navigator.vibrate(30);
+    }
+    
+    toast.success(`${product.name} adicionado`, { duration: 1000 });
   }, []);
 
+  const { dragState, dropZoneRef, handlers } = useDragToCart(addToCart);
+
+  useEffect(() => {
+    if (slug) {
+      fetchData();
+    }
+  }, [slug]);
+
+  // Auto-detect touch device for token mode
+  useEffect(() => {
+    const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    if (hasTouch && isMobile) {
+      setTokenMode(true);
+    }
+  }, [isMobile]);
+
   const fetchData = async () => {
+    if (!slug) return;
+    
     try {
-      // Fetch categories
+      // Fetch establishment by slug
+      const { data: estData, error: estError } = await supabase
+        .from('establishments')
+        .select('id, name, whatsapp, pix_key, mercado_pago_token, delivery_base_fee, delivery_fee_per_km')
+        .eq('slug', slug)
+        .single();
+
+      if (estError) throw estError;
+      if (!estData) {
+        toast.error('Estabelecimento não encontrado');
+        return;
+      }
+
+      setEstablishment(estData);
+
+      // Fetch categories for this establishment
       const { data: catData } = await supabase
         .from('categories')
         .select('id, name, image_url')
+        .eq('establishment_id', estData.id)
         .eq('is_active', true)
         .order('sort_order');
 
       setCategories(catData || []);
 
-      // Fetch products
+      // Fetch products for this establishment
       const { data: prodData } = await supabase
         .from('products')
         .select('id, name, description, price, promotional_price, image_url, category_id')
+        .eq('establishment_id', estData.id)
         .eq('is_active', true);
 
       setProducts(prodData || []);
@@ -133,21 +206,6 @@ const PDV = () => {
     const matchesCategory = !selectedCategory || product.category_id === selectedCategory;
     return matchesSearch && matchesCategory;
   });
-
-  const addToCart = (product: Product) => {
-    setCart(prev => {
-      const existing = prev.find(item => item.id === product.id);
-      if (existing) {
-        return prev.map(item => 
-          item.id === product.id 
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
-        );
-      }
-      return [...prev, { ...product, quantity: 1 }];
-    });
-    toast.success(`${product.name} adicionado`);
-  };
 
   const updateQuantity = (productId: string, delta: number) => {
     setCart(prev => {
@@ -169,9 +227,11 @@ const PDV = () => {
   const clearCart = () => {
     setCart([]);
     setDiscount(0);
+    setDeliveryFee(0);
     setObservations("");
     setCustomerName("");
     setCustomerPhone("");
+    setCustomerAddress("");
     setTableNumber("");
     setChangeFor(null);
   };
@@ -181,8 +241,105 @@ const PDV = () => {
     return sum + (price * item.quantity);
   }, 0);
 
-  const total = subtotal - discount;
+  const total = subtotal - discount + (orderType === 'delivery' ? deliveryFee : 0);
 
+  // Fullscreen toggle
+  const toggleFullscreen = async () => {
+    try {
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen();
+        setIsFullscreen(true);
+      } else {
+        await document.exitFullscreen();
+        setIsFullscreen(false);
+      }
+    } catch (error) {
+      console.error('Fullscreen error:', error);
+    }
+  };
+
+  // Generate WhatsApp message with PIX link
+  const generateWhatsAppMessage = async (): Promise<string> => {
+    if (!establishment) return '';
+
+    let pixInfo = '';
+    
+    // Try to generate dynamic PIX if Mercado Pago is configured
+    if (establishment.mercado_pago_token) {
+      setGeneratingPix(true);
+      try {
+        const { data, error } = await supabase.functions.invoke('mercadopago-pix', {
+          body: {
+            establishment_id: establishment.id,
+            order_id: `temp-${Date.now()}`,
+            amount: total,
+            description: `Pedido ${establishment.name}`,
+            payer: {
+              email: 'cliente@email.com',
+              name: customerName || 'Cliente'
+            }
+          }
+        });
+
+        if (!error && data?.qr_code_base64) {
+          pixInfo = `\n\n💳 *Pagar via PIX:*\nCopia e Cola: ${data.qr_code || 'Escaneie o QR Code'}`;
+        }
+      } catch (error) {
+        console.error('Error generating PIX:', error);
+      } finally {
+        setGeneratingPix(false);
+      }
+    } else if (establishment.pix_key) {
+      pixInfo = `\n\n💳 *Chave PIX:* ${establishment.pix_key}`;
+    }
+
+    const itemsList = cart.map(item => {
+      const price = item.promotional_price || item.price;
+      return `${item.quantity}x ${item.name} - R$ ${(price * item.quantity).toFixed(2)}`;
+    }).join('\n');
+
+    const orderTypeLabel = orderType === 'delivery' ? '🚚 Delivery' : 
+                          orderType === 'table' ? `🍽️ Mesa ${tableNumber}` : 
+                          '🛍️ Retirada';
+
+    let message = `🛒 *Resumo do Pedido - ${establishment.name}*\n\n`;
+    message += `${orderTypeLabel}\n`;
+    if (customerName) message += `👤 Cliente: ${customerName}\n`;
+    if (orderType === 'delivery' && customerAddress) {
+      message += `📍 Endereço: ${customerAddress}\n`;
+    }
+    message += `\n📦 *Itens:*\n${itemsList}\n`;
+    message += `\n━━━━━━━━━━━━━━━\n`;
+    message += `Subtotal: R$ ${subtotal.toFixed(2)}\n`;
+    if (discount > 0) message += `Desconto: -R$ ${discount.toFixed(2)}\n`;
+    if (orderType === 'delivery' && deliveryFee > 0) {
+      message += `Frete: R$ ${deliveryFee.toFixed(2)}\n`;
+    }
+    message += `\n💰 *TOTAL: R$ ${total.toFixed(2)}*`;
+    message += pixInfo;
+    if (observations) message += `\n\n📝 Obs: ${observations}`;
+
+    return message;
+  };
+
+  // Send to WhatsApp
+  const sendToWhatsApp = async () => {
+    if (!customerPhone) {
+      toast.error('Informe o telefone do cliente');
+      return;
+    }
+
+    const message = await generateWhatsAppMessage();
+    const phone = customerPhone.replace(/\D/g, '');
+    const fullPhone = phone.startsWith('55') ? phone : `55${phone}`;
+    const url = `https://wa.me/${fullPhone}?text=${encodeURIComponent(message)}`;
+    
+    window.open(url, '_blank');
+    setShowWhatsAppModal(false);
+    toast.success('Abrindo WhatsApp...');
+  };
+
+  // Print receipt
   const printReceipt = (orderNumber: number) => {
     const printContent = `
       <html>
@@ -216,6 +373,7 @@ const PDV = () => {
           <div class="total">
             <div class="item"><span>Subtotal:</span><span>R$ ${subtotal.toFixed(2)}</span></div>
             ${discount > 0 ? `<div class="item"><span>Desconto:</span><span>-R$ ${discount.toFixed(2)}</span></div>` : ''}
+            ${orderType === 'delivery' && deliveryFee > 0 ? `<div class="item"><span>Frete:</span><span>R$ ${deliveryFee.toFixed(2)}</span></div>` : ''}
             <div class="item" style="font-size: 16px;"><span>TOTAL:</span><span>R$ ${total.toFixed(2)}</span></div>
           </div>
           <div class="divider"></div>
@@ -228,7 +386,7 @@ const PDV = () => {
           ${observations ? `<p><strong>Obs:</strong> ${observations}</p>` : ''}
           <div class="footer">
             <p>Obrigado pela preferência!</p>
-            <p>VilaFood Delivery</p>
+            <p>${establishment?.name || 'VilaFood'}</p>
           </div>
         </body>
       </html>
@@ -242,7 +400,13 @@ const PDV = () => {
     }
   };
 
+  // Process order
   const processOrder = async () => {
+    if (!establishment) {
+      toast.error('Estabelecimento não encontrado');
+      return;
+    }
+    
     if (cart.length === 0) {
       toast.error('Adicione itens ao carrinho');
       return;
@@ -251,7 +415,6 @@ const PDV = () => {
     setProcessingOrder(true);
 
     try {
-      // Create order
       const orderItems: Json = cart.map(item => ({
         product_id: item.id,
         name: item.name,
@@ -263,18 +426,19 @@ const PDV = () => {
       const { data: order, error } = await supabase
         .from('orders')
         .insert({
-          establishment_id: establishmentId,
+          establishment_id: establishment.id,
           status: 'confirmed',
           delivery_type: orderType === 'table' ? 'table' : orderType === 'delivery' ? 'delivery' : 'pickup',
           payment_method: paymentMethod,
           items: orderItems,
           subtotal: subtotal,
           discount: discount,
-          delivery_fee: 0,
+          delivery_fee: orderType === 'delivery' ? deliveryFee : 0,
           total: total,
           table_number: orderType === 'table' ? tableNumber : null,
           observations: observations || null,
-          change_for: changeFor
+          change_for: changeFor,
+          delivery_address: orderType === 'delivery' && customerAddress ? { address: customerAddress } : null
         })
         .select()
         .single();
@@ -293,20 +457,153 @@ const PDV = () => {
     }
   };
 
+  // Product card with drag support
+  const ProductCard = ({ product }: { product: Product }) => {
+    const cardSize = tokenMode ? 'min-h-[140px]' : '';
+    
+    return (
+      <Card 
+        className={`overflow-hidden cursor-grab active:cursor-grabbing hover:shadow-lg transition-all group touch-manipulation select-none ${cardSize}`}
+        draggable
+        onDragStart={(e) => handlers.onDragStart(e, product)}
+        onDragEnd={handlers.onDragEnd}
+        onTouchStart={(e) => handlers.onTouchStart(e, product)}
+        onTouchMove={handlers.onTouchMove}
+        onTouchEnd={handlers.onTouchEnd}
+        onClick={() => addToCart(product)}
+      >
+        <div className={`aspect-square bg-muted relative overflow-hidden ${tokenMode ? 'aspect-[4/3]' : ''}`}>
+          {product.image_url ? (
+            <img 
+              src={product.image_url} 
+              alt={product.name}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform pointer-events-none"
+              draggable={false}
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-4xl bg-gradient-to-br from-muted to-muted/50">
+              🍽️
+            </div>
+          )}
+          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="bg-primary text-primary-foreground rounded-full p-1.5">
+              <Plus className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="absolute top-2 left-2 opacity-50 group-hover:opacity-100 transition-opacity">
+            <GripVertical className="w-5 h-5 text-white drop-shadow-lg" />
+          </div>
+        </div>
+        <CardContent className={`p-3 ${tokenMode ? 'p-4' : ''}`}>
+          <h3 className={`font-medium truncate ${tokenMode ? 'text-base' : 'text-sm'}`}>{product.name}</h3>
+          <div className="flex items-center gap-2 mt-1">
+            {product.promotional_price ? (
+              <>
+                <span className="text-xs text-muted-foreground line-through">
+                  R$ {product.price.toFixed(2)}
+                </span>
+                <span className={`font-bold text-primary ${tokenMode ? 'text-lg' : ''}`}>
+                  R$ {product.promotional_price.toFixed(2)}
+                </span>
+              </>
+            ) : (
+              <span className={`font-bold text-primary ${tokenMode ? 'text-lg' : ''}`}>
+                R$ {product.price.toFixed(2)}
+              </span>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+
+  // Ghost element for touch drag
+  const DragGhost = () => {
+    if (!dragState.isDragging || !dragState.ghostPosition || !dragState.draggedItem) {
+      return null;
+    }
+
+    return (
+      <div
+        className="fixed pointer-events-none z-[9999] bg-card border-2 border-primary rounded-lg shadow-2xl p-3 min-w-[120px] opacity-90"
+        style={{
+          left: dragState.ghostPosition.x - 60,
+          top: dragState.ghostPosition.y - 40,
+          transform: 'rotate(-3deg)',
+        }}
+      >
+        <p className="font-medium text-sm truncate">{dragState.draggedItem.name}</p>
+        <p className="text-primary font-bold text-sm">
+          R$ {(dragState.draggedItem.promotional_price || dragState.draggedItem.price).toFixed(2)}
+        </p>
+      </div>
+    );
+  };
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4" />
+          <p className="text-muted-foreground">Carregando PDV...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // No establishment found
+  if (!establishment) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-xl font-bold mb-2">Estabelecimento não encontrado</p>
+          <Link to="/painel">
+            <Button>Voltar ao Painel</Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-background flex flex-col lg:flex-row">
+    <div className={`min-h-[100dvh] bg-background flex flex-col ${tokenMode ? '' : 'lg:flex-row'}`}>
+      <DragGhost />
+      
       {/* Left Panel - Products */}
-      <div className="flex-1 flex flex-col">
+      <div className={`flex-1 flex flex-col ${tokenMode ? 'h-[60dvh]' : ''}`}>
         {/* Header */}
-        <header className="bg-card border-b border-border p-4">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <Link to="/painel">
-                <Button variant="ghost" size="icon">
+        <header className="bg-card border-b border-border p-3 md:p-4">
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <div className="flex items-center gap-2 min-w-0">
+              <Link to={`/painel/${slug}`}>
+                <Button variant="ghost" size="icon" className="shrink-0">
                   <ArrowLeft className="w-5 h-5" />
                 </Button>
               </Link>
-              <h1 className="text-xl font-bold">PDV - Ponto de Venda</h1>
+              <div className="min-w-0">
+                <h1 className="text-lg md:text-xl font-bold truncate">PDV</h1>
+                <p className="text-xs text-muted-foreground truncate">{establishment.name}</p>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setTokenMode(!tokenMode)}
+                title={tokenMode ? 'Modo Desktop' : 'Modo Token'}
+              >
+                {tokenMode ? <LayoutGrid className="w-4 h-4" /> : <Grid3X3 className="w-4 h-4" />}
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={toggleFullscreen}
+                title={isFullscreen ? 'Sair Fullscreen' : 'Fullscreen'}
+              >
+                {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+              </Button>
             </div>
           </div>
 
@@ -315,7 +612,7 @@ const PDV = () => {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               placeholder="Buscar produto..."
-              className="pl-10"
+              className={`pl-10 ${tokenMode ? 'h-12 text-lg' : ''}`}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -323,12 +620,13 @@ const PDV = () => {
         </header>
 
         {/* Categories */}
-        <div className="bg-card border-b border-border p-4 overflow-x-auto">
+        <div className="bg-card border-b border-border p-3 overflow-x-auto">
           <div className="flex gap-2">
             <Button
               variant={selectedCategory === null ? "default" : "outline"}
-              size="sm"
+              size={tokenMode ? "lg" : "sm"}
               onClick={() => setSelectedCategory(null)}
+              className={tokenMode ? 'text-base px-6' : ''}
             >
               Todos
             </Button>
@@ -336,9 +634,9 @@ const PDV = () => {
               <Button
                 key={category.id}
                 variant={selectedCategory === category.id ? "default" : "outline"}
-                size="sm"
+                size={tokenMode ? "lg" : "sm"}
                 onClick={() => setSelectedCategory(category.id)}
-                className="whitespace-nowrap"
+                className={`whitespace-nowrap ${tokenMode ? 'text-base px-6' : ''}`}
               >
                 {category.name}
               </Button>
@@ -347,81 +645,45 @@ const PDV = () => {
         </div>
 
         {/* Products Grid */}
-        <div className="flex-1 p-4 overflow-y-auto">
-          {loading ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-              {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
-                <Card key={i} className="animate-pulse">
-                  <div className="aspect-square bg-muted" />
-                  <CardContent className="p-3">
-                    <div className="h-4 bg-muted rounded mb-2" />
-                    <div className="h-5 bg-muted rounded w-1/2" />
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : filteredProducts.length === 0 ? (
+        <div className="flex-1 p-3 md:p-4 overflow-y-auto">
+          {filteredProducts.length === 0 ? (
             <div className="text-center py-12">
               <p className="text-muted-foreground">Nenhum produto encontrado</p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            <div className={`grid gap-3 md:gap-4 ${
+              tokenMode 
+                ? 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4' 
+                : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
+            }`}>
               {filteredProducts.map(product => (
-                <Card 
-                  key={product.id} 
-                  className="overflow-hidden cursor-pointer hover:shadow-lg transition-shadow group"
-                  onClick={() => addToCart(product)}
-                >
-                  <div className="aspect-square bg-muted relative overflow-hidden">
-                    {product.image_url ? (
-                      <img 
-                        src={product.image_url} 
-                        alt={product.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-4xl">
-                        🍽️
-                      </div>
-                    )}
-                    <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/10 transition-colors flex items-center justify-center">
-                      <Plus className="w-8 h-8 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </div>
-                  </div>
-                  <CardContent className="p-3">
-                    <h3 className="font-medium text-sm truncate">{product.name}</h3>
-                    <div className="flex items-center gap-2 mt-1">
-                      {product.promotional_price ? (
-                        <>
-                          <span className="text-xs text-muted-foreground line-through">
-                            R$ {product.price.toFixed(2)}
-                          </span>
-                          <span className="font-bold text-primary">
-                            R$ {product.promotional_price.toFixed(2)}
-                          </span>
-                        </>
-                      ) : (
-                        <span className="font-bold text-primary">
-                          R$ {product.price.toFixed(2)}
-                        </span>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
+                <ProductCard key={product.id} product={product} />
               ))}
             </div>
           )}
         </div>
       </div>
 
-      {/* Right Panel - Cart */}
-      <div className="w-full lg:w-96 bg-card border-l border-border flex flex-col">
+      {/* Right Panel - Cart (Drop Zone) */}
+      <div 
+        ref={dropZoneRef}
+        className={`bg-card border-l border-border flex flex-col transition-all ${
+          tokenMode 
+            ? 'h-[40dvh] border-t border-l-0' 
+            : 'w-full lg:w-96'
+        } ${dragState.isDragging ? 'ring-2 ring-primary ring-dashed bg-primary/5' : ''}`}
+        onDragOver={handlers.onDragOver}
+        onDrop={handlers.onDrop}
+      >
         {/* Cart Header */}
-        <div className="p-4 border-b border-border">
-          <div className="flex items-center justify-between mb-4">
+        <div className="p-3 md:p-4 border-b border-border shrink-0">
+          <div className="flex items-center justify-between mb-3">
             <h2 className="font-bold flex items-center gap-2">
               <ShoppingCart className="w-5 h-5" />
               Carrinho
+              {cart.length > 0 && (
+                <Badge variant="secondary">{cart.reduce((sum, item) => sum + item.quantity, 0)}</Badge>
+              )}
             </h2>
             {cart.length > 0 && (
               <Button variant="ghost" size="sm" onClick={clearCart}>
@@ -437,7 +699,7 @@ const PDV = () => {
               variant={orderType === 'takeaway' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setOrderType('takeaway')}
-              className="text-xs"
+              className={`text-xs ${tokenMode ? 'h-10' : ''}`}
             >
               Retirada
             </Button>
@@ -445,15 +707,16 @@ const PDV = () => {
               variant={orderType === 'delivery' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setOrderType('delivery')}
-              className="text-xs"
+              className={`text-xs ${tokenMode ? 'h-10' : ''}`}
             >
+              <Truck className="w-3 h-3 mr-1" />
               Delivery
             </Button>
             <Button
               variant={orderType === 'table' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setOrderType('table')}
-              className="text-xs"
+              className={`text-xs ${tokenMode ? 'h-10' : ''}`}
             >
               Mesa
             </Button>
@@ -470,55 +733,55 @@ const PDV = () => {
         </div>
 
         {/* Cart Items */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+        <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-2">
           {cart.length === 0 ? (
-            <div className="text-center py-8">
-              <ShoppingCart className="w-12 h-12 mx-auto text-muted-foreground mb-2" />
-              <p className="text-muted-foreground">Carrinho vazio</p>
-              <p className="text-sm text-muted-foreground">Clique nos produtos para adicionar</p>
+            <div className="text-center py-6">
+              <ShoppingCart className={`mx-auto text-muted-foreground mb-2 ${tokenMode ? 'w-16 h-16' : 'w-12 h-12'}`} />
+              <p className="text-muted-foreground">Arraste produtos aqui</p>
+              <p className="text-sm text-muted-foreground">ou clique para adicionar</p>
             </div>
           ) : (
             cart.map(item => (
-              <div key={item.id} className="flex gap-3 p-3 bg-muted/50 rounded-lg">
-                <div className="w-16 h-16 rounded-lg bg-muted overflow-hidden flex-shrink-0">
+              <div key={item.id} className="flex gap-2 p-2 bg-muted/50 rounded-lg">
+                <div className="w-12 h-12 rounded-lg bg-muted overflow-hidden flex-shrink-0">
                   {item.image_url ? (
                     <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-2xl">🍽️</div>
+                    <div className="w-full h-full flex items-center justify-center text-lg">🍽️</div>
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <h4 className="font-medium text-sm truncate">{item.name}</h4>
-                  <p className="text-primary font-bold">
+                  <p className="text-primary font-bold text-sm">
                     R$ {((item.promotional_price || item.price) * item.quantity).toFixed(2)}
                   </p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="w-7 h-7"
-                      onClick={() => updateQuantity(item.id, -1)}
-                    >
-                      <Minus className="w-3 h-3" />
-                    </Button>
-                    <span className="w-8 text-center font-medium">{item.quantity}</span>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="w-7 h-7"
-                      onClick={() => updateQuantity(item.id, 1)}
-                    >
-                      <Plus className="w-3 h-3" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="w-7 h-7 text-destructive ml-auto"
-                      onClick={() => removeFromCart(item.id)}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="w-7 h-7"
+                    onClick={() => updateQuantity(item.id, -1)}
+                  >
+                    <Minus className="w-3 h-3" />
+                  </Button>
+                  <span className="w-6 text-center font-medium text-sm">{item.quantity}</span>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="w-7 h-7"
+                    onClick={() => updateQuantity(item.id, 1)}
+                  >
+                    <Plus className="w-3 h-3" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="w-7 h-7 text-destructive"
+                    onClick={() => removeFromCart(item.id)}
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </Button>
                 </div>
               </div>
             ))
@@ -526,27 +789,42 @@ const PDV = () => {
         </div>
 
         {/* Cart Footer */}
-        <div className="border-t border-border p-4 space-y-3">
-          {/* Customer */}
-          <Button 
-            variant="outline" 
-            className="w-full justify-start"
-            onClick={() => setShowCustomerModal(true)}
-          >
-            <User className="w-4 h-4 mr-2" />
-            {customerName || 'Selecionar Cliente'}
-          </Button>
+        <div className="border-t border-border p-3 md:p-4 space-y-2 shrink-0">
+          {/* Customer & Delivery */}
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              className="flex-1 justify-start text-xs"
+              onClick={() => setShowCustomerModal(true)}
+            >
+              <User className="w-4 h-4 mr-1 shrink-0" />
+              <span className="truncate">{customerName || 'Cliente'}</span>
+            </Button>
+            {orderType === 'delivery' && (
+              <div className="flex items-center gap-1">
+                <Label className="text-xs shrink-0">Frete:</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  className="w-20 h-9"
+                  value={deliveryFee || ''}
+                  onChange={(e) => setDeliveryFee(parseFloat(e.target.value) || 0)}
+                  placeholder="0"
+                />
+              </div>
+            )}
+          </div>
 
           {/* Discount */}
           <div className="flex items-center gap-2">
-            <Label className="text-sm">Desconto:</Label>
+            <Label className="text-xs shrink-0">Desconto:</Label>
             <Input
               type="number"
               min="0"
-              className="w-24"
+              className="w-20 h-9"
               value={discount || ''}
               onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)}
-              placeholder="R$ 0,00"
+              placeholder="0"
             />
           </div>
 
@@ -562,21 +840,38 @@ const PDV = () => {
                 <span>-R$ {discount.toFixed(2)}</span>
               </div>
             )}
-            <div className="flex justify-between font-bold text-lg pt-2 border-t">
+            {orderType === 'delivery' && deliveryFee > 0 && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Frete:</span>
+                <span>R$ {deliveryFee.toFixed(2)}</span>
+              </div>
+            )}
+            <div className="flex justify-between font-bold text-lg pt-1 border-t">
               <span>Total:</span>
               <span>R$ {total.toFixed(2)}</span>
             </div>
           </div>
 
-          {/* Payment Button */}
-          <Button 
-            className="w-full h-12 text-lg" 
-            disabled={cart.length === 0}
-            onClick={() => setShowPaymentModal(true)}
-          >
-            <Receipt className="w-5 h-5 mr-2" />
-            Finalizar Venda
-          </Button>
+          {/* Action Buttons */}
+          <div className="grid grid-cols-2 gap-2">
+            <Button 
+              variant="outline"
+              className={`${tokenMode ? 'h-12' : 'h-10'}`} 
+              disabled={cart.length === 0}
+              onClick={() => setShowWhatsAppModal(true)}
+            >
+              <MessageCircle className="w-4 h-4 mr-1" />
+              WhatsApp
+            </Button>
+            <Button 
+              className={`${tokenMode ? 'h-12' : 'h-10'}`} 
+              disabled={cart.length === 0}
+              onClick={() => setShowPaymentModal(true)}
+            >
+              <Receipt className="w-4 h-4 mr-1" />
+              Finalizar
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -703,6 +998,16 @@ const PDV = () => {
                 onChange={(e) => setCustomerPhone(e.target.value)}
               />
             </div>
+            {orderType === 'delivery' && (
+              <div>
+                <Label className="mb-2 block">Endereço de Entrega</Label>
+                <Textarea
+                  placeholder="Rua, número, bairro..."
+                  value={customerAddress}
+                  onChange={(e) => setCustomerAddress(e.target.value)}
+                />
+              </div>
+            )}
           </div>
 
           <DialogFooter>
@@ -711,6 +1016,77 @@ const PDV = () => {
             </Button>
             <Button onClick={() => setShowCustomerModal(false)}>
               Salvar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* WhatsApp Modal */}
+      <Dialog open={showWhatsAppModal} onOpenChange={setShowWhatsAppModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <MessageCircle className="w-5 h-5 text-green-500" />
+              Enviar para WhatsApp
+            </DialogTitle>
+            <DialogDescription>
+              O pedido será enviado para o WhatsApp do cliente com o resumo e link de pagamento PIX.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div>
+              <Label className="mb-2 block">Nome do Cliente</Label>
+              <Input
+                placeholder="Nome do cliente"
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label className="mb-2 block">Telefone do Cliente *</Label>
+              <Input
+                placeholder="(00) 00000-0000"
+                value={customerPhone}
+                onChange={(e) => setCustomerPhone(e.target.value)}
+              />
+            </div>
+            {orderType === 'delivery' && (
+              <>
+                <div>
+                  <Label className="mb-2 block">Endereço de Entrega</Label>
+                  <Textarea
+                    placeholder="Rua, número, bairro..."
+                    value={customerAddress}
+                    onChange={(e) => setCustomerAddress(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label className="mb-2 block">Taxa de Entrega</Label>
+                  <Input
+                    type="number"
+                    placeholder="R$ 0,00"
+                    value={deliveryFee || ''}
+                    onChange={(e) => setDeliveryFee(parseFloat(e.target.value) || 0)}
+                  />
+                </div>
+              </>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowWhatsAppModal(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={sendToWhatsApp} disabled={!customerPhone || generatingPix}>
+              {generatingPix ? (
+                <>Gerando PIX...</>
+              ) : (
+                <>
+                  <Send className="w-4 h-4 mr-2" />
+                  Enviar
+                </>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
