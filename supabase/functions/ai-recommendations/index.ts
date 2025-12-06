@@ -184,26 +184,38 @@ ${JSON.stringify(productsList)}
 Retorne até ${limit} recomendações:
 {"recommendations": [{"product_id": "id", "reason": "justificativa curta"}]}`;
 
-    // Try Gemini first, then fallback
+    // Use Lovable AI Gateway (primary) with fallback
     let content = "";
-    let engine = "gemini";
+    let engine = "lovable";
     
     try {
-      content = await callGeminiText(systemPrompt, userPrompt);
-    } catch (geminiError) {
-      console.log("[ai-recommendations] Gemini failed, trying fallback:", geminiError);
+      content = await callLovableText(systemPrompt, userPrompt);
+    } catch (lovableError) {
+      console.log("[ai-recommendations] Lovable AI failed, trying Gemini:", lovableError);
       
-      if (geminiError instanceof Error && geminiError.message === "RATE_LIMIT") {
-        return new Response(
-          JSON.stringify({ error: "Muitas requisições, tente novamente" }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      
-      try {
-        content = await callLovableText(systemPrompt, userPrompt);
-        engine = "lovable";
-      } catch (lovableError) {
+      if (lovableError instanceof Error && (lovableError.message === "RATE_LIMIT" || lovableError.message === "PAYMENT_REQUIRED")) {
+        // Try Gemini as fallback
+        try {
+          content = await callGeminiText(systemPrompt, userPrompt);
+          engine = "gemini";
+        } catch (geminiError) {
+          // Ultimate fallback: random products
+          console.log("[ai-recommendations] All AI failed, using random fallback");
+          const randomRecs = availableProducts.slice(0, limit).map(p => ({
+            product: {
+              id: p.id, name: p.name, description: p.description,
+              price: p.price, promotional_price: p.promotional_price,
+              image_url: p.image_url, category: (p.categories as any)?.name
+            },
+            reason: "Combina com seu pedido!"
+          }));
+          
+          return new Response(
+            JSON.stringify({ recommendations: randomRecs, ai_powered: false, engine: "fallback" }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+      } else {
         // Ultimate fallback: random products
         console.log("[ai-recommendations] All AI failed, using random fallback");
         const randomRecs = availableProducts.slice(0, limit).map(p => ({
