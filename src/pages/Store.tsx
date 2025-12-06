@@ -1,5 +1,5 @@
-import { useState, useMemo } from "react";
-import { Link, useParams, useNavigate } from "react-router-dom";
+import { useState, useMemo, useEffect } from "react";
+import { Link, useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,10 +21,23 @@ import StoreBottomNav from "@/components/store/StoreBottomNav";
 import StoreStories from "@/components/store/StoreStories";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { setOrderSourceDirect, getOrderSourceDirect } from "@/hooks/useOrderSource";
 
 const Store = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  
+  // Set order source to 'direct' ONLY if user came directly to store (not from marketplace)
+  // Check referrer or if source was already set
+  useEffect(() => {
+    const currentSource = getOrderSourceDirect();
+    // Only set to 'direct' if not already set to 'marketplace'
+    // This preserves the marketplace source if user came from there
+    if (currentSource !== 'marketplace') {
+      setOrderSourceDirect('direct');
+    }
+  }, [slug]);
   const {
     establishment,
     products,

@@ -36,7 +36,7 @@ const ProductOfferCard = ({ product, variant = "default", className }: ProductOf
 
   return (
     <Link 
-      to={`/loja/${product.establishment?.slug || ''}`}
+      to={`/produto/${product.id}`}
       className={cn("block snap-center", className)}
     >
       <Card className={cn(

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { getOrderSourceDirect, OrderSource } from './useOrderSource';
 
 export interface OrderItem {
   product_id: string;
@@ -21,6 +22,7 @@ export interface CreateOrderData {
   subtotal: number;
   delivery_fee?: number;
   discount?: number;
+  platform_fee?: number;
   total: number;
   delivery_address?: {
     cep: string;
@@ -33,6 +35,7 @@ export interface CreateOrderData {
   change_for?: number;
   observations?: string;
   table_number?: string;
+  order_source?: OrderSource;
 }
 
 export const useCreateOrder = () => {
@@ -42,6 +45,9 @@ export const useCreateOrder = () => {
     setLoading(true);
 
     try {
+      // Get the order source from session storage if not provided
+      const orderSource = orderData.order_source || getOrderSourceDirect();
+      
       // First, try to find or create customer
       const customerId = orderData.customer_id;
 
@@ -57,6 +63,8 @@ export const useCreateOrder = () => {
           subtotal: orderData.subtotal,
           delivery_fee: orderData.delivery_fee || 0,
           discount: orderData.discount || 0,
+          platform_fee: orderData.platform_fee || 0,
+          order_source: orderSource,
           total: orderData.total,
           delivery_address: orderData.delivery_address as any || null,
           change_for: orderData.change_for || null,
