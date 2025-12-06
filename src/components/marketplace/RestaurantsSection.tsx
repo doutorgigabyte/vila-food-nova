@@ -71,8 +71,8 @@ const RestaurantsSection = ({
             ref={scrollRef}
             {...handlers}
             className={cn(
-              "flex items-center gap-4 overflow-x-auto pb-2 scrollbar-hide select-none",
-              isDragging ? "cursor-grabbing" : "cursor-grab"
+              "flex items-center gap-4 overflow-x-auto pb-2 scrollbar-hide select-none drag-scroll-container",
+              isDragging && "cursor-grabbing"
             )}
           >
             {restaurants.map((restaurant) => (
