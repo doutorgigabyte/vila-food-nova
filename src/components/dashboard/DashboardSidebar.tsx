@@ -1,11 +1,9 @@
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { 
-  Utensils, 
-  Store, 
   X,
   LayoutDashboard,
   ShoppingBag,
@@ -30,66 +28,114 @@ import {
   Boxes,
   Wallet,
   Users,
-  CreditCard
+  CreditCard,
+  Store,
+  ChevronDown,
+  ChevronRight
 } from "lucide-react";
-import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 interface DashboardSidebarProps {
   isOpen: boolean;
   onClose: () => void;
   storeOpen?: boolean;
   onToggleStore?: () => void;
+  establishment?: {
+    id: string;
+    name: string;
+    slug: string;
+    logo_url?: string | null;
+  } | null;
 }
 
-const menuItems = [
-  { icon: LayoutDashboard, label: "Dashboard", href: "/painel" },
-  { icon: Store, label: "PDV", href: "/painel/pdv" },
-  { icon: ShoppingBag, label: "Pedidos", href: "/painel/pedidos" },
-  { icon: Calendar, label: "Agendados", href: "/painel/agendados" },
-  { icon: ClipboardList, label: "Comanda Digital", href: "/painel/comanda" },
-  { icon: ChefHat, label: "Display Cozinha", href: "/painel/cozinha" },
-  { icon: Package, label: "Produtos", href: "/painel/produtos" },
-  { icon: Tag, label: "Categorias", href: "/painel/categorias" },
-  { icon: Boxes, label: "Estoque", href: "/painel/estoque" },
-  { icon: Truck, label: "Área de Atendimento", href: "/painel/area-atendimento" },
-  { icon: Bike, label: "Entregadores", href: "/painel/entregadores" },
-  { icon: DollarSign, label: "Cupons", href: "/painel/cupons" },
-  { icon: Gift, label: "Cashback", href: "/painel/cashback" },
-  { icon: ShoppingCart, label: "Recuperador de Vendas", href: "/painel/carrinhos-abandonados" },
-  { icon: CreditCard, label: "Pagamentos", href: "/painel/pagamentos" },
-  { icon: TrendingUp, label: "Fluxo de Caixa", href: "/painel/fluxo" },
-  { icon: Wallet, label: "Gestão Financeira", href: "/painel/financeiro" },
-  { icon: Users, label: "Fornecedores", href: "/painel/fornecedores" },
-  { icon: MessageSquare, label: "WhatsApp IA", href: "/painel/whatsapp" },
-  { icon: BarChart3, label: "Relatórios", href: "/painel/relatorios" },
-  { icon: LineChart, label: "Pixels Analytics", href: "/painel/pixels" },
-  { icon: QrCode, label: "QR Code", href: "/painel/qrcode" },
-  { icon: Eye, label: "Banners", href: "/painel/banners" },
-  { icon: Settings, label: "Integrações", href: "/painel/integracoes" },
+const getMenuItems = (baseUrl: string) => [
+  { icon: LayoutDashboard, label: "Dashboard", href: baseUrl },
+  { icon: Store, label: "PDV", href: `${baseUrl}/pdv` },
+  { icon: ShoppingBag, label: "Pedidos", href: `${baseUrl}/pedidos` },
+  { icon: Calendar, label: "Agendados", href: `${baseUrl}/agendados` },
+  { icon: ClipboardList, label: "Comanda Digital", href: `${baseUrl}/comanda` },
+  { icon: ChefHat, label: "Display Cozinha", href: `${baseUrl}/cozinha` },
+  { icon: Package, label: "Produtos", href: `${baseUrl}/produtos` },
+  { icon: Tag, label: "Categorias", href: `${baseUrl}/categorias` },
+  { icon: Boxes, label: "Estoque", href: `${baseUrl}/estoque` },
+  { icon: Truck, label: "Área de Atendimento", href: `${baseUrl}/area-atendimento` },
+  { icon: Bike, label: "Entregadores", href: `${baseUrl}/entregadores` },
+  { icon: DollarSign, label: "Cupons", href: `${baseUrl}/cupons` },
+  { icon: Gift, label: "Cashback", href: `${baseUrl}/cashback` },
+  { icon: ShoppingCart, label: "Recuperador de Vendas", href: `${baseUrl}/carrinhos-abandonados` },
+  { icon: CreditCard, label: "Pagamentos", href: `${baseUrl}/pagamentos` },
+  { icon: TrendingUp, label: "Fluxo de Caixa", href: `${baseUrl}/fluxo` },
+  { icon: Wallet, label: "Gestão Financeira", href: `${baseUrl}/financeiro` },
+  { icon: Users, label: "Fornecedores", href: `${baseUrl}/fornecedores` },
+  { icon: MessageSquare, label: "WhatsApp IA", href: `${baseUrl}/whatsapp` },
+  { icon: BarChart3, label: "Relatórios", href: `${baseUrl}/relatorios` },
+  { icon: LineChart, label: "Pixels Analytics", href: `${baseUrl}/pixels` },
+  { icon: QrCode, label: "QR Code", href: `${baseUrl}/qrcode` },
+  { icon: Eye, label: "Banners", href: `${baseUrl}/banners` },
+  { icon: Settings, label: "Integrações", href: `${baseUrl}/integracoes` },
 ];
 
-const DashboardSidebar = ({ isOpen, onClose, storeOpen = true, onToggleStore }: DashboardSidebarProps) => {
+const DashboardSidebar = ({ 
+  isOpen, 
+  onClose, 
+  storeOpen = true, 
+  onToggleStore,
+  establishment 
+}: DashboardSidebarProps) => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { slug } = useParams();
+  const { user, signOut } = useAuth();
+  
+  const baseUrl = slug ? `/painel/${slug}` : '/painel';
+  const menuItems = getMenuItems(baseUrl);
+
+  const isActive = (href: string) => {
+    return location.pathname === href;
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/auth');
+  };
 
   return (
     <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-card border-r border-border transform transition-transform duration-200 lg:translate-x-0 ${
       isOpen ? "translate-x-0" : "-translate-x-full"
     }`}>
       <div className="flex flex-col h-full">
-        {/* Logo */}
+        {/* Logo / Establishment */}
         <div className="p-4 border-b border-border flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2">
-            <div className="p-1.5 bg-primary/10 rounded-lg">
-              <Utensils className="w-5 h-5 text-primary" />
+          <Link to="/" className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center overflow-hidden">
+              {establishment?.logo_url ? (
+                <img 
+                  src={establishment.logo_url} 
+                  alt={establishment.name} 
+                  className="w-full h-full object-cover" 
+                />
+              ) : (
+                <Store className="w-5 h-5 text-primary" />
+              )}
             </div>
-            <span className="font-bold">
-              Vila<span className="text-primary">Food</span>
-            </span>
+            <div className="flex-1 min-w-0">
+              <span className="font-bold text-sm truncate block">
+                {establishment?.name || 'VilaFood'}
+              </span>
+              <Badge variant="outline" className="text-xs">
+                Painel
+              </Badge>
+            </div>
           </Link>
           <Button 
             variant="ghost" 
             size="icon" 
-            className="lg:hidden"
+            className="lg:hidden shrink-0"
             onClick={onClose}
           >
             <X className="w-5 h-5" />
@@ -106,45 +152,60 @@ const DashboardSidebar = ({ isOpen, onClose, storeOpen = true, onToggleStore }: 
               </div>
               <Switch checked={storeOpen} onCheckedChange={onToggleStore} />
             </div>
-            <Badge className={`mt-2 ${storeOpen ? "bg-green-500" : "bg-red-500"}`}>
+            <Badge className={`mt-2 ${storeOpen ? "bg-green-500 hover:bg-green-600" : "bg-red-500 hover:bg-red-600"}`}>
               {storeOpen ? "Aberta" : "Fechada"}
             </Badge>
           </div>
         )}
 
         {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+        <nav className="flex-1 p-3 space-y-1 overflow-y-auto scrollbar-hide">
           {menuItems.map((item) => {
             const Icon = item.icon;
-            const isActive = location.pathname === item.href;
+            const active = isActive(item.href);
             return (
               <Link
                 key={item.label}
                 to={item.href}
-                className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                  isActive 
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+                  active 
                     ? "bg-primary/10 text-primary" 
                     : "text-muted-foreground hover:bg-muted hover:text-foreground"
                 }`}
               >
-                <Icon className="w-5 h-5" />
-                <span className="flex-1 text-sm">{item.label}</span>
+                <Icon className="w-5 h-5 shrink-0" />
+                <span className="flex-1 text-sm font-medium">{item.label}</span>
               </Link>
             );
           })}
         </nav>
 
-        {/* User */}
+        {/* User Footer */}
         <div className="p-4 border-t border-border">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-              <span className="text-primary font-medium">VF</span>
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
+              {establishment?.logo_url ? (
+                <img 
+                  src={establishment.logo_url} 
+                  alt="" 
+                  className="w-full h-full object-cover" 
+                />
+              ) : (
+                <span className="text-primary font-medium text-sm">
+                  {establishment?.name?.substring(0, 2).toUpperCase() || 'VF'}
+                </span>
+              )}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-medium text-sm truncate">Minha Loja</p>
-              <p className="text-xs text-muted-foreground truncate">painel@vilafood.com</p>
+              <p className="font-medium text-sm truncate">{establishment?.name || 'Minha Loja'}</p>
+              <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
             </div>
-            <Button variant="ghost" size="icon">
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={handleSignOut}
+              title="Sair"
+            >
               <LogOut className="w-4 h-4" />
             </Button>
           </div>
