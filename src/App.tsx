@@ -67,6 +67,7 @@ import DataMigration from "./pages/admin/DataMigration";
 import ExternalDataMigration from "./pages/admin/ExternalDataMigration";
 import Roadmap from "./pages/admin/Roadmap";
 import SystemHealthCheck from "./pages/admin/SystemHealthCheck";
+import ImageFillManager from "./pages/admin/ImageFillManager";
 import VilaTokPage from "./pages/VilaTok";
 import VideosManagement from "./pages/dashboard/VideosManagement";
 import StoriesManagement from "./pages/dashboard/StoriesManagement";
@@ -180,6 +181,7 @@ const App = () => (
               <Route path="/admin/migracao-externa" element={<ProtectedAdminRoute><ExternalDataMigration /></ProtectedAdminRoute>} />
               <Route path="/admin/roadmap" element={<ProtectedAdminRoute><Roadmap /></ProtectedAdminRoute>} />
               <Route path="/admin/health" element={<ProtectedAdminRoute><SystemHealthCheck /></ProtectedAdminRoute>} />
+              <Route path="/admin/preencher-imagens" element={<ProtectedAdminRoute><ImageFillManager /></ProtectedAdminRoute>} />
               <Route path="/afiliado" element={<AffiliateDashboard />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
