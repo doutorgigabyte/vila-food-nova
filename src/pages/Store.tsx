@@ -16,6 +16,7 @@ import { StoreProductGrid } from "@/components/store/StoreProductGrid";
 import { StoreInfoTab } from "@/components/store/StoreInfoTab";
 import { StoreFloatingCart } from "@/components/store/StoreFloatingCart";
 import { StoreAccountTab } from "@/components/store/StoreAccountTab";
+import StoreBottomNav from "@/components/store/StoreBottomNav";
 import { toast } from "sonner";
 
 const Store = () => {
@@ -290,11 +291,21 @@ const Store = () => {
         </>
       )}
 
-      {/* Floating Cart Button */}
-      <StoreFloatingCart
-        itemCount={cartItemsCount}
-        total={cartTotal}
-        onClick={() => setIsCartOpen(true)}
+      {/* Floating Cart Button - Hidden on mobile when bottom nav is visible */}
+      <div className="hidden md:block">
+        <StoreFloatingCart
+          itemCount={cartItemsCount}
+          total={cartTotal}
+          onClick={() => setIsCartOpen(true)}
+          primaryColor={establishment.primary_color || undefined}
+        />
+      </div>
+
+      {/* Mobile Bottom Navigation */}
+      <StoreBottomNav
+        cartCount={cartItemsCount}
+        activeTab={activeTab}
+        onTabChange={handleTabChange}
         primaryColor={establishment.primary_color || undefined}
       />
 
