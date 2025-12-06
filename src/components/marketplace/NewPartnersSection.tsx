@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDragScroll } from "@/hooks/useDragScroll";
 import { useEstablishments } from "@/hooks/useEstablishment";
+import { cn } from "@/lib/utils";
 import EstablishmentCard from "./EstablishmentCard";
 
 const NewPartnersSection = () => {
@@ -64,10 +65,10 @@ const NewPartnersSection = () => {
           <div
             ref={scrollRef}
             {...handlers}
-            className={`flex gap-3 md:gap-4 overflow-x-auto scrollbar-hide scroll-smooth pb-2 snap-x snap-mandatory md:snap-none select-none ${
-              isDragging ? "cursor-grabbing" : "cursor-grab"
-            }`}
-            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            className={cn(
+              "flex gap-3 md:gap-4 overflow-x-auto scrollbar-hide pb-2 snap-x snap-mandatory md:snap-none select-none drag-scroll-container",
+              isDragging && "cursor-grabbing"
+            )}
           >
             {newPartners.map((establishment) => (
               <div 

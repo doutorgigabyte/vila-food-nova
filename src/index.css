@@ -239,6 +239,19 @@
     display: none;
   }
 
+  /* Drag scroll container optimizations */
+  .drag-scroll-container {
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x;
+    overscroll-behavior-x: contain;
+    scroll-behavior: auto;
+    cursor: grab;
+  }
+
+  .drag-scroll-container:active {
+    cursor: grabbing;
+  }
+
   /* Safe area support for iOS */
   .safe-area-inset-bottom {
     padding-bottom: env(safe-area-inset-bottom, 0);

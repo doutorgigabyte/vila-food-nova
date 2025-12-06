@@ -144,10 +144,9 @@ const CategoriesCarousel = ({ mainCategory, selectedCategory, onCategoryClick }:
             ref={scrollRef}
             {...handlers}
             className={cn(
-              "flex gap-3 md:gap-4 overflow-x-auto scrollbar-hide scroll-smooth pb-2 select-none",
-              isDragging ? "cursor-grabbing" : "cursor-grab"
+              "flex gap-3 md:gap-4 overflow-x-auto scrollbar-hide pb-2 select-none drag-scroll-container",
+              isDragging && "cursor-grabbing"
             )}
-            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
             {categories.map((category) => {
               const IconComponent = category.icon;
