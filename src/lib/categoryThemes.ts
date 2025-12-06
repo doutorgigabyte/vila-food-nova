@@ -13,6 +13,8 @@ export interface CategoryTheme {
   forYouSubtitle: string;
   accentColor: string;
   bgGradient: string;
+  iconBg: string;
+  iconColor: string;
 }
 
 export const categoryThemes: Record<string, CategoryTheme> = {
@@ -30,6 +32,8 @@ export const categoryThemes: Record<string, CategoryTheme> = {
     forYouSubtitle: "Recomendações personalizadas",
     accentColor: "text-primary",
     bgGradient: "from-primary/5 to-transparent",
+    iconBg: "bg-primary/10",
+    iconColor: "text-primary",
   },
   mercado: {
     id: "mercado",
@@ -45,6 +49,8 @@ export const categoryThemes: Record<string, CategoryTheme> = {
     forYouSubtitle: "Baseado no que você costuma comprar",
     accentColor: "text-emerald-600",
     bgGradient: "from-emerald-50 to-transparent dark:from-emerald-950/20",
+    iconBg: "bg-emerald-100 dark:bg-emerald-900/30",
+    iconColor: "text-emerald-600",
   },
   farmacia: {
     id: "farmacia",
@@ -60,6 +66,8 @@ export const categoryThemes: Record<string, CategoryTheme> = {
     forYouSubtitle: "Sugestões para seu bem-estar",
     accentColor: "text-red-500",
     bgGradient: "from-red-50 to-transparent dark:from-red-950/20",
+    iconBg: "bg-red-100 dark:bg-red-900/30",
+    iconColor: "text-red-500",
   },
   compras: {
     id: "compras",
@@ -75,6 +83,8 @@ export const categoryThemes: Record<string, CategoryTheme> = {
     forYouSubtitle: "Produtos que combinam com você",
     accentColor: "text-green-600",
     bgGradient: "from-green-50 to-transparent dark:from-green-950/20",
+    iconBg: "bg-green-100 dark:bg-green-900/30",
+    iconColor: "text-green-600",
   },
   comida: {
     id: "comida",
@@ -90,6 +100,8 @@ export const categoryThemes: Record<string, CategoryTheme> = {
     forYouSubtitle: "Baseado no seu paladar",
     accentColor: "text-amber-600",
     bgGradient: "from-amber-50 to-transparent dark:from-amber-950/20",
+    iconBg: "bg-amber-100 dark:bg-amber-900/30",
+    iconColor: "text-amber-600",
   },
   artesanato: {
     id: "artesanato",
@@ -105,6 +117,8 @@ export const categoryThemes: Record<string, CategoryTheme> = {
     forYouSubtitle: "Peças que combinam com seu estilo",
     accentColor: "text-purple-600",
     bgGradient: "from-purple-50 to-transparent dark:from-purple-950/20",
+    iconBg: "bg-purple-100 dark:bg-purple-900/30",
+    iconColor: "text-purple-600",
   },
   servicos: {
     id: "servicos",
@@ -120,6 +134,8 @@ export const categoryThemes: Record<string, CategoryTheme> = {
     forYouSubtitle: "Baseado nas suas necessidades",
     accentColor: "text-blue-600",
     bgGradient: "from-blue-50 to-transparent dark:from-blue-950/20",
+    iconBg: "bg-blue-100 dark:bg-blue-900/30",
+    iconColor: "text-blue-600",
   },
 };
 

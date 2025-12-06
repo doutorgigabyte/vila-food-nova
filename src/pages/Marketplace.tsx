@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useEstablishments } from "@/hooks/useEstablishment";
+import { useState, useMemo } from "react";
+import { useEstablishmentsByCategory } from "@/hooks/useEstablishmentsByCategory";
 import MarketplaceHeader from "@/components/marketplace/MarketplaceHeader";
 import MainCategoriesGrid from "@/components/marketplace/MainCategoriesGrid";
 import PlatformBannerSlider from "@/components/marketplace/PlatformBannerSlider";
@@ -19,34 +19,25 @@ import BestStoresSection from "@/components/marketplace/BestStoresSection";
 import NewPartnersSection from "@/components/marketplace/NewPartnersSection";
 import JustForYouCarousel from "@/components/marketplace/JustForYouCarousel";
 import Footer from "@/components/landing/Footer";
-import { segmentToCategoryMap } from "@/components/marketplace/MainCategoriesGrid";
 
 const Marketplace = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedMainCategory, setSelectedMainCategory] = useState<string | null>(null);
   const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null);
-  const { establishments, loading } = useEstablishments();
+  
+  // Use the category-filtered hook for establishments
+  const { establishments, loading } = useEstablishmentsByCategory(
+    selectedMainCategory, 
+    selectedSubcategory
+  );
 
-  // Filtra estabelecimentos por categoria principal e subcategoria
-  const filteredEstablishments = establishments.filter((est) => {
-    // Filtro por termo de busca
-    const matchesSearch = est.name.toLowerCase().includes(searchTerm.toLowerCase());
-    if (!matchesSearch) return false;
-
-    // Se nenhuma categoria principal selecionada, mostra todos
-    if (!selectedMainCategory) return true;
-
-    // Filtra por subcategoria específica (segment_id)
-    if (selectedSubcategory) {
-      return est.segment_id === selectedSubcategory;
-    }
-
-    // Filtra por categoria principal (mapeia o segment para a categoria)
-    // Aqui precisamos verificar se o segment do estabelecimento pertence à categoria principal
-    // Por enquanto, vamos mostrar todos quando uma categoria principal é selecionada
-    // A lógica completa requer acesso ao nome do segmento
-    return true;
-  });
+  // Filter by search term
+  const filteredEstablishments = useMemo(() => {
+    if (!searchTerm) return establishments;
+    return establishments.filter((est) =>
+      est.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [establishments, searchTerm]);
 
   const handleMainCategorySelect = (categoryId: string | null) => {
     setSelectedMainCategory(categoryId);
@@ -92,37 +83,56 @@ const Marketplace = () => {
         {/* Video Highlights - Premium Partner Section */}
         <VideoHighlightsSection />
 
-        {/* Top Offers */}
-        <TopOffersSection />
+        {/* Top Offers - filtered by category */}
+        <TopOffersSection mainCategory={selectedMainCategory} />
 
-        {/* Vilas Gastronômicas */}
-        <VilasSection />
+        {/* Vilas Gastronômicas - only show when no category selected or food category */}
+        {(!selectedMainCategory || selectedMainCategory === 'comida') && (
+          <VilasSection />
+        )}
 
-        {/* Just For You Carousel */}
-        <JustForYouCarousel />
+        {/* Just For You Carousel - filtered by category */}
+        <JustForYouCarousel mainCategory={selectedMainCategory} />
 
-        {/* Best Stores Nearby */}
-        <BestStoresSection />
+        {/* Best Stores Nearby - filtered by category */}
+        <BestStoresSection 
+          mainCategory={selectedMainCategory} 
+          subcategory={selectedSubcategory}
+        />
 
-        {/* New Partners */}
-        <NewPartnersSection />
+        {/* New Partners - filtered by category */}
+        <NewPartnersSection 
+          mainCategory={selectedMainCategory}
+          subcategory={selectedSubcategory}
+        />
 
-        {/* Highlights */}
-        <HighlightsSection />
+        {/* Highlights - filtered by category */}
+        <HighlightsSection 
+          mainCategory={selectedMainCategory}
+          subcategory={selectedSubcategory}
+        />
 
-        {/* Trending Products */}
-        <TrendingProducts />
+        {/* Trending Products - filtered by category */}
+        <TrendingProducts mainCategory={selectedMainCategory} />
 
-        {/* Best Reviewed */}
-        <BestReviewedSection />
+        {/* Best Reviewed - filtered by category */}
+        <BestReviewedSection 
+          mainCategory={selectedMainCategory}
+          subcategory={selectedSubcategory}
+        />
 
-        {/* Want to Dine In */}
-        <RestaurantsSection />
+        {/* Want to Dine In - filtered by category */}
+        <RestaurantsSection 
+          mainCategory={selectedMainCategory}
+          subcategory={selectedSubcategory}
+        />
 
-        {/* All Restaurants */}
+        {/* All Restaurants/Establishments - filtered by category */}
         <AllRestaurants 
           establishments={filteredEstablishments} 
-          loading={loading} 
+          loading={loading}
+          mainCategory={selectedMainCategory}
+          subcategory={selectedSubcategory}
         />
       </main>
 

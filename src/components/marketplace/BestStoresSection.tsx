@@ -2,17 +2,22 @@ import { ChevronLeft, ChevronRight, Award } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDragScroll } from "@/hooks/useDragScroll";
-import { useEstablishments } from "@/hooks/useEstablishment";
+import { useEstablishmentsByCategory, useCategoryTitle } from "@/hooks/useEstablishmentsByCategory";
 import { cn } from "@/lib/utils";
 import EstablishmentCard from "./EstablishmentCard";
 import { Link } from "react-router-dom";
+import { getCategoryTheme } from "@/lib/categoryThemes";
 
-const BestStoresSection = () => {
-  const { scrollRef, isDragging, handlers, scroll, wasClick } = useDragScroll();
-  const { establishments, loading } = useEstablishments();
+interface BestStoresSectionProps {
+  mainCategory?: string | null;
+  subcategory?: string | null;
+}
 
-  // Get best stores (could be filtered by rating in the future)
-  const bestStores = establishments.slice(0, 8);
+const BestStoresSection = ({ mainCategory, subcategory }: BestStoresSectionProps) => {
+  const { scrollRef, isDragging, handlers, scroll } = useDragScroll();
+  const { establishments, loading } = useEstablishmentsByCategory(mainCategory || null, subcategory, 8);
+  const titles = useCategoryTitle(mainCategory || null);
+  const theme = getCategoryTheme(mainCategory || null);
 
   if (loading) {
     return (
@@ -29,30 +34,36 @@ const BestStoresSection = () => {
     );
   }
 
-  if (bestStores.length === 0) {
+  if (establishments.length === 0) {
     return null;
   }
 
   return (
-    <section className="py-6 md:py-8 bg-muted/30">
+    <section className={cn(
+      "py-6 md:py-8",
+      mainCategory ? `bg-gradient-to-b ${theme.bgGradient}` : "bg-muted/30"
+    )}>
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between mb-4 md:mb-6">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-accent/20 rounded-lg hidden md:flex">
-              <Award className="w-5 h-5 text-accent-foreground" />
+            <div className={cn(
+              "p-2 rounded-lg hidden md:flex",
+              theme.iconBg || "bg-accent/20"
+            )}>
+              <Award className={cn("w-5 h-5", theme.iconColor || "text-accent-foreground")} />
             </div>
             <div>
               <h2 className="text-lg md:text-xl font-bold text-foreground flex items-center gap-2">
-                Melhores Lojas Próximas
-                <Award className="w-4 h-4 text-accent md:hidden" />
+                {titles.stores}
+                <Award className={cn("w-4 h-4 md:hidden", theme.iconColor || "text-accent")} />
               </h2>
               <p className="text-xs md:text-sm text-muted-foreground hidden md:block">
-                Os estabelecimentos mais bem avaliados perto de você
+                Os estabelecimentos mais bem avaliados
               </p>
             </div>
           </div>
           <Link 
-            to="/estabelecimentos" 
+            to={mainCategory ? `/categoria/${mainCategory}` : "/estabelecimentos"}
             className="text-primary text-sm font-medium hover:underline flex items-center gap-1"
           >
             Ver todos <ChevronRight className="w-4 h-4" />
@@ -82,7 +93,7 @@ const BestStoresSection = () => {
               scrollSnapType: isDragging ? 'none' : 'x proximity',
             }}
           >
-            {bestStores.map((establishment) => (
+            {establishments.map((establishment) => (
               <div 
                 key={establishment.id} 
                 className="flex-shrink-0 w-72 md:w-80"
