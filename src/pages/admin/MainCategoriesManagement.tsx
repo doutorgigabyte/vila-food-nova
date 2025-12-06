@@ -277,10 +277,10 @@ const MainCategoriesManagement = () => {
   );
 
   return (
-    <AdminLayout title="Categorias Principais" icon={Layers} breadcrumb="Categorias Principais">
+    <AdminLayout title="Áreas de Negócio" icon={Layers} breadcrumb="Tipos de Negócio > Áreas">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Categorias Principais ({categories?.length || 0})</CardTitle>
+          <CardTitle>Áreas de Negócio ({categories?.length || 0})</CardTitle>
           <Button onClick={() => { resetForm(); setIsDialogOpen(true); }}>
             <Plus className="h-4 w-4 mr-2" />
             Nova Categoria
@@ -306,7 +306,7 @@ const MainCategoriesManagement = () => {
                   <TableHead>Ícone</TableHead>
                   <TableHead>Nome</TableHead>
                   <TableHead>Slug</TableHead>
-                  <TableHead>Subcategorias</TableHead>
+                  <TableHead>Segmentos</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
@@ -327,7 +327,7 @@ const MainCategoriesManagement = () => {
                       </TableCell>
                       <TableCell>
                         <Badge variant="secondary">
-                          {subcategoryCounts?.[category.id] || 0} subcategorias
+                          {subcategoryCounts?.[category.id] || 0} segmentos
                         </Badge>
                       </TableCell>
                       <TableCell>

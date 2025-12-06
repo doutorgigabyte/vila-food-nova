@@ -24,7 +24,8 @@ import {
   Package,
   Rocket,
   Database,
-  Heart
+  Heart,
+  Tag
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import logo from "@/assets/logo.png";
@@ -56,10 +57,10 @@ const navItems: NavItem[] = [
   },
   { 
     icon: Layers, 
-    label: "Categorias",
+    label: "Tipos de Negócio",
     children: [
-      { icon: Layers, label: "Principais", href: "/admin/categorias-principais" },
-      { icon: Layers, label: "Subcategorias", href: "/admin/segmentos" },
+      { icon: Layers, label: "Áreas", href: "/admin/categorias-principais" },
+      { icon: Tag, label: "Segmentos", href: "/admin/segmentos" },
     ]
   },
   { icon: CreditCard, label: "Planos", href: "/admin/planos" },

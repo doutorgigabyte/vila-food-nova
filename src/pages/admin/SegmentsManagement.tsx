@@ -181,12 +181,12 @@ const SegmentsManagement = () => {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['admin-segments'] });
       logAction({ action: 'create', entityType: 'segment', entityId: data.id, newData: data as any });
-      toast.success('Subcategoria criada com sucesso!');
+      toast.success('Segmento criado com sucesso!');
       setIsDialogOpen(false);
       resetForm();
     },
     onError: (error) => {
-      toast.error('Erro ao criar subcategoria: ' + error.message);
+      toast.error('Erro ao criar segmento: ' + error.message);
     }
   });
 
@@ -211,12 +211,12 @@ const SegmentsManagement = () => {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['admin-segments'] });
       logAction({ action: 'update', entityType: 'segment', entityId: data.id, oldData: selectedSegment as any, newData: data as any });
-      toast.success('Subcategoria atualizada com sucesso!');
+      toast.success('Segmento atualizado com sucesso!');
       setIsDialogOpen(false);
       resetForm();
     },
     onError: (error) => {
-      toast.error('Erro ao atualizar subcategoria: ' + error.message);
+      toast.error('Erro ao atualizar segmento: ' + error.message);
     }
   });
 
@@ -234,12 +234,12 @@ const SegmentsManagement = () => {
     onSuccess: (id) => {
       queryClient.invalidateQueries({ queryKey: ['admin-segments'] });
       logAction({ action: 'delete', entityType: 'segment', entityId: id, oldData: selectedSegment as any });
-      toast.success('Subcategoria excluída com sucesso!');
+      toast.success('Segmento excluído com sucesso!');
       setIsDeleteDialogOpen(false);
       setSelectedSegment(null);
     },
     onError: (error) => {
-      toast.error('Erro ao excluir subcategoria: ' + error.message);
+      toast.error('Erro ao excluir segmento: ' + error.message);
     }
   });
 
@@ -329,13 +329,13 @@ const SegmentsManagement = () => {
   });
 
   return (
-    <AdminLayout title="Gerenciar Subcategorias" icon={Tag} breadcrumb="Subcategorias">
+    <AdminLayout title="Segmentos de Estabelecimentos" icon={Tag} breadcrumb="Tipos de Negócio > Segmentos">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Subcategorias ({segments?.length || 0})</CardTitle>
+          <CardTitle>Segmentos ({segments?.length || 0})</CardTitle>
           <Button onClick={() => { resetForm(); setIsDialogOpen(true); }}>
             <Plus className="h-4 w-4 mr-2" />
-            Nova Subcategoria
+            Novo Segmento
           </Button>
         </CardHeader>
         <CardContent>
@@ -372,7 +372,7 @@ const SegmentsManagement = () => {
                 <TableRow>
                   <TableHead>Ícone</TableHead>
                   <TableHead>Nome</TableHead>
-                  <TableHead>Categoria Principal</TableHead>
+                  <TableHead>Área</TableHead>
                   <TableHead>Estabelecimentos</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
@@ -428,7 +428,7 @@ const SegmentsManagement = () => {
                 {filteredSegments?.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                      Nenhuma subcategoria encontrada
+                      Nenhum segmento encontrado
                     </TableCell>
                   </TableRow>
                 )}
@@ -442,7 +442,7 @@ const SegmentsManagement = () => {
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{selectedSegment ? 'Editar Subcategoria' : 'Nova Subcategoria'}</DialogTitle>
+            <DialogTitle>{selectedSegment ? 'Editar Segmento' : 'Novo Segmento'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
@@ -455,7 +455,7 @@ const SegmentsManagement = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="parent_category">Categoria Principal</Label>
+              <Label htmlFor="parent_category">Área de Negócio</Label>
               <Select 
                 value={formData.parent_category_id} 
                 onValueChange={(value) => setFormData({ ...formData, parent_category_id: value })}
