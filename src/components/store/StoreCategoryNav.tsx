@@ -1,4 +1,3 @@
-import { useRef } from "react";
 import { 
   ChevronLeft, 
   ChevronRight, 
@@ -29,6 +28,7 @@ import {
   type LucideIcon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useDragScroll } from "@/hooks/useDragScroll";
 
 // Map category names to icons
 const categoryIconMap: Record<string, LucideIcon> = {
@@ -195,17 +195,12 @@ export const StoreCategoryNav = ({
   promoCount = 0,
   featuredCount = 0,
 }: StoreCategoryNavProps) => {
-  const scrollRef = useRef<HTMLDivElement>(null);
-
-  const scroll = (direction: "left" | "right") => {
-    if (scrollRef.current) {
-      const scrollAmount = 200;
-      scrollRef.current.scrollBy({
-        left: direction === "left" ? -scrollAmount : scrollAmount,
-        behavior: "smooth",
-      });
-    }
-  };
+  const { scrollRef, isDragging, handlers, scroll, wasClick } = useDragScroll({
+    direction: "horizontal",
+    momentum: true,
+    friction: 0.92,
+    sensitivity: 1,
+  });
 
   const allTabs = [
     { id: null, name: "TODAS", icon: Grid3X3, count: null },
@@ -219,27 +214,43 @@ export const StoreCategoryNav = ({
     })),
   ];
 
+  const handleTabClick = (tabId: string | null) => {
+    // Only trigger click if not dragging
+    if (wasClick()) {
+      onSelectCategory(tabId);
+    }
+  };
+
   return (
     <div className="relative mx-4 my-4">
       {/* Desktop Navigation Arrows */}
       <button
-        onClick={() => scroll("left")}
+        onClick={() => scroll("left", 200)}
         className="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 w-8 h-8 bg-card shadow-md rounded-full items-center justify-center z-10 hover:bg-muted transition-colors"
       >
         <ChevronLeft className="w-4 h-4" />
       </button>
       <button
-        onClick={() => scroll("right")}
+        onClick={() => scroll("right", 200)}
         className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 w-8 h-8 bg-card shadow-md rounded-full items-center justify-center z-10 hover:bg-muted transition-colors"
       >
         <ChevronRight className="w-4 h-4" />
       </button>
 
-      {/* Categories */}
+      {/* Categories with drag scroll */}
       <div
         ref={scrollRef}
-        className="flex gap-2 overflow-x-auto scrollbar-hide py-1 touch-pan-x"
-        style={{ scrollSnapType: "x mandatory" }}
+        {...handlers}
+        className={cn(
+          "flex gap-2 overflow-x-auto py-1 select-none",
+          isDragging ? "cursor-grabbing" : "cursor-grab"
+        )}
+        style={{ 
+          scrollSnapType: isDragging ? "none" : "x mandatory",
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none',
+          WebkitOverflowScrolling: 'touch',
+        }}
       >
         {allTabs.map((tab) => {
           const isActive = selectedCategory === tab.id;
@@ -248,10 +259,10 @@ export const StoreCategoryNav = ({
           return (
             <button
               key={tab.id || "all"}
-              onClick={() => onSelectCategory(tab.id)}
+              onClick={() => handleTabClick(tab.id)}
               className={cn(
                 "flex flex-col items-center gap-1.5 px-4 py-2.5 rounded-xl transition-all shrink-0 touch-manipulation active:scale-95",
-                "border min-w-[80px] scroll-snap-align-start",
+                "border min-w-[80px]",
                 isActive
                   ? "bg-primary text-primary-foreground border-primary shadow-lg"
                   : "bg-card hover:bg-muted border-border"

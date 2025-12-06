@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight, Percent } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -7,19 +7,26 @@ import { useProductsByMainCategory } from "@/hooks/useProducts";
 import ProductOfferCard from "./ProductOfferCard";
 import { getCategoryTheme } from "@/lib/categoryThemes";
 import { Link } from "react-router-dom";
+import { useDragScroll } from "@/hooks/useDragScroll";
 
 interface TopOffersSectionProps {
   mainCategory?: string | null;
 }
 
 const TopOffersSection = ({ mainCategory }: TopOffersSectionProps) => {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const [activeIndex, setActiveIndex] = useState(0);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
   
   const { products, loading } = useProductsByMainCategory(mainCategory || null, 30);
   const theme = getCategoryTheme(mainCategory || null);
+
+  // Use drag scroll hook for mouse + touch drag support
+  const { scrollRef, isDragging, handlers, scroll } = useDragScroll({
+    direction: "horizontal",
+    momentum: true,
+    friction: 0.92,
+    sensitivity: 1,
+  });
 
   // Filter products with promotional price
   const offersProducts = products.filter(
@@ -36,27 +43,12 @@ const TopOffersSection = ({ mainCategory }: TopOffersSectionProps) => {
       setCanScrollRight(
         container.scrollLeft < container.scrollWidth - container.clientWidth - 10
       );
-      
-      // Calculate active index for mobile snap
-      const itemWidth = 200 + 12; // Approximate card width + gap
-      const newIndex = Math.round(container.scrollLeft / itemWidth);
-      setActiveIndex(Math.min(newIndex, offersProducts.length - 1));
     };
 
     container.addEventListener('scroll', handleScroll, { passive: true });
     handleScroll();
     return () => container.removeEventListener('scroll', handleScroll);
-  }, [offersProducts.length]);
-
-  const scroll = (direction: "left" | "right") => {
-    if (scrollRef.current) {
-      const scrollAmount = 320;
-      scrollRef.current.scrollBy({
-        left: direction === "left" ? -scrollAmount : scrollAmount,
-        behavior: "smooth",
-      });
-    }
-  };
+  }, [offersProducts.length, scrollRef]);
 
   if (loading) {
     return (
@@ -114,29 +106,29 @@ const TopOffersSection = ({ mainCategory }: TopOffersSectionProps) => {
               "absolute -left-4 top-1/2 -translate-y-1/2 z-10 shadow-md transition-opacity bg-card hidden md:flex",
               canScrollLeft ? "opacity-0 group-hover:opacity-100" : "opacity-0 pointer-events-none"
             )}
-            onClick={() => scroll("left")}
+            onClick={() => scroll("left", 320)}
           >
             <ChevronLeft className="w-5 h-5" />
           </Button>
 
-          {/* iOS-style scroll with snap */}
+          {/* iOS-style scroll with drag support */}
           <div
             ref={scrollRef}
-            className="flex gap-3 md:gap-4 overflow-x-auto snap-x snap-mandatory md:snap-none pb-2 touch-pan-y overscroll-x-contain"
+            {...handlers}
+            className={cn(
+              "flex gap-3 md:gap-4 overflow-x-auto snap-x snap-mandatory pb-2 overscroll-x-contain select-none",
+              isDragging ? "cursor-grabbing" : "cursor-grab"
+            )}
             style={{
               scrollbarWidth: 'none',
               msOverflowStyle: 'none',
               WebkitOverflowScrolling: 'touch',
             }}
           >
-            {offersProducts.map((product, index) => (
+            {offersProducts.map((product) => (
               <div 
                 key={product.id} 
-                className={cn(
-                  "flex-shrink-0 snap-center transition-all duration-300 ease-out",
-                  // Only apply scale effect on mobile
-                  "md:scale-100 md:opacity-100"
-                )}
+                className="flex-shrink-0 snap-center transition-all duration-300 ease-out"
               >
                 <ProductOfferCard product={product} variant="large" />
               </div>
@@ -150,7 +142,7 @@ const TopOffersSection = ({ mainCategory }: TopOffersSectionProps) => {
               "absolute -right-4 top-1/2 -translate-y-1/2 z-10 shadow-md transition-opacity bg-card hidden md:flex",
               canScrollRight ? "opacity-0 group-hover:opacity-100" : "opacity-0 pointer-events-none"
             )}
-            onClick={() => scroll("right")}
+            onClick={() => scroll("right", 320)}
           >
             <ChevronRight className="w-5 h-5" />
           </Button>

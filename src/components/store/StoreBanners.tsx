@@ -1,4 +1,6 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
+import { useDragScroll } from "@/hooks/useDragScroll";
+import { cn } from "@/lib/utils";
 
 interface Banner {
   id: string;
@@ -13,8 +15,14 @@ interface StoreBannersProps {
 }
 
 export const StoreBanners = ({ banners, primaryColor }: StoreBannersProps) => {
-  const scrollRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
+  
+  const { scrollRef, isDragging, handlers, wasClick } = useDragScroll({
+    direction: "horizontal",
+    momentum: true,
+    friction: 0.92,
+    sensitivity: 1,
+  });
 
   // Track scroll position
   useEffect(() => {
@@ -30,7 +38,7 @@ export const StoreBanners = ({ banners, primaryColor }: StoreBannersProps) => {
 
     container.addEventListener('scroll', handleScroll, { passive: true });
     return () => container.removeEventListener('scroll', handleScroll);
-  }, [banners.length]);
+  }, [banners.length, scrollRef]);
 
   // Auto-scroll
   useEffect(() => {
@@ -48,7 +56,7 @@ export const StoreBanners = ({ banners, primaryColor }: StoreBannersProps) => {
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [banners.length, activeIndex]);
+  }, [banners.length, activeIndex, scrollRef]);
 
   const scrollToIndex = (index: number) => {
     const container = scrollRef.current;
@@ -97,10 +105,14 @@ export const StoreBanners = ({ banners, primaryColor }: StoreBannersProps) => {
 
   return (
     <div className="my-4 relative">
-      {/* Native iOS-style scroll container */}
+      {/* Native iOS-style scroll container with drag support */}
       <div
         ref={scrollRef}
-        className="flex gap-3 overflow-x-auto snap-x snap-mandatory px-4"
+        {...handlers}
+        className={cn(
+          "flex gap-3 overflow-x-auto snap-x snap-mandatory px-4 select-none",
+          isDragging ? "cursor-grabbing" : "cursor-grab"
+        )}
         style={{
           scrollbarWidth: 'none',
           msOverflowStyle: 'none',
@@ -110,15 +122,21 @@ export const StoreBanners = ({ banners, primaryColor }: StoreBannersProps) => {
         {banners.map((banner, index) => (
           <div
             key={banner.id}
-            className={`
-              relative flex-shrink-0 w-[85vw] max-w-lg h-36 md:h-48
-              snap-center rounded-3xl overflow-hidden shadow-lg
-              transition-all duration-300 ease-out
-              ${activeIndex === index ? 'scale-100 opacity-100' : 'scale-[0.95] opacity-70'}
-            `}
+            className={cn(
+              "relative flex-shrink-0 w-[85vw] max-w-lg h-36 md:h-48",
+              "snap-center rounded-3xl overflow-hidden shadow-lg",
+              "transition-all duration-300 ease-out",
+              activeIndex === index ? 'scale-100 opacity-100' : 'scale-[0.95] opacity-70'
+            )}
           >
             {banner.link_url ? (
-              <a href={banner.link_url} target="_blank" rel="noopener noreferrer" className="block w-full h-full">
+              <a 
+                href={banner.link_url} 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="block w-full h-full"
+                onClick={(e) => !wasClick() && e.preventDefault()}
+              >
                 <img
                   src={banner.image_url}
                   alt={banner.title || "Banner"}
@@ -157,13 +175,12 @@ export const StoreBanners = ({ banners, primaryColor }: StoreBannersProps) => {
             <button
               key={index}
               onClick={() => scrollToIndex(index)}
-              className={`
-                h-2 rounded-full transition-all duration-300 ease-out
-                ${activeIndex === index 
+              className={cn(
+                "h-2 rounded-full transition-all duration-300 ease-out",
+                activeIndex === index 
                   ? 'w-6 bg-primary' 
                   : 'w-2 bg-muted-foreground/30 hover:bg-muted-foreground/50'
-                }
-              `}
+              )}
               aria-label={`Go to slide ${index + 1}`}
             />
           ))}

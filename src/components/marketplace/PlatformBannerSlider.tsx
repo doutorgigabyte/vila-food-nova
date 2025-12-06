@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
+import { useDragScroll } from "@/hooks/useDragScroll";
 
 interface PlatformBanner {
   id: string;
@@ -55,8 +56,14 @@ interface PlatformBannerSliderProps {
 }
 
 const PlatformBannerSlider = ({ banners = defaultBanners }: PlatformBannerSliderProps) => {
-  const scrollRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
+
+  const { scrollRef, isDragging, handlers } = useDragScroll({
+    direction: "horizontal",
+    momentum: true,
+    friction: 0.92,
+    sensitivity: 1,
+  });
 
   // Track scroll position for iOS-style snap
   useEffect(() => {
@@ -72,7 +79,7 @@ const PlatformBannerSlider = ({ banners = defaultBanners }: PlatformBannerSlider
 
     container.addEventListener('scroll', handleScroll, { passive: true });
     return () => container.removeEventListener('scroll', handleScroll);
-  }, [banners.length]);
+  }, [banners.length, scrollRef]);
 
   // Auto-scroll
   useEffect(() => {
@@ -90,7 +97,7 @@ const PlatformBannerSlider = ({ banners = defaultBanners }: PlatformBannerSlider
     }, 4000);
 
     return () => clearInterval(interval);
-  }, [banners.length, activeIndex]);
+  }, [banners.length, activeIndex, scrollRef]);
 
   const scrollToIndex = (index: number) => {
     const container = scrollRef.current;
@@ -104,10 +111,14 @@ const PlatformBannerSlider = ({ banners = defaultBanners }: PlatformBannerSlider
 
   return (
     <section className="py-3">
-      {/* iOS-style horizontal scroll with snap */}
+      {/* iOS-style horizontal scroll with snap and drag support */}
       <div
         ref={scrollRef}
-        className="flex gap-3 overflow-x-auto snap-x snap-mandatory px-4"
+        {...handlers}
+        className={cn(
+          "flex gap-3 overflow-x-auto snap-x snap-mandatory px-4 select-none",
+          isDragging ? "cursor-grabbing" : "cursor-grab"
+        )}
         style={{
           scrollbarWidth: 'none',
           msOverflowStyle: 'none',
