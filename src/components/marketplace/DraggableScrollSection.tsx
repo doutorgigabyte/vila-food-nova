@@ -1,8 +1,7 @@
-import { ReactNode } from "react";
+import { ReactNode, useRef, useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useDragScroll } from "@/hooks/useDragScroll";
 
 interface DraggableScrollSectionProps {
   title: string;
@@ -27,7 +26,36 @@ const DraggableScrollSection = ({
   viewAllText = "Ver todos",
   onViewAllClick,
 }: DraggableScrollSectionProps) => {
-  const { scrollRef, isDragging, handlers, scroll } = useDragScroll();
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
+
+  // Update scroll button visibility
+  useEffect(() => {
+    const container = scrollRef.current;
+    if (!container) return;
+
+    const checkScroll = () => {
+      setCanScrollLeft(container.scrollLeft > 0);
+      setCanScrollRight(
+        container.scrollLeft < container.scrollWidth - container.clientWidth - 10
+      );
+    };
+
+    checkScroll();
+    container.addEventListener('scroll', checkScroll, { passive: true });
+    return () => container.removeEventListener('scroll', checkScroll);
+  }, [children]);
+
+  const scroll = (direction: "left" | "right") => {
+    if (scrollRef.current) {
+      const scrollAmount = 320;
+      scrollRef.current.scrollBy({
+        left: direction === "left" ? -scrollAmount : scrollAmount,
+        behavior: "smooth",
+      });
+    }
+  };
 
   return (
     <section className={cn("py-6 md:py-8", className)}>
@@ -70,30 +98,29 @@ const DraggableScrollSection = ({
           )}
         </div>
 
-        {/* Content with drag scroll */}
+        {/* iOS-style horizontal scroll with snap */}
         <div className="relative group">
           {/* Left scroll button - hidden on mobile */}
           <Button
             variant="outline"
             size="icon"
-            className="absolute -left-4 top-1/2 -translate-y-1/2 z-10 shadow-md opacity-0 group-hover:opacity-100 transition-opacity bg-card hidden md:flex"
+            className={cn(
+              "absolute -left-4 top-1/2 -translate-y-1/2 z-10 shadow-md transition-opacity bg-card hidden md:flex",
+              canScrollLeft ? "opacity-0 group-hover:opacity-100" : "opacity-0 pointer-events-none"
+            )}
             onClick={() => scroll("left")}
           >
             <ChevronLeft className="w-5 h-5" />
           </Button>
 
-          {/* Scrollable container with drag */}
+          {/* Scrollable container with native snap */}
           <div
             ref={scrollRef}
-            {...handlers}
-            className={cn(
-              "flex gap-3 md:gap-4 overflow-x-auto scrollbar-hide pb-2 select-none",
-              "touch-pan-y will-change-scroll overscroll-x-contain",
-              isDragging ? "cursor-grabbing" : "cursor-grab"
-            )}
+            className="flex gap-3 md:gap-4 overflow-x-auto snap-x snap-mandatory md:snap-none pb-2 touch-pan-y overscroll-x-contain"
             style={{
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none',
               WebkitOverflowScrolling: 'touch',
-              scrollSnapType: isDragging ? 'none' : 'x proximity',
             }}
           >
             {children}
@@ -103,7 +130,10 @@ const DraggableScrollSection = ({
           <Button
             variant="outline"
             size="icon"
-            className="absolute -right-4 top-1/2 -translate-y-1/2 z-10 shadow-md opacity-0 group-hover:opacity-100 transition-opacity bg-card hidden md:flex"
+            className={cn(
+              "absolute -right-4 top-1/2 -translate-y-1/2 z-10 shadow-md transition-opacity bg-card hidden md:flex",
+              canScrollRight ? "opacity-0 group-hover:opacity-100" : "opacity-0 pointer-events-none"
+            )}
             onClick={() => scroll("right")}
           >
             <ChevronRight className="w-5 h-5" />

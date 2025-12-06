@@ -1,8 +1,8 @@
+import { useRef, useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight, Percent } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useDragScroll } from "@/hooks/useDragScroll";
 import { useProductsByMainCategory } from "@/hooks/useProducts";
 import ProductOfferCard from "./ProductOfferCard";
 import { getCategoryTheme } from "@/lib/categoryThemes";
@@ -13,7 +13,11 @@ interface TopOffersSectionProps {
 }
 
 const TopOffersSection = ({ mainCategory }: TopOffersSectionProps) => {
-  const { scrollRef, isDragging, handlers, scroll } = useDragScroll();
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
+  
   const { products, loading } = useProductsByMainCategory(mainCategory || null, 30);
   const theme = getCategoryTheme(mainCategory || null);
 
@@ -22,6 +26,38 @@ const TopOffersSection = ({ mainCategory }: TopOffersSectionProps) => {
     (p) => p.promotional_price && p.promotional_price < p.price
   );
 
+  // Track scroll position for snap behavior
+  useEffect(() => {
+    const container = scrollRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      setCanScrollLeft(container.scrollLeft > 0);
+      setCanScrollRight(
+        container.scrollLeft < container.scrollWidth - container.clientWidth - 10
+      );
+      
+      // Calculate active index for mobile snap
+      const itemWidth = 200 + 12; // Approximate card width + gap
+      const newIndex = Math.round(container.scrollLeft / itemWidth);
+      setActiveIndex(Math.min(newIndex, offersProducts.length - 1));
+    };
+
+    container.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, [offersProducts.length]);
+
+  const scroll = (direction: "left" | "right") => {
+    if (scrollRef.current) {
+      const scrollAmount = 320;
+      scrollRef.current.scrollBy({
+        left: direction === "left" ? -scrollAmount : scrollAmount,
+        behavior: "smooth",
+      });
+    }
+  };
+
   if (loading) {
     return (
       <section className="py-6 md:py-8">
@@ -29,7 +65,7 @@ const TopOffersSection = ({ mainCategory }: TopOffersSectionProps) => {
           <Skeleton className="h-8 w-48 mb-4" />
           <div className="flex gap-4 overflow-hidden">
             {[1, 2, 3, 4].map((i) => (
-              <Skeleton key={i} className="flex-shrink-0 w-52 h-56 rounded-xl" />
+              <Skeleton key={i} className="flex-shrink-0 w-52 h-56 rounded-3xl" />
             ))}
           </div>
         </div>
@@ -74,27 +110,34 @@ const TopOffersSection = ({ mainCategory }: TopOffersSectionProps) => {
           <Button
             variant="outline"
             size="icon"
-            className="absolute -left-4 top-1/2 -translate-y-1/2 z-10 shadow-md opacity-0 group-hover:opacity-100 transition-opacity bg-card hidden md:flex"
+            className={cn(
+              "absolute -left-4 top-1/2 -translate-y-1/2 z-10 shadow-md transition-opacity bg-card hidden md:flex",
+              canScrollLeft ? "opacity-0 group-hover:opacity-100" : "opacity-0 pointer-events-none"
+            )}
             onClick={() => scroll("left")}
           >
             <ChevronLeft className="w-5 h-5" />
           </Button>
 
+          {/* iOS-style scroll with snap */}
           <div
             ref={scrollRef}
-            {...handlers}
-            className={cn(
-              "flex gap-3 md:gap-4 overflow-x-auto scrollbar-hide pb-2 select-none",
-              "touch-pan-y will-change-scroll overscroll-x-contain",
-              isDragging ? "cursor-grabbing" : "cursor-grab"
-            )}
+            className="flex gap-3 md:gap-4 overflow-x-auto snap-x snap-mandatory md:snap-none pb-2 touch-pan-y overscroll-x-contain"
             style={{
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none',
               WebkitOverflowScrolling: 'touch',
-              scrollSnapType: isDragging ? 'none' : 'x proximity',
             }}
           >
-            {offersProducts.map((product) => (
-              <div key={product.id} className="flex-shrink-0 scroll-card">
+            {offersProducts.map((product, index) => (
+              <div 
+                key={product.id} 
+                className={cn(
+                  "flex-shrink-0 snap-center transition-all duration-300 ease-out",
+                  // Only apply scale effect on mobile
+                  "md:scale-100 md:opacity-100"
+                )}
+              >
                 <ProductOfferCard product={product} variant="large" />
               </div>
             ))}
@@ -103,7 +146,10 @@ const TopOffersSection = ({ mainCategory }: TopOffersSectionProps) => {
           <Button
             variant="outline"
             size="icon"
-            className="absolute -right-4 top-1/2 -translate-y-1/2 z-10 shadow-md opacity-0 group-hover:opacity-100 transition-opacity bg-card hidden md:flex"
+            className={cn(
+              "absolute -right-4 top-1/2 -translate-y-1/2 z-10 shadow-md transition-opacity bg-card hidden md:flex",
+              canScrollRight ? "opacity-0 group-hover:opacity-100" : "opacity-0 pointer-events-none"
+            )}
             onClick={() => scroll("right")}
           >
             <ChevronRight className="w-5 h-5" />

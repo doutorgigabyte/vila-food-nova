@@ -1,8 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useDragScroll } from "@/hooks/useDragScroll";
 
 interface Banner {
   id: string;
@@ -44,145 +42,125 @@ interface PromoBannersProps {
 }
 
 const PromoBanners = ({ banners = defaultBanners }: PromoBannersProps) => {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const intervalRef = useRef<NodeJS.Timeout>();
-  const { scrollRef, isDragging, handlers } = useDragScroll();
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
 
+  // Track scroll for iOS-style snap
   useEffect(() => {
-    intervalRef.current = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % banners.length);
-    }, 5000);
+    const container = scrollRef.current;
+    if (!container) return;
 
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
+    const handleScroll = () => {
+      const scrollLeft = container.scrollLeft;
+      const itemWidth = container.offsetWidth * 0.85 + 12;
+      const newIndex = Math.round(scrollLeft / itemWidth);
+      setActiveIndex(Math.min(newIndex, banners.length - 1));
     };
+
+    container.addEventListener('scroll', handleScroll, { passive: true });
+    return () => container.removeEventListener('scroll', handleScroll);
   }, [banners.length]);
 
-  const goToPrev = () => {
-    setCurrentIndex((prev) => (prev - 1 + banners.length) % banners.length);
-  };
+  // Auto-scroll
+  useEffect(() => {
+    if (banners.length <= 1) return;
+    const container = scrollRef.current;
+    if (!container) return;
 
-  const goToNext = () => {
-    setCurrentIndex((prev) => (prev + 1) % banners.length);
+    const interval = setInterval(() => {
+      const nextIndex = (activeIndex + 1) % banners.length;
+      const itemWidth = container.offsetWidth * 0.85 + 12;
+      container.scrollTo({
+        left: nextIndex * itemWidth,
+        behavior: 'smooth',
+      });
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [banners.length, activeIndex]);
+
+  const scrollToIndex = (index: number) => {
+    const container = scrollRef.current;
+    if (!container) return;
+    const itemWidth = container.offsetWidth * 0.85 + 12;
+    container.scrollTo({
+      left: index * itemWidth,
+      behavior: 'smooth',
+    });
   };
 
   return (
     <section className="py-4 md:py-6">
-      <div className="container mx-auto px-4">
-        <div className="relative group">
-          {/* Desktop: Show 3 banners side by side */}
-          <div className="hidden md:block">
-            <div className="flex gap-4 overflow-hidden">
-              {banners.map((banner, index) => (
-                <div
-                  key={banner.id}
-                  className="flex-shrink-0 w-[calc(33.333%-1rem)] transition-transform duration-500 ease-out"
-                  style={{
-                    transform: `translateX(-${currentIndex * 100}%)`,
-                  }}
-                >
-                  <BannerCard banner={banner} />
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Mobile: Horizontal scroll with drag */}
-          <div 
-            ref={scrollRef}
-            {...handlers}
+      {/* iOS-style horizontal scroll with snap */}
+      <div
+        ref={scrollRef}
+        className="flex gap-3 overflow-x-auto snap-x snap-mandatory px-4"
+        style={{
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none',
+          WebkitOverflowScrolling: 'touch',
+        }}
+      >
+        {banners.map((banner, index) => (
+          <div
+            key={banner.id}
             className={cn(
-              "flex gap-3 overflow-x-auto scrollbar-hide scroll-smooth snap-x snap-mandatory md:hidden select-none",
-              isDragging ? "cursor-grabbing" : "cursor-grab"
+              "relative flex-shrink-0 w-[85vw] max-w-md h-40 md:h-44 snap-center rounded-3xl overflow-hidden bg-gradient-to-r p-5 transition-all duration-300 ease-out",
+              banner.bgColor,
+              activeIndex === index ? 'scale-100 opacity-100' : 'scale-[0.95] opacity-70'
             )}
-            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
-            {banners.map((banner) => (
-              <div key={banner.id} className="flex-shrink-0 w-[85%] snap-start">
-                <BannerCard banner={banner} />
+            <div className="flex-1 text-white z-10 relative">
+              <h3 className="text-base md:text-lg font-bold mb-1 drop-shadow">{banner.title}</h3>
+              <p className="text-sm opacity-90 mb-3 drop-shadow">{banner.subtitle}</p>
+              <Button 
+                size="sm" 
+                variant="secondary"
+                className="bg-card text-foreground hover:bg-card/90 shadow-md active:scale-95 transition-transform"
+              >
+                Pedir Agora
+              </Button>
+            </div>
+            
+            {banner.image && (
+              <div className="absolute right-2 bottom-2 md:right-4 md:bottom-4 w-28 h-28 md:w-32 md:h-32">
+                <img 
+                  src={banner.image} 
+                  alt={banner.title}
+                  className="w-full h-full object-cover rounded-full shadow-xl ring-4 ring-white/20 transition-transform duration-300"
+                  draggable={false}
+                />
               </div>
-            ))}
+            )}
+            
+            {banner.discount && (
+              <div className="absolute top-3 right-3 bg-card text-primary font-bold text-base px-3 py-1 rounded-full shadow-lg">
+                {banner.discount} OFF
+              </div>
+            )}
           </div>
+        ))}
+        {/* End padding */}
+        <div className="flex-shrink-0 w-4" />
+      </div>
 
-          {/* Desktop Navigation */}
-          <Button
-            variant="outline"
-            size="icon"
-            className="absolute -left-4 top-1/2 -translate-y-1/2 z-10 shadow-md bg-card hidden md:flex opacity-0 group-hover:opacity-100 transition-opacity"
-            onClick={goToPrev}
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </Button>
-
-          <Button
-            variant="outline"
-            size="icon"
-            className="absolute -right-4 top-1/2 -translate-y-1/2 z-10 shadow-md bg-card hidden md:flex opacity-0 group-hover:opacity-100 transition-opacity"
-            onClick={goToNext}
-          >
-            <ChevronRight className="w-5 h-5" />
-          </Button>
-        </div>
-
-        {/* Dots - Desktop */}
-        <div className="hidden md:flex justify-center gap-2 mt-4">
-          {banners.map((_, index) => (
-            <button
-              key={index}
-              onClick={() => setCurrentIndex(index)}
-              className={cn(
-                "h-2 rounded-full transition-all",
-                index === currentIndex 
-                  ? "w-6 bg-primary" 
-                  : "w-2 bg-muted-foreground/30 hover:bg-muted-foreground/50"
-              )}
-            />
-          ))}
-        </div>
+      {/* iOS-style dot indicators */}
+      <div className="flex justify-center gap-2 mt-4">
+        {banners.map((_, index) => (
+          <button
+            key={index}
+            onClick={() => scrollToIndex(index)}
+            className={cn(
+              "h-2 rounded-full transition-all duration-300 ease-out",
+              activeIndex === index 
+                ? "w-6 bg-primary" 
+                : "w-2 bg-muted-foreground/30 hover:bg-muted-foreground/50"
+            )}
+            aria-label={`Go to slide ${index + 1}`}
+          />
+        ))}
       </div>
     </section>
-  );
-};
-
-const BannerCard = ({ banner }: { banner: Banner }) => {
-  return (
-    <div 
-      className={cn(
-        "relative h-40 md:h-44 rounded-2xl overflow-hidden bg-gradient-to-r p-5 flex items-center group/banner transition-transform hover:scale-[1.02]",
-        banner.bgColor
-      )}
-    >
-      <div className="flex-1 text-white z-10">
-        <h3 className="text-base md:text-lg font-bold mb-1 drop-shadow">{banner.title}</h3>
-        <p className="text-sm opacity-90 mb-3 drop-shadow">{banner.subtitle}</p>
-        <Button 
-          size="sm" 
-          variant="secondary"
-          className="bg-card text-foreground hover:bg-card/90 shadow-md"
-        >
-          Pedir Agora
-        </Button>
-      </div>
-      
-      {banner.image && (
-        <div className="absolute right-2 bottom-2 md:right-4 md:bottom-4 w-28 h-28 md:w-32 md:h-32">
-          <img 
-            src={banner.image} 
-            alt={banner.title}
-            className="w-full h-full object-cover rounded-full shadow-xl ring-4 ring-white/20 group-hover/banner:scale-110 transition-transform duration-300"
-            draggable={false}
-          />
-        </div>
-      )}
-      
-      {banner.discount && (
-        <div className="absolute top-3 right-3 bg-card text-primary font-bold text-base px-3 py-1 rounded-full shadow-lg">
-          {banner.discount} OFF
-        </div>
-      )}
-    </div>
   );
 };
 
