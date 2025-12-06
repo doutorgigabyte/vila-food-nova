@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Upload, X, Loader2, Image as ImageIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { uploadToS3, validateFile, UploadType } from "@/lib/s3";
+import { uploadToS3, deleteFromS3, validateFile, UploadType } from "@/lib/s3";
 
 interface ImageUploadProps {
   bucket: UploadType;
@@ -25,6 +25,7 @@ export const ImageUpload = ({
   establishmentId,
 }: ImageUploadProps) => {
   const [uploading, setUploading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [preview, setPreview] = useState<string | null>(currentImage || null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -59,11 +60,21 @@ export const ImageUpload = ({
       const objectUrl = URL.createObjectURL(file);
       setPreview(objectUrl);
 
+      // Delete old image from S3 if exists and is a CloudFront/S3 URL
+      if (currentImage && (currentImage.includes('cloudfront.net') || currentImage.includes('s3.amazonaws.com'))) {
+        try {
+          await deleteFromS3(currentImage, establishmentId);
+          console.log('Old image deleted from S3');
+        } catch (deleteError) {
+          console.warn('Failed to delete old image, continuing with upload:', deleteError);
+        }
+      }
+
       // Upload to S3
       const result = await uploadToS3(file, bucket, establishmentId);
 
       onUpload(result.url);
-      toast.success("Imagem enviada com sucesso!");
+      toast.success("Imagem enviada para S3 com sucesso!");
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
       console.error("Upload error:", errorMessage);
@@ -77,7 +88,21 @@ export const ImageUpload = ({
     }
   };
 
-  const handleRemove = () => {
+  const handleRemove = async () => {
+    // Delete from S3 if it's a CloudFront/S3 URL
+    if (currentImage && (currentImage.includes('cloudfront.net') || currentImage.includes('s3.amazonaws.com'))) {
+      setDeleting(true);
+      try {
+        await deleteFromS3(currentImage, establishmentId);
+        toast.success("Imagem removida do S3");
+      } catch (error) {
+        console.warn('Failed to delete from S3:', error);
+        // Continue with removal even if S3 delete fails
+      } finally {
+        setDeleting(false);
+      }
+    }
+    
     setPreview(null);
     onRemove?.();
   };
@@ -103,7 +128,7 @@ export const ImageUpload = ({
             alt="Preview"
             className="w-full h-full object-cover"
           />
-          {!uploading && (
+          {!uploading && !deleting && (
             <div className="absolute inset-0 bg-black/50 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
               <Button
                 type="button"
@@ -126,9 +151,12 @@ export const ImageUpload = ({
               )}
             </div>
           )}
-          {uploading && (
-            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+          {(uploading || deleting) && (
+            <div className="absolute inset-0 bg-black/50 flex items-center justify-center flex-col gap-2">
               <Loader2 className="w-8 h-8 text-white animate-spin" />
+              <span className="text-white text-sm">
+                {deleting ? 'Removendo...' : 'Enviando...'}
+              </span>
             </div>
           )}
         </div>
