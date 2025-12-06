@@ -15,6 +15,53 @@ interface Suggestion {
   target_name?: string;
 }
 
+// ==================== Gemini Text API Call ====================
+async function callGeminiForAnalysis(establishmentName: string, description: string | null, productNames: string[]): Promise<string[]> {
+  const GOOGLE_API_KEY = Deno.env.get("GOOGLE_API_KEY");
+  
+  if (!GOOGLE_API_KEY) {
+    console.log("[analyze-establishment] No GOOGLE_API_KEY, skipping AI analysis");
+    return [];
+  }
+
+  const systemPrompt = `Você é um consultor de marketing para restaurantes. Analise o estabelecimento e sugira melhorias.`;
+  
+  const userPrompt = `Estabelecimento: ${establishmentName}
+Descrição atual: ${description || "Sem descrição"}
+Produtos: ${productNames.slice(0, 20).join(", ")}
+
+Sugira 3 melhorias práticas para aumentar vendas (máx 60 caracteres cada). Retorne JSON:
+{"suggestions": ["sugestão 1", "sugestão 2", "sugestão 3"]}`;
+
+  try {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GOOGLE_API_KEY}`;
+    
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ role: "user", parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }] }],
+        generationConfig: { temperature: 0.7, maxOutputTokens: 300 }
+      }),
+    });
+
+    if (!response.ok) {
+      console.log("[analyze-establishment] Gemini failed:", response.status);
+      return [];
+    }
+
+    const data = await response.json();
+    const content = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    
+    const cleanContent = content.replace(/```json\n?|\n?```/g, "").trim();
+    const parsed = JSON.parse(cleanContent);
+    return parsed.suggestions || [];
+  } catch (error) {
+    console.error("[analyze-establishment] AI analysis failed:", error);
+    return [];
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -35,6 +82,7 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
+    // Fetch establishment
     const { data: establishment, error: estError } = await supabase
       .from('establishments')
       .select('*')
@@ -45,46 +93,69 @@ serve(async (req) => {
       throw new Error("Establishment not found");
     }
 
+    // Fetch products
     const { data: products } = await supabase
       .from('products')
       .select('id, name, description, image_url, price')
       .eq('establishment_id', establishmentId)
       .eq('is_active', true);
 
-    console.log(`Analyzing establishment: ${establishment.name}`);
+    console.log(`[analyze-establishment] Analyzing: ${establishment.name} (${products?.length || 0} products)`);
 
     const suggestions: Suggestion[] = [];
-    let descriptionScore = 50;
-    let photosScore = 0;
-    let bannerScore = 0;
+    
+    // ==================== Score Calculation ====================
+    
+    // Logo Score
     let logoScore = 0;
-
     if (!establishment.logo_url) {
-      logoScore = 0;
       suggestions.push({
         type: 'logo', priority: 'high',
-        message: 'Seu estabelecimento não tem logo.',
+        message: 'Seu estabelecimento não tem logo. Uma logo profissional aumenta a confiança.',
         action: 'generate_logo', target_id: establishment.id, target_name: establishment.name
       });
-    } else { logoScore = 80; }
+    } else {
+      logoScore = 80;
+    }
 
+    // Banner Score
+    let bannerScore = 0;
     if (!establishment.banner_url) {
-      bannerScore = 0;
       suggestions.push({
         type: 'banner', priority: 'high',
-        message: 'Seu estabelecimento não tem banner.',
+        message: 'Adicione um banner atrativo para destacar seu estabelecimento.',
         action: 'generate_banner', target_id: establishment.id, target_name: establishment.name
       });
-    } else { bannerScore = 80; }
+    } else {
+      bannerScore = 80;
+    }
 
+    // Description Score
+    let descriptionScore = 30;
+    if (establishment.description) {
+      const descLength = establishment.description.length;
+      if (descLength > 100) descriptionScore = 80;
+      else if (descLength > 50) descriptionScore = 60;
+      else descriptionScore = 40;
+    } else {
+      suggestions.push({
+        type: 'description', priority: 'medium',
+        message: 'Adicione uma descrição atraente do seu estabelecimento.',
+        action: 'improve_description', target_id: establishment.id, target_name: establishment.name
+      });
+    }
+
+    // Photos Score
+    let photosScore = 0;
     let productsWithoutPhoto = 0;
+    
     for (const product of products || []) {
       if (!product.image_url) {
         productsWithoutPhoto++;
         if (productsWithoutPhoto <= 5) {
           suggestions.push({
             type: 'photo', priority: 'high',
-            message: `O produto "${product.name}" não tem foto.`,
+            message: `"${product.name}" precisa de uma foto profissional.`,
             action: 'generate_photo', target_id: product.id, target_name: product.name
           });
         }
@@ -94,8 +165,35 @@ serve(async (req) => {
     const totalProducts = products?.length || 1;
     photosScore = Math.round(((totalProducts - productsWithoutPhoto) / totalProducts) * 100);
 
-    const overallScore = Math.round((descriptionScore * 0.25) + (photosScore * 0.35) + (bannerScore * 0.20) + (logoScore * 0.20));
+    if (productsWithoutPhoto > 5) {
+      suggestions.push({
+        type: 'photo', priority: 'high',
+        message: `Mais ${productsWithoutPhoto - 5} produtos sem foto. Gere imagens para todos!`,
+        action: 'generate_all_photos', target_id: establishment.id, target_name: establishment.name
+      });
+    }
 
+    // ==================== AI-Powered Suggestions ====================
+    const productNames = (products || []).map(p => p.name);
+    const aiSuggestions = await callGeminiForAnalysis(establishment.name, establishment.description, productNames);
+    
+    for (const suggestion of aiSuggestions) {
+      suggestions.push({
+        type: 'general',
+        priority: 'medium',
+        message: suggestion
+      });
+    }
+
+    // ==================== Overall Score ====================
+    const overallScore = Math.round(
+      (descriptionScore * 0.20) + 
+      (photosScore * 0.40) + 
+      (bannerScore * 0.20) + 
+      (logoScore * 0.20)
+    );
+
+    // Save analysis
     await supabase.from('ai_profile_analyses').insert({
       establishment_id: establishmentId,
       overall_score: overallScore,
@@ -107,14 +205,26 @@ serve(async (req) => {
       suggestions: suggestions
     });
 
+    console.log(`[analyze-establishment] Score: ${overallScore}% | ${suggestions.length} suggestions`);
+
     return new Response(
-      JSON.stringify({ overall_score: overallScore, description_score: descriptionScore, photos_score: photosScore, banner_score: bannerScore, logo_score: logoScore, products_analyzed: totalProducts, suggestions: suggestions.slice(0, 15) }),
+      JSON.stringify({ 
+        overall_score: overallScore, 
+        description_score: descriptionScore, 
+        photos_score: photosScore, 
+        banner_score: bannerScore, 
+        logo_score: logoScore, 
+        products_analyzed: totalProducts, 
+        products_without_photo: productsWithoutPhoto,
+        suggestions: suggestions.slice(0, 15),
+        ai_powered: aiSuggestions.length > 0
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
 
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    console.error("Analysis error:", error);
+    console.error("[analyze-establishment] Error:", error);
     return new Response(
       JSON.stringify({ error: errorMessage }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }

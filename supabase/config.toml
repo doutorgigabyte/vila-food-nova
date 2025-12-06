@@ -68,3 +68,6 @@ verify_jwt = false
 
 [functions.apply-ai-improvements]
 verify_jwt = false
+
+[functions.ai-health-check]
+verify_jwt = false

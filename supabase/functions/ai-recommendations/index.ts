@@ -20,6 +20,75 @@ interface RecommendationRequest {
   limit?: number;
 }
 
+// ==================== Gemini Text API Call ====================
+async function callGeminiText(systemPrompt: string, userPrompt: string): Promise<string> {
+  const GOOGLE_API_KEY = Deno.env.get("GOOGLE_API_KEY");
+  
+  if (!GOOGLE_API_KEY) {
+    throw new Error("GOOGLE_API_KEY not configured");
+  }
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GOOGLE_API_KEY}`;
+  
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      contents: [{ role: "user", parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }] }],
+      generationConfig: { temperature: 0.7, maxOutputTokens: 500 }
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error("[ai-recommendations] Gemini error:", response.status, errorText);
+    
+    if (response.status === 429) {
+      throw new Error("RATE_LIMIT");
+    }
+    throw new Error(`Gemini API error: ${response.status}`);
+  }
+
+  const data = await response.json();
+  return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+}
+
+// ==================== Fallback: Lovable AI Gateway ====================
+async function callLovableText(systemPrompt: string, userPrompt: string): Promise<string> {
+  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+  
+  if (!LOVABLE_API_KEY) {
+    throw new Error("LOVABLE_API_KEY not configured");
+  }
+
+  console.log("[ai-recommendations] Using Lovable AI Gateway fallback...");
+
+  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "google/gemini-2.5-flash",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt }
+      ]
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    if (response.status === 429) throw new Error("RATE_LIMIT");
+    if (response.status === 402) throw new Error("PAYMENT_REQUIRED");
+    throw new Error(`Lovable AI error: ${response.status} - ${errorText}`);
+  }
+
+  const data = await response.json();
+  return data.choices?.[0]?.message?.content || "";
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -28,7 +97,7 @@ serve(async (req) => {
   try {
     const { establishment_id, cart_items, limit = 3 }: RecommendationRequest = await req.json();
     
-    // Input validation to prevent abuse
+    // Validation
     if (!establishment_id || typeof establishment_id !== 'string') {
       return new Response(
         JSON.stringify({ error: "establishment_id inválido" }),
@@ -43,7 +112,6 @@ serve(async (req) => {
       );
     }
     
-    // Limit cart items to prevent large payload abuse
     if (cart_items.length > 50) {
       return new Response(
         JSON.stringify({ error: "Máximo de 50 itens no carrinho" }),
@@ -51,40 +119,28 @@ serve(async (req) => {
       );
     }
     
-    const GOOGLE_API_KEY = Deno.env.get("GOOGLE_API_KEY");
-    if (!GOOGLE_API_KEY) {
-      throw new Error("GOOGLE_API_KEY is not configured");
-    }
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    // Fetch all active products from the establishment
+    // Fetch products
     const { data: allProducts, error: productsError } = await supabase
       .from("products")
-      .select(`
-        id,
-        name,
-        description,
-        price,
-        promotional_price,
-        image_url,
-        category_id,
-        categories (name)
-      `)
+      .select(`id, name, description, price, promotional_price, image_url, category_id, categories (name)`)
       .eq("establishment_id", establishment_id)
       .eq("is_active", true);
 
     if (productsError) throw productsError;
-    if (!allProducts || allProducts.length === 0) {
+    
+    if (!allProducts?.length) {
       return new Response(
         JSON.stringify({ recommendations: [], message: "Nenhum produto disponível" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Get cart item IDs to exclude from recommendations
+    // Filter out cart items
     const cartItemIds = cart_items.map(item => item.id);
     const availableProducts = allProducts.filter(p => !cartItemIds.includes(p.id));
 
@@ -95,130 +151,116 @@ serve(async (req) => {
       );
     }
 
-    // Build context for AI
+    // Build AI context
     const cartSummary = cart_items.map(item => 
       `${item.quantity}x ${item.name} (${item.category || 'sem categoria'}) - R$ ${(item.price * item.quantity).toFixed(2)}`
     ).join("\n");
 
-    const productsList = availableProducts.map(p => ({
+    const productsList = availableProducts.slice(0, 30).map(p => ({
       id: p.id,
       name: p.name,
-      description: p.description,
+      description: p.description?.substring(0, 100),
       price: p.promotional_price || p.price,
       category: (p.categories as any)?.name || "Sem categoria"
     }));
 
-    const systemPrompt = `Você é um assistente de vendas inteligente para um restaurante/delivery. Sua função é recomendar produtos complementares baseados no carrinho do cliente.
+    const systemPrompt = `Você é um assistente de vendas inteligente para um delivery. Recomende produtos complementares.
 
-REGRAS IMPORTANTES:
-1. Recomende produtos que COMPLEMENTEM o que o cliente já está comprando
-2. Para lanches/hambúrgueres: sugira batatas fritas, bebidas, sobremesas
-3. Para pizzas: sugira bebidas, bordas recheadas, sobremesas
-4. Para bebidas: sugira petiscos, porções
-5. Considere a quantidade no carrinho: se tem 2 hambúrgueres, sugira bebida para 2 pessoas
-6. Seja breve e persuasivo nas justificativas (máximo 50 caracteres)
-7. Priorize promoções quando disponíveis
-8. Retorne APENAS JSON válido, sem markdown`;
+REGRAS:
+1. Recomende produtos que COMPLEMENTEM o carrinho
+2. Lanches → sugira bebidas, batatas, sobremesas
+3. Pizzas → sugira bebidas, bordas, sobremesas
+4. Considere quantidade: 2 hambúrgueres = sugerir para 2 pessoas
+5. Priorize promoções
+6. Justificativas curtas (máx 40 caracteres)
+7. Retorne APENAS JSON válido`;
 
-    const userPrompt = `CARRINHO ATUAL DO CLIENTE:
+    const userPrompt = `CARRINHO:
 ${cartSummary}
 
-PRODUTOS DISPONÍVEIS PARA RECOMENDAR:
-${JSON.stringify(productsList, null, 2)}
+PRODUTOS DISPONÍVEIS:
+${JSON.stringify(productsList)}
 
-Retorne um JSON com até ${limit} recomendações no formato:
-{
-  "recommendations": [
-    {
-      "product_id": "id_do_produto",
-      "reason": "Breve justificativa da recomendação"
-    }
-  ]
-}`;
+Retorne até ${limit} recomendações:
+{"recommendations": [{"product_id": "id", "reason": "justificativa curta"}]}`;
 
-    // Call Google Gemini API directly
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GOOGLE_API_KEY}`;
+    // Try Gemini first, then fallback
+    let content = "";
+    let engine = "gemini";
     
-    const response = await fetch(geminiUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        contents: [
-          {
-            role: "user",
-            parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }]
-          }
-        ],
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 500,
-        }
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Gemini API error:", response.status, errorText);
-      if (response.status === 429) {
+    try {
+      content = await callGeminiText(systemPrompt, userPrompt);
+    } catch (geminiError) {
+      console.log("[ai-recommendations] Gemini failed, trying fallback:", geminiError);
+      
+      if (geminiError instanceof Error && geminiError.message === "RATE_LIMIT") {
         return new Response(
-          JSON.stringify({ error: "Muitas requisições, tente novamente em alguns segundos" }),
+          JSON.stringify({ error: "Muitas requisições, tente novamente" }),
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      throw new Error(`Gemini API error: ${response.status}`);
+      
+      try {
+        content = await callLovableText(systemPrompt, userPrompt);
+        engine = "lovable";
+      } catch (lovableError) {
+        // Ultimate fallback: random products
+        console.log("[ai-recommendations] All AI failed, using random fallback");
+        const randomRecs = availableProducts.slice(0, limit).map(p => ({
+          product: {
+            id: p.id, name: p.name, description: p.description,
+            price: p.price, promotional_price: p.promotional_price,
+            image_url: p.image_url, category: (p.categories as any)?.name
+          },
+          reason: "Combina com seu pedido!"
+        }));
+        
+        return new Response(
+          JSON.stringify({ recommendations: randomRecs, ai_powered: false, engine: "fallback" }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
     }
-
-    const aiResponse = await response.json();
-    const content = aiResponse.candidates?.[0]?.content?.parts?.[0]?.text || "";
 
     // Parse AI response
     let aiRecommendations: { product_id: string; reason: string }[] = [];
     try {
-      // Clean up potential markdown formatting
       const cleanContent = content.replace(/```json\n?|\n?```/g, "").trim();
       const parsed = JSON.parse(cleanContent);
       aiRecommendations = parsed.recommendations || [];
-    } catch (parseError) {
-      console.error("Failed to parse AI response:", content);
-      // Fallback: return random products
+    } catch {
+      console.error("[ai-recommendations] Parse failed:", content.substring(0, 200));
       aiRecommendations = availableProducts.slice(0, limit).map(p => ({
         product_id: p.id,
         reason: "Combina com seu pedido!"
       }));
     }
 
-    // Enrich recommendations with full product data
+    // Enrich with product data
     const recommendations = aiRecommendations
       .map(rec => {
         const product = availableProducts.find(p => p.id === rec.product_id);
         if (!product) return null;
         return {
           product: {
-            id: product.id,
-            name: product.name,
-            description: product.description,
-            price: product.price,
-            promotional_price: product.promotional_price,
-            image_url: product.image_url,
-            category: (product.categories as any)?.name
+            id: product.id, name: product.name, description: product.description,
+            price: product.price, promotional_price: product.promotional_price,
+            image_url: product.image_url, category: (product.categories as any)?.name
           },
           reason: rec.reason
         };
       })
       .filter(Boolean);
 
+    console.log(`[ai-recommendations] Generated ${recommendations.length} recommendations (engine: ${engine})`);
+
     return new Response(
-      JSON.stringify({ 
-        recommendations,
-        ai_powered: true
-      }),
+      JSON.stringify({ recommendations, ai_powered: true, engine }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
 
   } catch (error) {
-    console.error("Error in ai-recommendations:", error);
+    console.error("[ai-recommendations] Error:", error);
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : "Erro ao gerar recomendações" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
