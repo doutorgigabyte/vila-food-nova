@@ -137,7 +137,7 @@ Retorne um JSON com até ${limit} recomendações no formato:
 }`;
 
     // Call Google Gemini API directly
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GOOGLE_API_KEY}`;
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GOOGLE_API_KEY}`;
     
     const response = await fetch(geminiUrl, {
       method: "POST",
