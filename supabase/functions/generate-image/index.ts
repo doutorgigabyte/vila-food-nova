@@ -188,9 +188,9 @@ serve(async (req) => {
   try {
     const { type, id, name, establishmentId } = await req.json();
     
-    const GOOGLE_API_KEY = Deno.env.get('GOOGLE_API_KEY');
-    if (!GOOGLE_API_KEY) {
-      throw new Error('GOOGLE_API_KEY not configured');
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    if (!LOVABLE_API_KEY) {
+      throw new Error('LOVABLE_API_KEY not configured');
     }
 
     // Generate prompt based on type with enhanced prompts
@@ -232,32 +232,28 @@ Do not include any text in the image.`;
     console.log(`Generating image for ${type}: ${name}`);
     console.log(`Prompt: ${prompt}`);
 
-    // Call Google Imagen 3.0 API for stable image generation
-    const model = 'imagen-3.0-generate-001';
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GOOGLE_API_KEY}`;
-    
-    const aiResponse = await fetch(geminiUrl, {
+    // Use Lovable AI Gateway with gemini-2.5-flash-image-preview model
+    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        contents: [
+        model: 'google/gemini-2.5-flash-image-preview',
+        messages: [
           {
-            parts: [
-              { text: prompt }
-            ]
+            role: 'user',
+            content: prompt
           }
         ],
-        generationConfig: {
-          candidateCount: 1
-        }
+        modalities: ['image', 'text']
       }),
     });
 
     if (!aiResponse.ok) {
       const errorText = await aiResponse.text();
-      console.error('Gemini API error:', aiResponse.status, errorText);
+      console.error('Lovable AI Gateway error:', aiResponse.status, errorText);
       
       if (aiResponse.status === 429) {
         return new Response(JSON.stringify({ 
@@ -269,31 +265,36 @@ Do not include any text in the image.`;
         });
       }
       
-      throw new Error(`Gemini API error: ${aiResponse.status} - ${errorText}`);
+      if (aiResponse.status === 402) {
+        return new Response(JSON.stringify({ 
+          error: 'Payment required. Please add funds to your Lovable AI workspace.',
+        }), {
+          status: 402,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      
+      throw new Error(`Lovable AI Gateway error: ${aiResponse.status} - ${errorText}`);
     }
 
     const aiData = await aiResponse.json();
-    console.log('Gemini API Response received, extracting image...');
+    console.log('Lovable AI Response received, extracting image...');
 
-    // Extract image from Gemini response
-    // Format: { candidates: [{ content: { parts: [{ inlineData: { mimeType: "image/png", data: "base64..." } }] } }] }
+    // Extract image from Lovable AI Gateway response
+    // Format: { choices: [{ message: { images: [{ image_url: { url: "data:image/png;base64,..." } }] } }] }
     let imageBase64: string | undefined;
     
-    const candidates = aiData.candidates;
-    if (candidates && candidates.length > 0) {
-      const parts = candidates[0]?.content?.parts;
-      if (parts) {
-        for (const part of parts) {
-          if (part.inlineData && part.inlineData.data) {
-            imageBase64 = part.inlineData.data;
-            break;
-          }
-        }
+    const aiImageUrl = aiData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+    if (aiImageUrl && aiImageUrl.startsWith('data:image')) {
+      // Extract base64 from data URL: "data:image/png;base64,..."
+      const base64Match = aiImageUrl.match(/^data:image\/[^;]+;base64,(.+)$/);
+      if (base64Match && base64Match[1]) {
+        imageBase64 = base64Match[1];
       }
     }
     
     if (imageBase64) {
-      console.log('Found image in Gemini response, base64 length:', imageBase64.length);
+      console.log('Found image in Lovable AI response, base64 length:', imageBase64.length);
     }
 
     if (!imageBase64) {
@@ -316,7 +317,7 @@ Do not include any text in the image.`;
 
     // Upload directly to S3
     const uploadType = type === 'category' ? 'categories' : type === 'product' ? 'products' : 'establishments';
-    const imageUrl = await uploadToS3(bytes, `${id}.png`, 'image/png', uploadType, establishmentId || id);
+    const s3ImageUrl = await uploadToS3(bytes, `${id}.png`, 'image/png', uploadType, establishmentId || id);
 
     // Update database record if we have an ID
     if (id) {
@@ -327,25 +328,25 @@ Do not include any text in the image.`;
       if (type === 'product') {
         const { error } = await supabase
           .from('products')
-          .update({ image_url: imageUrl })
+          .update({ image_url: s3ImageUrl })
           .eq('id', id);
         if (error) throw error;
       } else if (type === 'category') {
         const { error } = await supabase
           .from('categories')
-          .update({ image_url: imageUrl })
+          .update({ image_url: s3ImageUrl })
           .eq('id', id);
         if (error) throw error;
       } else if (type === 'logo' || type === 'establishment_logo') {
         const { error } = await supabase
           .from('establishments')
-          .update({ logo_url: imageUrl })
+          .update({ logo_url: s3ImageUrl })
           .eq('id', id);
         if (error) throw error;
       } else if (type === 'banner' || type === 'establishment_banner') {
         const { error } = await supabase
           .from('establishments')
-          .update({ banner_url: imageUrl })
+          .update({ banner_url: s3ImageUrl })
           .eq('id', id);
         if (error) throw error;
       }
@@ -355,7 +356,7 @@ Do not include any text in the image.`;
 
     return new Response(JSON.stringify({ 
       success: true, 
-      imageUrl,
+      imageUrl: s3ImageUrl,
       type,
       id,
       name
