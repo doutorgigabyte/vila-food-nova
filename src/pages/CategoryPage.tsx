@@ -9,11 +9,11 @@ import CategoryProductsSection from "@/components/marketplace/CategoryProductsSe
 import MobileBottomNav from "@/components/marketplace/MobileBottomNav";
 
 const CategoryPage = () => {
-  const { categoryId } = useParams<{ categoryId: string }>();
+  const { categoryId, subcategoryId } = useParams<{ categoryId: string; subcategoryId?: string }>();
   const navigate = useNavigate();
   const [category, setCategory] = useState<CategoryConfig | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null);
+  const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(subcategoryId || null);
   const [establishments, setEstablishments] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -118,8 +118,14 @@ const CategoryPage = () => {
     return keywordMap[catId] || [];
   };
 
-  const handleSubcategoryClick = (subcategoryId: string) => {
-    setSelectedSubcategory(prev => prev === subcategoryId ? null : subcategoryId);
+  const handleSubcategoryClick = (subId: string) => {
+    if (selectedSubcategory === subId) {
+      setSelectedSubcategory(null);
+      navigate(`/categoria/${categoryId}`);
+    } else {
+      setSelectedSubcategory(subId);
+      navigate(`/categoria/${categoryId}/${subId}`);
+    }
   };
 
   if (!category) {
