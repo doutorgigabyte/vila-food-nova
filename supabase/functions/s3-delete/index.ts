@@ -6,18 +6,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Allowed file types for security
-const ALLOWED_IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
-const ALLOWED_VIDEO_EXTENSIONS = ['mp4', 'webm', 'mov'];
-const ALLOWED_EXTENSIONS = [...ALLOWED_IMAGE_EXTENSIONS, ...ALLOWED_VIDEO_EXTENSIONS];
-
-const ALLOWED_IMAGE_CONTENT_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-const ALLOWED_VIDEO_CONTENT_TYPES = ['video/mp4', 'video/webm', 'video/quicktime'];
-const ALLOWED_CONTENT_TYPES = [...ALLOWED_IMAGE_CONTENT_TYPES, ...ALLOWED_VIDEO_CONTENT_TYPES];
-
-const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
-const MAX_VIDEO_SIZE = 50 * 1024 * 1024; // 50MB
-
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -49,100 +37,77 @@ serve(async (req) => {
       );
     }
 
-    const formData = await req.formData();
-    const file = formData.get('file') as File;
-    const type = formData.get('type') as string || 'products';
-    const establishmentId = formData.get('establishmentId') as string;
+    const body = await req.json();
+    const { url, key, establishmentId } = body;
 
-    if (!file) {
-      console.error('No file provided in request');
-      return new Response(
-        JSON.stringify({ error: 'Arquivo não fornecido' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    if (!establishmentId || establishmentId === 'general') {
-      return new Response(
-        JSON.stringify({ error: 'ID do estabelecimento é obrigatório' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // SECURITY: Verify user owns the establishment
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    );
-
-    const { data: establishment, error: estError } = await supabaseAdmin
-      .from('establishments')
-      .select('owner_id')
-      .eq('id', establishmentId)
-      .single();
-
-    if (estError || !establishment) {
-      return new Response(
-        JSON.stringify({ error: 'Estabelecimento não encontrado' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    if (establishment.owner_id !== user.id) {
-      // Check if user is super_admin
-      const { data: userRole } = await supabaseAdmin
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .eq('role', 'super_admin')
-        .single();
-
-      if (!userRole) {
-        return new Response(
-          JSON.stringify({ error: 'Você não tem permissão para fazer upload neste estabelecimento' }),
-          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+    // Extract key from URL if not provided directly
+    let s3Key = key;
+    if (!s3Key && url) {
+      // Extract key from CloudFront or S3 URL
+      const cloudfrontUrl = Deno.env.get('AWS_CLOUDFRONT_URL') || '';
+      if (url.startsWith(cloudfrontUrl)) {
+        s3Key = url.replace(cloudfrontUrl + '/', '');
+      } else {
+        // Try to extract from S3 URL
+        const match = url.match(/\.amazonaws\.com\/(.+)$/);
+        if (match) {
+          s3Key = match[1];
+        }
       }
     }
 
-    // SECURITY: Validate file size based on type
-    const isVideo = ALLOWED_VIDEO_CONTENT_TYPES.includes(file.type);
-    const maxSize = isVideo ? MAX_VIDEO_SIZE : MAX_IMAGE_SIZE;
-    
-    if (file.size > maxSize) {
-      const maxSizeMB = maxSize / 1024 / 1024;
+    if (!s3Key) {
       return new Response(
-        JSON.stringify({ error: `Arquivo muito grande. Máximo permitido: ${maxSizeMB}MB` }),
+        JSON.stringify({ error: 'URL ou key do arquivo não fornecido' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // SECURITY: Validate file extension
-    const extension = file.name.split('.').pop()?.toLowerCase() || '';
-    if (!ALLOWED_EXTENSIONS.includes(extension)) {
-      return new Response(
-        JSON.stringify({ error: `Tipo de arquivo não permitido. Permitidos: ${ALLOWED_EXTENSIONS.join(', ')}` }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    console.log(`Attempting to delete S3 object: ${s3Key}`);
+
+    // SECURITY: If establishmentId provided, verify ownership
+    if (establishmentId) {
+      const supabaseAdmin = createClient(
+        Deno.env.get('SUPABASE_URL')!,
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
       );
+
+      const { data: establishment, error: estError } = await supabaseAdmin
+        .from('establishments')
+        .select('owner_id')
+        .eq('id', establishmentId)
+        .single();
+
+      if (estError || !establishment) {
+        return new Response(
+          JSON.stringify({ error: 'Estabelecimento não encontrado' }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      if (establishment.owner_id !== user.id) {
+        // Check if user is super_admin
+        const { data: userRole } = await supabaseAdmin
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id)
+          .eq('role', 'super_admin')
+          .single();
+
+        if (!userRole) {
+          return new Response(
+            JSON.stringify({ error: 'Você não tem permissão para excluir arquivos deste estabelecimento' }),
+            { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+      }
     }
 
-    // SECURITY: Validate content type
-    const contentType = file.type || 'application/octet-stream';
-    if (!ALLOWED_CONTENT_TYPES.includes(contentType)) {
-      return new Response(
-        JSON.stringify({ error: `Tipo de conteúdo não permitido. Permitidos: ${ALLOWED_CONTENT_TYPES.join(', ')}` }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    console.log(`Processing upload: ${file.name}, type: ${type}, establishment: ${establishmentId}, user: ${user.id}`);
-
-    // Get AWS credentials from environment
+    // Get AWS credentials
     const accessKeyId = Deno.env.get('AWS_ACCESS_KEY_ID');
     const secretAccessKey = Deno.env.get('AWS_SECRET_ACCESS_KEY');
     const region = Deno.env.get('AWS_REGION') || 'sa-east-1';
     const bucketName = Deno.env.get('AWS_BUCKET_NAME');
-    const cloudfrontUrl = Deno.env.get('AWS_CLOUDFRONT_URL');
 
     if (!accessKeyId || !secretAccessKey || !bucketName) {
       console.error('Missing AWS credentials');
@@ -152,50 +117,33 @@ serve(async (req) => {
       );
     }
 
-    // Generate unique filename
-    const timestamp = Date.now();
-    const random = Math.random().toString(36).substring(2, 10);
-    const fileName = `${timestamp}_${random}.${extension}`;
-
-    // Build S3 path following VilFood pattern
+    // Build AWS Signature v4 for DELETE request
     const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const key = `_uploads/${type}/${establishmentId}/${year}/${month}/${fileName}`;
-
-    console.log(`Uploading to S3: ${key}`);
-
-    // Read file content
-    const arrayBuffer = await file.arrayBuffer();
-    const body = new Uint8Array(arrayBuffer);
-
-    // Build AWS Signature v4
-    const service = 's3';
     const host = `${bucketName}.s3.${region}.amazonaws.com`;
     const amzDate = now.toISOString().replace(/[:-]|\.\d{3}/g, '');
     const dateStamp = amzDate.slice(0, 8);
 
     // Create canonical request
-    const method = 'PUT';
-    const canonicalUri = '/' + key;
+    const method = 'DELETE';
+    const canonicalUri = '/' + s3Key;
     const canonicalQuerystring = '';
     
-    // Hash the payload
-    const payloadHash = await sha256Hex(body);
+    // Empty payload for DELETE
+    const payloadHash = await sha256Hex(new Uint8Array(0));
     
     const canonicalHeaders = 
-      `content-type:${contentType}\n` +
       `host:${host}\n` +
       `x-amz-content-sha256:${payloadHash}\n` +
       `x-amz-date:${amzDate}\n`;
     
-    const signedHeaders = 'content-type;host;x-amz-content-sha256;x-amz-date';
+    const signedHeaders = 'host;x-amz-content-sha256;x-amz-date';
     
     const canonicalRequest = 
       `${method}\n${canonicalUri}\n${canonicalQuerystring}\n${canonicalHeaders}\n${signedHeaders}\n${payloadHash}`;
 
     // Create string to sign
     const algorithm = 'AWS4-HMAC-SHA256';
+    const service = 's3';
     const credentialScope = `${dateStamp}/${region}/${service}/aws4_request`;
     const canonicalRequestHash = await sha256Hex(new TextEncoder().encode(canonicalRequest));
     const stringToSign = `${algorithm}\n${amzDate}\n${credentialScope}\n${canonicalRequestHash}`;
@@ -208,50 +156,43 @@ serve(async (req) => {
     const authorizationHeader = 
       `${algorithm} Credential=${accessKeyId}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
 
-    // Make request to S3
-    const s3Url = `https://${host}/${key}`;
+    // Make DELETE request to S3
+    const s3Url = `https://${host}/${s3Key}`;
     
     const s3Response = await fetch(s3Url, {
-      method: 'PUT',
+      method: 'DELETE',
       headers: {
-        'Content-Type': contentType,
         'x-amz-content-sha256': payloadHash,
         'x-amz-date': amzDate,
         'Authorization': authorizationHeader,
       },
-      body: body,
     });
 
-    if (!s3Response.ok) {
+    // S3 returns 204 No Content on successful delete
+    if (!s3Response.ok && s3Response.status !== 204) {
       const errorText = await s3Response.text();
-      console.error(`S3 upload failed: ${s3Response.status} - ${errorText}`);
+      console.error(`S3 delete failed: ${s3Response.status} - ${errorText}`);
       return new Response(
-        JSON.stringify({ error: 'Erro ao enviar para S3', details: errorText }),
+        JSON.stringify({ error: 'Erro ao excluir do S3', details: errorText }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log(`Upload successful: ${key}`);
-
-    // Return URL (CloudFront if configured, otherwise S3)
-    const imageUrl = cloudfrontUrl 
-      ? `${cloudfrontUrl}/${key}`
-      : `https://${host}/${key}`;
+    console.log(`Successfully deleted: ${s3Key}`);
 
     return new Response(
       JSON.stringify({ 
-        url: imageUrl,
-        key: key,
-        bucket: bucketName,
+        success: true,
+        deletedKey: s3Key,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (err: unknown) {
     const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-    console.error('Upload error:', errorMessage);
+    console.error('Delete error:', errorMessage);
     return new Response(
-      JSON.stringify({ error: 'Erro interno no upload', details: errorMessage }),
+      JSON.stringify({ error: 'Erro interno ao excluir', details: errorMessage }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

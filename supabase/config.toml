@@ -42,6 +42,9 @@ verify_jwt = false
 [functions.s3-upload]
 verify_jwt = false
 
+[functions.s3-delete]
+verify_jwt = false
+
 [functions.migrate-legacy-data]
 verify_jwt = true
 
