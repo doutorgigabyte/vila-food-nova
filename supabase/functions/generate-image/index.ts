@@ -233,7 +233,7 @@ Do not include any text in the image.`;
     console.log(`Prompt: ${prompt}`);
 
     // Call Google Gemini API directly for image generation (Nano Banana model)
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${GOOGLE_API_KEY}`;
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${GOOGLE_API_KEY}`;
     
     const aiResponse = await fetch(geminiUrl, {
       method: 'POST',
