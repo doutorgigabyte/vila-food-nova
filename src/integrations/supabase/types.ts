@@ -2079,7 +2079,7 @@ export type Database = {
           auto_response_enabled: boolean | null
           created_at: string | null
           description: string | null
-          establishment_id: string
+          establishment_id: string | null
           evolution_api_key: string | null
           evolution_api_url: string | null
           id: string
@@ -2101,7 +2101,7 @@ export type Database = {
           auto_response_enabled?: boolean | null
           created_at?: string | null
           description?: string | null
-          establishment_id: string
+          establishment_id?: string | null
           evolution_api_key?: string | null
           evolution_api_url?: string | null
           id?: string
@@ -2123,7 +2123,7 @@ export type Database = {
           auto_response_enabled?: boolean | null
           created_at?: string | null
           description?: string | null
-          establishment_id?: string
+          establishment_id?: string | null
           evolution_api_key?: string | null
           evolution_api_url?: string | null
           id?: string
