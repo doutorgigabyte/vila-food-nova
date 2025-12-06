@@ -6,7 +6,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Projeto externo com dados em português - usando service_role para bypass RLS
+// Projeto externo com dados legados
 const EXTERNAL_SUPABASE_URL = "https://yaiityqznznclrxqpjtm.supabase.co";
 const EXTERNAL_SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlhaWl0eXF6bnpuY2xyeHFwanRtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NDg1NzY0NCwiZXhwIjoyMDgwNDMzNjQ0fQ.Z8PVIgstF6BlAAhLEXdDb5sh73Z8ApZTa6Q2exO1VNE";
 
@@ -27,130 +27,75 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
+    // Verificar dados externos
     if (action === "check_external") {
-      // Verificar estrutura do projeto externo
-      const { data: produtos, error: prodError } = await externalClient
-        .from("produtos")
-        .select("*")
-        .limit(5);
-
-      const { data: categorias, error: catError } = await externalClient
-        .from("categorias")
-        .select("*")
-        .limit(5);
-
-      const { data: estabelecimentos, error: estError } = await externalClient
-        .from("estabelecimentos")
-        .select("*")
-        .limit(5);
-
-      const { data: idMapping, error: mapError } = await externalClient
-        .from("id_mapping")
-        .select("*")
-        .limit(20);
-
-      return new Response(
-        JSON.stringify({
-          success: true,
-          data: {
-            produtos: { count: produtos?.length ?? 0, sample: produtos, error: prodError?.message },
-            categorias: { count: categorias?.length ?? 0, sample: categorias, error: catError?.message },
-            estabelecimentos: { count: estabelecimentos?.length ?? 0, sample: estabelecimentos, error: estError?.message },
-            id_mapping: { count: idMapping?.length ?? 0, sample: idMapping, error: mapError?.message },
-          },
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    if (action === "get_all_external_data") {
-      // Buscar todos os dados do projeto externo
-      const { data: produtos, error: prodError } = await externalClient
-        .from("produtos")
-        .select("*");
-
-      const { data: categorias, error: catError } = await externalClient
-        .from("categorias")
-        .select("*");
-
-      const { data: estabelecimentos, error: estError } = await externalClient
-        .from("estabelecimentos")
-        .select("*");
-
-      const { data: idMapping, error: mapError } = await externalClient
-        .from("id_mapping")
-        .select("*");
-
-      return new Response(
-        JSON.stringify({
-          success: true,
-          data: {
-            produtos: { count: produtos?.length ?? 0, data: produtos, error: prodError?.message },
-            categorias: { count: categorias?.length ?? 0, data: categorias, error: catError?.message },
-            estabelecimentos: { count: estabelecimentos?.length ?? 0, data: estabelecimentos, error: estError?.message },
-            id_mapping: { count: idMapping?.length ?? 0, data: idMapping, error: mapError?.message },
-          },
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    if (action === "debug_mapping") {
-      // Verificar estrutura do id_mapping e estabelecimentos
-      const { data: idMapping } = await externalClient
-        .from("id_mapping")
-        .select("*");
-      
-      const { data: extEstabelecimentos } = await externalClient
+      const { data: estabelecimentos } = await externalClient
         .from("estabelecimentos")
         .select("id, nome, slug")
-        .limit(10);
+        .order("nome");
 
-      const { data: extCategorias } = await externalClient
+      const { data: categorias } = await externalClient
         .from("categorias")
-        .select("id, nome, rel_estabelecimentos_id, establishment_id")
-        .limit(10);
+        .select("id, nome, rel_estabelecimentos_id");
 
-      const { data: extProdutos } = await externalClient
+      const { data: produtos } = await externalClient
         .from("produtos")
-        .select("id, nome, rel_estabelecimentos_id, establishment_id, rel_categorias_id, category_id")
-        .limit(10);
+        .select("id, nome, rel_estabelecimentos_id, rel_categorias_id");
 
-      // Verificar estabelecimentos no projeto atual
-      const { data: currentEstabelecimentos } = await currentClient
+      const { data: currentEstablishments } = await currentClient
         .from("establishments")
         .select("id, name, slug")
-        .limit(50);
+        .order("name");
 
-      // Agrupar id_mapping por table_name
-      const mappingByTable: Record<string, any[]> = {};
-      for (const m of idMapping ?? []) {
-        if (!mappingByTable[m.table_name]) {
-          mappingByTable[m.table_name] = [];
-        }
-        mappingByTable[m.table_name].push(m);
+      // Agrupar categorias e produtos por estabelecimento
+      const catByEst: Record<string, number> = {};
+      const prodByEst: Record<string, number> = {};
+      
+      for (const cat of categorias ?? []) {
+        const estId = String(cat.rel_estabelecimentos_id);
+        catByEst[estId] = (catByEst[estId] || 0) + 1;
       }
+      
+      for (const prod of produtos ?? []) {
+        const estId = String(prod.rel_estabelecimentos_id);
+        prodByEst[estId] = (prodByEst[estId] || 0) + 1;
+      }
+
+      // Criar mapa de slug -> estabelecimento atual
+      const currentBySlug = new Map(currentEstablishments?.map(e => [e.slug, e]) ?? []);
+
+      // Resumo por estabelecimento
+      const summary = (estabelecimentos ?? []).map(est => {
+        const current = currentBySlug.get(est.slug);
+        return {
+          legacy_id: est.id,
+          nome: est.nome,
+          slug: est.slug,
+          categorias: catByEst[String(est.id)] || 0,
+          produtos: prodByEst[String(est.id)] || 0,
+          mapeado: !!current,
+          current_id: current?.id || null,
+        };
+      });
 
       return new Response(
         JSON.stringify({
           success: true,
-          debug: {
-            id_mapping_total: idMapping?.length ?? 0,
-            id_mapping_by_table: Object.fromEntries(
-              Object.entries(mappingByTable).map(([k, v]) => [k, { count: v.length, sample: v.slice(0, 3) }])
-            ),
-            external_estabelecimentos: extEstabelecimentos,
-            external_categorias: extCategorias,
-            external_produtos: extProdutos,
-            current_establishments: currentEstabelecimentos,
+          summary: {
+            estabelecimentos_legado: estabelecimentos?.length || 0,
+            estabelecimentos_atual: currentEstablishments?.length || 0,
+            total_categorias: categorias?.length || 0,
+            total_produtos: produtos?.length || 0,
+            mapeados: summary.filter(s => s.mapeado).length,
           },
+          details: summary,
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
+    // Migrar tudo por slug (método principal)
     if (action === "migrate_by_slug") {
-      // Estratégia alternativa: mapear por slug ao invés de id_mapping
       console.log("Starting migration by slug...");
 
       // Buscar estabelecimentos externos
@@ -168,10 +113,13 @@ serve(async (req) => {
       
       // Criar mapa de ID externo -> novo ID (baseado no slug)
       const extIdToNewId = new Map<string, string>();
+      const mappedEstablishments: any[] = [];
+
       for (const ext of extEstabelecimentos ?? []) {
         const newId = slugToNewId.get(ext.slug);
         if (newId) {
           extIdToNewId.set(String(ext.id), newId);
+          mappedEstablishments.push({ legacy_id: ext.id, nome: ext.nome, slug: ext.slug, new_id: newId });
         }
       }
 
@@ -182,6 +130,16 @@ serve(async (req) => {
         .from("categorias")
         .select("*");
 
+      // Buscar categorias já existentes no destino
+      const { data: existingCategories } = await currentClient
+        .from("categories")
+        .select("id, name, establishment_id");
+
+      const existingCatMap = new Map<string, string>();
+      for (const cat of existingCategories ?? []) {
+        existingCatMap.set(`${cat.establishment_id}:${cat.name}`, cat.id);
+      }
+
       // Migrar categorias
       const categoryResults: any[] = [];
       const oldCatToNewCat = new Map<string, string>();
@@ -189,23 +147,32 @@ serve(async (req) => {
       for (const cat of extCategorias ?? []) {
         const extEstId = String(cat.rel_estabelecimentos_id ?? cat.establishment_id);
         const newEstId = extIdToNewId.get(extEstId);
+        const catName = cat.nome ?? cat.name;
 
         if (!newEstId) {
           categoryResults.push({ 
             id: cat.id, 
-            name: cat.nome ?? cat.name, 
+            name: catName, 
             status: "skipped", 
             reason: `establishment ${extEstId} not mapped`,
-            extEstId
           });
+          continue;
+        }
+
+        // Verificar se categoria já existe
+        const existingKey = `${newEstId}:${catName}`;
+        if (existingCatMap.has(existingKey)) {
+          const existingId = existingCatMap.get(existingKey)!;
+          oldCatToNewCat.set(String(cat.id), existingId);
+          categoryResults.push({ id: cat.id, name: catName, status: "exists", new_id: existingId });
           continue;
         }
 
         const categoryData = {
           establishment_id: newEstId,
-          name: cat.nome ?? cat.name,
-          description: cat.descricao ?? cat.description,
-          image_url: cat.imagem ?? cat.image_url,
+          name: catName,
+          description: cat.descricao ?? cat.description ?? null,
+          image_url: cat.imagem ?? cat.image_url ?? null,
           sort_order: cat.ordem ?? cat.sort_order ?? 0,
           is_active: cat.ativo !== false && cat.is_active !== false,
         };
@@ -217,10 +184,11 @@ serve(async (req) => {
           .single();
 
         if (error) {
-          categoryResults.push({ id: cat.id, name: categoryData.name, status: "error", error: error.message });
+          categoryResults.push({ id: cat.id, name: catName, status: "error", error: error.message });
         } else {
-          categoryResults.push({ id: cat.id, name: categoryData.name, status: "success", new_id: data.id });
+          categoryResults.push({ id: cat.id, name: catName, status: "success", new_id: data.id });
           oldCatToNewCat.set(String(cat.id), data.id);
+          existingCatMap.set(existingKey, data.id);
         }
       }
 
@@ -229,20 +197,38 @@ serve(async (req) => {
         .from("produtos")
         .select("*");
 
+      // Buscar produtos já existentes
+      const { data: existingProducts } = await currentClient
+        .from("products")
+        .select("id, name, establishment_id");
+
+      const existingProdMap = new Map<string, string>();
+      for (const prod of existingProducts ?? []) {
+        existingProdMap.set(`${prod.establishment_id}:${prod.name}`, prod.id);
+      }
+
       // Migrar produtos
       const productResults: any[] = [];
 
       for (const prod of extProdutos ?? []) {
         const extEstId = String(prod.rel_estabelecimentos_id ?? prod.establishment_id);
         const newEstId = extIdToNewId.get(extEstId);
+        const prodName = prod.nome ?? prod.name;
 
         if (!newEstId) {
           productResults.push({ 
             id: prod.id, 
-            name: prod.nome ?? prod.name, 
+            name: prodName, 
             status: "skipped", 
             reason: `establishment ${extEstId} not mapped`
           });
+          continue;
+        }
+
+        // Verificar se produto já existe
+        const existingKey = `${newEstId}:${prodName}`;
+        if (existingProdMap.has(existingKey)) {
+          productResults.push({ id: prod.id, name: prodName, status: "exists" });
           continue;
         }
 
@@ -252,11 +238,11 @@ serve(async (req) => {
         const productData = {
           establishment_id: newEstId,
           category_id: newCatId,
-          name: prod.nome ?? prod.name,
-          description: prod.descricao ?? prod.description,
+          name: prodName,
+          description: prod.descricao ?? prod.description ?? null,
           price: parseFloat(prod.valor ?? prod.price ?? 0),
           promotional_price: prod.valor_promocional ? parseFloat(prod.valor_promocional) : null,
-          image_url: prod.destaque ?? prod.image_url,
+          image_url: prod.destaque ?? prod.image_url ?? null,
           is_active: prod.visible !== false && prod.is_active !== false,
           is_featured: prod.is_featured === true,
           stock_quantity: null,
@@ -272,19 +258,21 @@ serve(async (req) => {
           .single();
 
         if (error) {
-          productResults.push({ id: prod.id, name: productData.name, status: "error", error: error.message });
+          productResults.push({ id: prod.id, name: prodName, status: "error", error: error.message });
         } else {
-          productResults.push({ id: prod.id, name: productData.name, status: "success", new_id: data.id });
+          productResults.push({ id: prod.id, name: prodName, status: "success", new_id: data.id });
+          existingProdMap.set(existingKey, data.id);
         }
       }
 
       return new Response(
         JSON.stringify({
           success: true,
-          establishment_mappings: extIdToNewId.size,
+          establishment_mappings: mappedEstablishments,
           categories: {
             total: extCategorias?.length ?? 0,
             success: categoryResults.filter(r => r.status === "success").length,
+            exists: categoryResults.filter(r => r.status === "exists").length,
             skipped: categoryResults.filter(r => r.status === "skipped").length,
             errors: categoryResults.filter(r => r.status === "error").length,
             results: categoryResults,
@@ -292,6 +280,7 @@ serve(async (req) => {
           products: {
             total: extProdutos?.length ?? 0,
             success: productResults.filter(r => r.status === "success").length,
+            exists: productResults.filter(r => r.status === "exists").length,
             skipped: productResults.filter(r => r.status === "skipped").length,
             errors: productResults.filter(r => r.status === "error").length,
             results: productResults,
@@ -301,153 +290,83 @@ serve(async (req) => {
       );
     }
 
-    if (action === "migrate_categories") {
-      // Buscar categorias do projeto externo
-      const { data: categorias, error: catError } = await externalClient
+    // Limpar dados do banco externo (tabelas legadas em português)
+    if (action === "cleanup_external") {
+      // Deletar tabelas legadas que não são mais necessárias
+      const cleanup: any[] = [];
+
+      // Contar registros antes de limpar
+      const { count: catCount } = await externalClient
         .from("categorias")
-        .select("*");
+        .select("*", { count: "exact", head: true });
 
-      if (catError) throw catError;
+      const { count: prodCount } = await externalClient
+        .from("produtos")
+        .select("*", { count: "exact", head: true });
 
-      // Buscar mapeamento de IDs de estabelecimentos - CORRIGIDO: usa "establishments" não "estabelecimentos"
-      const { data: idMapping } = await externalClient
+      const { count: estCount } = await externalClient
+        .from("estabelecimentos")
+        .select("*", { count: "exact", head: true });
+
+      const { count: mapCount } = await externalClient
         .from("id_mapping")
-        .select("*")
-        .eq("table_name", "establishments");
+        .select("*", { count: "exact", head: true });
 
-      console.log("Found establishment mappings:", idMapping?.length);
-
-      const estIdMap = new Map(idMapping?.map(m => [m.old_id, m.new_id]) ?? []);
-
-      // Buscar mapeamento de categorias - CORRIGIDO: usa "categories" não "categorias"  
-      const { data: catIdMapping } = await externalClient
-        .from("id_mapping")
-        .select("*")
-        .eq("table_name", "categories");
-
-      console.log("Found category mappings:", catIdMapping?.length);
-
-      const catIdMap = new Map(catIdMapping?.map(m => [m.old_id, m.new_id]) ?? []);
-
-      const results = [];
-      for (const cat of categorias ?? []) {
-        const newEstId = estIdMap.get(String(cat.rel_estabelecimentos_id ?? cat.establishment_id));
-        const newCatId = catIdMap.get(String(cat.id));
-
-        if (!newEstId) {
-          results.push({ id: cat.id, name: cat.nome ?? cat.name, status: "skipped", reason: "no_establishment_mapping" });
-          continue;
-        }
-
-        const categoryData = {
-          id: newCatId || undefined,
-          establishment_id: newEstId,
-          name: cat.nome ?? cat.name,
-          description: cat.descricao ?? cat.description,
-          image_url: cat.imagem ?? cat.image_url,
-          sort_order: cat.ordem ?? cat.sort_order ?? 0,
-          is_active: cat.ativo !== false && cat.is_active !== false,
-        };
-
-        // Tentar inserir ou atualizar
-        const { data, error } = await currentClient
-          .from("categories")
-          .upsert(categoryData, { onConflict: "id" })
-          .select()
-          .single();
-
-        if (error) {
-          results.push({ id: cat.id, name: categoryData.name, status: "error", error: error.message });
-        } else {
-          results.push({ id: cat.id, name: categoryData.name, status: "success", new_id: data.id });
-        }
-      }
+      cleanup.push({ table: "categorias", records: catCount });
+      cleanup.push({ table: "produtos", records: prodCount });
+      cleanup.push({ table: "estabelecimentos", records: estCount });
+      cleanup.push({ table: "id_mapping", records: mapCount });
 
       return new Response(
-        JSON.stringify({ success: true, results, total: categorias?.length ?? 0 }),
+        JSON.stringify({
+          success: true,
+          message: "Use 'confirm_cleanup' para confirmar a limpeza das tabelas legadas",
+          tables_to_cleanup: cleanup,
+        }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    if (action === "migrate_products") {
-      // Buscar produtos do projeto externo
-      const { data: produtos, error: prodError } = await externalClient
+    if (action === "confirm_cleanup") {
+      const results: any[] = [];
+
+      // Deletar dados das tabelas legadas
+      const { error: prodError } = await externalClient
         .from("produtos")
-        .select("*");
+        .delete()
+        .neq("id", 0);
+      results.push({ table: "produtos", deleted: !prodError, error: prodError?.message });
 
-      if (prodError) throw prodError;
+      const { error: catError } = await externalClient
+        .from("categorias")
+        .delete()
+        .neq("id", 0);
+      results.push({ table: "categorias", deleted: !catError, error: catError?.message });
 
-      // Buscar mapeamentos - CORRIGIDO: usar nomes em inglês
-      const { data: estIdMapping } = await externalClient
+      const { error: estError } = await externalClient
+        .from("estabelecimentos")
+        .delete()
+        .neq("id", 0);
+      results.push({ table: "estabelecimentos", deleted: !estError, error: estError?.message });
+
+      const { error: mapError } = await externalClient
         .from("id_mapping")
-        .select("*")
-        .eq("table_name", "establishments");
-
-      const { data: catIdMapping } = await externalClient
-        .from("id_mapping")
-        .select("*")
-        .eq("table_name", "categories");
-
-      const { data: prodIdMapping } = await externalClient
-        .from("id_mapping")
-        .select("*")
-        .eq("table_name", "products");
-
-      console.log("Mappings found - establishments:", estIdMapping?.length, "categories:", catIdMapping?.length, "products:", prodIdMapping?.length);
-
-      const estIdMap = new Map(estIdMapping?.map(m => [m.old_id, m.new_id]) ?? []);
-      const catIdMap = new Map(catIdMapping?.map(m => [m.old_id, m.new_id]) ?? []);
-      const prodIdMap = new Map(prodIdMapping?.map(m => [m.old_id, m.new_id]) ?? []);
-
-      const results = [];
-      for (const prod of produtos ?? []) {
-        const newEstId = estIdMap.get(String(prod.rel_estabelecimentos_id ?? prod.establishment_id));
-        const newCatId = catIdMap.get(String(prod.rel_categorias_id ?? prod.category_id));
-        const newProdId = prodIdMap.get(String(prod.id));
-
-        if (!newEstId) {
-          results.push({ id: prod.id, name: prod.nome ?? prod.name, status: "skipped", reason: "no_establishment_mapping" });
-          continue;
-        }
-
-        const productData = {
-          id: newProdId || undefined,
-          establishment_id: newEstId,
-          category_id: newCatId || null,
-          name: prod.nome ?? prod.name,
-          description: prod.descricao ?? prod.description,
-          price: parseFloat(prod.valor ?? prod.price ?? 0),
-          promotional_price: prod.valor_promocional ? parseFloat(prod.valor_promocional) : (prod.promotional_price ? parseFloat(prod.promotional_price) : null),
-          image_url: prod.destaque ?? prod.image_url,
-          is_active: prod.visible !== false && prod.is_active !== false,
-          is_featured: prod.is_featured === true,
-          stock_quantity: prod.stock_quantity ?? null,
-          preparation_time: prod.preparation_time ?? 30,
-          variations: prod.variations ?? [],
-          additionals: prod.additionals ?? [],
-        };
-
-        const { data, error } = await currentClient
-          .from("products")
-          .upsert(productData, { onConflict: "id" })
-          .select()
-          .single();
-
-        if (error) {
-          results.push({ id: prod.id, name: productData.name, status: "error", error: error.message });
-        } else {
-          results.push({ id: prod.id, name: productData.name, status: "success", new_id: data.id });
-        }
-      }
+        .delete()
+        .neq("old_id", "0");
+      results.push({ table: "id_mapping", deleted: !mapError, error: mapError?.message });
 
       return new Response(
-        JSON.stringify({ success: true, results, total: produtos?.length ?? 0 }),
+        JSON.stringify({
+          success: true,
+          message: "Tabelas legadas limpas",
+          results,
+        }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     return new Response(
-      JSON.stringify({ success: false, error: "Invalid action" }),
+      JSON.stringify({ success: false, error: "Ação inválida. Use: check_external, migrate_by_slug, cleanup_external, confirm_cleanup" }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
     );
 
