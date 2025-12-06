@@ -1009,6 +1009,7 @@ export type Database = {
       }
       establishment_videos: {
         Row: {
+          comments_count: number | null
           created_at: string | null
           description: string | null
           duration: number | null
@@ -1026,6 +1027,7 @@ export type Database = {
           views_count: number | null
         }
         Insert: {
+          comments_count?: number | null
           created_at?: string | null
           description?: string | null
           duration?: number | null
@@ -1043,6 +1045,7 @@ export type Database = {
           views_count?: number | null
         }
         Update: {
+          comments_count?: number | null
           created_at?: string | null
           description?: string | null
           duration?: number | null
@@ -2344,6 +2347,57 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      video_comments: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          is_hidden: boolean | null
+          parent_id: string | null
+          session_id: string | null
+          updated_at: string | null
+          user_id: string | null
+          video_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          is_hidden?: boolean | null
+          parent_id?: string | null
+          session_id?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          video_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          is_hidden?: boolean | null
+          parent_id?: string | null
+          session_id?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "video_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "video_comments_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "establishment_videos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       video_likes: {
         Row: {

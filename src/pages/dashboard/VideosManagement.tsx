@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Plus, Video, Trash2, Eye, EyeOff, Link2 } from 'lucide-react';
-import AdminLayout from '@/components/admin/AdminLayout';
+import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -186,7 +186,7 @@ export default function VideosManagement() {
   };
 
   return (
-    <AdminLayout title="VilaTok - Vídeos">
+    <DashboardLayout title="VilaTok - Vídeos" establishment={establishment}>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <p className="text-muted-foreground">Gerencie seus vídeos promocionais</p>
@@ -257,6 +257,6 @@ export default function VideosManagement() {
           {videos.length === 0 && !isLoading && (<Card className="col-span-full"><CardContent className="py-12 text-center"><Video className="w-16 h-16 text-muted-foreground mx-auto mb-4" /><h3 className="text-lg font-medium mb-2">Nenhum vídeo ainda</h3><p className="text-muted-foreground mb-4">Adicione vídeos para aparecer no VilaTok!</p><Button onClick={() => setIsDialogOpen(true)}><Plus className="w-4 h-4 mr-2" />Adicionar Primeiro Vídeo</Button></CardContent></Card>)}
         </div>
       </div>
-    </AdminLayout>
+    </DashboardLayout>
   );
 }

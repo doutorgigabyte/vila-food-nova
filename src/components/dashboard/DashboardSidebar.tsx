@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,7 +15,6 @@ import {
   BarChart3,
   QrCode,
   Eye,
-  Settings,
   LogOut,
   ClipboardList,
   Gift,
@@ -30,20 +28,14 @@ import {
   Users,
   CreditCard,
   Store,
-  ChevronDown,
-  ChevronRight,
   Brain,
-  Sparkles,
   Video,
   Camera,
   Cog
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+import { useUserRole } from "@/hooks/useUserRole";
+import AdminEstablishmentSwitcher from "@/components/admin/AdminEstablishmentSwitcher";
 
 interface DashboardSidebarProps {
   isOpen: boolean;
@@ -85,7 +77,7 @@ const getMenuItems = (baseUrl: string) => [
   { icon: LineChart, label: "Pixels Analytics", href: `${baseUrl}/pixels` },
   { icon: QrCode, label: "QR Code", href: `${baseUrl}/qrcode` },
   { icon: Eye, label: "Banners", href: `${baseUrl}/banners` },
-  { icon: Settings, label: "Integrações", href: `${baseUrl}/integracoes` },
+  { icon: Cog, label: "Integrações", href: `${baseUrl}/integracoes` },
   { icon: Cog, label: "Configurações", href: `${baseUrl}/configuracoes` },
 ];
 
@@ -100,9 +92,11 @@ const DashboardSidebar = ({
   const navigate = useNavigate();
   const { slug } = useParams();
   const { user, signOut } = useAuth();
+  const { appRole } = useUserRole();
   
   const baseUrl = slug ? `/painel/${slug}` : '/painel';
   const menuItems = getMenuItems(baseUrl);
+  const isSuperAdmin = appRole === 'super_admin';
 
   const isActive = (href: string) => {
     return location.pathname === href;
@@ -150,6 +144,13 @@ const DashboardSidebar = ({
             <X className="w-5 h-5" />
           </Button>
         </div>
+
+        {/* Super Admin Switcher */}
+        {isSuperAdmin && (
+          <div className="p-4 border-b border-border">
+            <AdminEstablishmentSwitcher />
+          </div>
+        )}
 
         {/* Store Status */}
         {onToggleStore && (

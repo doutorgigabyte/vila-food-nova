@@ -14,6 +14,7 @@ interface EstablishmentVideo {
   views_count: number;
   likes_count: number;
   shares_count: number;
+  comments_count: number;
   is_active: boolean;
   sort_order: number;
   created_at: string;

@@ -7,11 +7,10 @@ import {
   Pause, 
   Search, 
   ArrowLeft, 
-  Check,
-  Volume2,
-  VolumeX
+  Check
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useMusicLibrary, categories, type MusicTrack } from "@/hooks/useMusicLibrary";
 
 interface MusicSelectorProps {
   selectedMusic: string | null;
@@ -20,84 +19,15 @@ interface MusicSelectorProps {
   onBack: () => void;
 }
 
-interface MusicTrack {
-  id: string;
-  name: string;
-  artist: string;
-  duration: string;
-  url: string;
-  category: string;
-}
-
-// Sample royalty-free music tracks (in production, fetch from API or S3)
-const sampleTracks: MusicTrack[] = [
-  {
-    id: "1",
-    name: "Happy Vibes",
-    artist: "VilaFood Music",
-    duration: "0:15",
-    url: "/music/happy-vibes.mp3",
-    category: "Alegre"
-  },
-  {
-    id: "2",
-    name: "Chill Beats",
-    artist: "VilaFood Music",
-    duration: "0:15",
-    url: "/music/chill-beats.mp3",
-    category: "Relaxante"
-  },
-  {
-    id: "3",
-    name: "Energy Boost",
-    artist: "VilaFood Music",
-    duration: "0:15",
-    url: "/music/energy-boost.mp3",
-    category: "Energético"
-  },
-  {
-    id: "4",
-    name: "Acoustic Morning",
-    artist: "VilaFood Music",
-    duration: "0:15",
-    url: "/music/acoustic-morning.mp3",
-    category: "Acústico"
-  },
-  {
-    id: "5",
-    name: "Urban Groove",
-    artist: "VilaFood Music",
-    duration: "0:15",
-    url: "/music/urban-groove.mp3",
-    category: "Urbano"
-  },
-  {
-    id: "6",
-    name: "Summer Party",
-    artist: "VilaFood Music",
-    duration: "0:15",
-    url: "/music/summer-party.mp3",
-    category: "Festivo"
-  },
-];
-
-const categories = ["Todos", "Alegre", "Relaxante", "Energético", "Acústico", "Urbano", "Festivo"];
-
 const MusicSelector = ({ selectedMusic, onSelect, onSkip, onBack }: MusicSelectorProps) => {
+  const { filterTracks } = useMusicLibrary();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("Todos");
   const [playingTrack, setPlayingTrack] = useState<string | null>(null);
   const [localSelected, setLocalSelected] = useState<string | null>(selectedMusic);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Filter tracks
-  const filteredTracks = sampleTracks.filter(track => {
-    const matchesSearch = 
-      track.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      track.artist.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === "Todos" || track.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
+  const filteredTracks = filterTracks(searchTerm, selectedCategory);
 
   const togglePlay = (track: MusicTrack) => {
     if (playingTrack === track.id) {
@@ -107,13 +37,13 @@ const MusicSelector = ({ selectedMusic, onSelect, onSkip, onBack }: MusicSelecto
       if (audioRef.current) {
         audioRef.current.pause();
       }
-      // In production, we'd actually play the audio
-      // For demo, we'll just toggle state
+      audioRef.current = new Audio(track.url);
+      audioRef.current.play().catch(console.error);
       setPlayingTrack(track.id);
       
-      // Create audio element (in production with real URLs)
-      // audioRef.current = new Audio(track.url);
-      // audioRef.current.play();
+      audioRef.current.onended = () => {
+        setPlayingTrack(null);
+      };
     }
   };
 

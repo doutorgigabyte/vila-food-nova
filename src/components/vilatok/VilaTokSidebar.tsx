@@ -1,14 +1,15 @@
 import { Heart, Share2, ShoppingCart, Store, MessageCircle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 interface VilaTokSidebarProps {
   videoId: string;
   likesCount: number;
   sharesCount: number;
+  commentsCount?: number;
   isLiked: boolean;
   onLike: () => void;
   onShare: () => void;
+  onComment: () => void;
   onViewProduct: () => void;
   onGoToStore: () => void;
   hasProduct: boolean;
@@ -17,9 +18,11 @@ interface VilaTokSidebarProps {
 export function VilaTokSidebar({
   likesCount,
   sharesCount,
+  commentsCount = 0,
   isLiked,
   onLike,
   onShare,
+  onComment,
   onViewProduct,
   onGoToStore,
   hasProduct,
@@ -54,15 +57,17 @@ export function VilaTokSidebar({
         </span>
       </button>
 
-      {/* Comment Button (placeholder for future) */}
+      {/* Comment Button */}
       <button
-        className="flex flex-col items-center gap-1 transition-transform active:scale-90 opacity-50"
-        disabled
+        onClick={onComment}
+        className="flex flex-col items-center gap-1 transition-transform active:scale-90"
       >
         <div className="w-12 h-12 rounded-full flex items-center justify-center bg-black/30 backdrop-blur-sm">
           <MessageCircle className="w-7 h-7 text-white" />
         </div>
-        <span className="text-white text-xs font-medium drop-shadow-lg">Em breve</span>
+        <span className="text-white text-xs font-medium drop-shadow-lg">
+          {formatCount(commentsCount)}
+        </span>
       </button>
 
       {/* Share Button */}
