@@ -169,6 +169,7 @@ export type Database = {
       affiliate_referrals: {
         Row: {
           affiliate_id: string
+          can_be_managed: boolean | null
           commission_earned: number | null
           created_at: string | null
           establishment_id: string
@@ -177,6 +178,7 @@ export type Database = {
         }
         Insert: {
           affiliate_id: string
+          can_be_managed?: boolean | null
           commission_earned?: number | null
           created_at?: string | null
           establishment_id: string
@@ -185,6 +187,7 @@ export type Database = {
         }
         Update: {
           affiliate_id?: string
+          can_be_managed?: boolean | null
           commission_earned?: number | null
           created_at?: string | null
           establishment_id?: string
@@ -210,6 +213,7 @@ export type Database = {
       }
       affiliates: {
         Row: {
+          can_manage_stores: boolean | null
           code: string
           commission_rate: number | null
           created_at: string | null
@@ -219,6 +223,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          can_manage_stores?: boolean | null
           code: string
           commission_rate?: number | null
           created_at?: string | null
@@ -228,6 +233,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          can_manage_stores?: boolean | null
           code?: string
           commission_rate?: number | null
           created_at?: string | null
@@ -1687,6 +1693,115 @@ export type Database = {
           name?: string
           user_id?: string
           username?: string | null
+        }
+        Relationships: []
+      }
+      payment_split_items: {
+        Row: {
+          amount: number
+          created_at: string | null
+          establishment_fee: number | null
+          establishment_id: string | null
+          id: string
+          mp_transfer_id: string | null
+          net_amount: number
+          order_id: string | null
+          split_id: string | null
+          transfer_status: string | null
+          transferred_at: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          establishment_fee?: number | null
+          establishment_id?: string | null
+          id?: string
+          mp_transfer_id?: string | null
+          net_amount: number
+          order_id?: string | null
+          split_id?: string | null
+          transfer_status?: string | null
+          transferred_at?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          establishment_fee?: number | null
+          establishment_id?: string | null
+          id?: string
+          mp_transfer_id?: string | null
+          net_amount?: number
+          order_id?: string | null
+          split_id?: string | null
+          transfer_status?: string | null
+          transferred_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_split_items_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_split_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_split_items_split_id_fkey"
+            columns: ["split_id"]
+            isOneToOne: false
+            referencedRelation: "payment_splits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_splits: {
+        Row: {
+          checkout_id: string
+          created_at: string | null
+          id: string
+          mp_payment_id: string | null
+          payer_email: string | null
+          payer_name: string | null
+          payment_method: string | null
+          platform_fee: number | null
+          platform_fee_percent: number | null
+          status: string | null
+          total_amount: number
+          updated_at: string | null
+        }
+        Insert: {
+          checkout_id: string
+          created_at?: string | null
+          id?: string
+          mp_payment_id?: string | null
+          payer_email?: string | null
+          payer_name?: string | null
+          payment_method?: string | null
+          platform_fee?: number | null
+          platform_fee_percent?: number | null
+          status?: string | null
+          total_amount: number
+          updated_at?: string | null
+        }
+        Update: {
+          checkout_id?: string
+          created_at?: string | null
+          id?: string
+          mp_payment_id?: string | null
+          payer_email?: string | null
+          payer_name?: string | null
+          payment_method?: string | null
+          platform_fee?: number | null
+          platform_fee_percent?: number | null
+          status?: string | null
+          total_amount?: number
+          updated_at?: string | null
         }
         Relationships: []
       }

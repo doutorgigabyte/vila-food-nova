@@ -68,6 +68,7 @@ import DataMigration from "./pages/admin/DataMigration";
 import ExternalDataMigration from "./pages/admin/ExternalDataMigration";
 import Roadmap from "./pages/admin/Roadmap";
 import SystemHealthCheck from "./pages/admin/SystemHealthCheck";
+import AffiliatesManagement from "./pages/admin/AffiliatesManagement";
 import ImageFillManager from "./pages/admin/ImageFillManager";
 import VilaTokPage from "./pages/VilaTok";
 import VideosManagement from "./pages/dashboard/VideosManagement";
@@ -177,6 +178,7 @@ const App = () => (
               <Route path="/admin/vilas" element={<ProtectedAdminRoute><VilasManagement /></ProtectedAdminRoute>} />
               <Route path="/admin/planos" element={<ProtectedAdminRoute><PlansManagement /></ProtectedAdminRoute>} />
               <Route path="/admin/assinaturas" element={<ProtectedAdminRoute><SubscriptionsManagement /></ProtectedAdminRoute>} />
+              <Route path="/admin/afiliados" element={<ProtectedAdminRoute><AffiliatesManagement /></ProtectedAdminRoute>} />
               <Route path="/admin/cidades" element={<ProtectedAdminRoute><CitiesManagement /></ProtectedAdminRoute>} />
               <Route path="/admin/estados" element={<ProtectedAdminRoute><StatesManagement /></ProtectedAdminRoute>} />
               <Route path="/admin/segmentos" element={<ProtectedAdminRoute><SegmentsManagement /></ProtectedAdminRoute>} />
