@@ -129,8 +129,11 @@ interface MainCategoriesGridProps {
 
 const MainCategoriesGrid = ({ selectedCategory, onCategorySelect }: MainCategoriesGridProps) => {
   return (
-    <section className="py-6 md:py-8 bg-card">
+    <section className="py-6 md:py-8 bg-gradient-to-b from-primary/5 to-transparent">
       <div className="container mx-auto px-4">
+        <h2 className="text-lg md:text-xl font-bold mb-4 md:mb-6 text-center">
+          O que você procura hoje?
+        </h2>
         <div className="grid grid-cols-3 md:grid-cols-6 gap-3 md:gap-4">
           {mainCategories.map((category) => {
             const IconComponent = category.icon;

@@ -75,8 +75,12 @@ const Marketplace = () => {
           />
         )}
 
-        {/* Show regular categories when no main category selected */}
-        {!selectedMainCategory && <CategoriesCarousel />}
+        {/* Subcategories carousel - filtered by main category if selected */}
+        <CategoriesCarousel 
+          mainCategory={selectedMainCategory}
+          selectedCategory={selectedSubcategory}
+          onCategoryClick={(id) => setSelectedSubcategory(selectedSubcategory === id ? null : id)}
+        />
 
         {/* Promotional Banners */}
         <PromoBanners />
