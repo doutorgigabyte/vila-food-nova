@@ -128,7 +128,8 @@ const TopOffersSection = ({ mainCategory }: TopOffersSectionProps) => {
             {offersProducts.map((product) => (
               <div 
                 key={product.id} 
-                className="flex-shrink-0 snap-center transition-all duration-300 ease-out"
+                className="flex-shrink-0 snap-center"
+                style={{ pointerEvents: isDragging ? 'none' : 'auto' }}
               >
                 <ProductOfferCard product={product} variant="large" />
               </div>

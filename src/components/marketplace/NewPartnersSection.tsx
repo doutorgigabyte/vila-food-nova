@@ -78,8 +78,8 @@ const NewPartnersSection = () => {
             {newPartners.map((establishment) => (
               <div 
                 key={establishment.id} 
-                className="flex-shrink-0 w-52 md:w-60 scroll-card"
-                onClick={(e) => isDragging && e.preventDefault()}
+                className="flex-shrink-0 w-52 md:w-60"
+                style={{ pointerEvents: isDragging ? 'none' : 'auto' }}
               >
                 <EstablishmentCard 
                   establishment={establishment} 

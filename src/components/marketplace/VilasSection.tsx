@@ -110,19 +110,19 @@ const VilasSection = () => {
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
             {vilasWithCount.map((vila) => (
-              <Link 
+              <div 
                 key={vila.id} 
-                to={`/vila/${vila.slug}`}
                 className="flex-shrink-0"
-                onClick={(e) => isDragging && e.preventDefault()}
+                style={{ pointerEvents: isDragging ? 'none' : 'auto' }}
               >
-                <Card className="w-72 md:w-80 group/card overflow-hidden hover:shadow-lg transition-all duration-300 border-border/50 hover:border-primary/30">
+                <Link to={`/vila/${vila.slug}`}>
+                <Card className="w-72 md:w-80 overflow-hidden hover:shadow-lg transition-all duration-300 border-border/50 hover:border-primary/30">
                   <div className="relative h-28 md:h-32 bg-gradient-to-br from-primary/20 to-accent/20 overflow-hidden">
                     {vila.image_url ? (
                       <img
                         src={vila.image_url}
                         alt={vila.name}
-                        className="w-full h-full object-cover group-hover/card:scale-105 transition-transform duration-300"
+                        className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                         draggable={false}
                       />
                     ) : (
@@ -154,7 +154,8 @@ const VilasSection = () => {
                     )}
                   </CardContent>
                 </Card>
-              </Link>
+                </Link>
+              </div>
             ))}
           </div>
 

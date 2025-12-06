@@ -13,12 +13,12 @@ interface UseDragScrollOptions {
 
 export const useDragScroll = (options: UseDragScrollOptions = {}) => {
   const { 
-    sensitivity = 1, 
+    sensitivity = 1.2, 
     momentum = true, 
     direction = "horizontal",
-    friction = 0.92,
-    velocityMultiplier = 0.8,
-    snapThreshold = 8,
+    friction = 0.95,
+    velocityMultiplier = 1.2,
+    snapThreshold = 5,
     preventVerticalScroll = true
   } = options;
 
@@ -87,7 +87,7 @@ export const useDragScroll = (options: UseDragScrollOptions = {}) => {
     }
     
     // Apply velocity cap to prevent too fast momentum
-    const maxVelocity = 25;
+    const maxVelocity = 40;
     vx = Math.max(-maxVelocity, Math.min(maxVelocity, vx));
     vy = Math.max(-maxVelocity, Math.min(maxVelocity, vy));
     

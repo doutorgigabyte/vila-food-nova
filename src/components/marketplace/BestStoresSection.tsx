@@ -8,7 +8,7 @@ import EstablishmentCard from "./EstablishmentCard";
 import { Link } from "react-router-dom";
 
 const BestStoresSection = () => {
-  const { scrollRef, isDragging, handlers, scroll } = useDragScroll();
+  const { scrollRef, isDragging, handlers, scroll, wasClick } = useDragScroll();
   const { establishments, loading } = useEstablishments();
 
   // Get best stores (could be filtered by rating in the future)
@@ -85,8 +85,8 @@ const BestStoresSection = () => {
             {bestStores.map((establishment) => (
               <div 
                 key={establishment.id} 
-                className="flex-shrink-0 w-72 md:w-80 scroll-card"
-                onClick={(e) => isDragging && e.preventDefault()}
+                className="flex-shrink-0 w-72 md:w-80"
+                style={{ pointerEvents: isDragging ? 'none' : 'auto' }}
               >
                 <EstablishmentCard 
                   establishment={establishment} 

@@ -26,13 +26,13 @@ const EstablishmentCard = ({
   if (variant === "compact") {
     return (
       <Link to={`/loja/${est.slug}`} className={cn("block snap-center", className)}>
-        <Card className="overflow-hidden hover:shadow-lg transition-all group h-full rounded-3xl border-0 shadow-md">
-          <div className="relative h-32 bg-muted">
+        <Card className="overflow-hidden hover:shadow-lg transition-all h-full rounded-3xl border-0 shadow-md">
+          <div className="relative h-32 bg-muted overflow-hidden">
             {est.banner_url ? (
               <img
                 src={est.banner_url}
                 alt={est.name}
-                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                className="w-full h-full object-cover hover:scale-110 transition-transform duration-500"
                 draggable={false}
               />
             ) : (
@@ -87,13 +87,13 @@ const EstablishmentCard = ({
   if (variant === "featured") {
     return (
       <Link to={`/loja/${est.slug}`} className={cn("block snap-center", className)}>
-        <Card className="overflow-hidden hover:shadow-lg transition-all group h-full rounded-3xl border-0 shadow-md hover:shadow-xl">
-          <div className="relative h-36 md:h-44 bg-muted">
+        <Card className="overflow-hidden hover:shadow-lg transition-all h-full rounded-3xl border-0 shadow-md hover:shadow-xl">
+          <div className="relative h-36 md:h-44 bg-muted overflow-hidden">
             {est.banner_url ? (
               <img
                 src={est.banner_url}
                 alt={est.name}
-                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                className="w-full h-full object-cover hover:scale-110 transition-transform duration-500"
                 draggable={false}
               />
             ) : (
@@ -186,13 +186,13 @@ const EstablishmentCard = ({
   // Default variant
   return (
     <Link to={`/loja/${est.slug}`} className={cn("block snap-center", className)}>
-      <Card className="overflow-hidden hover:shadow-lg transition-all group h-full rounded-3xl border-0 shadow-md">
-        <div className="relative h-40 bg-muted">
+      <Card className="overflow-hidden hover:shadow-lg transition-all h-full rounded-3xl border-0 shadow-md">
+        <div className="relative h-40 bg-muted overflow-hidden">
           {est.banner_url ? (
             <img
               src={est.banner_url}
               alt={est.name}
-              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+              className="w-full h-full object-cover hover:scale-110 transition-transform duration-500"
               draggable={false}
             />
           ) : (
