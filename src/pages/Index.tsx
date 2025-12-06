@@ -18,11 +18,14 @@ import NewPartnersSection from "@/components/marketplace/NewPartnersSection";
 import JustForYouCarousel from "@/components/marketplace/JustForYouCarousel";
 import Footer from "@/components/landing/Footer";
 import BusinessCTABanner from "@/components/marketplace/BusinessCTABanner";
+import SmartSearch from "@/components/marketplace/SmartSearch";
+import VilaTokBubble from "@/components/vilatok/VilaTokBubble";
 
 const Index = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedMainCategory, setSelectedMainCategory] = useState<string | null>(null);
   const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const { establishments, loading } = useEstablishments();
 
   // Filtra estabelecimentos por categoria principal e subcategoria
@@ -47,11 +50,16 @@ const Index = () => {
     setSelectedSubcategory(null);
   };
 
+  const handleSearchClick = () => {
+    setIsSearchOpen(true);
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col pb-16 md:pb-0">
       <MarketplaceHeader 
         searchTerm={searchTerm} 
-        onSearchChange={setSearchTerm} 
+        onSearchChange={setSearchTerm}
+        onSearchClick={handleSearchClick}
       />
 
       <main className="flex-1">
@@ -115,6 +123,12 @@ const Index = () => {
 
       {/* Mobile Bottom Navigation */}
       <MobileBottomNav />
+
+      {/* VilaTok Stories Bubble */}
+      <VilaTokBubble />
+
+      {/* Smart Search Overlay */}
+      <SmartSearch isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
     </div>
   );
 };
