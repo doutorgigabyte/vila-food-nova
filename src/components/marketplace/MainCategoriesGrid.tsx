@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
   ShoppingCart, 
@@ -10,7 +10,8 @@ import {
   LucideIcon,
   ChevronDown,
   ChevronUp,
-  X
+  X,
+  GripHorizontal
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -138,10 +139,18 @@ interface MainCategoriesGridProps {
   onCategorySelect?: (categoryId: string | null) => void;
 }
 
+const EXPAND_THRESHOLD = 60; // pixels to pull to expand
+
 const MainCategoriesGrid = ({ selectedCategory, onCategorySelect }: MainCategoriesGridProps) => {
   const navigate = useNavigate();
   const [isExpanded, setIsExpanded] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [pullProgress, setPullProgress] = useState(0);
+  const [isPulling, setIsPulling] = useState(false);
+  
+  const containerRef = useRef<HTMLDivElement>(null);
+  const startY = useRef(0);
+  const currentY = useRef(0);
 
   const handleCategoryClick = (categoryId: string) => {
     navigate(`/categoria/${categoryId}`);
@@ -150,79 +159,172 @@ const MainCategoriesGrid = ({ selectedCategory, onCategorySelect }: MainCategori
   const toggleExpand = () => {
     setIsAnimating(true);
     setIsExpanded(!isExpanded);
-    // Reset animation state after animation completes
+    setPullProgress(0);
     setTimeout(() => setIsAnimating(false), 600);
   };
 
+  // Touch/Mouse handlers for elastic pull effect
+  const handlePullStart = useCallback((clientY: number) => {
+    if (isExpanded) return;
+    startY.current = clientY;
+    currentY.current = clientY;
+    setIsPulling(true);
+  }, [isExpanded]);
+
+  const handlePullMove = useCallback((clientY: number) => {
+    if (!isPulling || isExpanded) return;
+    
+    currentY.current = clientY;
+    const delta = clientY - startY.current;
+    
+    // Only allow pulling down (positive delta)
+    if (delta > 0) {
+      // Apply elastic resistance
+      const elasticDelta = Math.min(delta * 0.5, EXPAND_THRESHOLD * 1.5);
+      setPullProgress(elasticDelta);
+    }
+  }, [isPulling, isExpanded]);
+
+  const handlePullEnd = useCallback(() => {
+    if (!isPulling) return;
+    
+    setIsPulling(false);
+    
+    // Check if pulled enough to expand
+    if (pullProgress >= EXPAND_THRESHOLD) {
+      toggleExpand();
+    } else {
+      // Elastic bounce back
+      setPullProgress(0);
+    }
+  }, [isPulling, pullProgress]);
+
+  // Touch events
+  const handleTouchStart = (e: React.TouchEvent) => {
+    handlePullStart(e.touches[0].clientY);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    handlePullMove(e.touches[0].clientY);
+  };
+
+  const handleTouchEnd = () => {
+    handlePullEnd();
+  };
+
+  // Mouse events
+  const handleMouseDown = (e: React.MouseEvent) => {
+    handlePullStart(e.clientY);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    handlePullMove(e.clientY);
+  };
+
+  const handleMouseUp = () => {
+    handlePullEnd();
+  };
+
+  const handleMouseLeave = () => {
+    if (isPulling) handlePullEnd();
+  };
+
+  // Calculate transform for elastic effect
+  const elasticTransform = isPulling ? `translateY(${pullProgress}px) scale(${1 + pullProgress * 0.001})` : 'none';
+  const pullIndicatorOpacity = Math.min(pullProgress / EXPAND_THRESHOLD, 1);
+
   return (
-    <section className="py-3 md:py-6 bg-gradient-to-b from-primary/5 to-transparent">
+    <section className="py-2 bg-gradient-to-b from-primary/5 to-transparent">
       <div className="container mx-auto px-4">
         {/* Miniature View (Collapsed) */}
-        <div className={cn(
-          "overflow-hidden transition-all duration-500 ease-out",
-          isExpanded ? "max-h-0 opacity-0" : "max-h-32 opacity-100"
-        )}>
-          <div className="flex items-center gap-2">
-            {/* Scrollable mini icons */}
-            <div className="flex-1 overflow-x-auto scrollbar-hide">
-              <div className="flex items-center gap-3 pb-1">
-                {mainCategories.map((category) => {
-                  const IconComponent = category.icon;
-                  const isSelected = selectedCategory === category.id;
-                  
-                  return (
-                    <button
-                      key={category.id}
-                      onClick={() => handleCategoryClick(category.id)}
-                      className={cn(
-                        "flex flex-col items-center justify-center shrink-0 transition-all duration-200 touch-feedback",
-                        "active:scale-95"
-                      )}
-                    >
-                      <div className={cn(
-                        "w-12 h-12 rounded-full flex items-center justify-center transition-all",
-                        isSelected 
-                          ? "ring-2 ring-primary ring-offset-2 scale-110" 
-                          : "",
-                        category.bgColor
-                      )}>
-                        {category.imageUrl ? (
-                          <img 
-                            src={category.imageUrl} 
-                            alt={category.name}
-                            className="w-full h-full rounded-full object-cover"
-                            draggable={false}
-                          />
-                        ) : (
-                          <IconComponent className={cn("w-5 h-5", category.iconColor)} />
-                        )}
-                      </div>
-                      <span className={cn(
-                        "text-[10px] mt-1 font-medium text-center whitespace-nowrap",
-                        isSelected ? "text-primary" : "text-muted-foreground"
-                      )}>
-                        {category.name}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
+        <div 
+          ref={containerRef}
+          className={cn(
+            "overflow-hidden transition-all duration-500 ease-out",
+            isExpanded ? "max-h-0 opacity-0 pointer-events-none" : "max-h-40 opacity-100"
+          )}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseLeave}
+          style={{
+            transform: elasticTransform,
+            transition: isPulling ? 'none' : 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)'
+          }}
+        >
+          {/* Pull indicator */}
+          <div 
+            className="flex justify-center mb-1 transition-opacity duration-200"
+            style={{ opacity: pullIndicatorOpacity }}
+          >
+            <div className="flex flex-col items-center gap-0.5 text-muted-foreground">
+              <GripHorizontal className="w-5 h-5 animate-bounce" />
+              <span className="text-[10px]">Puxe para expandir</span>
             </div>
-            
-            {/* Expand Button */}
-            <button
-              onClick={toggleExpand}
-              className="shrink-0 w-10 h-10 rounded-full bg-muted/80 flex items-center justify-center hover:bg-muted transition-all touch-feedback active:scale-95 hover:scale-110"
-            >
-              <ChevronDown className="w-5 h-5 text-muted-foreground transition-transform" />
-            </button>
+          </div>
+
+          {/* Centered scrollable mini icons */}
+          <div className="flex justify-center">
+            <div className="flex items-center gap-2 md:gap-3 overflow-x-auto scrollbar-hide px-2 py-1 max-w-full">
+              {mainCategories.map((category) => {
+                const IconComponent = category.icon;
+                const isSelected = selectedCategory === category.id;
+                
+                return (
+                  <button
+                    key={category.id}
+                    onClick={() => handleCategoryClick(category.id)}
+                    className={cn(
+                      "flex flex-col items-center justify-center shrink-0 transition-all duration-200 touch-feedback select-none",
+                      "active:scale-95"
+                    )}
+                  >
+                    <div className={cn(
+                      "w-12 h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center transition-all shadow-sm",
+                      isSelected 
+                        ? "ring-2 ring-primary ring-offset-2 scale-110" 
+                        : "",
+                      category.bgColor
+                    )}>
+                      {category.imageUrl ? (
+                        <img 
+                          src={category.imageUrl} 
+                          alt={category.name}
+                          className="w-full h-full rounded-full object-cover"
+                          draggable={false}
+                        />
+                      ) : (
+                        <IconComponent className={cn("w-5 h-5 md:w-6 md:h-6", category.iconColor)} />
+                      )}
+                    </div>
+                    <span className={cn(
+                      "text-[10px] md:text-xs mt-1 font-medium text-center whitespace-nowrap select-none",
+                      isSelected ? "text-primary" : "text-muted-foreground"
+                    )}>
+                      {category.name}
+                    </span>
+                  </button>
+                );
+              })}
+              
+              {/* Expand Button - visually separate */}
+              <button
+                onClick={toggleExpand}
+                className="shrink-0 w-10 h-10 md:w-12 md:h-12 rounded-full bg-muted/80 flex items-center justify-center hover:bg-muted transition-all touch-feedback active:scale-95 hover:scale-110 ml-1"
+              >
+                <ChevronDown className="w-5 h-5 text-muted-foreground transition-transform" />
+              </button>
+            </div>
           </div>
         </div>
 
         {/* Expanded View */}
         <div className={cn(
           "overflow-hidden transition-all duration-500 ease-out",
-          isExpanded ? "max-h-[600px] opacity-100" : "max-h-0 opacity-0"
+          isExpanded ? "max-h-[600px] opacity-100" : "max-h-0 opacity-0 pointer-events-none"
         )}>
           {/* Header with close button */}
           <div className="flex items-center justify-between mb-4">
@@ -251,7 +353,7 @@ const MainCategoriesGrid = ({ selectedCategory, onCategorySelect }: MainCategori
                     animationDelay: isExpanded && isAnimating ? `${index * 50}ms` : '0ms',
                   }}
                   className={cn(
-                    "flex flex-col items-center justify-center p-4 md:p-6 rounded-2xl transition-all duration-300 touch-feedback",
+                    "flex flex-col items-center justify-center p-4 md:p-6 rounded-2xl transition-all duration-300 touch-feedback select-none",
                     "border-2 hover:shadow-lg active:scale-95",
                     isSelected 
                       ? "border-primary bg-primary/5 shadow-md" 
@@ -276,13 +378,13 @@ const MainCategoriesGrid = ({ selectedCategory, onCategorySelect }: MainCategori
                     )}
                   </div>
                   <span className={cn(
-                    "text-xs md:text-sm font-semibold text-center",
+                    "text-xs md:text-sm font-semibold text-center select-none",
                     isSelected ? "text-primary" : "text-foreground"
                   )}>
                     {category.name}
                   </span>
                   {category.description && (
-                    <span className="text-[10px] text-muted-foreground text-center mt-0.5 hidden md:block">
+                    <span className="text-[10px] text-muted-foreground text-center mt-0.5 hidden md:block select-none">
                       {category.description}
                     </span>
                   )}
