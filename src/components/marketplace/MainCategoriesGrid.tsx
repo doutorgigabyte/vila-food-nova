@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { 
   ShoppingCart, 
   Pill, 
@@ -10,7 +9,8 @@ import {
   LucideIcon,
   ChevronDown,
   ChevronUp,
-  X
+  X,
+  MoreHorizontal
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -20,6 +20,7 @@ export interface MainCategory {
   icon: LucideIcon;
   bgColor: string;
   iconColor: string;
+  borderColor: string;
   description?: string;
   imageUrl?: string;
 }
@@ -29,8 +30,9 @@ export const mainCategories: MainCategory[] = [
     id: "mercado", 
     name: "Mercado", 
     icon: ShoppingCart, 
-    bgColor: "bg-emerald-50 dark:bg-emerald-950/30",
+    bgColor: "bg-emerald-100 dark:bg-emerald-900/40",
     iconColor: "text-emerald-600 dark:text-emerald-400",
+    borderColor: "border-emerald-400",
     description: "Supermercados e mercearias",
     imageUrl: "https://images.unsplash.com/photo-1542838132-92c53300491e?w=100&h=100&fit=crop"
   },
@@ -38,8 +40,9 @@ export const mainCategories: MainCategory[] = [
     id: "farmacia", 
     name: "Farmácia", 
     icon: Pill, 
-    bgColor: "bg-red-50 dark:bg-red-950/30",
+    bgColor: "bg-red-100 dark:bg-red-900/40",
     iconColor: "text-red-500 dark:text-red-400",
+    borderColor: "border-red-400",
     description: "Medicamentos e saúde",
     imageUrl: "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=100&h=100&fit=crop"
   },
@@ -47,8 +50,9 @@ export const mainCategories: MainCategory[] = [
     id: "compras", 
     name: "Compras", 
     icon: ShoppingBag, 
-    bgColor: "bg-green-50 dark:bg-green-950/30",
+    bgColor: "bg-green-100 dark:bg-green-900/40",
     iconColor: "text-green-600 dark:text-green-400",
+    borderColor: "border-green-400",
     description: "Lojas e varejo",
     imageUrl: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=100&h=100&fit=crop"
   },
@@ -56,8 +60,9 @@ export const mainCategories: MainCategory[] = [
     id: "comida", 
     name: "Comida", 
     icon: UtensilsCrossed, 
-    bgColor: "bg-amber-50 dark:bg-amber-950/30",
+    bgColor: "bg-amber-100 dark:bg-amber-900/40",
     iconColor: "text-amber-600 dark:text-amber-400",
+    borderColor: "border-amber-400",
     description: "Restaurantes e lanches",
     imageUrl: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=100&h=100&fit=crop"
   },
@@ -65,8 +70,9 @@ export const mainCategories: MainCategory[] = [
     id: "artesanato", 
     name: "Artesanato", 
     icon: Palette, 
-    bgColor: "bg-purple-50 dark:bg-purple-950/30",
+    bgColor: "bg-purple-100 dark:bg-purple-900/40",
     iconColor: "text-purple-600 dark:text-purple-400",
+    borderColor: "border-purple-400",
     description: "Artesãos locais",
     imageUrl: "https://images.unsplash.com/photo-1452860606245-08befc0ff44b?w=100&h=100&fit=crop"
   },
@@ -74,8 +80,9 @@ export const mainCategories: MainCategory[] = [
     id: "servicos", 
     name: "Serviços", 
     icon: Package, 
-    bgColor: "bg-blue-50 dark:bg-blue-950/30",
+    bgColor: "bg-blue-100 dark:bg-blue-900/40",
     iconColor: "text-blue-600 dark:text-blue-400",
+    borderColor: "border-blue-400",
     description: "Entregas e serviços",
     imageUrl: "https://images.unsplash.com/photo-1521791136064-7986c2920216?w=100&h=100&fit=crop"
   },
@@ -139,12 +146,23 @@ interface MainCategoriesGridProps {
 }
 
 const MainCategoriesGrid = ({ selectedCategory, onCategorySelect }: MainCategoriesGridProps) => {
-  const navigate = useNavigate();
   const [isExpanded, setIsExpanded] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
 
+  // Get the selected category config for theming
+  const selectedCategoryConfig = mainCategories.find(c => c.id === selectedCategory);
+
   const handleCategoryClick = (categoryId: string) => {
-    navigate(`/categoria/${categoryId}`);
+    // Toggle: if already selected, deselect; otherwise select
+    if (selectedCategory === categoryId) {
+      onCategorySelect?.(null);
+    } else {
+      onCategorySelect?.(categoryId);
+    }
+    // Close expanded view when selecting
+    if (isExpanded) {
+      setIsExpanded(false);
+    }
   };
 
   const toggleExpand = () => {
@@ -154,7 +172,12 @@ const MainCategoriesGrid = ({ selectedCategory, onCategorySelect }: MainCategori
   };
 
   return (
-    <section className="py-2 bg-gradient-to-b from-primary/5 to-transparent">
+    <section className={cn(
+      "py-2 transition-colors duration-300",
+      selectedCategoryConfig 
+        ? `${selectedCategoryConfig.bgColor.replace('100', '50').replace('900/40', '950/20')}` 
+        : "bg-gradient-to-b from-primary/5 to-transparent"
+    )}>
       <div className="container mx-auto px-4">
         {/* Miniature View (Collapsed) */}
         <div 
@@ -165,7 +188,7 @@ const MainCategoriesGrid = ({ selectedCategory, onCategorySelect }: MainCategori
         >
           {/* Compact category icons - smaller and centered */}
           <div className="flex justify-center">
-            <div className="flex items-center justify-center gap-1.5 md:gap-2 py-1">
+            <div className="flex items-center justify-center gap-1 md:gap-1.5 py-1">
               {mainCategories.map((category) => {
                 const IconComponent = category.icon;
                 const isSelected = selectedCategory === category.id;
@@ -180,10 +203,10 @@ const MainCategoriesGrid = ({ selectedCategory, onCategorySelect }: MainCategori
                     )}
                   >
                     <div className={cn(
-                      "w-9 h-9 md:w-11 md:h-11 rounded-full flex items-center justify-center transition-all shadow-sm",
+                      "w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center transition-all shadow-sm border-2",
                       isSelected 
-                        ? "ring-2 ring-primary ring-offset-1 scale-105" 
-                        : "",
+                        ? `${category.borderColor} scale-110 shadow-md` 
+                        : "border-transparent",
                       category.bgColor
                     )}>
                       {category.imageUrl ? (
@@ -200,20 +223,30 @@ const MainCategoriesGrid = ({ selectedCategory, onCategorySelect }: MainCategori
                   </button>
                 );
               })}
+              
+              {/* "Ver Todas" button at the end */}
+              <button
+                onClick={toggleExpand}
+                className="flex items-center justify-center shrink-0 transition-all duration-200 touch-feedback select-none active:scale-95"
+              >
+                <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-muted/80 flex items-center justify-center shadow-sm border-2 border-transparent hover:border-primary/30">
+                  <MoreHorizontal className="w-4 h-4 md:w-5 md:h-5 text-muted-foreground" />
+                </div>
+              </button>
             </div>
           </div>
 
           {/* Centered expand arrow below icons */}
-          <div className="flex justify-center mt-1.5">
+          <div className="flex justify-center mt-1">
             <button
               onClick={toggleExpand}
               className={cn(
-                "w-8 h-8 rounded-full bg-muted/60 flex items-center justify-center",
+                "w-6 h-6 rounded-full bg-muted/40 flex items-center justify-center",
                 "hover:bg-muted transition-all touch-feedback active:scale-95",
-                "hover:scale-110 shadow-sm border border-border/50"
+                "hover:scale-110"
               )}
             >
-              <ChevronDown className="w-4 h-4 text-muted-foreground" />
+              <ChevronDown className="w-3 h-3 text-muted-foreground" />
             </button>
           </div>
         </div>
@@ -253,7 +286,7 @@ const MainCategoriesGrid = ({ selectedCategory, onCategorySelect }: MainCategori
                     "flex flex-col items-center justify-center p-4 md:p-6 rounded-2xl transition-all duration-300 touch-feedback select-none",
                     "border-2 hover:shadow-lg active:scale-95",
                     isSelected 
-                      ? "border-primary bg-primary/5 shadow-md" 
+                      ? `${category.borderColor} ${category.bgColor} shadow-md` 
                       : `border-transparent ${category.bgColor} hover:border-primary/30`,
                     isExpanded && isAnimating && "animate-rubber-band"
                   )}
@@ -276,7 +309,7 @@ const MainCategoriesGrid = ({ selectedCategory, onCategorySelect }: MainCategori
                   </div>
                   <span className={cn(
                     "text-xs md:text-sm font-semibold text-center select-none",
-                    isSelected ? "text-primary" : "text-foreground"
+                    isSelected ? category.iconColor : "text-foreground"
                   )}>
                     {category.name}
                   </span>
