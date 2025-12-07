@@ -18,8 +18,41 @@ interface SubcategoryCarouselProps {
   categoryIcon?: string;
 }
 
-// Emojis para subcategorias
+// Emojis para subcategorias - mapeamento completo
 const subcategoryEmojis: Record<string, string> = {
+  // Mercado
+  "todos": "🏠",
+  "supermercados": "🛒",
+  "bebidas": "🥤",
+  "hortifruti": "🥬",
+  "padaria": "🥖",
+  "açougue": "🥩",
+  "frios": "🧀",
+  "limpeza": "🧹",
+  "higiene": "🧴",
+  "congelados": "🧊",
+  "laticínios": "🥛",
+  "mercearia": "🛒",
+  // Comida
+  "doces e bolos": "🍰",
+  "árabe": "🥙",
+  "salgados": "🥟",
+  "açaí": "🍇",
+  "chinesa": "🥡",
+  "brasileira": "🍛",
+  "pizza": "🍕",
+  "padarias": "🥐",
+  "pastel": "🥟",
+  "italiana": "🍝",
+  "lanches": "🍔",
+  "carnes": "🥩",
+  "saudável": "🥗",
+  "sorvetes": "🍦",
+  "japonesa": "🍣",
+  "marmita": "🍱",
+  "hamburguer": "🍔",
+  "pizzaria": "🍕",
+  "restaurante": "🍽️",
   // Moda
   "moda masculina": "👔",
   "moda feminina": "👗",
@@ -48,12 +81,19 @@ const subcategoryEmojis: Record<string, string> = {
   "eletrônicos": "📱",
   "informática": "💻",
   "games": "🎮",
+  // Farmácia
+  "medicamentos": "💊",
+  "vitaminas": "💪",
+  "suplementos": "🏋️",
+  "dermocosméticos": "✨",
   // Outros
   "esportes": "⚽",
   "brinquedos": "🧸",
   "papelaria": "📚",
   "jardim": "🌱",
   "automotivo": "🚗",
+  "artesanato": "🎨",
+  "serviços": "🔧",
 };
 
 const getEmoji = (name: string): string => {
@@ -132,7 +172,8 @@ const SubcategoryCarousel = ({
         {subcategories.map((subcategory, index) => {
           const isSelected = selectedId === subcategory.id;
           const colorClass = subcategoryColors[index % subcategoryColors.length];
-          const emoji = subcategory.icon || getEmoji(subcategory.name);
+          // Sempre usar emoji do nome, ignorar o campo icon que contém nomes de ícones Lucide
+          const emoji = getEmoji(subcategory.name);
 
           return (
             <motion.button
