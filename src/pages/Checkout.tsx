@@ -24,6 +24,7 @@ import {
   Info
 } from "lucide-react";
 import { toast } from "sonner";
+import { Price } from "@/components/ui/price";
 import { useCart } from "@/hooks/useCart";
 import { useCreateOrder } from "@/hooks/useCreateOrder";
 import { useAuth } from "@/hooks/useAuth";
@@ -438,9 +439,9 @@ const Checkout = () => {
                 </div>
               )}
               <Separator />
-              <div className="flex justify-between">
+              <div className="flex justify-between items-center">
                 <span className="text-muted-foreground">Total</span>
-                <span className="font-bold">R$ {total.toFixed(2)}</span>
+                <Price value={total} size="lg" />
               </div>
             </CardContent>
           </Card>

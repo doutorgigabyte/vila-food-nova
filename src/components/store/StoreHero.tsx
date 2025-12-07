@@ -1,4 +1,4 @@
-import { MessageCircle, Facebook, Instagram, Youtube, MapPin, Globe } from "lucide-react";
+import { MessageCircle, MapPin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { StoreEstablishment } from "@/hooks/useStoreData";
@@ -106,23 +106,19 @@ export const StoreHero = ({ establishment, cashbackPercentage }: StoreHeroProps)
                 )}
               </div>
 
-              {/* Social Links */}
+              {/* Social Links - only show if establishment has the URL */}
               <div className="flex items-center gap-2 mt-2">
-                <a href="#" className="text-muted-foreground hover:text-[#1877F2] transition-colors">
-                  <Facebook className="w-4 h-4" />
-                </a>
-                <a href="#" className="text-muted-foreground hover:text-[#E4405F] transition-colors">
-                  <Instagram className="w-4 h-4" />
-                </a>
-                <a href="#" className="text-muted-foreground hover:text-[#FF0000] transition-colors">
-                  <Youtube className="w-4 h-4" />
-                </a>
-                <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
-                  <MapPin className="w-4 h-4" />
-                </a>
-                <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
-                  <Globe className="w-4 h-4" />
-                </a>
+                {establishment.address && (
+                  <a 
+                    href={`https://maps.google.com/?q=${encodeURIComponent(establishment.address)}`} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-muted-foreground hover:text-primary transition-colors"
+                    title="Ver no mapa"
+                  >
+                    <MapPin className="w-4 h-4" />
+                  </a>
+                )}
               </div>
             </div>
           </div>

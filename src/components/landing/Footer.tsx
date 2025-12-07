@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { MapPin, Mail, Phone, Instagram, Facebook, Linkedin, Store } from "lucide-react";
+import { MapPin, Mail, Phone, Instagram, Facebook, Store } from "lucide-react";
 import logoHorizontalWhite from "@/assets/logo-horizontal-white.png";
 
 const Footer = () => {
@@ -140,14 +140,11 @@ const Footer = () => {
             © {currentYear} VilaFood. Todos os direitos reservados.
           </p>
           <div className="flex items-center gap-4">
-            <a href="https://instagram.com/vilafood" target="_blank" rel="noopener noreferrer" className="text-background/60 hover:text-background transition-colors">
+            <a href="https://instagram.com/vilafood" target="_blank" rel="noopener noreferrer" className="text-background/60 hover:text-background transition-colors" aria-label="Instagram">
               <Instagram size={20} />
             </a>
-            <a href="https://facebook.com/vilafood" target="_blank" rel="noopener noreferrer" className="text-background/60 hover:text-background transition-colors">
+            <a href="https://facebook.com/vilafood" target="_blank" rel="noopener noreferrer" className="text-background/60 hover:text-background transition-colors" aria-label="Facebook">
               <Facebook size={20} />
-            </a>
-            <a href="#" className="text-background/60 hover:text-background transition-colors">
-              <Linkedin size={20} />
             </a>
           </div>
         </div>

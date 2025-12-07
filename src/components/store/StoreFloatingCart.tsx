@@ -1,6 +1,7 @@
 import { ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { Price } from "@/components/ui/price";
 
 interface StoreFloatingCartProps {
   itemCount: number;
@@ -36,7 +37,7 @@ export const StoreFloatingCart = ({ itemCount, total, onClick, primaryColor }: S
           </div>
           <span>Fechar pedido</span>
         </div>
-        <span className="text-lg font-bold">R$ {total.toFixed(2)}</span>
+        <Price value={total} size="lg" className="text-white" />
       </Button>
     </div>
   );
