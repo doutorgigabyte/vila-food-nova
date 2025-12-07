@@ -9,7 +9,6 @@ import { useStoreData, type StoreProduct } from "@/hooks/useStoreData";
 import { useCart, type CartProduct, type EstablishmentInfo } from "@/hooks/useCart";
 import { ProductModal } from "@/components/store/ProductModal";
 import { CartSheet } from "@/components/store/CartSheet";
-import { StoreHeader } from "@/components/store/StoreHeader";
 import { StoreHero } from "@/components/store/StoreHero";
 import { StoreBanners } from "@/components/store/StoreBanners";
 import { StoreCategoryNav } from "@/components/store/StoreCategoryNav";
@@ -244,14 +243,6 @@ const Store = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      {/* Header Navigation */}
-      <StoreHeader
-        activeTab={activeTab}
-        onTabChange={handleTabChange}
-        cartCount={cartItemsCount}
-        primaryColor={establishment.primary_color || undefined}
-      />
-
       {activeTab === "info" ? (
         <StoreInfoTab establishment={establishment} />
       ) : activeTab === "conta" ? (
