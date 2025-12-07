@@ -87,20 +87,134 @@ const ProductOfferCard = ({ product, variant = "default", className }: ProductOf
   // When used in a grid, cards should fill the grid cell (no fixed width)
   const isGridContext = !className?.includes('scroll-card') && variant === 'large';
 
+  // Hero variant for category page - large visual cards
+  if (variant === "large") {
+    return (
+      <Link 
+        to={`/produto/${product.id}`}
+        className={cn("block group", !isGridContext && "snap-center scroll-card", className)}
+      >
+        <Card className={cn(
+          "overflow-hidden hover:shadow-elevated transition-all relative border-0 shadow-soft",
+          isGridContext 
+            ? "w-full rounded-2xl" 
+            : "w-72 md:w-80 lg:w-96 rounded-3xl"
+        )}>
+          <div className={cn(
+            "relative overflow-hidden bg-muted",
+            isGridContext ? "aspect-[4/3]" : "aspect-[4/3] md:aspect-[16/10]"
+          )}>
+            {/* Skeleton while loading */}
+            {!imageLoaded && !imageError && product.image_url && (
+              <div className="absolute inset-0 skeleton-shimmer" />
+            )}
+            
+            {product.image_url && !imageError ? (
+              <img
+                src={product.image_url}
+                alt={product.name}
+                loading="lazy"
+                decoding="async"
+                className={cn(
+                  "w-full h-full object-cover transition-transform duration-500 group-hover:scale-105",
+                  imageLoaded ? "opacity-100" : "opacity-0"
+                )}
+                draggable={false}
+                onLoad={() => setImageLoaded(true)}
+                onError={() => setImageError(true)}
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">
+                <span className="text-5xl md:text-6xl opacity-30">🍽️</span>
+              </div>
+            )}
+            
+            {/* Not available overlay */}
+            {!isAvailable && (
+              <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center">
+                <Clock className="w-8 h-8 md:w-10 md:h-10 text-muted-foreground mb-2" />
+                <span className="text-sm md:text-base font-medium text-muted-foreground">Indisponível</span>
+              </div>
+            )}
+            
+            {/* Discount badge - prominent */}
+            {discount && isAvailable && (
+              <Badge className="absolute top-3 left-3 bg-destructive text-destructive-foreground font-bold px-3 py-1 text-sm shadow-lg rounded-lg">
+                {discount}% OFF
+              </Badge>
+            )}
+            
+            {/* Favorite button - larger */}
+            <button 
+              type="button"
+              className={cn(
+                "absolute top-3 right-3 w-10 h-10 flex items-center justify-center bg-card/90 backdrop-blur-sm hover:bg-card rounded-full shadow-lg transition-all z-10",
+                isFavorite ? "text-red-500 hover:text-red-600" : "text-muted-foreground hover:text-destructive"
+              )}
+              onClick={handleFavoriteClick}
+              onTouchEnd={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                toggleFavoriteProduct(product.id);
+              }}
+            >
+              <Heart className={cn("w-5 h-5", isFavorite && "fill-current")} />
+            </button>
+            
+            {/* Gradient overlay for text readability */}
+            <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
+            
+            {/* Content overlay on image */}
+            <div className="absolute inset-x-0 bottom-0 p-4 text-white">
+              <p className="text-xs text-white/80 truncate mb-0.5">
+                {product.establishment?.name || 'Estabelecimento'}
+              </p>
+              <h3 className="font-bold text-base md:text-lg truncate leading-tight drop-shadow-md">
+                {product.name}
+              </h3>
+              <div className="mt-1 flex items-center justify-between">
+                <PriceWithDiscount
+                  price={product.price}
+                  promotionalPrice={product.promotional_price}
+                  size="sm"
+                  className="text-white"
+                />
+                {/* Add button */}
+                {isAvailable && (
+                  <button 
+                    type="button"
+                    className="w-10 h-10 flex items-center justify-center rounded-full shadow-lg bg-primary hover:bg-primary/90 text-primary-foreground transition-colors z-10"
+                    onClick={handleAddToCart}
+                    onTouchEnd={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleAddToCart(e as any);
+                    }}
+                  >
+                    <Plus className="w-5 h-5" />
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </Card>
+      </Link>
+    );
+  }
+
+  // Default/compact variants
   return (
     <Link 
       to={`/produto/${product.id}`}
-      className={cn("block", !isGridContext && "snap-center scroll-card", className)}
+      className={cn("block", className)}
     >
       <Card className={cn(
         "overflow-hidden hover:shadow-lg transition-all relative rounded-2xl border-0 shadow-soft card-hover",
-        isGridContext 
-          ? "w-full" 
-          : variant === "large" ? "w-52 md:w-64" : variant === "compact" ? "w-36 md:w-44" : "w-40 md:w-52"
+        variant === "compact" ? "w-36 md:w-44" : "w-40 md:w-52"
       )}>
         <div className={cn(
           "relative overflow-hidden bg-muted",
-          isGridContext ? "aspect-square" : variant === "large" ? "h-40 md:h-52" : variant === "compact" ? "h-28" : "h-32 md:h-36"
+          variant === "compact" ? "h-28" : "h-32 md:h-36"
         )}>
           {/* Skeleton while loading */}
           {!imageLoaded && !imageError && product.image_url && (
@@ -188,7 +302,7 @@ const ProductOfferCard = ({ product, variant = "default", className }: ProductOf
             <PriceWithDiscount
               price={product.price}
               promotionalPrice={product.promotional_price}
-              size={variant === "large" ? "sm" : "xs"}
+              size="xs"
             />
           </div>
         </CardContent>
