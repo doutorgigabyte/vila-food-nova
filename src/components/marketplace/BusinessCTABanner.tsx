@@ -69,7 +69,7 @@ const BusinessCTABanner = () => {
                     </Button>
                   </Link>
                   <Link to="/cadastro-estabelecimento" className="w-full sm:w-auto">
-                    <Button size="lg" variant="outline" className="w-full border-white/30 text-white hover:bg-white/10 text-sm sm:text-base">
+                    <Button size="lg" className="w-full bg-white text-primary hover:bg-white/90 text-sm sm:text-base font-semibold">
                       Começar Grátis
                     </Button>
                   </Link>
