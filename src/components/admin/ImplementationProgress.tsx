@@ -82,7 +82,7 @@ const phases: ProgressPhase[] = [
       { name: 'Tabela whatsapp_carts (carrinhos temporários)', status: 'completed', priority: 'medium' },
       { name: 'Tabela whatsapp_conversations (histórico)', status: 'completed', priority: 'medium' },
       { name: 'RLS policies para todas as tabelas WhatsApp', status: 'completed', priority: 'high' },
-      { name: 'PlansManagement.tsx com campos WhatsApp', status: 'in-progress', priority: 'high' },
+      { name: 'PlansManagement.tsx com campos WhatsApp', status: 'completed', priority: 'high' },
     ]
   },
   {
@@ -90,9 +90,9 @@ const phases: ProgressPhase[] = [
     name: 'Fase 7: WhatsApp - Nível 1 (Chatbot)',
     description: 'Chatbot com palavras-chave configuráveis',
     items: [
-      { name: 'Interface de configuração de palavras-chave', status: 'pending', priority: 'high' },
-      { name: 'Palavras-chave padrão (cardápio, pedido, horário)', status: 'pending', priority: 'high' },
-      { name: 'Editor de mensagens automáticas', status: 'pending', priority: 'medium' },
+      { name: 'Interface de configuração de palavras-chave', status: 'completed', priority: 'high' },
+      { name: 'Palavras-chave padrão (cardápio, pedido, horário)', status: 'completed', priority: 'high' },
+      { name: 'Editor de mensagens automáticas', status: 'completed', priority: 'medium' },
       { name: 'Disparos automáticos de status de pedido', status: 'pending', priority: 'high' },
       { name: 'Edge Function whatsapp-chatbot', status: 'pending', priority: 'high' },
       { name: 'Teste de criação de instância Evolution API', status: 'pending', priority: 'high' },
@@ -117,7 +117,7 @@ const phases: ProgressPhase[] = [
     name: 'Fase 9: WhatsApp - Interface de Configuração',
     description: 'Dashboard completo de WhatsApp',
     items: [
-      { name: 'WhatsAppManagement.tsx com abas (Chatbot/Agente IA)', status: 'pending', priority: 'high' },
+      { name: 'WhatsAppManagement.tsx com abas (Chatbot/Agente IA)', status: 'completed', priority: 'high' },
       { name: 'Dashboard de conversas (histórico)', status: 'pending', priority: 'medium' },
       { name: 'Estatísticas de WhatsApp (mensagens, conversões)', status: 'pending', priority: 'medium' },
       { name: 'Preview de conversa em tempo real', status: 'pending', priority: 'low' },
