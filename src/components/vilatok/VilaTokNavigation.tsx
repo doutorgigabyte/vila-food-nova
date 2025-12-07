@@ -15,34 +15,47 @@ export function VilaTokNavigation({
 }: VilaTokNavigationProps) {
   return (
     <>
-      {/* Vertical dots (establishments) - right side */}
-      <div className="absolute right-2 top-1/2 -translate-y-1/2 flex flex-col gap-1.5 z-20">
-        {Array.from({ length: Math.min(totalEstablishments, 10) }).map((_, i) => (
+      {/* Vertical dots (establishments) - LEFT side */}
+      <div className="absolute left-3 top-1/2 -translate-y-1/2 flex flex-col gap-2 z-20">
+        {Array.from({ length: Math.min(totalEstablishments, 8) }).map((_, i) => (
           <div
-            key={i}
+            key={`v-${i}`}
             className={cn(
-              "w-1.5 h-1.5 rounded-full transition-all duration-300",
+              "rounded-full transition-all duration-300",
               i === currentEstablishmentIndex
-                ? "bg-white w-1.5 h-4"
-                : "bg-white/40"
+                ? "w-2.5 h-6 bg-primary shadow-lg shadow-primary/50"
+                : "w-2 h-2 bg-white/40 hover:bg-white/60"
             )}
           />
         ))}
-        {totalEstablishments > 10 && (
-          <span className="text-white/60 text-[8px] mt-1">
-            +{totalEstablishments - 10}
+        {totalEstablishments > 8 && (
+          <span className="text-white/50 text-[10px] font-medium mt-1">
+            +{totalEstablishments - 8}
           </span>
         )}
       </div>
 
-      {/* Swipe hints */}
-      <div className="absolute bottom-24 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 z-20 opacity-50">
-        <div className="flex items-center gap-4 text-white/70 text-xs">
-          <span>← →</span>
-          <span className="text-white/50">|</span>
-          <span>↑ ↓</span>
+      {/* Horizontal dots (videos/stories) - RIGHT side */}
+      {totalVideos > 1 && (
+        <div className="absolute right-3 top-1/2 -translate-y-1/2 flex flex-col gap-2 z-20">
+          {Array.from({ length: Math.min(totalVideos, 8) }).map((_, i) => (
+            <div
+              key={`h-${i}`}
+              className={cn(
+                "rounded-full transition-all duration-300",
+                i === currentVideoIndex
+                  ? "w-2.5 h-6 bg-white shadow-lg"
+                  : "w-2 h-2 bg-white/30 hover:bg-white/50"
+              )}
+            />
+          ))}
+          {totalVideos > 8 && (
+            <span className="text-white/40 text-[10px] font-medium mt-1">
+              +{totalVideos - 8}
+            </span>
+          )}
         </div>
-      </div>
+      )}
     </>
   );
 }
