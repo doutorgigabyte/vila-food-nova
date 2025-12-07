@@ -1,4 +1,6 @@
 import { Subcategory } from "@/lib/categoryConfig";
+import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
 
 interface SubcategoryGridProps {
   subcategories: Subcategory[];
@@ -8,20 +10,20 @@ interface SubcategoryGridProps {
   categoryBgColor: string;
 }
 
-// Color palette for subcategory cards
+// Color palette for subcategory cards with dark mode support
 const subcategoryColors = [
-  { bg: "bg-blue-50", border: "border-blue-100" },
-  { bg: "bg-pink-50", border: "border-pink-100" },
-  { bg: "bg-amber-50", border: "border-amber-100" },
-  { bg: "bg-green-50", border: "border-green-100" },
-  { bg: "bg-purple-50", border: "border-purple-100" },
-  { bg: "bg-red-50", border: "border-red-100" },
-  { bg: "bg-cyan-50", border: "border-cyan-100" },
-  { bg: "bg-orange-50", border: "border-orange-100" },
-  { bg: "bg-indigo-50", border: "border-indigo-100" },
-  { bg: "bg-teal-50", border: "border-teal-100" },
-  { bg: "bg-rose-50", border: "border-rose-100" },
-  { bg: "bg-emerald-50", border: "border-emerald-100" },
+  { bg: "bg-blue-50 dark:bg-blue-950/30", border: "border-blue-200 dark:border-blue-800", icon: "bg-blue-100 dark:bg-blue-900/50" },
+  { bg: "bg-pink-50 dark:bg-pink-950/30", border: "border-pink-200 dark:border-pink-800", icon: "bg-pink-100 dark:bg-pink-900/50" },
+  { bg: "bg-amber-50 dark:bg-amber-950/30", border: "border-amber-200 dark:border-amber-800", icon: "bg-amber-100 dark:bg-amber-900/50" },
+  { bg: "bg-green-50 dark:bg-green-950/30", border: "border-green-200 dark:border-green-800", icon: "bg-green-100 dark:bg-green-900/50" },
+  { bg: "bg-purple-50 dark:bg-purple-950/30", border: "border-purple-200 dark:border-purple-800", icon: "bg-purple-100 dark:bg-purple-900/50" },
+  { bg: "bg-red-50 dark:bg-red-950/30", border: "border-red-200 dark:border-red-800", icon: "bg-red-100 dark:bg-red-900/50" },
+  { bg: "bg-cyan-50 dark:bg-cyan-950/30", border: "border-cyan-200 dark:border-cyan-800", icon: "bg-cyan-100 dark:bg-cyan-900/50" },
+  { bg: "bg-orange-50 dark:bg-orange-950/30", border: "border-orange-200 dark:border-orange-800", icon: "bg-orange-100 dark:bg-orange-900/50" },
+  { bg: "bg-indigo-50 dark:bg-indigo-950/30", border: "border-indigo-200 dark:border-indigo-800", icon: "bg-indigo-100 dark:bg-indigo-900/50" },
+  { bg: "bg-teal-50 dark:bg-teal-950/30", border: "border-teal-200 dark:border-teal-800", icon: "bg-teal-100 dark:bg-teal-900/50" },
+  { bg: "bg-rose-50 dark:bg-rose-950/30", border: "border-rose-200 dark:border-rose-800", icon: "bg-rose-100 dark:bg-rose-900/50" },
+  { bg: "bg-emerald-50 dark:bg-emerald-950/30", border: "border-emerald-200 dark:border-emerald-800", icon: "bg-emerald-100 dark:bg-emerald-900/50" },
 ];
 
 const SubcategoryGrid = ({
@@ -32,38 +34,54 @@ const SubcategoryGrid = ({
   categoryBgColor,
 }: SubcategoryGridProps) => {
   return (
-    <div className="py-6 bg-card">
-      <h2 className="text-lg font-semibold mb-4 px-4">Categorias</h2>
-      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 px-4">
+    <section className="py-6 bg-card">
+      <div className="flex items-center justify-between px-4 mb-4">
+        <h2 className="text-lg font-bold text-foreground">Subcategorias</h2>
+        <span className="text-sm text-muted-foreground">{subcategories.length} opções</span>
+      </div>
+      
+      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3 px-4">
         {subcategories.map((subcategory, index) => {
           const isSelected = selectedSubcategory === subcategory.id;
           const colorSet = subcategoryColors[index % subcategoryColors.length];
           
           return (
-            <button
+            <motion.button
               key={subcategory.id}
               onClick={() => onSubcategoryClick(subcategory.id)}
-              className={`
-                flex flex-col items-center justify-center p-4 rounded-2xl
-                transition-all duration-200 hover:shadow-md hover:-translate-y-1
-                border
-                ${isSelected 
-                  ? `ring-2 ring-primary shadow-lg ${colorSet.bg} ${colorSet.border}` 
-                  : `${colorSet.bg} ${colorSet.border} hover:shadow-lg`
-                }
-              `}
+              className={cn(
+                "flex flex-col items-center justify-center p-3 rounded-2xl transition-all duration-200 border touch-target",
+                isSelected 
+                  ? "ring-2 ring-primary shadow-lg scale-105" 
+                  : "hover:shadow-lg hover:-translate-y-1",
+                colorSet.bg,
+                colorSet.border
+              )}
+              whileTap={{ scale: 0.95 }}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.03 }}
             >
-              <div className="w-14 h-14 flex items-center justify-center mb-2">
-                <span className="text-4xl">{subcategory.icon}</span>
+              <div className={cn(
+                "w-12 h-12 rounded-xl flex items-center justify-center mb-2",
+                colorSet.icon
+              )}>
+                <span className="text-2xl">{subcategory.icon}</span>
               </div>
-              <span className={`text-xs font-medium text-center leading-tight text-foreground`}>
+              <span className="text-xs font-medium text-center leading-tight text-foreground line-clamp-2">
                 {subcategory.name}
               </span>
-            </button>
+              {isSelected && (
+                <motion.div 
+                  className="w-1.5 h-1.5 rounded-full bg-primary mt-1"
+                  layoutId="subcategoryIndicator"
+                />
+              )}
+            </motion.button>
           );
         })}
       </div>
-    </div>
+    </section>
   );
 };
 

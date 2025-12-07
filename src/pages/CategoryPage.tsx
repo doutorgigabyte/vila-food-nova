@@ -7,6 +7,11 @@ import SubcategoryGrid from "@/components/marketplace/SubcategoryGrid";
 import CategoryStoresSection from "@/components/marketplace/CategoryStoresSection";
 import CategoryProductsSection from "@/components/marketplace/CategoryProductsSection";
 import MobileBottomNav from "@/components/marketplace/MobileBottomNav";
+import VideoHighlightsSection from "@/components/marketplace/VideoHighlightsSection";
+import TopOffersSection from "@/components/marketplace/TopOffersSection";
+import BestStoresSection from "@/components/marketplace/BestStoresSection";
+import Footer from "@/components/landing/Footer";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const CategoryPage = () => {
   const { categoryId, subcategoryId } = useParams<{ categoryId: string; subcategoryId?: string }>();
@@ -38,8 +43,6 @@ const CategoryPage = () => {
       setLoading(true);
       try {
         // Fetch establishments with segments that match this category
-        // For now, we'll fetch all active establishments and filter client-side
-        // In production, you'd want to add segment mapping to the database
         const { data: establishmentsData, error: estError } = await supabase
           .from("establishments")
           .select(`
@@ -130,14 +133,22 @@ const CategoryPage = () => {
 
   if (!category) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      <div className="min-h-screen bg-background">
+        <div className="p-4 space-y-4">
+          <Skeleton className="h-32 w-full" />
+          <Skeleton className="h-20 w-full" />
+          <div className="grid grid-cols-3 gap-3">
+            {[...Array(6)].map((_, i) => (
+              <Skeleton key={i} className="h-24 rounded-2xl" />
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="min-h-screen bg-background pb-20 md:pb-0">
       <CategoryHeader
         category={category}
         searchTerm={searchTerm}
@@ -152,10 +163,22 @@ const CategoryPage = () => {
         categoryBgColor={category.bgColor}
       />
 
+      {/* Video Highlights for this category */}
+      <VideoHighlightsSection mainCategory={categoryId} />
+
+      {/* Top Offers for this category */}
+      <TopOffersSection mainCategory={categoryId} />
+
       <CategoryProductsSection
         products={products}
         categoryName={category.name}
         loading={loading}
+      />
+
+      {/* Best Stores Section */}
+      <BestStoresSection 
+        mainCategory={categoryId} 
+        subcategory={selectedSubcategory}
       />
 
       <CategoryStoresSection
@@ -163,6 +186,8 @@ const CategoryPage = () => {
         categoryName={category.name}
         loading={loading}
       />
+
+      <Footer />
 
       <MobileBottomNav />
     </div>

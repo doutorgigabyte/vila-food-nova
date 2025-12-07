@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Home, Heart, ShoppingBag, ClipboardList, Menu } from "lucide-react";
+import { Home, Heart, ShoppingBag, ClipboardList, User, Flame } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCart } from "@/hooks/useCart";
 import { motion } from "framer-motion";
@@ -17,18 +17,26 @@ const MobileBottomNav = () => {
   };
 
   const navItems = [
-    { icon: Home, label: "Início", path: "/marketplace" },
-    { icon: Heart, label: "Favoritos", path: "/favoritos" },
+    { icon: Home, label: "Início", path: "/" },
+    { icon: Flame, label: "VilaTok", path: "/vilatok" },
     { icon: ShoppingBag, label: "Carrinho", path: "/checkout", isCenter: true, count: cartCount },
-    { icon: ClipboardList, label: "Pedidos", path: "/pedidos" },
-    { icon: Menu, label: "Menu", path: "/menu" },
+    { icon: Heart, label: "Favoritos", path: "/favoritos" },
+    { icon: User, label: "Conta", path: "/menu" },
   ];
+
+  // Check if current path matches or starts with the nav item path
+  const isPathActive = (path: string) => {
+    if (path === "/") {
+      return location.pathname === "/" || location.pathname === "/marketplace";
+    }
+    return location.pathname.startsWith(path);
+  };
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-md border-t border-border safe-area-inset-bottom md:hidden">
       <div className="flex items-center justify-around h-16 px-2">
         {navItems.map((item) => {
-          const isActive = location.pathname === item.path;
+          const isActive = isPathActive(item.path);
           const Icon = item.icon;
 
           if (item.isCenter) {
@@ -66,7 +74,7 @@ const MobileBottomNav = () => {
               to={item.path}
               onClick={triggerHaptic}
               className={cn(
-                "flex flex-col items-center justify-center gap-1 flex-1 py-2 transition-colors touch-feedback touch-target",
+                "flex flex-col items-center justify-center gap-1 flex-1 py-2 transition-colors touch-feedback touch-target relative",
                 isActive ? "text-primary" : "text-muted-foreground"
               )}
             >
@@ -76,11 +84,11 @@ const MobileBottomNav = () => {
               >
                 <Icon className={cn("w-5 h-5", isActive && "text-primary")} />
               </motion.div>
-              <span className="text-xs font-medium">{item.label}</span>
+              <span className="text-[10px] font-medium">{item.label}</span>
               {isActive && (
                 <motion.div 
                   className="absolute bottom-1 w-1 h-1 rounded-full bg-primary"
-                  layoutId="activeIndicator"
+                  layoutId="activeNavIndicator"
                 />
               )}
             </Link>
