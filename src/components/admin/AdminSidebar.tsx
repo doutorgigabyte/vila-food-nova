@@ -84,6 +84,7 @@ const navItems: NavItem[] = [
     label: "Sistema",
     children: [
       { icon: Heart, label: "Health Check", href: "/admin/health" },
+      { icon: BarChart3, label: "Progresso", href: "/admin/progresso" },
       { icon: Rocket, label: "Roadmap", href: "/admin/roadmap" },
       { icon: Database, label: "Migração", href: "/admin/migracao" },
       { icon: Database, label: "Banco de Dados", href: "/admin/banco-dados" },

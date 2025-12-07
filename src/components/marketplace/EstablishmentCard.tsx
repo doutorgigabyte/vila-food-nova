@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Establishment } from "@/hooks/useEstablishment";
+import { useFavorites } from "@/hooks/useFavorites";
 import { cn } from "@/lib/utils";
 
 interface EstablishmentCardProps {
@@ -22,6 +23,28 @@ const EstablishmentCard = ({
   className,
 }: EstablishmentCardProps) => {
   const est = establishment;
+  const { isEstablishmentFavorite, toggleFavoriteEstablishment } = useFavorites();
+  const isFavorite = isEstablishmentFavorite(est.id);
+
+  const handleFavoriteClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleFavoriteEstablishment(est.id);
+  };
+
+  const FavoriteButton = () => (
+    <Button 
+      variant="ghost" 
+      size="icon" 
+      className={cn(
+        "absolute top-3 right-3 w-9 h-9 bg-card/80 backdrop-blur-sm hover:bg-card rounded-full shadow-md active:scale-95 transition-all",
+        isFavorite ? "text-red-500 hover:text-red-600" : "text-muted-foreground hover:text-destructive"
+      )}
+      onClick={handleFavoriteClick}
+    >
+      <Heart className={cn("w-4 h-4", isFavorite && "fill-current")} />
+    </Button>
+  );
 
   if (variant === "compact") {
     return (
@@ -58,14 +81,7 @@ const EstablishmentCard = ({
               </Badge>
             )}
             
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="absolute top-3 right-3 w-9 h-9 bg-card/80 backdrop-blur-sm hover:bg-card text-muted-foreground hover:text-destructive rounded-full shadow-md active:scale-95"
-              onClick={(e) => e.preventDefault()}
-            >
-              <Heart className="w-4 h-4" />
-            </Button>
+            <FavoriteButton />
           </div>
           
           <CardContent className="p-4">
@@ -130,14 +146,7 @@ const EstablishmentCard = ({
               </Badge>
             )}
             
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="absolute top-3 right-3 w-9 h-9 bg-card/80 backdrop-blur-sm hover:bg-card text-muted-foreground hover:text-destructive rounded-full shadow-md active:scale-95"
-              onClick={(e) => e.preventDefault()}
-            >
-              <Heart className="w-4 h-4" />
-            </Button>
+            <FavoriteButton />
           </div>
           
           <CardContent className="p-4">
@@ -207,14 +216,7 @@ const EstablishmentCard = ({
             </div>
           )}
           
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="absolute top-3 right-3 w-9 h-9 bg-card/80 backdrop-blur-sm hover:bg-card text-muted-foreground hover:text-destructive rounded-full shadow-md active:scale-95"
-            onClick={(e) => e.preventDefault()}
-          >
-            <Heart className="w-4 h-4" />
-          </Button>
+          <FavoriteButton />
 
           {est.is_open && (
             <Badge className="absolute top-3 left-3 bg-green-500 rounded-full shadow-md">Aberto</Badge>
