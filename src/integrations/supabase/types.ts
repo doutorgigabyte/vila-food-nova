@@ -1362,6 +1362,45 @@ export type Database = {
           },
         ]
       }
+      favorites: {
+        Row: {
+          created_at: string
+          establishment_id: string | null
+          id: string
+          product_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          establishment_id?: string | null
+          id?: string
+          product_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          establishment_id?: string | null
+          id?: string
+          product_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "favorites_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "favorites_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       financial_accounts: {
         Row: {
           balance: number | null
@@ -2230,6 +2269,63 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      saved_addresses: {
+        Row: {
+          city: string
+          complement: string | null
+          created_at: string
+          formatted_address: string | null
+          id: string
+          is_default: boolean | null
+          label: string
+          latitude: number | null
+          longitude: number | null
+          neighborhood: string | null
+          number: string | null
+          state: string
+          street: string
+          updated_at: string
+          user_id: string
+          zip_code: string | null
+        }
+        Insert: {
+          city: string
+          complement?: string | null
+          created_at?: string
+          formatted_address?: string | null
+          id?: string
+          is_default?: boolean | null
+          label?: string
+          latitude?: number | null
+          longitude?: number | null
+          neighborhood?: string | null
+          number?: string | null
+          state?: string
+          street: string
+          updated_at?: string
+          user_id: string
+          zip_code?: string | null
+        }
+        Update: {
+          city?: string
+          complement?: string | null
+          created_at?: string
+          formatted_address?: string | null
+          id?: string
+          is_default?: boolean | null
+          label?: string
+          latitude?: number | null
+          longitude?: number | null
+          neighborhood?: string | null
+          number?: string | null
+          state?: string
+          street?: string
+          updated_at?: string
+          user_id?: string
+          zip_code?: string | null
+        }
+        Relationships: []
       }
       scheduled_orders: {
         Row: {
