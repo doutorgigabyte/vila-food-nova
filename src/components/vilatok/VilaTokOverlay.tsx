@@ -38,54 +38,59 @@ export function VilaTokOverlay({
     : 0;
 
   return (
-    <div className="absolute bottom-0 left-0 right-16 p-4 pb-20">
-      {/* Establishment Info */}
-      <div className="flex items-center gap-3 mb-3">
-        <Avatar className="w-10 h-10 border-2 border-white ring-2 ring-primary/50">
+    <div className="absolute bottom-0 left-0 right-20 p-4 pb-6 z-10">
+      {/* Establishment Info - Avatar com borda vermelha */}
+      <div className="flex items-center gap-3 mb-2">
+        <Avatar className="w-12 h-12 border-[3px] border-primary shadow-lg">
           <AvatarImage src={getImageUrl(establishment.logo_url)} />
-          <AvatarFallback className="bg-primary text-primary-foreground text-sm">
+          <AvatarFallback className="bg-primary text-primary-foreground text-lg font-bold">
             {establishment.name.charAt(0)}
           </AvatarFallback>
         </Avatar>
-        <span className="text-white font-bold text-base drop-shadow-lg">
+        <span className="text-white font-semibold text-base drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
           @{establishment.slug}
         </span>
       </div>
 
-      {/* Video Title & Description */}
+      {/* Video Title - Bold e grande */}
       {video.title && (
-        <h3 className="text-white font-semibold text-lg mb-1 drop-shadow-lg line-clamp-1">
+        <h3 className="text-white font-bold text-xl mb-1 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] line-clamp-2">
           {video.title}
         </h3>
       )}
+      
+      {/* Video Description */}
       {video.description && (
-        <p className="text-white/90 text-sm drop-shadow-lg line-clamp-2 mb-4">
+        <p className="text-white/90 text-sm drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] line-clamp-3 mb-4 leading-relaxed">
           {video.description}
         </p>
       )}
 
-      {/* Enhanced Product Card */}
+      {/* Product Card - Layout exato do reference */}
       {product && (
-        <div className="bg-white rounded-2xl p-3 shadow-xl border-2 border-primary/20 max-w-[300px] relative overflow-hidden">
-          {/* Discount Badge */}
+        <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-3 shadow-2xl max-w-[320px] relative overflow-hidden">
+          {/* Discount Badge - Canto superior direito */}
           {hasDiscount && (
-            <div className="absolute -top-1 -right-1 bg-gradient-to-r from-red-500 to-primary text-white text-xs font-bold px-2 py-1 rounded-bl-lg rounded-tr-xl flex items-center gap-1">
+            <div className="absolute top-2 right-2 bg-gradient-to-r from-primary to-red-500 text-white text-xs font-bold px-2 py-1 rounded-lg flex items-center gap-1 shadow-md">
               <Sparkles className="w-3 h-3" />
               -{discountPercent}%
             </div>
           )}
 
           <div className="flex items-center gap-3">
+            {/* Product Image */}
             <img
               src={getImageUrl(product.image_url)}
               alt={product.name}
-              className="w-16 h-16 rounded-xl object-cover ring-2 ring-primary/10"
+              className="w-16 h-16 rounded-xl object-cover shadow-md flex-shrink-0"
             />
-            <div className="flex-1 min-w-0">
-              <p className="text-foreground font-semibold text-sm line-clamp-1">
+            
+            {/* Product Info */}
+            <div className="flex-1 min-w-0 pr-8">
+              <p className="text-foreground font-semibold text-sm line-clamp-1 mb-1">
                 {product.name}
               </p>
-              <div className="flex items-center gap-2 mt-0.5">
+              <div className="flex items-baseline gap-2">
                 {hasDiscount ? (
                   <>
                     <span className="text-primary font-bold text-lg">
@@ -104,10 +109,10 @@ export function VilaTokOverlay({
             </div>
           </div>
 
-          {/* Prominent "Eu Quero" Button */}
+          {/* "Eu Quero!" Button - Vermelho com ícone */}
           <Button
             onClick={onProductClick}
-            className="w-full mt-3 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-white font-bold py-5 text-base rounded-xl shadow-lg shadow-primary/30 transition-all duration-200 active:scale-[0.98]"
+            className="w-full mt-3 bg-primary hover:bg-primary/90 text-white font-bold py-4 text-base rounded-xl shadow-lg transition-all duration-200 active:scale-[0.98]"
           >
             <ShoppingBag className="w-5 h-5 mr-2" />
             Eu Quero!

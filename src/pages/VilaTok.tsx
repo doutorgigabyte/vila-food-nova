@@ -1,6 +1,6 @@
 import { useEffect, useCallback, useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Flame } from 'lucide-react';
+import { Flame } from 'lucide-react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Mousewheel, Keyboard, FreeMode, Virtual } from 'swiper/modules';
 import type { Swiper as SwiperType } from 'swiper';
@@ -14,9 +14,10 @@ import { useAuth } from '@/hooks/useAuth';
 import { VilaTokPlayer } from '@/components/vilatok/VilaTokPlayer';
 import { VilaTokSidebar } from '@/components/vilatok/VilaTokSidebar';
 import { VilaTokOverlay } from '@/components/vilatok/VilaTokOverlay';
-import { VilaTokNavigation } from '@/components/vilatok/VilaTokNavigation';
 import { VilaTokProgressBars } from '@/components/vilatok/VilaTokProgressBars';
 import { VilaTokTutorial } from '@/components/vilatok/VilaTokTutorial';
+import { VilaTokHeader } from '@/components/vilatok/VilaTokHeader';
+import { VilaTokAudioIndicator } from '@/components/vilatok/VilaTokAudioIndicator';
 import { useCart } from '@/hooks/useCart';
 import { toast } from 'sonner';
 import VideoComments from '@/components/stories/VideoComments';
@@ -35,21 +36,11 @@ export default function VilaTok() {
   const { addToCart } = useCart();
   const {
     establishments,
-    currentEstablishment,
-    currentVideo,
-    currentEstablishmentIndex,
-    currentVideoIndex,
     isLoading,
     likedVideos,
-    goToNextEstablishment,
-    goToPreviousEstablishment,
-    goToNextVideo,
-    goToPreviousVideo,
     toggleLike,
     incrementViews,
     incrementShares,
-    totalEstablishments,
-    totalVideosInCurrent,
   } = useVilaTok({ mainCategorySlug: categorySlug });
 
   const [showComments, setShowComments] = useState(false);
@@ -59,24 +50,22 @@ export default function VilaTok() {
   const [currentProgress, setCurrentProgress] = useState(0);
   const [activeEstablishmentIndex, setActiveEstablishmentIndex] = useState(0);
   const [activeVideoIndices, setActiveVideoIndices] = useState<Map<number, number>>(new Map());
+  const [isPlaying, setIsPlaying] = useState(true);
 
   const handleTutorialComplete = useCallback(() => {
     localStorage.setItem(TUTORIAL_STORAGE_KEY, 'true');
     setShowTutorial(false);
   }, []);
 
-  // Get current active video index for establishment
   const getActiveVideoIndex = (estIndex: number) => {
     return activeVideoIndices.get(estIndex) || 0;
   };
 
-  // Handle vertical slide change (establishment)
   const handleVerticalSlideChange = useCallback((swiper: SwiperType) => {
     setActiveEstablishmentIndex(swiper.activeIndex);
     setCurrentProgress(0);
   }, []);
 
-  // Handle horizontal slide change (video within establishment)
   const handleHorizontalSlideChange = useCallback((estIndex: number, swiper: SwiperType) => {
     setActiveVideoIndices(prev => {
       const next = new Map(prev);
@@ -86,22 +75,18 @@ export default function VilaTok() {
     setCurrentProgress(0);
   }, []);
 
-  // Handle auto-advance: go to next video, or next establishment if last video
   const handleAutoAdvance = useCallback(() => {
     const currentHorizontalSwiper = horizontalSwipersRef.current.get(activeEstablishmentIndex);
     const currentVideoIdx = getActiveVideoIndex(activeEstablishmentIndex);
     const currentEst = establishments[activeEstablishmentIndex];
     
     if (currentEst && currentVideoIdx < currentEst.videos.length - 1) {
-      // More videos in current establishment - advance horizontal
       currentHorizontalSwiper?.slideNext();
     } else if (verticalSwiperRef.current && activeEstablishmentIndex < establishments.length - 1) {
-      // Last video, go to next establishment
       verticalSwiperRef.current.slideNext();
     }
   }, [activeEstablishmentIndex, establishments, activeVideoIndices]);
 
-  // Reset progress when video changes
   useEffect(() => {
     setCurrentProgress(0);
   }, [activeEstablishmentIndex, activeVideoIndices]);
@@ -119,13 +104,8 @@ export default function VilaTok() {
     const shareText = video.description || `Confira ${est.establishment.name} no VilaTok!`;
 
     try {
-      const shareData = {
-        title: shareTitle,
-        text: shareText,
-        url: shareUrl,
-      };
       if (navigator.share) {
-        await navigator.share(shareData);
+        await navigator.share({ title: shareTitle, text: shareText, url: shareUrl });
         incrementShares(video.id);
       } else {
         await navigator.clipboard.writeText(shareUrl);
@@ -180,7 +160,6 @@ export default function VilaTok() {
     setCurrentProgress(progress);
   }, []);
 
-  // Get current active video and establishment
   const activeEst = establishments[activeEstablishmentIndex];
   const activeVideoIdx = getActiveVideoIndex(activeEstablishmentIndex);
   const activeVideo = activeEst?.videos[activeVideoIdx];
@@ -199,25 +178,7 @@ export default function VilaTok() {
   if (establishments.length === 0) {
     return (
       <div className="fixed inset-0 bg-black flex flex-col">
-        {/* Header */}
-        <div className="absolute top-0 left-0 right-0 z-30 bg-black/80 backdrop-blur-sm">
-          <div className="flex items-center justify-between p-4">
-            <button
-              onClick={() => navigate(-1)}
-              className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center"
-            >
-              <ArrowLeft className="w-5 h-5 text-white" />
-            </button>
-
-            <div className="flex items-center gap-2">
-              <Flame className="w-6 h-6 text-primary" />
-              <span className="text-white font-bold text-lg">VilaTok</span>
-            </div>
-
-            <div className="w-10" />
-          </div>
-        </div>
-
+        <VilaTokHeader />
         <div className="flex-1 flex flex-col items-center justify-center p-8 pt-32">
           <Flame className="w-20 h-20 text-primary mb-6" />
           <h2 className="text-white text-2xl font-bold mb-2">VilaTok</h2>
@@ -240,26 +201,10 @@ export default function VilaTok() {
 
   return (
     <div className="fixed inset-0 bg-black overflow-hidden vilatok-container">
-      {/* Header */}
-      <div className="absolute top-0 left-0 right-0 z-30">
-        <div className="flex items-center justify-between p-4 bg-gradient-to-b from-black/60 to-transparent">
-          <button
-            onClick={() => navigate(-1)}
-            className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center"
-          >
-            <ArrowLeft className="w-5 h-5 text-white" />
-          </button>
+      {/* Header com botão Voltar e logo VilaTok */}
+      <VilaTokHeader />
 
-          <div className="flex items-center gap-2">
-            <Flame className="w-6 h-6 text-primary" />
-            <span className="text-white font-bold text-lg">VilaTok</span>
-          </div>
-
-          <div className="w-10" />
-        </div>
-      </div>
-
-      {/* Instagram-style Progress Bars */}
+      {/* Progress Bars - Instagram style */}
       {activeEst && (
         <VilaTokProgressBars
           totalVideos={activeEst.videos.length}
@@ -268,7 +213,12 @@ export default function VilaTok() {
         />
       )}
 
-      {/* Vertical Swiper (Establishments) - Ultra-fluid config */}
+      {/* Audio Indicator - Lado esquerdo */}
+      <div className="absolute left-4 top-1/2 -translate-y-1/2 z-20">
+        <VilaTokAudioIndicator isPlaying={isPlaying && !showTutorial} />
+      </div>
+
+      {/* Vertical Swiper (Establishments) */}
       <Swiper
         direction="vertical"
         modules={[Mousewheel, Keyboard, FreeMode, Virtual]}
@@ -298,13 +248,7 @@ export default function VilaTok() {
         passiveListeners={true}
         edgeSwipeDetection={true}
         edgeSwipeThreshold={20}
-        freeMode={{
-          enabled: false,
-          momentum: true,
-          momentumRatio: 0.8,
-          momentumBounce: true,
-          momentumBounceRatio: 0.6,
-        }}
+        freeMode={false}
         className="w-full h-full"
         onSwiper={(swiper) => {
           verticalSwiperRef.current = swiper;
@@ -317,7 +261,7 @@ export default function VilaTok() {
             className="w-full h-full vilatok-slide"
             virtualIndex={estIndex}
           >
-            {/* Horizontal Swiper (Videos within Establishment) - Ultra-fluid config */}
+            {/* Horizontal Swiper (Videos within Establishment) */}
             <Swiper
               direction="horizontal"
               modules={[Mousewheel, Keyboard, FreeMode]}
@@ -343,11 +287,7 @@ export default function VilaTok() {
               touchStartPreventDefault={false}
               touchMoveStopPropagation={true}
               passiveListeners={true}
-              freeMode={{
-                enabled: false,
-                momentum: true,
-                momentumRatio: 0.8,
-              }}
+              freeMode={false}
               className="w-full h-full"
               onSwiper={(swiper) => {
                 horizontalSwipersRef.current.set(estIndex, swiper);
@@ -358,6 +298,13 @@ export default function VilaTok() {
               {est.videos.map((video, vidIndex) => {
                 const isVideoActive = !showTutorial && estIndex === activeEstablishmentIndex && vidIndex === (activeVideoIndices.get(estIndex) || 0);
                 const isNearby = Math.abs(estIndex - activeEstablishmentIndex) <= 1;
+                
+                // Prepare video thumbnails for sidebar navigation
+                const videoThumbnails = est.videos.map((v, idx) => ({
+                  id: v.id,
+                  thumbnail_url: v.thumbnail_url,
+                  isActive: idx === (activeVideoIndices.get(estIndex) || 0),
+                }));
                 
                 return (
                   <SwiperSlide key={video.id} className="w-full h-full vilatok-slide">
@@ -372,6 +319,7 @@ export default function VilaTok() {
                           onVideoEnd={() => {}}
                           onAutoAdvance={handleAutoAdvance}
                           onProgressUpdate={handleProgressUpdate}
+                          onPlayStateChange={setIsPlaying}
                         />
                       )}
 
@@ -385,7 +333,8 @@ export default function VilaTok() {
                         onProductClick={handleAddToCart}
                       />
 
-                      <div className="absolute right-4 bottom-32 z-20">
+                      {/* Sidebar - Lado direito */}
+                      <div className="absolute right-3 bottom-48 z-20">
                         <VilaTokSidebar
                           videoId={video.id}
                           likesCount={video.likes_count}
@@ -419,6 +368,7 @@ export default function VilaTok() {
                           onViewProduct={handleAddToCart}
                           onGoToStore={handleGoToStore}
                           hasProduct={!!video.product}
+                          videoThumbnails={videoThumbnails}
                         />
                       </div>
                     </div>
@@ -430,14 +380,6 @@ export default function VilaTok() {
         ))}
       </Swiper>
 
-      {/* Navigation Indicators */}
-      <VilaTokNavigation
-        totalEstablishments={establishments.length}
-        currentEstablishmentIndex={activeEstablishmentIndex}
-        totalVideos={activeEst?.videos.length || 0}
-        currentVideoIndex={activeVideoIdx}
-      />
-
       {/* Comments Modal */}
       {activeVideo && (
         <VideoComments
@@ -447,7 +389,7 @@ export default function VilaTok() {
         />
       )}
 
-      {/* Tutorial Overlay - First visit only */}
+      {/* Tutorial Overlay */}
       {showTutorial && (
         <VilaTokTutorial onComplete={handleTutorialComplete} />
       )}

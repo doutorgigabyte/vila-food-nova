@@ -514,3 +514,18 @@
   background-size: 200% 200%;
   animation: gradient 2s ease infinite;
 }
+
+/* VilaTok Audio Indicator Animation */
+@keyframes vilatok-audio-bar {
+  0%, 100% {
+    transform: scaleY(0.3);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+.vilatok-audio-bar {
+  animation: vilatok-audio-bar 0.5s ease-in-out infinite;
+  transform-origin: bottom;
+}
