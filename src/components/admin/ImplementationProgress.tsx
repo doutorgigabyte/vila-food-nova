@@ -1,145 +1,321 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, Circle, Clock, MessageSquare, Bot, Settings } from 'lucide-react';
+import { 
+  CheckCircle, Circle, Clock, MessageSquare, Bot, Settings, 
+  Shield, ShoppingCart, Video, LayoutDashboard, CreditCard,
+  Users, MapPin, Bell, Truck, Store, AlertTriangle
+} from 'lucide-react';
 
 interface ProgressPhase {
   id: string;
   name: string;
   description: string;
+  category: 'completed' | 'security' | 'operation' | 'vilatok' | 'admin' | 'financial' | 'ux' | 'integration';
   items: {
     name: string;
     status: 'completed' | 'in-progress' | 'pending';
-    priority: 'high' | 'medium' | 'low';
+    priority: 'critical' | 'high' | 'medium' | 'low';
   }[];
 }
 
 const phases: ProgressPhase[] = [
+  // ===== FASES CONCLUÍDAS =====
   {
-    id: 'phase-1',
-    name: 'Fase 1: Correções Críticas',
-    description: 'Tabelas e funcionalidades essenciais',
+    id: 'whatsapp-complete',
+    name: '✅ Módulo WhatsApp',
+    description: 'Chatbot + Agente IA + Monitoramento (100% concluído)',
+    category: 'completed',
     items: [
-      { name: 'Tabela favorites', status: 'completed', priority: 'high' },
-      { name: 'Tabela saved_addresses', status: 'completed', priority: 'high' },
-      { name: 'Hook useFavorites', status: 'completed', priority: 'high' },
-      { name: 'Hook useUserOrders', status: 'completed', priority: 'high' },
-      { name: 'Página Orders.tsx com dados reais', status: 'completed', priority: 'high' },
-      { name: 'Página Favorites.tsx com dados reais', status: 'completed', priority: 'high' },
+      { name: 'Infraestrutura de tabelas e RLS', status: 'completed', priority: 'high' },
+      { name: 'Nível 1: Chatbot com palavras-chave', status: 'completed', priority: 'high' },
+      { name: 'Nível 2: Agente IA com Lovable AI', status: 'completed', priority: 'high' },
+      { name: 'Interface de configuração completa', status: 'completed', priority: 'high' },
+      { name: 'Health Check e monitoramento', status: 'completed', priority: 'high' },
+      { name: 'Notificações automáticas de pedidos', status: 'completed', priority: 'high' },
+    ]
+  },
+
+  // ===== PRIORIDADE 1: SEGURANÇA E SESSÃO =====
+  {
+    id: 'security-session',
+    name: '🔒 P1: Segurança e Sessão',
+    description: 'Correções críticas de logout, contexto e autenticação',
+    category: 'security',
+    items: [
+      { name: 'Bug crítico: logout não invalida sessão (botão voltar loga novamente)', status: 'pending', priority: 'critical' },
+      { name: 'Limpar storage/cookies no logout', status: 'pending', priority: 'critical' },
+      { name: 'Validação de e-mail com código na criação de conta', status: 'pending', priority: 'high' },
+      { name: 'Contexto de estabelecimento quebrado em WhatsApp & IA', status: 'pending', priority: 'high' },
+      { name: 'Contexto de estabelecimento quebrado em Área de Atendimento', status: 'pending', priority: 'high' },
+      { name: 'Erro RLS ao criar cupom no Admin', status: 'pending', priority: 'high' },
+      { name: 'Visitante vê menus de usuário logado (ocultar)', status: 'pending', priority: 'medium' },
+    ]
+  },
+
+  // ===== PRIORIDADE 2: OPERAÇÃO DA LOJA =====
+  {
+    id: 'pdv-operation',
+    name: '💳 P2.1: PDV (Ponto de Venda)',
+    description: 'Sistema de vendas presenciais',
+    category: 'operation',
+    items: [
+      { name: 'PIX: Corrigir geração de QR Code (erro atual)', status: 'pending', priority: 'critical' },
+      { name: 'Dinheiro: Confirmação de pagamento não funciona', status: 'pending', priority: 'critical' },
+      { name: 'Cartão: Integração com Mercado Pago', status: 'pending', priority: 'critical' },
+      { name: 'Criar pedido após pagamento confirmado', status: 'pending', priority: 'high' },
+      { name: 'Atualização de status do pedido', status: 'pending', priority: 'high' },
+      { name: 'Geração de comprovante', status: 'pending', priority: 'medium' },
     ]
   },
   {
-    id: 'phase-2',
-    name: 'Fase 2: Melhorias de UX',
-    description: 'Experiência do usuário e design',
+    id: 'comanda-operation',
+    name: '🍽️ P2.2: Comanda Digital',
+    description: 'Sistema de mesas e garçom',
+    category: 'operation',
     items: [
-      { name: 'Sistema de notificações com som', status: 'completed', priority: 'high' },
-      { name: 'Modal de novo pedido', status: 'completed', priority: 'high' },
-      { name: 'Auto-avanço VilaTok Stories', status: 'completed', priority: 'medium' },
-      { name: 'Barra de progresso no vídeo', status: 'completed', priority: 'medium' },
-      { name: 'Histórico integrado no DriverApp', status: 'completed', priority: 'medium' },
+      { name: 'Botão "Abrir comanda" não funciona', status: 'pending', priority: 'critical' },
+      { name: 'Nome do garçom vir do usuário logado (não digitado)', status: 'pending', priority: 'high' },
+      { name: 'Mudar estado visual da mesa ao abrir comanda', status: 'pending', priority: 'high' },
+      { name: 'Interface adaptada para tablet (touch)', status: 'pending', priority: 'medium' },
+      { name: 'Integração com display de cozinha', status: 'pending', priority: 'medium' },
     ]
   },
   {
-    id: 'phase-3',
-    name: 'Fase 3: Integrações',
-    description: 'APIs e serviços externos',
+    id: 'stock-operation',
+    name: '📦 P2.3: Estoque',
+    description: 'Gestão de inventário',
+    category: 'operation',
     items: [
-      { name: 'Histórico do App Entregador', status: 'completed', priority: 'medium' },
-      { name: 'GPS em tempo real (useDriverGPS)', status: 'completed', priority: 'medium' },
-      { name: 'GPSStatusIndicator component', status: 'completed', priority: 'medium' },
-      { name: 'Webhooks Mercado Pago', status: 'completed', priority: 'high' },
+      { name: 'Selecionar produto não carrega lista', status: 'pending', priority: 'critical' },
+      { name: 'Vincular movimentações aos produtos da loja', status: 'pending', priority: 'high' },
+      { name: 'Fluxo completo entrada/saída/ajuste/perda', status: 'pending', priority: 'high' },
     ]
   },
   {
-    id: 'phase-4',
-    name: 'Fase 4: Configurações',
-    description: 'Polimento e configurações',
+    id: 'orders-operation',
+    name: '📋 P2.4: Pedidos',
+    description: 'Gestão de pedidos da loja',
+    category: 'operation',
     items: [
-      { name: 'Configurações do Estabelecimento', status: 'completed', priority: 'medium' },
-      { name: 'Área de serviço no mapa', status: 'completed', priority: 'low' },
+      { name: 'Integração com PDV', status: 'pending', priority: 'high' },
+      { name: 'Integração com marketplace', status: 'pending', priority: 'high' },
+      { name: 'Fluxo de status: Pendente → Confirmado → Preparando → Pronto → Entrega', status: 'pending', priority: 'high' },
+      { name: 'Pedidos agendados para horário específico', status: 'pending', priority: 'medium' },
+    ]
+  },
+
+  // ===== PRIORIDADE 3: VILATOK =====
+  {
+    id: 'vilatok-fixes',
+    name: '🎬 P3: VilaTok / Stories',
+    description: 'Correções da micro rede social',
+    category: 'vilatok',
+    items: [
+      { name: 'Botão "Novo vídeo" abre tela branca (bug crítico)', status: 'pending', priority: 'critical' },
+      { name: 'Fluxo completo: Upload → Cortar → Música → Detalhes → Agendar → Preview', status: 'pending', priority: 'high' },
+      { name: 'Limitar repostagem automática a max 3x/dia', status: 'pending', priority: 'high' },
+      { name: 'Separar criação de stories do perfil VilaTok', status: 'pending', priority: 'medium' },
+      { name: 'Stories do cardápio exibir apenas da loja atual', status: 'pending', priority: 'high' },
+      { name: 'Foto de perfil circular com anel de stories', status: 'pending', priority: 'medium' },
+      { name: 'Remover IA isolada de produto (centralizar no Diagnóstico)', status: 'pending', priority: 'low' },
+    ]
+  },
+
+  // ===== PRIORIDADE 4: ADMIN =====
+  {
+    id: 'admin-plans',
+    name: '⚙️ P4.1: Planos e Regras de Negócio',
+    description: 'Aplicar regras de plano no sistema',
+    category: 'admin',
+    items: [
+      { name: 'Recursos configurados no plano refletir na loja', status: 'pending', priority: 'critical' },
+      { name: 'WhatsApp básico vs. avançado por plano', status: 'pending', priority: 'high' },
+      { name: 'Limite de stories no VilaTok por plano', status: 'pending', priority: 'high' },
+      { name: 'Recursos de IA e analytics por plano', status: 'pending', priority: 'medium' },
+      { name: 'Modelo de pagamento e ativação de planos', status: 'pending', priority: 'high' },
     ]
   },
   {
-    id: 'phase-5',
-    name: 'Fase 5: Testes e Deploy',
-    description: 'Validação e lançamento',
+    id: 'admin-responsive',
+    name: '📱 P4.2: Responsividade Admin',
+    description: 'Todas as telas admin para mobile',
+    category: 'admin',
     items: [
-      { name: 'Health Check do Sistema', status: 'completed', priority: 'high' },
-      { name: 'Testes de fluxo completo', status: 'completed', priority: 'high' },
-      { name: 'Documentação de APIs', status: 'completed', priority: 'medium' },
+      { name: 'Dashboard do SuperAdmin responsivo', status: 'pending', priority: 'high' },
+      { name: 'Gestão de estabelecimentos responsiva', status: 'pending', priority: 'high' },
+      { name: 'Gestão de planos responsiva', status: 'pending', priority: 'medium' },
+      { name: 'Gestão de vilas responsiva', status: 'pending', priority: 'medium' },
+      { name: 'Relatórios responsivos', status: 'pending', priority: 'medium' },
     ]
   },
   {
-    id: 'phase-6',
-    name: 'Fase 6: WhatsApp - Infraestrutura',
-    description: 'Base de dados e configurações do módulo WhatsApp',
+    id: 'admin-reports',
+    name: '📊 P4.3: Relatórios',
+    description: 'Módulo de relatórios e analytics',
+    category: 'admin',
     items: [
-      { name: 'Campos WhatsApp em plans (chatbot, ai_agent, max_messages)', status: 'completed', priority: 'high' },
-      { name: 'Campos extras em whatsapp_instances (level, keywords)', status: 'completed', priority: 'high' },
-      { name: 'Tabela whatsapp_keywords (palavras-chave)', status: 'completed', priority: 'high' },
-      { name: 'Tabela whatsapp_auto_messages (mensagens automáticas)', status: 'completed', priority: 'high' },
-      { name: 'Tabela whatsapp_carts (carrinhos temporários)', status: 'completed', priority: 'medium' },
-      { name: 'Tabela whatsapp_conversations (histórico)', status: 'completed', priority: 'medium' },
-      { name: 'RLS policies para todas as tabelas WhatsApp', status: 'completed', priority: 'high' },
-      { name: 'PlansManagement.tsx com campos WhatsApp', status: 'completed', priority: 'high' },
+      { name: 'Criar módulo de relatórios básico', status: 'pending', priority: 'high' },
+      { name: 'Filtros por período, loja, vila', status: 'pending', priority: 'high' },
+      { name: 'Health Check como ferramenta de monitoramento técnico', status: 'pending', priority: 'medium' },
+      { name: 'Pedidos admin com visão analítica', status: 'pending', priority: 'medium' },
+    ]
+  },
+
+  // ===== PRIORIDADE 5: FINANCEIRO E INTEGRAÇÕES =====
+  {
+    id: 'financial-integration',
+    name: '💰 P5.1: Financeiro',
+    description: 'Consolidar módulos financeiros',
+    category: 'financial',
+    items: [
+      { name: 'Validar integração Mercado Pago completa', status: 'pending', priority: 'critical' },
+      { name: 'Split em tempo real no pagamento', status: 'pending', priority: 'high' },
+      { name: 'Consolidar pagamentos e fluxo de caixa em módulo único', status: 'pending', priority: 'high' },
+      { name: 'Integrar com pedidos e PDV', status: 'pending', priority: 'high' },
+      { name: 'Remover módulo de Cashback (complexo demais)', status: 'pending', priority: 'low' },
+      { name: 'Unificar Vouchers e Cupons', status: 'pending', priority: 'medium' },
     ]
   },
   {
-    id: 'phase-7',
-    name: 'Fase 7: WhatsApp - Nível 1 (Chatbot)',
-    description: 'Chatbot com palavras-chave configuráveis',
+    id: 'pixels-integration',
+    name: '📈 P5.2: Pixels e Feeds',
+    description: 'Validar integrações de marketing',
+    category: 'integration',
     items: [
-      { name: 'Interface de configuração de palavras-chave', status: 'completed', priority: 'high' },
-      { name: 'Palavras-chave padrão (cardápio, pedido, horário)', status: 'completed', priority: 'high' },
-      { name: 'Editor de mensagens automáticas', status: 'completed', priority: 'medium' },
-      { name: 'Edge Function whatsapp-order-notifications', status: 'completed', priority: 'high' },
-      { name: 'Hook useWhatsAppKeywords', status: 'completed', priority: 'high' },
-      { name: 'Hook useWhatsAppAutoMessages', status: 'completed', priority: 'high' },
-      { name: 'Edge Function whatsapp-webhook atualizada (Tier 1)', status: 'completed', priority: 'high' },
-      { name: 'Integração Evolution API', status: 'completed', priority: 'high' },
+      { name: 'Validar disparo de eventos Google Analytics', status: 'pending', priority: 'medium' },
+      { name: 'Validar disparo de eventos Facebook Pixel', status: 'pending', priority: 'medium' },
+      { name: 'Validar disparo de eventos TikTok Pixel', status: 'pending', priority: 'low' },
+      { name: 'Validar feed XML para Meta e Google Merchant', status: 'pending', priority: 'medium' },
+    ]
+  },
+
+  // ===== MELHORIAS DE UX =====
+  {
+    id: 'ux-marketplace',
+    name: '🛒 UX: Marketplace',
+    description: 'Correções de experiência do usuário',
+    category: 'ux',
+    items: [
+      { name: 'Sininho de notificações não funciona na tela de categoria', status: 'pending', priority: 'high' },
+      { name: 'Remover ícone de fogo (VilaTok) das categorias (redundante)', status: 'pending', priority: 'low' },
+      { name: 'Espaçamento entre botão som e fechar nas notificações', status: 'pending', priority: 'medium' },
+      { name: 'Slide 3D muda de tamanho no scroll', status: 'pending', priority: 'high' },
+      { name: 'Cards de produtos com tamanho padronizado', status: 'pending', priority: 'high' },
+      { name: 'Clique em produto abre page view', status: 'pending', priority: 'high' },
+      { name: 'Clique em estabelecimento abre cardápio (não funciona)', status: 'pending', priority: 'critical' },
+      { name: 'Filtros "Todos, Recém-chegados, Popular" não funcionam', status: 'pending', priority: 'high' },
+      { name: 'Ordenação não altera listagem', status: 'pending', priority: 'high' },
+      { name: 'Vilas não abrem ao clique', status: 'pending', priority: 'high' },
+      { name: 'Scroll horizontal tremendo/travando', status: 'pending', priority: 'medium' },
     ]
   },
   {
-    id: 'phase-8',
-    name: 'Fase 8: WhatsApp - Nível 2 (Agente IA)',
-    description: 'Agente IA com vendas conversacionais',
+    id: 'ux-cardapio',
+    name: '📖 UX: Cardápio Digital',
+    description: 'Melhorias na visualização de lojas',
+    category: 'ux',
     items: [
-      { name: 'Edge Function whatsapp-ai-response com Lovable AI', status: 'completed', priority: 'high' },
-      { name: 'Tool Calling: add_to_cart, remove_from_cart', status: 'completed', priority: 'high' },
-      { name: 'Tool Calling: view_cart, checkout', status: 'completed', priority: 'high' },
-      { name: 'Tool Calling: calculate_delivery, request_human', status: 'completed', priority: 'high' },
-      { name: 'Envio de imagens de produtos (CloudFront)', status: 'completed', priority: 'medium' },
-      { name: 'Prompt personalizado por estabelecimento', status: 'completed', priority: 'medium' },
-      { name: 'Fallback para atendimento humano', status: 'completed', priority: 'medium' },
+      { name: 'Página carrega no meio (deve ser no topo)', status: 'pending', priority: 'high' },
+      { name: 'Foto de perfil circular com anel de stories', status: 'pending', priority: 'medium' },
+      { name: 'Stories mostram outras lojas (deve ser só da loja)', status: 'pending', priority: 'high' },
+      { name: 'Notificações 100% internas (não browser push)', status: 'pending', priority: 'medium' },
     ]
   },
   {
-    id: 'phase-9',
-    name: 'Fase 9: WhatsApp - Interface de Configuração',
-    description: 'Dashboard completo de WhatsApp',
+    id: 'ux-categories',
+    name: '🏷️ UX: Categorias e Subcategorias',
+    description: 'Lógica de filtros por categoria',
+    category: 'ux',
     items: [
-      { name: 'WhatsAppManagement.tsx com 6 abas', status: 'completed', priority: 'high' },
-      { name: 'Dashboard de conversas (histórico)', status: 'completed', priority: 'medium' },
-      { name: 'ConversationHistory component', status: 'completed', priority: 'medium' },
-      { name: 'Estatísticas de WhatsApp em tempo real', status: 'completed', priority: 'medium' },
-      { name: 'QR Code para conexão', status: 'completed', priority: 'high' },
-      { name: 'Bloqueio de features por plano', status: 'completed', priority: 'high' },
+      { name: 'Categoria exibe apenas estabelecimentos relacionados', status: 'pending', priority: 'high' },
+      { name: 'VilaTok da categoria mostra só stories daquela categoria', status: 'pending', priority: 'high' },
+      { name: 'Slide/banners específicos por categoria', status: 'pending', priority: 'medium' },
+      { name: 'Subcategoria filtra corretamente estabelecimentos', status: 'pending', priority: 'high' },
     ]
   },
   {
-    id: 'phase-10',
-    name: 'Fase 10: WhatsApp - Testes & Monitoramento',
-    description: 'Sistema de monitoramento e health check',
+    id: 'ux-account',
+    name: '👤 UX: Minha Conta',
+    description: 'Páginas do usuário cliente',
+    category: 'ux',
     items: [
-      { name: 'WhatsAppHealthCheck component', status: 'completed', priority: 'high' },
-      { name: 'WhatsAppRealTimeStats component', status: 'completed', priority: 'high' },
-      { name: 'Realtime subscription para estatísticas', status: 'completed', priority: 'medium' },
-      { name: 'Verificação de Evolution API', status: 'completed', priority: 'high' },
-      { name: 'Verificação de Edge Functions', status: 'completed', priority: 'high' },
-      { name: 'Aba de monitoramento no dashboard', status: 'completed', priority: 'medium' },
+      { name: 'Implementar página "Meus endereços"', status: 'pending', priority: 'high' },
+      { name: 'Implementar página "Minha conta" com edição', status: 'pending', priority: 'high' },
+      { name: 'Implementar Modo escuro ou remover', status: 'pending', priority: 'low' },
+      { name: 'Implementar Configurações do cliente', status: 'pending', priority: 'low' },
     ]
-  }
+  },
+
+  // ===== CONFIGURAÇÕES DA LOJA =====
+  {
+    id: 'store-config',
+    name: '⚙️ Configurações da Loja',
+    description: 'Ajustes nas configurações do estabelecimento',
+    category: 'operation',
+    items: [
+      { name: 'Horário de funcionamento por dia da semana', status: 'pending', priority: 'high' },
+      { name: 'Status automático baseado no horário', status: 'pending', priority: 'high' },
+      { name: 'Redesenhar módulo de taxas (delivery/retirada/mesa separados)', status: 'pending', priority: 'high' },
+      { name: 'Split em tempo real para entregador (não agendado)', status: 'pending', priority: 'medium' },
+      { name: 'Implementar QR Code da loja', status: 'pending', priority: 'low' },
+      { name: 'Implementar Banners da loja', status: 'pending', priority: 'low' },
+    ]
+  },
+
+  // ===== DIAGNÓSTICO IA =====
+  {
+    id: 'ai-diagnosis',
+    name: '🤖 Diagnóstico de IA',
+    description: 'Hub de inteligência artificial',
+    category: 'integration',
+    items: [
+      { name: '"Aplicar melhorias" deve gerar textos otimizados', status: 'pending', priority: 'high' },
+      { name: 'Sugestões de banners e organização', status: 'pending', priority: 'medium' },
+      { name: 'Pré-preencher campos para lojista confirmar', status: 'pending', priority: 'medium' },
+      { name: 'Relatório mais estratégico e poético', status: 'pending', priority: 'low' },
+    ]
+  },
+
+  // ===== ENTREGADORES =====
+  {
+    id: 'delivery-drivers',
+    name: '🚴 Entregadores',
+    description: 'Sistema de entregadores',
+    category: 'operation',
+    items: [
+      { name: 'App entregador: lista de lojas vinculadas', status: 'pending', priority: 'high' },
+      { name: 'Entregador solicita vínculo com novas lojas', status: 'pending', priority: 'medium' },
+      { name: 'Lojista aceita/recusa vínculo de entregador', status: 'pending', priority: 'medium' },
+      { name: 'Pedido marketplace → loja → entregador', status: 'pending', priority: 'high' },
+    ]
+  },
+
+  // ===== CARRINHO ABANDONADO =====
+  {
+    id: 'abandoned-cart',
+    name: '🛒 Recuperador de Vendas',
+    description: 'Carrinho abandonado + IA + WhatsApp',
+    category: 'integration',
+    items: [
+      { name: 'Detectar carrinho abandonado', status: 'pending', priority: 'high' },
+      { name: 'Programar mensagens WhatsApp automáticas', status: 'pending', priority: 'high' },
+      { name: 'Intervalo configurável (1min, 5min, etc)', status: 'pending', priority: 'medium' },
+    ]
+  },
+
+  // ===== LIMPEZA =====
+  {
+    id: 'cleanup',
+    name: '🧹 Limpeza e Remoções',
+    description: 'Remover módulos desnecessários',
+    category: 'admin',
+    items: [
+      { name: 'Remover módulo de Fornecedores', status: 'pending', priority: 'low' },
+      { name: 'Remover "Chamar suporte" do SuperAdmin', status: 'pending', priority: 'low' },
+      { name: 'E-mail apenas para validação (não notificações)', status: 'pending', priority: 'medium' },
+    ]
+  },
 ];
 
 export function ImplementationProgress() {
@@ -149,6 +325,9 @@ export function ImplementationProgress() {
   );
   const inProgressItems = phases.reduce((acc, phase) => 
     acc + phase.items.filter(item => item.status === 'in-progress').length, 0
+  );
+  const criticalItems = phases.reduce((acc, phase) => 
+    acc + phase.items.filter(item => item.priority === 'critical' && item.status !== 'completed').length, 0
   );
   
   const overallProgress = Math.round((completedItems / totalItems) * 100);
@@ -166,6 +345,8 @@ export function ImplementationProgress() {
 
   const getPriorityBadge = (priority: string) => {
     switch (priority) {
+      case 'critical':
+        return <Badge variant="destructive" className="text-xs animate-pulse">Crítica</Badge>;
       case 'high':
         return <Badge variant="destructive" className="text-xs">Alta</Badge>;
       case 'medium':
@@ -175,13 +356,50 @@ export function ImplementationProgress() {
     }
   };
 
-  const getPhaseIcon = (phaseId: string) => {
-    if (phaseId.includes('phase-6') || phaseId.includes('phase-7') || phaseId.includes('phase-8') || phaseId.includes('phase-9') || phaseId.includes('phase-10')) {
-      if (phaseId === 'phase-8') return <Bot className="h-4 w-4 text-primary" />;
-      if (phaseId === 'phase-9' || phaseId === 'phase-10') return <Settings className="h-4 w-4 text-primary" />;
-      return <MessageSquare className="h-4 w-4 text-primary" />;
+  const getCategoryIcon = (category: string) => {
+    switch (category) {
+      case 'completed':
+        return <CheckCircle className="h-5 w-5 text-green-500" />;
+      case 'security':
+        return <Shield className="h-5 w-5 text-red-500" />;
+      case 'operation':
+        return <ShoppingCart className="h-5 w-5 text-orange-500" />;
+      case 'vilatok':
+        return <Video className="h-5 w-5 text-pink-500" />;
+      case 'admin':
+        return <LayoutDashboard className="h-5 w-5 text-blue-500" />;
+      case 'financial':
+        return <CreditCard className="h-5 w-5 text-emerald-500" />;
+      case 'ux':
+        return <Users className="h-5 w-5 text-purple-500" />;
+      case 'integration':
+        return <Bot className="h-5 w-5 text-cyan-500" />;
+      default:
+        return <Settings className="h-5 w-5 text-muted-foreground" />;
     }
-    return null;
+  };
+
+  const getCategoryColor = (category: string) => {
+    switch (category) {
+      case 'completed':
+        return 'bg-green-500/10 border-green-500/30';
+      case 'security':
+        return 'bg-red-500/10 border-red-500/30';
+      case 'operation':
+        return 'bg-orange-500/10 border-orange-500/30';
+      case 'vilatok':
+        return 'bg-pink-500/10 border-pink-500/30';
+      case 'admin':
+        return 'bg-blue-500/10 border-blue-500/30';
+      case 'financial':
+        return 'bg-emerald-500/10 border-emerald-500/30';
+      case 'ux':
+        return 'bg-purple-500/10 border-purple-500/30';
+      case 'integration':
+        return 'bg-cyan-500/10 border-cyan-500/30';
+      default:
+        return '';
+    }
   };
 
   return (
@@ -189,9 +407,9 @@ export function ImplementationProgress() {
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="text-xl">Progresso da Implementação</CardTitle>
+            <CardTitle className="text-xl">Roadmap Beta-Teste VillaFood</CardTitle>
             <p className="text-sm text-muted-foreground mt-1">
-              VilaFood - Sistema em Desenvolvimento Contínuo
+              Relatório completo de melhorias e correções
             </p>
           </div>
           <div className="text-right">
@@ -204,7 +422,7 @@ export function ImplementationProgress() {
         
         <div className="mt-4 space-y-2">
           <Progress value={overallProgress} className="h-3" />
-          <div className="flex gap-4 text-xs text-muted-foreground">
+          <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
             <span className="flex items-center gap-1">
               <CheckCircle className="h-3 w-3 text-green-500" />
               {completedItems} concluídos
@@ -217,7 +435,35 @@ export function ImplementationProgress() {
               <Circle className="h-3 w-3 text-muted-foreground" />
               {totalItems - completedItems - inProgressItems} pendentes
             </span>
+            {criticalItems > 0 && (
+              <span className="flex items-center gap-1 text-red-500 font-medium">
+                <AlertTriangle className="h-3 w-3" />
+                {criticalItems} críticos
+              </span>
+            )}
           </div>
+        </div>
+
+        {/* Legenda de categorias */}
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Badge variant="outline" className="bg-red-500/10 border-red-500/30 text-red-700">
+            <Shield className="h-3 w-3 mr-1" /> Segurança
+          </Badge>
+          <Badge variant="outline" className="bg-orange-500/10 border-orange-500/30 text-orange-700">
+            <ShoppingCart className="h-3 w-3 mr-1" /> Operação
+          </Badge>
+          <Badge variant="outline" className="bg-pink-500/10 border-pink-500/30 text-pink-700">
+            <Video className="h-3 w-3 mr-1" /> VilaTok
+          </Badge>
+          <Badge variant="outline" className="bg-blue-500/10 border-blue-500/30 text-blue-700">
+            <LayoutDashboard className="h-3 w-3 mr-1" /> Admin
+          </Badge>
+          <Badge variant="outline" className="bg-emerald-500/10 border-emerald-500/30 text-emerald-700">
+            <CreditCard className="h-3 w-3 mr-1" /> Financeiro
+          </Badge>
+          <Badge variant="outline" className="bg-purple-500/10 border-purple-500/30 text-purple-700">
+            <Users className="h-3 w-3 mr-1" /> UX
+          </Badge>
         </div>
       </CardHeader>
       
@@ -225,15 +471,22 @@ export function ImplementationProgress() {
         {phases.map((phase) => {
           const phaseCompleted = phase.items.filter(i => i.status === 'completed').length;
           const phaseProgress = Math.round((phaseCompleted / phase.items.length) * 100);
-          const isWhatsAppPhase = phase.id.includes('phase-6') || phase.id.includes('phase-7') || phase.id.includes('phase-8') || phase.id.includes('phase-9') || phase.id.includes('phase-10');
+          const phaseCritical = phase.items.filter(i => i.priority === 'critical' && i.status !== 'completed').length;
           
           return (
-            <div key={phase.id} className={`space-y-3 ${isWhatsAppPhase ? 'p-4 rounded-lg bg-primary/5 border border-primary/20' : ''}`}>
+            <div key={phase.id} className={`space-y-3 p-4 rounded-lg border ${getCategoryColor(phase.category)}`}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  {getPhaseIcon(phase.id)}
+                  {getCategoryIcon(phase.category)}
                   <div>
-                    <h3 className="font-semibold">{phase.name}</h3>
+                    <h3 className="font-semibold flex items-center gap-2">
+                      {phase.name}
+                      {phaseCritical > 0 && (
+                        <Badge variant="destructive" className="text-xs">
+                          {phaseCritical} crítico{phaseCritical > 1 ? 's' : ''}
+                        </Badge>
+                      )}
+                    </h3>
                     <p className="text-xs text-muted-foreground">{phase.description}</p>
                   </div>
                 </div>
@@ -251,6 +504,8 @@ export function ImplementationProgress() {
                         ? 'bg-green-500/10' 
                         : item.status === 'in-progress'
                         ? 'bg-yellow-500/10'
+                        : item.priority === 'critical'
+                        ? 'bg-red-500/5'
                         : 'bg-muted/50'
                     }`}
                   >
@@ -270,11 +525,38 @@ export function ImplementationProgress() {
           );
         })}
 
+        {/* Resumo das prioridades */}
+        <div className="pt-4 border-t space-y-3">
+          <h4 className="font-semibold text-sm">Prioridades de Implementação:</h4>
+          <div className="grid gap-2 text-sm">
+            <div className="flex items-center gap-2">
+              <Badge variant="destructive">P1</Badge>
+              <span>Segurança e Sessão - logout, contexto, RLS</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge variant="destructive">P2</Badge>
+              <span>Operação da Loja - PDV, Comanda, Estoque, Pedidos</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge className="bg-pink-500">P3</Badge>
+              <span>VilaTok - Stories, repostagem, perfil</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge className="bg-blue-500">P4</Badge>
+              <span>Admin - Planos, responsividade, relatórios</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge className="bg-emerald-500">P5</Badge>
+              <span>Financeiro e Integrações - Mercado Pago, split, pixels</span>
+            </div>
+          </div>
+        </div>
+
         <div className="pt-4 border-t">
           <div className="flex items-center gap-2 text-sm">
             <MessageSquare className="h-4 w-4 text-green-500" />
             <span className="text-green-600 font-medium">
-              Módulo WhatsApp 100% concluído (Fases 6-10) ✓
+              Módulo WhatsApp 100% concluído ✓
             </span>
           </div>
         </div>
