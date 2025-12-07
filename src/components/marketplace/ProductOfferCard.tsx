@@ -3,6 +3,7 @@ import { Heart, Plus, Clock } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useFavorites } from "@/hooks/useFavorites";
 import { cn } from "@/lib/utils";
 
 interface Product {
@@ -27,12 +28,21 @@ interface ProductOfferCardProps {
 }
 
 const ProductOfferCard = ({ product, variant = "default", className }: ProductOfferCardProps) => {
+  const { isProductFavorite, toggleFavoriteProduct } = useFavorites();
+  const isFavorite = isProductFavorite(product.id);
+  
   const discount = product.promotional_price && product.promotional_price < product.price
     ? Math.round(((product.price - product.promotional_price) / product.price) * 100)
     : null;
   
   const currentPrice = product.promotional_price || product.price;
   const isAvailable = product.is_active !== false && product.establishment?.is_open !== false;
+
+  const handleFavoriteClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleFavoriteProduct(product.id);
+  };
 
   return (
     <Link 
@@ -84,10 +94,13 @@ const ProductOfferCard = ({ product, variant = "default", className }: ProductOf
           <Button 
             variant="ghost" 
             size="icon" 
-            className="absolute top-3 right-3 w-9 h-9 bg-card/80 backdrop-blur-sm hover:bg-card text-muted-foreground hover:text-destructive transition-colors rounded-full shadow-md active:scale-95"
-            onClick={(e) => e.preventDefault()}
+            className={cn(
+              "absolute top-3 right-3 w-9 h-9 bg-card/80 backdrop-blur-sm hover:bg-card transition-all rounded-full shadow-md active:scale-95",
+              isFavorite ? "text-red-500 hover:text-red-600" : "text-muted-foreground hover:text-destructive"
+            )}
+            onClick={handleFavoriteClick}
           >
-            <Heart className="w-4 h-4" />
+            <Heart className={cn("w-4 h-4", isFavorite && "fill-current")} />
           </Button>
           
           {/* Add button */}
