@@ -6,7 +6,6 @@ import { VilaTokPlayer } from '@/components/vilatok/VilaTokPlayer';
 import { VilaTokSidebar } from '@/components/vilatok/VilaTokSidebar';
 import { VilaTokOverlay } from '@/components/vilatok/VilaTokOverlay';
 import { VilaTokNavigation } from '@/components/vilatok/VilaTokNavigation';
-import CategoryPills from '@/components/marketplace/CategoryPills';
 import { useCart } from '@/hooks/useCart';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -39,13 +38,6 @@ export default function VilaTok() {
   const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null);
   const [showComments, setShowComments] = useState(false);
 
-  const handleCategoryChange = (slug: string | null) => {
-    if (slug) {
-      setSearchParams({ category: slug });
-    } else {
-      setSearchParams({});
-    }
-  };
 
   // Handle keyboard navigation
   useEffect(() => {
@@ -198,12 +190,6 @@ export default function VilaTok() {
 
             <div className="w-10" />
           </div>
-          <div className="bg-black/60">
-            <CategoryPills 
-              selectedCategory={categorySlug || undefined} 
-              onCategoryChange={handleCategoryChange}
-            />
-          </div>
         </div>
 
         <div className="flex-1 flex flex-col items-center justify-center p-8 pt-32">
@@ -250,13 +236,6 @@ export default function VilaTok() {
           <div className="w-10" />
         </div>
         
-        {/* Category Pills */}
-        <div className="bg-black/40 backdrop-blur-sm">
-          <CategoryPills 
-            selectedCategory={categorySlug || undefined} 
-            onCategoryChange={handleCategoryChange}
-          />
-        </div>
       </div>
 
       {/* Video Player */}
@@ -266,6 +245,7 @@ export default function VilaTok() {
         musicUrl={currentVideo.music_url}
         isActive={true}
         onViewCountIncrement={() => incrementViews(currentVideo.id)}
+        onVideoEnd={goToNextEstablishment}
       />
 
       {/* Navigation Indicators */}
