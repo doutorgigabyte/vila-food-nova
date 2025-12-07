@@ -8,8 +8,11 @@ interface VilaTokPlayerProps {
   thumbnailUrl?: string | null;
   musicUrl?: string | null;
   isActive: boolean;
+  autoAdvance?: boolean;
+  autoAdvanceDelay?: number; // milliseconds after video ends
   onViewCountIncrement?: () => void;
   onVideoEnd?: () => void;
+  onAutoAdvance?: () => void;
 }
 
 export function VilaTokPlayer({
@@ -17,8 +20,11 @@ export function VilaTokPlayer({
   thumbnailUrl,
   musicUrl,
   isActive,
+  autoAdvance = true,
+  autoAdvanceDelay = 500,
   onViewCountIncrement,
   onVideoEnd,
+  onAutoAdvance,
 }: VilaTokPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -72,6 +78,17 @@ export function VilaTokPlayer({
 
     return () => clearTimeout(timer);
   }, [isPlaying, hasCountedView, onViewCountIncrement]);
+
+  // Handle video end with auto-advance
+  const handleVideoEnd = useCallback(() => {
+    onVideoEnd?.();
+    
+    if (autoAdvance && onAutoAdvance) {
+      setTimeout(() => {
+        onAutoAdvance();
+      }, autoAdvanceDelay);
+    }
+  }, [autoAdvance, autoAdvanceDelay, onVideoEnd, onAutoAdvance]);
 
   const togglePlay = useCallback(() => {
     if (!videoRef.current) return;
@@ -133,7 +150,7 @@ export function VilaTokPlayer({
         muted={isMuted}
         playsInline
         preload="auto"
-        onEnded={onVideoEnd}
+        onEnded={handleVideoEnd}
       />
 
       {/* Background Music */}
@@ -144,6 +161,20 @@ export function VilaTokPlayer({
           loop
           preload="auto"
         />
+      )}
+
+      {/* Progress bar */}
+      {isActive && (
+        <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20 z-40">
+          <div 
+            className="h-full bg-primary transition-all duration-100"
+            style={{ 
+              width: videoRef.current 
+                ? `${(videoRef.current.currentTime / (videoRef.current.duration || 1)) * 100}%` 
+                : '0%' 
+            }}
+          />
+        </div>
       )}
 
       {/* Play/Pause indicator */}
