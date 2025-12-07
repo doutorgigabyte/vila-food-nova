@@ -119,6 +119,21 @@ const MarketplaceHeader = ({ searchTerm, onSearchChange, onSearchClick }: Market
               <img src={logoHorizontal} alt="VilaFood" className="h-9 md:h-10" />
             </Link>
 
+            {/* Search Bar - Desktop */}
+            <div className="hidden md:flex flex-1 max-w-xl mx-4">
+              <div className="relative w-full" onClick={onSearchClick}>
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar restaurantes ou pratos..."
+                  className="pl-10 bg-muted/50 cursor-pointer"
+                  value={searchTerm}
+                  onChange={(e) => onSearchChange(e.target.value)}
+                  onFocus={onSearchClick}
+                  readOnly={!!onSearchClick}
+                />
+              </div>
+            </div>
+
             {/* Navigation - Desktop */}
             <nav className="hidden lg:flex items-center gap-6">
               <Link to="/" className="text-sm font-medium text-primary hover:text-primary/80 transition-colors">
