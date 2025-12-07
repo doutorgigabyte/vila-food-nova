@@ -1,6 +1,12 @@
 import { useEffect, useCallback, useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Flame } from 'lucide-react';
+import { Swiper, SwiperSlide } from 'swiper/react';
+import { Mousewheel, Keyboard } from 'swiper/modules';
+import type { Swiper as SwiperType } from 'swiper';
+import 'swiper/css';
+import 'swiper/css/mousewheel';
+
 import { useVilaTok } from '@/hooks/useVilaTok';
 import { VilaTokPlayer } from '@/components/vilatok/VilaTokPlayer';
 import { VilaTokSidebar } from '@/components/vilatok/VilaTokSidebar';
@@ -18,10 +24,13 @@ export default function VilaTok() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const categorySlug = searchParams.get('category');
-  const containerRef = useRef<HTMLDivElement>(null);
+  
+  const verticalSwiperRef = useRef<SwiperType | null>(null);
+  const horizontalSwipersRef = useRef<Map<number, SwiperType>>(new Map());
   
   const { addToCart } = useCart();
   const {
+    establishments,
     currentEstablishment,
     currentVideo,
     currentEstablishmentIndex,
@@ -39,144 +48,71 @@ export default function VilaTok() {
     totalVideosInCurrent,
   } = useVilaTok({ mainCategorySlug: categorySlug });
 
-  const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null);
   const [showComments, setShowComments] = useState(false);
   const [showTutorial, setShowTutorial] = useState(() => {
     return !localStorage.getItem(TUTORIAL_STORAGE_KEY);
   });
   const [currentProgress, setCurrentProgress] = useState(0);
+  const [activeEstablishmentIndex, setActiveEstablishmentIndex] = useState(0);
+  const [activeVideoIndices, setActiveVideoIndices] = useState<Map<number, number>>(new Map());
 
   const handleTutorialComplete = useCallback(() => {
     localStorage.setItem(TUTORIAL_STORAGE_KEY, 'true');
     setShowTutorial(false);
   }, []);
 
+  // Get current active video index for establishment
+  const getActiveVideoIndex = (estIndex: number) => {
+    return activeVideoIndices.get(estIndex) || 0;
+  };
+
+  // Handle vertical slide change (establishment)
+  const handleVerticalSlideChange = useCallback((swiper: SwiperType) => {
+    setActiveEstablishmentIndex(swiper.activeIndex);
+    setCurrentProgress(0);
+  }, []);
+
+  // Handle horizontal slide change (video within establishment)
+  const handleHorizontalSlideChange = useCallback((estIndex: number, swiper: SwiperType) => {
+    setActiveVideoIndices(prev => {
+      const next = new Map(prev);
+      next.set(estIndex, swiper.activeIndex);
+      return next;
+    });
+    setCurrentProgress(0);
+  }, []);
+
   // Handle auto-advance: go to next video, or next establishment if last video
   const handleAutoAdvance = useCallback(() => {
-    if (currentVideoIndex < totalVideosInCurrent - 1) {
-      // More videos in current establishment
-      goToNextVideo();
-    } else {
+    const currentHorizontalSwiper = horizontalSwipersRef.current.get(activeEstablishmentIndex);
+    const currentVideoIdx = getActiveVideoIndex(activeEstablishmentIndex);
+    const currentEst = establishments[activeEstablishmentIndex];
+    
+    if (currentEst && currentVideoIdx < currentEst.videos.length - 1) {
+      // More videos in current establishment - advance horizontal
+      currentHorizontalSwiper?.slideNext();
+    } else if (verticalSwiperRef.current && activeEstablishmentIndex < establishments.length - 1) {
       // Last video, go to next establishment
-      goToNextEstablishment();
+      verticalSwiperRef.current.slideNext();
     }
-  }, [currentVideoIndex, totalVideosInCurrent, goToNextVideo, goToNextEstablishment]);
+  }, [activeEstablishmentIndex, establishments, activeVideoIndices]);
 
   // Reset progress when video changes
   useEffect(() => {
     setCurrentProgress(0);
-  }, [currentVideoIndex, currentEstablishmentIndex]);
-
-  // Handle keyboard navigation
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (showTutorial) return;
-      
-      switch (e.key) {
-        case 'ArrowUp':
-          e.preventDefault();
-          goToPreviousEstablishment();
-          break;
-        case 'ArrowDown':
-          e.preventDefault();
-          goToNextEstablishment();
-          break;
-        case 'ArrowLeft':
-          e.preventDefault();
-          goToPreviousVideo();
-          break;
-        case 'ArrowRight':
-          e.preventDefault();
-          handleAutoAdvance();
-          break;
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [showTutorial, goToNextEstablishment, goToPreviousEstablishment, goToNextVideo, goToPreviousVideo, handleAutoAdvance]);
-
-  // Handle mouse wheel navigation
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    const handleWheel = (e: WheelEvent) => {
-      if (showTutorial) return;
-      
-      e.preventDefault();
-      
-      // Debounce wheel events
-      const now = Date.now();
-      const lastWheel = container.dataset.lastWheel ? parseInt(container.dataset.lastWheel) : 0;
-      if (now - lastWheel < 300) return;
-      container.dataset.lastWheel = now.toString();
-
-      if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
-        // Vertical scroll - change establishment
-        if (e.deltaY > 0) {
-          goToNextEstablishment();
-        } else {
-          goToPreviousEstablishment();
-        }
-      } else {
-        // Horizontal scroll - change video
-        if (e.deltaX > 0) {
-          handleAutoAdvance();
-        } else {
-          goToPreviousVideo();
-        }
-      }
-    };
-
-    container.addEventListener('wheel', handleWheel, { passive: false });
-    return () => container.removeEventListener('wheel', handleWheel);
-  }, [showTutorial, goToNextEstablishment, goToPreviousEstablishment, goToPreviousVideo, handleAutoAdvance]);
-
-  // Handle touch swipe
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    setTouchStart({ x: e.touches[0].clientX, y: e.touches[0].clientY });
-  }, []);
-
-  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
-    if (!touchStart) return;
-
-    const touchEnd = { x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY };
-    const deltaX = touchEnd.x - touchStart.x;
-    const deltaY = touchEnd.y - touchStart.y;
-
-    const minSwipeDistance = 50;
-
-    // Check if horizontal or vertical swipe
-    if (Math.abs(deltaX) > Math.abs(deltaY)) {
-      // Horizontal swipe
-      if (Math.abs(deltaX) > minSwipeDistance) {
-        if (deltaX > 0) {
-          goToPreviousVideo();
-        } else {
-          handleAutoAdvance();
-        }
-      }
-    } else {
-      // Vertical swipe
-      if (Math.abs(deltaY) > minSwipeDistance) {
-        if (deltaY > 0) {
-          goToPreviousEstablishment();
-        } else {
-          goToNextEstablishment();
-        }
-      }
-    }
-
-    setTouchStart(null);
-  }, [touchStart, goToNextEstablishment, goToPreviousEstablishment, goToPreviousVideo, handleAutoAdvance]);
+  }, [activeEstablishmentIndex, activeVideoIndices]);
 
   const handleShare = useCallback(async () => {
-    if (!currentVideo || !currentEstablishment) return;
+    const estIndex = activeEstablishmentIndex;
+    const vidIndex = getActiveVideoIndex(estIndex);
+    const est = establishments[estIndex];
+    const video = est?.videos[vidIndex];
+    
+    if (!video || !est) return;
 
-    const shareUrl = `${window.location.origin}/vilatok?v=${currentVideo.id}`;
-    const shareTitle = currentVideo.title || currentEstablishment.establishment.name;
-    const shareText = currentVideo.description || `Confira ${currentEstablishment.establishment.name} no VilaTok!`;
+    const shareUrl = `${window.location.origin}/vilatok?v=${video.id}`;
+    const shareTitle = video.title || est.establishment.name;
+    const shareText = video.description || `Confira ${est.establishment.name} no VilaTok!`;
 
     try {
       const shareData = {
@@ -186,34 +122,39 @@ export default function VilaTok() {
       };
       if (navigator.share) {
         await navigator.share(shareData);
-        incrementShares(currentVideo.id);
+        incrementShares(video.id);
       } else {
         await navigator.clipboard.writeText(shareUrl);
         toast.success('Link copiado para a área de transferência!');
-        incrementShares(currentVideo.id);
+        incrementShares(video.id);
       }
     } catch (error) {
       console.error('Error sharing:', error);
     }
-  }, [currentVideo, currentEstablishment, incrementShares]);
+  }, [activeEstablishmentIndex, establishments, activeVideoIndices, incrementShares]);
 
   const handleAddToCart = useCallback(async () => {
-    if (!currentVideo?.product || !currentEstablishment) return;
+    const estIndex = activeEstablishmentIndex;
+    const vidIndex = getActiveVideoIndex(estIndex);
+    const est = establishments[estIndex];
+    const video = est?.videos[vidIndex];
+    
+    if (!video?.product || !est) return;
 
     const product = {
-      id: currentVideo.product.id,
-      name: currentVideo.product.name,
-      price: currentVideo.product.price,
-      promotional_price: currentVideo.product.promotional_price,
-      image_url: currentVideo.product.image_url,
-      establishment_id: currentEstablishment.establishment.id,
+      id: video.product.id,
+      name: video.product.name,
+      price: video.product.price,
+      promotional_price: video.product.promotional_price,
+      image_url: video.product.image_url,
+      establishment_id: est.establishment.id,
     };
 
     const establishmentInfo = {
-      id: currentEstablishment.establishment.id,
-      name: currentEstablishment.establishment.name,
-      slug: currentEstablishment.establishment.slug,
-      logo_url: currentEstablishment.establishment.logo_url,
+      id: est.establishment.id,
+      name: est.establishment.name,
+      slug: est.establishment.slug,
+      logo_url: est.establishment.logo_url,
       vila_id: null,
       delivery_base_fee: 0,
       min_order_value: 0,
@@ -222,17 +163,23 @@ export default function VilaTok() {
     };
 
     await addToCart(product, establishmentInfo);
-    toast.success(`${currentVideo.product.name} adicionado ao carrinho!`);
-  }, [currentVideo, currentEstablishment, addToCart]);
+    toast.success(`${video.product.name} adicionado ao carrinho!`);
+  }, [activeEstablishmentIndex, establishments, activeVideoIndices, addToCart]);
 
   const handleGoToStore = useCallback(() => {
-    if (!currentEstablishment) return;
-    navigate(`/loja/${currentEstablishment.establishment.slug}`);
-  }, [currentEstablishment, navigate]);
+    const est = establishments[activeEstablishmentIndex];
+    if (!est) return;
+    navigate(`/loja/${est.establishment.slug}`);
+  }, [activeEstablishmentIndex, establishments, navigate]);
 
   const handleProgressUpdate = useCallback((progress: number) => {
     setCurrentProgress(progress);
   }, []);
+
+  // Get current active video and establishment
+  const activeEst = establishments[activeEstablishmentIndex];
+  const activeVideoIdx = getActiveVideoIndex(activeEstablishmentIndex);
+  const activeVideo = activeEst?.videos[activeVideoIdx];
 
   if (isLoading) {
     return (
@@ -245,10 +192,10 @@ export default function VilaTok() {
     );
   }
 
-  if (!currentVideo || !currentEstablishment) {
+  if (establishments.length === 0) {
     return (
       <div className="fixed inset-0 bg-black flex flex-col">
-        {/* Header with category pills */}
+        {/* Header */}
         <div className="absolute top-0 left-0 right-0 z-30 bg-black/80 backdrop-blur-sm">
           <div className="flex items-center justify-between p-4">
             <button
@@ -288,13 +235,8 @@ export default function VilaTok() {
   }
 
   return (
-    <div 
-      ref={containerRef}
-      className="fixed inset-0 bg-black overflow-hidden"
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
-    >
-      {/* Header with category pills */}
+    <div className="fixed inset-0 bg-black overflow-hidden">
+      {/* Header */}
       <div className="absolute top-0 left-0 right-0 z-30">
         <div className="flex items-center justify-between p-4 bg-gradient-to-b from-black/60 to-transparent">
           <button
@@ -314,66 +256,124 @@ export default function VilaTok() {
       </div>
 
       {/* Instagram-style Progress Bars */}
-      <VilaTokProgressBars
-        totalVideos={totalVideosInCurrent}
-        currentVideoIndex={currentVideoIndex}
-        currentProgress={currentProgress}
-      />
+      {activeEst && (
+        <VilaTokProgressBars
+          totalVideos={activeEst.videos.length}
+          currentVideoIndex={activeVideoIdx}
+          currentProgress={currentProgress}
+        />
+      )}
 
-      {/* Video Player */}
-      <VilaTokPlayer
-        videoUrl={currentVideo.video_url}
-        thumbnailUrl={currentVideo.thumbnail_url}
-        musicUrl={currentVideo.music_url}
-        isActive={!showTutorial}
-        onViewCountIncrement={() => incrementViews(currentVideo.id)}
-        onVideoEnd={() => {}}
-        onAutoAdvance={handleAutoAdvance}
-        onProgressUpdate={handleProgressUpdate}
-      />
+      {/* Vertical Swiper (Establishments) */}
+      <Swiper
+        direction="vertical"
+        modules={[Mousewheel, Keyboard]}
+        mousewheel={{
+          sensitivity: 1,
+          thresholdDelta: 50,
+        }}
+        keyboard={{
+          enabled: !showTutorial,
+          onlyInViewport: true,
+        }}
+        speed={400}
+        slidesPerView={1}
+        className="w-full h-full"
+        onSwiper={(swiper) => {
+          verticalSwiperRef.current = swiper;
+        }}
+        onSlideChange={handleVerticalSlideChange}
+      >
+        {establishments.map((est, estIndex) => (
+          <SwiperSlide key={est.establishment.id} className="w-full h-full">
+            {/* Horizontal Swiper (Videos within Establishment) */}
+            <Swiper
+              direction="horizontal"
+              modules={[Mousewheel, Keyboard]}
+              mousewheel={{
+                sensitivity: 1,
+                thresholdDelta: 50,
+                forceToAxis: true,
+              }}
+              keyboard={{
+                enabled: !showTutorial && estIndex === activeEstablishmentIndex,
+                onlyInViewport: true,
+              }}
+              speed={300}
+              slidesPerView={1}
+              className="w-full h-full"
+              onSwiper={(swiper) => {
+                horizontalSwipersRef.current.set(estIndex, swiper);
+              }}
+              onSlideChange={(swiper) => handleHorizontalSlideChange(estIndex, swiper)}
+              nested={true}
+            >
+              {est.videos.map((video, vidIndex) => (
+                <SwiperSlide key={video.id} className="w-full h-full">
+                  <div className="relative w-full h-full">
+                    {/* Video Player */}
+                    <VilaTokPlayer
+                      videoUrl={video.video_url}
+                      thumbnailUrl={video.thumbnail_url}
+                      musicUrl={video.music_url}
+                      isActive={!showTutorial && estIndex === activeEstablishmentIndex && vidIndex === getActiveVideoIndex(estIndex)}
+                      onViewCountIncrement={() => incrementViews(video.id)}
+                      onVideoEnd={() => {}}
+                      onAutoAdvance={handleAutoAdvance}
+                      onProgressUpdate={handleProgressUpdate}
+                    />
+
+                    {/* Overlay */}
+                    <VilaTokOverlay
+                      establishment={est.establishment}
+                      video={{
+                        title: video.title,
+                        description: video.description,
+                      }}
+                      product={video.product}
+                      onProductClick={handleAddToCart}
+                    />
+
+                    {/* Sidebar */}
+                    <div className="absolute right-4 bottom-32 z-20">
+                      <VilaTokSidebar
+                        videoId={video.id}
+                        likesCount={video.likes_count}
+                        sharesCount={video.shares_count}
+                        commentsCount={video.comments_count || 0}
+                        isLiked={likedVideos.has(video.id)}
+                        onLike={() => toggleLike(video.id)}
+                        onShare={handleShare}
+                        onComment={() => setShowComments(true)}
+                        onViewProduct={handleAddToCart}
+                        onGoToStore={handleGoToStore}
+                        hasProduct={!!video.product}
+                      />
+                    </div>
+                  </div>
+                </SwiperSlide>
+              ))}
+            </Swiper>
+          </SwiperSlide>
+        ))}
+      </Swiper>
 
       {/* Navigation Indicators */}
       <VilaTokNavigation
-        totalEstablishments={totalEstablishments}
-        currentEstablishmentIndex={currentEstablishmentIndex}
-        totalVideos={totalVideosInCurrent}
-        currentVideoIndex={currentVideoIndex}
+        totalEstablishments={establishments.length}
+        currentEstablishmentIndex={activeEstablishmentIndex}
+        totalVideos={activeEst?.videos.length || 0}
+        currentVideoIndex={activeVideoIdx}
       />
-
-      {/* Sidebar */}
-      <div className="absolute right-4 bottom-32 z-20">
-        <VilaTokSidebar
-          videoId={currentVideo.id}
-          likesCount={currentVideo.likes_count}
-          sharesCount={currentVideo.shares_count}
-          commentsCount={currentVideo.comments_count || 0}
-          isLiked={likedVideos.has(currentVideo.id)}
-          onLike={() => toggleLike(currentVideo.id)}
-          onShare={handleShare}
-          onComment={() => setShowComments(true)}
-          onViewProduct={handleAddToCart}
-          onGoToStore={handleGoToStore}
-          hasProduct={!!currentVideo.product}
-        />
-      </div>
 
       {/* Comments Modal */}
-      <VideoComments
-        videoId={currentVideo.id}
-        isOpen={showComments}
-        onClose={() => setShowComments(false)}
-      />
-
-      {/* Overlay */}
-      <VilaTokOverlay
-        establishment={currentEstablishment.establishment}
-        video={{
-          title: currentVideo.title,
-          description: currentVideo.description,
-        }}
-        product={currentVideo.product}
-        onProductClick={handleAddToCart}
-      />
+      {activeVideo && (
+        <VideoComments
+          videoId={activeVideo.id}
+          isOpen={showComments}
+          onClose={() => setShowComments(false)}
+        />
+      )}
 
       {/* Tutorial Overlay - First visit only */}
       {showTutorial && (
