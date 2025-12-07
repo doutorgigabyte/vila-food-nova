@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useEstablishments } from "@/hooks/useEstablishment";
 import MarketplaceHeader from "@/components/marketplace/MarketplaceHeader";
-import VilaTokStoriesRow from "@/components/marketplace/VilaTokStoriesRow";
 import SubcategoriesCarousel from "@/components/marketplace/SubcategoriesCarousel";
 import CategoryBannerSlider from "@/components/marketplace/CategoryBannerSlider";
 import TopOffersSection from "@/components/marketplace/TopOffersSection";
@@ -76,9 +75,6 @@ const Index = () => {
       />
 
       <main className="flex-1">
-        {/* VilaTok Stories Row - Instagram-like story bubbles */}
-        <VilaTokStoriesRow />
-
         {/* Subcategories carousel - shows when main category is selected */}
         <SubcategoriesCarousel 
           mainCategory={selectedMainCategory}

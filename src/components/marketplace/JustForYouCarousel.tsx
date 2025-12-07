@@ -60,15 +60,30 @@ const JustForYouCarousel = ({ mainCategory }: JustForYouCarouselProps) => {
     setCurrentIndex((prev) => (prev + 1) % carouselItems.length);
   };
 
-  // Check if mobile for simplified carousel
+  // Check if mobile for simplified carousel and track viewport width
   const [isMobile, setIsMobile] = useState(false);
+  const [viewportWidth, setViewportWidth] = useState(1200);
   
   useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 768);
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
+    const updateViewport = () => {
+      const width = window.innerWidth;
+      setIsMobile(width < 768);
+      setViewportWidth(width);
+    };
+    updateViewport();
+    window.addEventListener('resize', updateViewport);
+    return () => window.removeEventListener('resize', updateViewport);
   }, []);
+
+  // Calculate spread factor based on viewport width (desktop only)
+  const getSpreadFactor = () => {
+    if (isMobile) return 1;
+    if (viewportWidth >= 1920) return 1.5;
+    if (viewportWidth >= 1600) return 1.35;
+    if (viewportWidth >= 1440) return 1.25;
+    if (viewportWidth >= 1280) return 1.15;
+    return 1;
+  };
 
   // Get visible items - reduced on mobile for performance (3 items vs 5)
   const getVisibleItems = () => {
@@ -135,13 +150,14 @@ const JustForYouCarousel = ({ mainCategory }: JustForYouCarouselProps) => {
                 const isFarLeft = item.offset === -2;
                 const isFarRight = item.offset === 2;
 
-                // Calculate position and styling based on offset
+                // Calculate position and styling based on offset with dynamic spread
+                const spread = getSpreadFactor();
                 const getPosition = () => {
                   if (isCenter) return "0%";
-                  if (isLeft) return "-45%";
-                  if (isRight) return "45%";
-                  if (isFarLeft) return "-85%";
-                  if (isFarRight) return "85%";
+                  if (isLeft) return `${-45 * spread}%`;
+                  if (isRight) return `${45 * spread}%`;
+                  if (isFarLeft) return `${-85 * spread}%`;
+                  if (isFarRight) return `${85 * spread}%`;
                   return "0%";
                 };
 
