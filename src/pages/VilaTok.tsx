@@ -10,6 +10,7 @@ import 'swiper/css/free-mode';
 import 'swiper/css/virtual';
 
 import { useVilaTok } from '@/hooks/useVilaTok';
+import { useAuth } from '@/hooks/useAuth';
 import { VilaTokPlayer } from '@/components/vilatok/VilaTokPlayer';
 import { VilaTokSidebar } from '@/components/vilatok/VilaTokSidebar';
 import { VilaTokOverlay } from '@/components/vilatok/VilaTokOverlay';
@@ -26,6 +27,7 @@ export default function VilaTok() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const categorySlug = searchParams.get('category');
+  const { user } = useAuth();
   
   const verticalSwiperRef = useRef<SwiperType | null>(null);
   const horizontalSwipersRef = useRef<Map<number, SwiperType>>(new Map());
@@ -394,13 +396,35 @@ export default function VilaTok() {
                         sharesCount={video.shares_count}
                         commentsCount={video.comments_count || 0}
                         isLiked={likedVideos.has(video.id)}
-                        onLike={() => toggleLike(video.id)}
+                        onLike={async () => {
+                          const success = await toggleLike(video.id);
+                          if (!success) {
+                            toast.error('Faça login para curtir', {
+                              action: {
+                                label: 'Entrar',
+                                onClick: () => navigate('/auth'),
+                              },
+                            });
+                          }
+                        }}
                         onShare={handleShare}
-                        onComment={() => setShowComments(true)}
+                        onComment={() => {
+                          if (!user) {
+                            toast.error('Faça login para comentar', {
+                              action: {
+                                label: 'Entrar',
+                                onClick: () => navigate('/auth'),
+                              },
+                            });
+                            return;
+                          }
+                          setShowComments(true);
+                        }}
                         onViewProduct={handleAddToCart}
                         onGoToStore={handleGoToStore}
                         hasProduct={!!video.product}
                       />
+                    </div>
                     </div>
                   </div>
                 </SwiperSlide>
