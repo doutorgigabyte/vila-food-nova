@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { Separator } from "@/components/ui/separator";
 import {
   Dialog,
   DialogContent,
@@ -29,7 +30,9 @@ import {
   Trash2,
   Check,
   Package,
-  CreditCard
+  CreditCard,
+  MessageSquare,
+  Bot
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -46,6 +49,9 @@ interface Plan {
   billing_period: string;
   is_active: boolean;
   created_at: string;
+  whatsapp_chatbot: boolean;
+  whatsapp_ai_agent: boolean;
+  max_whatsapp_messages: number;
 }
 
 const PlansManagement = () => {
@@ -64,6 +70,9 @@ const PlansManagement = () => {
     features: "",
     billing_period: "monthly",
     is_active: true,
+    whatsapp_chatbot: true,
+    whatsapp_ai_agent: false,
+    max_whatsapp_messages: 1000,
   });
 
   useEffect(() => {
@@ -78,7 +87,13 @@ const PlansManagement = () => {
         .order("price", { ascending: true });
 
       if (error) throw error;
-      setPlans(data?.map(p => ({ ...p, features: p.features as string[] || [] })) || []);
+      setPlans(data?.map(p => ({ 
+        ...p, 
+        features: p.features as string[] || [],
+        whatsapp_chatbot: p.whatsapp_chatbot ?? true,
+        whatsapp_ai_agent: p.whatsapp_ai_agent ?? false,
+        max_whatsapp_messages: p.max_whatsapp_messages ?? 1000
+      })) || []);
     } catch (error) {
       console.error("Error fetching plans:", error);
       toast({ title: "Erro ao carregar planos", variant: "destructive" });
@@ -98,6 +113,9 @@ const PlansManagement = () => {
         features: formData.features.split("\n").filter(f => f.trim()),
         billing_period: formData.billing_period,
         is_active: formData.is_active,
+        whatsapp_chatbot: formData.whatsapp_chatbot,
+        whatsapp_ai_agent: formData.whatsapp_ai_agent,
+        max_whatsapp_messages: formData.max_whatsapp_messages,
       };
 
       if (editingPlan) {
@@ -153,6 +171,9 @@ const PlansManagement = () => {
       features: "",
       billing_period: "monthly",
       is_active: true,
+      whatsapp_chatbot: true,
+      whatsapp_ai_agent: false,
+      max_whatsapp_messages: 1000,
     });
   };
 
@@ -167,6 +188,9 @@ const PlansManagement = () => {
       features: plan.features.join("\n"),
       billing_period: plan.billing_period,
       is_active: plan.is_active,
+      whatsapp_chatbot: plan.whatsapp_chatbot,
+      whatsapp_ai_agent: plan.whatsapp_ai_agent,
+      max_whatsapp_messages: plan.max_whatsapp_messages,
     });
     setDialogOpen(true);
   };
@@ -190,7 +214,7 @@ const PlansManagement = () => {
               Novo Plano
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{editingPlan ? "Editar Plano" : "Novo Plano"}</DialogTitle>
             </DialogHeader>
@@ -250,6 +274,65 @@ const PlansManagement = () => {
                   />
                 </div>
               </div>
+
+              {/* WhatsApp Features Section */}
+              <Separator className="my-4" />
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <MessageSquare className="w-5 h-5 text-green-600" />
+                  <Label className="text-base font-semibold">Módulo WhatsApp</Label>
+                </div>
+                
+                <div className="space-y-4 p-4 rounded-lg border border-border bg-muted/30">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label className="flex items-center gap-2">
+                        <MessageSquare className="w-4 h-4" />
+                        Chatbot (Nível 1)
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Respostas automáticas com palavras-chave
+                      </p>
+                    </div>
+                    <Switch
+                      checked={formData.whatsapp_chatbot}
+                      onCheckedChange={(checked) => setFormData(prev => ({ ...prev, whatsapp_chatbot: checked }))}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label className="flex items-center gap-2">
+                        <Bot className="w-4 h-4" />
+                        Agente IA (Nível 2)
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Vendas conversacionais com IA
+                      </p>
+                    </div>
+                    <Switch
+                      checked={formData.whatsapp_ai_agent}
+                      onCheckedChange={(checked) => setFormData(prev => ({ ...prev, whatsapp_ai_agent: checked }))}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Máx. Mensagens WhatsApp/mês</Label>
+                    <Input
+                      type="number"
+                      value={formData.max_whatsapp_messages}
+                      onChange={(e) => setFormData(prev => ({ ...prev, max_whatsapp_messages: Number(e.target.value) }))}
+                      placeholder="1000"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      0 = ilimitado
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <Separator className="my-4" />
+
               <div className="space-y-2">
                 <Label>Recursos (um por linha)</Label>
                 <Textarea
@@ -307,6 +390,28 @@ const PlansManagement = () => {
                   <p>Até {plan.max_products} produtos</p>
                   <p>Até {plan.max_orders} pedidos/mês</p>
                 </div>
+
+                {/* WhatsApp Features Display */}
+                <div className="flex flex-wrap gap-2">
+                  {plan.whatsapp_chatbot && (
+                    <Badge variant="outline" className="gap-1 text-green-600 border-green-600/30">
+                      <MessageSquare className="w-3 h-3" />
+                      Chatbot
+                    </Badge>
+                  )}
+                  {plan.whatsapp_ai_agent && (
+                    <Badge variant="outline" className="gap-1 text-blue-600 border-blue-600/30">
+                      <Bot className="w-3 h-3" />
+                      Agente IA
+                    </Badge>
+                  )}
+                </div>
+
+                {plan.max_whatsapp_messages > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    {plan.max_whatsapp_messages.toLocaleString()} msgs WhatsApp/mês
+                  </p>
+                )}
 
                 <div className="space-y-2">
                   {plan.features.map((feature, index) => (

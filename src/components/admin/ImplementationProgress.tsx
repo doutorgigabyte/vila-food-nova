@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, Circle, Clock, AlertCircle } from 'lucide-react';
+import { CheckCircle, Circle, Clock, MessageSquare, Bot, Settings } from 'lucide-react';
 
 interface ProgressPhase {
   id: string;
@@ -69,6 +69,60 @@ const phases: ProgressPhase[] = [
       { name: 'Testes de fluxo completo', status: 'completed', priority: 'high' },
       { name: 'Documentação de APIs', status: 'completed', priority: 'medium' },
     ]
+  },
+  {
+    id: 'phase-6',
+    name: 'Fase 6: WhatsApp - Infraestrutura',
+    description: 'Base de dados e configurações do módulo WhatsApp',
+    items: [
+      { name: 'Campos WhatsApp em plans (chatbot, ai_agent, max_messages)', status: 'completed', priority: 'high' },
+      { name: 'Campos extras em whatsapp_instances (level, keywords)', status: 'completed', priority: 'high' },
+      { name: 'Tabela whatsapp_keywords (palavras-chave)', status: 'completed', priority: 'high' },
+      { name: 'Tabela whatsapp_auto_messages (mensagens automáticas)', status: 'completed', priority: 'high' },
+      { name: 'Tabela whatsapp_carts (carrinhos temporários)', status: 'completed', priority: 'medium' },
+      { name: 'Tabela whatsapp_conversations (histórico)', status: 'completed', priority: 'medium' },
+      { name: 'RLS policies para todas as tabelas WhatsApp', status: 'completed', priority: 'high' },
+      { name: 'PlansManagement.tsx com campos WhatsApp', status: 'in-progress', priority: 'high' },
+    ]
+  },
+  {
+    id: 'phase-7',
+    name: 'Fase 7: WhatsApp - Nível 1 (Chatbot)',
+    description: 'Chatbot com palavras-chave configuráveis',
+    items: [
+      { name: 'Interface de configuração de palavras-chave', status: 'pending', priority: 'high' },
+      { name: 'Palavras-chave padrão (cardápio, pedido, horário)', status: 'pending', priority: 'high' },
+      { name: 'Editor de mensagens automáticas', status: 'pending', priority: 'medium' },
+      { name: 'Disparos automáticos de status de pedido', status: 'pending', priority: 'high' },
+      { name: 'Edge Function whatsapp-chatbot', status: 'pending', priority: 'high' },
+      { name: 'Teste de criação de instância Evolution API', status: 'pending', priority: 'high' },
+    ]
+  },
+  {
+    id: 'phase-8',
+    name: 'Fase 8: WhatsApp - Nível 2 (Agente IA)',
+    description: 'Agente IA com vendas conversacionais',
+    items: [
+      { name: 'Edge Function whatsapp-agent com Lovable AI', status: 'pending', priority: 'high' },
+      { name: 'Tool Calling: search_products, add_to_cart', status: 'pending', priority: 'high' },
+      { name: 'Tool Calling: validate_address, calculate_delivery', status: 'pending', priority: 'high' },
+      { name: 'Tool Calling: create_pix_payment', status: 'pending', priority: 'high' },
+      { name: 'Envio de imagens de produtos (CloudFront)', status: 'pending', priority: 'medium' },
+      { name: 'Prompt personalizado por estabelecimento', status: 'pending', priority: 'medium' },
+      { name: 'Edge Function whatsapp-followup (reativação)', status: 'pending', priority: 'low' },
+    ]
+  },
+  {
+    id: 'phase-9',
+    name: 'Fase 9: WhatsApp - Interface de Configuração',
+    description: 'Dashboard completo de WhatsApp',
+    items: [
+      { name: 'WhatsAppManagement.tsx com abas (Chatbot/Agente IA)', status: 'pending', priority: 'high' },
+      { name: 'Dashboard de conversas (histórico)', status: 'pending', priority: 'medium' },
+      { name: 'Estatísticas de WhatsApp (mensagens, conversões)', status: 'pending', priority: 'medium' },
+      { name: 'Preview de conversa em tempo real', status: 'pending', priority: 'low' },
+      { name: 'Bloqueio de features por plano', status: 'pending', priority: 'high' },
+    ]
   }
 ];
 
@@ -105,6 +159,15 @@ export function ImplementationProgress() {
     }
   };
 
+  const getPhaseIcon = (phaseId: string) => {
+    if (phaseId.includes('phase-6') || phaseId.includes('phase-7') || phaseId.includes('phase-8') || phaseId.includes('phase-9')) {
+      if (phaseId === 'phase-8') return <Bot className="h-4 w-4 text-primary" />;
+      if (phaseId === 'phase-9') return <Settings className="h-4 w-4 text-primary" />;
+      return <MessageSquare className="h-4 w-4 text-primary" />;
+    }
+    return null;
+  };
+
   return (
     <Card className="w-full">
       <CardHeader>
@@ -112,7 +175,7 @@ export function ImplementationProgress() {
           <div>
             <CardTitle className="text-xl">Progresso da Implementação</CardTitle>
             <p className="text-sm text-muted-foreground mt-1">
-              VilaFood - Sistema 100% Operacional
+              VilaFood - Sistema em Desenvolvimento Contínuo
             </p>
           </div>
           <div className="text-right">
@@ -146,13 +209,17 @@ export function ImplementationProgress() {
         {phases.map((phase) => {
           const phaseCompleted = phase.items.filter(i => i.status === 'completed').length;
           const phaseProgress = Math.round((phaseCompleted / phase.items.length) * 100);
+          const isWhatsAppPhase = phase.id.includes('phase-6') || phase.id.includes('phase-7') || phase.id.includes('phase-8') || phase.id.includes('phase-9');
           
           return (
-            <div key={phase.id} className="space-y-3">
+            <div key={phase.id} className={`space-y-3 ${isWhatsAppPhase ? 'p-4 rounded-lg bg-primary/5 border border-primary/20' : ''}`}>
               <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-semibold">{phase.name}</h3>
-                  <p className="text-xs text-muted-foreground">{phase.description}</p>
+                <div className="flex items-center gap-2">
+                  {getPhaseIcon(phase.id)}
+                  <div>
+                    <h3 className="font-semibold">{phase.name}</h3>
+                    <p className="text-xs text-muted-foreground">{phase.description}</p>
+                  </div>
                 </div>
                 <span className="text-sm font-medium">{phaseProgress}%</span>
               </div>
@@ -189,9 +256,9 @@ export function ImplementationProgress() {
 
         <div className="pt-4 border-t">
           <div className="flex items-center gap-2 text-sm">
-            <CheckCircle className="h-4 w-4 text-green-500" />
-            <span className="text-green-600 font-medium">
-              Sistema 100% operacional e pronto para produção!
+            <MessageSquare className="h-4 w-4 text-primary" />
+            <span className="text-primary font-medium">
+              Módulo WhatsApp em desenvolvimento (Fases 6-9)
             </span>
           </div>
         </div>
