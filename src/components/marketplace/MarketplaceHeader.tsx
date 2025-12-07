@@ -41,6 +41,27 @@ interface MarketplaceHeaderProps {
   onSearchClick?: () => void;
 }
 
+// Separate Sticky Search Bar Component
+export const StickySearchBar = ({ searchTerm, onSearchChange, onSearchClick }: MarketplaceHeaderProps) => {
+  return (
+    <div className="sticky top-0 z-50 bg-card/95 backdrop-blur-sm border-b border-border shadow-sm">
+      <div className="container mx-auto px-4 py-2">
+        <div className="relative" onClick={onSearchClick}>
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar restaurantes ou pratos..."
+            className="pl-10 bg-muted/50 cursor-pointer"
+            value={searchTerm}
+            onChange={(e) => onSearchChange(e.target.value)}
+            onFocus={onSearchClick}
+            readOnly={!!onSearchClick}
+          />
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const MarketplaceHeader = ({ searchTerm, onSearchChange, onSearchClick }: MarketplaceHeaderProps) => {
   const { items } = useCart();
   const { user } = useAuth();
@@ -51,8 +72,7 @@ const MarketplaceHeader = ({ searchTerm, onSearchChange, onSearchClick }: Market
   const cartCount = items.reduce((acc, item) => acc + item.quantity, 0);
 
   return (
-    <>
-      <header className="bg-card shadow-sm">
+    <header className="bg-card shadow-sm">
         {/* Top Bar - Only visible for logged-in users */}
         {user && (
           <div className="bg-primary text-white">
@@ -239,24 +259,6 @@ const MarketplaceHeader = ({ searchTerm, onSearchChange, onSearchClick }: Market
           </div>
         </div>
       </header>
-
-      {/* Sticky Search Bar */}
-      <div className="sticky top-0 z-50 bg-card/95 backdrop-blur-sm border-b border-border shadow-sm">
-        <div className="container mx-auto px-4 py-2">
-          <div className="relative" onClick={onSearchClick}>
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar restaurantes ou pratos..."
-              className="pl-10 bg-muted/50 cursor-pointer"
-              value={searchTerm}
-              onChange={(e) => onSearchChange(e.target.value)}
-              onFocus={onSearchClick}
-              readOnly={!!onSearchClick}
-            />
-          </div>
-        </div>
-      </div>
-    </>
   );
 };
 

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useEstablishments } from "@/hooks/useEstablishment";
-import MarketplaceHeader from "@/components/marketplace/MarketplaceHeader";
+import MarketplaceHeader, { StickySearchBar } from "@/components/marketplace/MarketplaceHeader";
 import SubcategoriesCarousel from "@/components/marketplace/SubcategoriesCarousel";
 import CategoryBannerSlider from "@/components/marketplace/CategoryBannerSlider";
 import TopOffersSection from "@/components/marketplace/TopOffersSection";
@@ -70,6 +70,12 @@ const Index = () => {
     )}>
       <MarketplaceHeader 
         searchTerm={searchTerm} 
+        onSearchChange={setSearchTerm}
+        onSearchClick={handleSearchClick}
+      />
+
+      <StickySearchBar
+        searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
         onSearchClick={handleSearchClick}
       />
