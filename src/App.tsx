@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -8,92 +8,101 @@ import { AuthProvider } from "./hooks/useAuth";
 import { AdminAccessProvider } from "./contexts/AdminAccessContext";
 import { CartProvider } from "./hooks/useCart";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
-import Vila from "./pages/Vila";
-import Vilas from "./pages/Vilas";
-import Conheca from "./pages/Conheca";
-import VilasManagement from "./pages/admin/VilasManagement";
-import Index from "./pages/Index";
-import Auth from "./pages/Auth";
-import RecoverPassword from "./pages/RecoverPassword";
-import RegisterEstablishment from "./pages/RegisterEstablishment";
-import Marketplace from "./pages/Marketplace";
-import Store from "./pages/Store";
-import Checkout from "./pages/Checkout";
-import Orders from "./pages/Orders";
-import EstablishmentDashboard from "./pages/dashboard/EstablishmentDashboard";
-import ProductsManagement from "./pages/dashboard/ProductsManagement";
-import CategoriesManagement from "./pages/dashboard/CategoriesManagement";
-import OrdersManagement from "./pages/dashboard/OrdersManagement";
-import PDV from "./pages/dashboard/PDV";
-import BannersManagement from "./pages/dashboard/BannersManagement";
-import CouponsManagement from "./pages/dashboard/CouponsManagement";
-import DeliveryFeesManagement from "./pages/dashboard/DeliveryFeesManagement";
-import CashFlowManagement from "./pages/dashboard/CashFlowManagement";
-import QRCodeManagement from "./pages/dashboard/QRCodeManagement";
-import ReportsManagement from "./pages/dashboard/ReportsManagement";
-import WhatsAppManagement from "./pages/dashboard/WhatsAppManagement";
-import IntegrationsManagement from "./pages/dashboard/IntegrationsManagement";
-import ServiceAreaManagement from "./pages/dashboard/ServiceAreaManagement";
-import MercadoPagoManagement from "./pages/dashboard/MercadoPagoManagement";
-import MercadoPagoCallback from "./pages/dashboard/MercadoPagoCallback";
-import AdminDashboard from "./pages/admin/AdminDashboard";
-import AffiliateDashboard from "./pages/dashboard/AffiliateDashboard";
-import UsersManagement from "./pages/admin/UsersManagement";
-import EstablishmentsManagement from "./pages/admin/EstablishmentsManagement";
-import PlansManagement from "./pages/admin/PlansManagement";
-import SubscriptionsManagement from "./pages/admin/SubscriptionsManagement";
-import CitiesManagement from "./pages/admin/CitiesManagement";
-import StatesManagement from "./pages/admin/StatesManagement";
-import SegmentsManagement from "./pages/admin/SegmentsManagement";
-import MainCategoriesManagement from "./pages/admin/MainCategoriesManagement";
-import AdminProductsManagement from "./pages/admin/AdminProductsManagement";
-import AdminCategoriesManagement from "./pages/admin/AdminCategoriesManagement";
-import AdminOrdersManagement from "./pages/admin/AdminOrdersManagement";
-import AdminVouchersManagement from "./pages/admin/AdminVouchersManagement";
-import NotFound from "./pages/NotFound";
 import PWAInstallPrompt from "./components/PWAInstallPrompt";
-// New dashboard pages
-import WaiterApp from "./pages/dashboard/WaiterApp";
-import KitchenDisplay from "./pages/dashboard/KitchenDisplay";
-import CashbackManagement from "./pages/dashboard/CashbackManagement";
-import AbandonedCartsManagement from "./pages/dashboard/AbandonedCartsManagement";
-import ScheduledOrdersManagement from "./pages/dashboard/ScheduledOrdersManagement";
-import DeliveryDriversManagement from "./pages/dashboard/DeliveryDriversManagement";
-import AnalyticsPixelsManagement from "./pages/dashboard/AnalyticsPixelsManagement";
-import InventoryManagement from "./pages/dashboard/InventoryManagement";
-import AdvancedFinanceManagement from "./pages/dashboard/AdvancedFinanceManagement";
-import SuppliersManagement from "./pages/dashboard/SuppliersManagement";
-import PaymentsManagement from "./pages/dashboard/PaymentsManagement";
-import DataMigration from "./pages/admin/DataMigration";
-import ExternalDataMigration from "./pages/admin/ExternalDataMigration";
-import Roadmap from "./pages/admin/Roadmap";
-import ImplementationRoadmap from "./pages/admin/ImplementationRoadmap";
-import SystemHealthCheck from "./pages/admin/SystemHealthCheck";
-import AffiliatesManagement from "./pages/admin/AffiliatesManagement";
-import ImageFillManager from "./pages/admin/ImageFillManager";
-import VilaTokPage from "./pages/VilaTok";
-import VideosManagement from "./pages/dashboard/VideosManagement";
-import StoriesManagement from "./pages/dashboard/StoriesManagement";
-import CategoryPage from "./pages/CategoryPage";
-import Menu from "./pages/Menu";
-import Favorites from "./pages/Favorites";
-import ProductsListing from "./pages/ProductsListing";
-import ProductDetail from "./pages/ProductDetail";
-import AIAnalysisDashboard from "./pages/dashboard/AIAnalysisDashboard";
-import EstablishmentSettings from "./pages/dashboard/EstablishmentSettings";
 import { OrderSourceProvider } from "./hooks/useOrderSource";
 import { NotificationProvider } from "./components/notifications/NotificationProvider";
-// Affiliate pages
-import AffiliateReferrals from "./pages/affiliate/AffiliateReferrals";
-import AffiliateCommissions from "./pages/affiliate/AffiliateCommissions";
-import AffiliateVouchers from "./pages/affiliate/AffiliateVouchers";
-import AffiliateReports from "./pages/affiliate/AffiliateReports";
-import AffiliateSettings from "./pages/affiliate/AffiliateSettings";
-// Admin settings
-import AdminSettings from "./pages/admin/AdminSettings";
-import DatabaseManagement from "./pages/admin/DatabaseManagement";
-// Driver app
-import DriverApp from "./pages/driver/DriverApp";
+import PageSkeleton from "./components/ui/PageSkeleton";
+
+// Critical pages - load immediately
+import Index from "./pages/Index";
+import Store from "./pages/Store";
+import Auth from "./pages/Auth";
+
+// Lazy loaded pages - load on demand
+const Vila = lazy(() => import("./pages/Vila"));
+const Vilas = lazy(() => import("./pages/Vilas"));
+const Conheca = lazy(() => import("./pages/Conheca"));
+const RecoverPassword = lazy(() => import("./pages/RecoverPassword"));
+const RegisterEstablishment = lazy(() => import("./pages/RegisterEstablishment"));
+const Marketplace = lazy(() => import("./pages/Marketplace"));
+const Checkout = lazy(() => import("./pages/Checkout"));
+const Orders = lazy(() => import("./pages/Orders"));
+const Menu = lazy(() => import("./pages/Menu"));
+const Favorites = lazy(() => import("./pages/Favorites"));
+const ProductsListing = lazy(() => import("./pages/ProductsListing"));
+const ProductDetail = lazy(() => import("./pages/ProductDetail"));
+const VilaTokPage = lazy(() => import("./pages/VilaTok"));
+const CategoryPage = lazy(() => import("./pages/CategoryPage"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+
+// Dashboard pages - lazy loaded
+const EstablishmentDashboard = lazy(() => import("./pages/dashboard/EstablishmentDashboard"));
+const ProductsManagement = lazy(() => import("./pages/dashboard/ProductsManagement"));
+const CategoriesManagement = lazy(() => import("./pages/dashboard/CategoriesManagement"));
+const OrdersManagement = lazy(() => import("./pages/dashboard/OrdersManagement"));
+const PDV = lazy(() => import("./pages/dashboard/PDV"));
+const BannersManagement = lazy(() => import("./pages/dashboard/BannersManagement"));
+const CouponsManagement = lazy(() => import("./pages/dashboard/CouponsManagement"));
+const DeliveryFeesManagement = lazy(() => import("./pages/dashboard/DeliveryFeesManagement"));
+const CashFlowManagement = lazy(() => import("./pages/dashboard/CashFlowManagement"));
+const QRCodeManagement = lazy(() => import("./pages/dashboard/QRCodeManagement"));
+const ReportsManagement = lazy(() => import("./pages/dashboard/ReportsManagement"));
+const WhatsAppManagement = lazy(() => import("./pages/dashboard/WhatsAppManagement"));
+const IntegrationsManagement = lazy(() => import("./pages/dashboard/IntegrationsManagement"));
+const ServiceAreaManagement = lazy(() => import("./pages/dashboard/ServiceAreaManagement"));
+const MercadoPagoManagement = lazy(() => import("./pages/dashboard/MercadoPagoManagement"));
+const MercadoPagoCallback = lazy(() => import("./pages/dashboard/MercadoPagoCallback"));
+const WaiterApp = lazy(() => import("./pages/dashboard/WaiterApp"));
+const KitchenDisplay = lazy(() => import("./pages/dashboard/KitchenDisplay"));
+const CashbackManagement = lazy(() => import("./pages/dashboard/CashbackManagement"));
+const AbandonedCartsManagement = lazy(() => import("./pages/dashboard/AbandonedCartsManagement"));
+const ScheduledOrdersManagement = lazy(() => import("./pages/dashboard/ScheduledOrdersManagement"));
+const DeliveryDriversManagement = lazy(() => import("./pages/dashboard/DeliveryDriversManagement"));
+const AnalyticsPixelsManagement = lazy(() => import("./pages/dashboard/AnalyticsPixelsManagement"));
+const InventoryManagement = lazy(() => import("./pages/dashboard/InventoryManagement"));
+const AdvancedFinanceManagement = lazy(() => import("./pages/dashboard/AdvancedFinanceManagement"));
+const SuppliersManagement = lazy(() => import("./pages/dashboard/SuppliersManagement"));
+const PaymentsManagement = lazy(() => import("./pages/dashboard/PaymentsManagement"));
+const VideosManagement = lazy(() => import("./pages/dashboard/VideosManagement"));
+const StoriesManagement = lazy(() => import("./pages/dashboard/StoriesManagement"));
+const AIAnalysisDashboard = lazy(() => import("./pages/dashboard/AIAnalysisDashboard"));
+const EstablishmentSettings = lazy(() => import("./pages/dashboard/EstablishmentSettings"));
+const AffiliateDashboard = lazy(() => import("./pages/dashboard/AffiliateDashboard"));
+
+// Admin pages - lazy loaded
+const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
+const UsersManagement = lazy(() => import("./pages/admin/UsersManagement"));
+const EstablishmentsManagement = lazy(() => import("./pages/admin/EstablishmentsManagement"));
+const VilasManagement = lazy(() => import("./pages/admin/VilasManagement"));
+const PlansManagement = lazy(() => import("./pages/admin/PlansManagement"));
+const SubscriptionsManagement = lazy(() => import("./pages/admin/SubscriptionsManagement"));
+const AffiliatesManagement = lazy(() => import("./pages/admin/AffiliatesManagement"));
+const CitiesManagement = lazy(() => import("./pages/admin/CitiesManagement"));
+const StatesManagement = lazy(() => import("./pages/admin/StatesManagement"));
+const SegmentsManagement = lazy(() => import("./pages/admin/SegmentsManagement"));
+const MainCategoriesManagement = lazy(() => import("./pages/admin/MainCategoriesManagement"));
+const AdminProductsManagement = lazy(() => import("./pages/admin/AdminProductsManagement"));
+const AdminCategoriesManagement = lazy(() => import("./pages/admin/AdminCategoriesManagement"));
+const AdminOrdersManagement = lazy(() => import("./pages/admin/AdminOrdersManagement"));
+const AdminVouchersManagement = lazy(() => import("./pages/admin/AdminVouchersManagement"));
+const DataMigration = lazy(() => import("./pages/admin/DataMigration"));
+const ExternalDataMigration = lazy(() => import("./pages/admin/ExternalDataMigration"));
+const Roadmap = lazy(() => import("./pages/admin/Roadmap"));
+const ImplementationRoadmap = lazy(() => import("./pages/admin/ImplementationRoadmap"));
+const SystemHealthCheck = lazy(() => import("./pages/admin/SystemHealthCheck"));
+const ImageFillManager = lazy(() => import("./pages/admin/ImageFillManager"));
+const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
+const DatabaseManagement = lazy(() => import("./pages/admin/DatabaseManagement"));
+
+// Affiliate pages - lazy loaded
+const AffiliateReferrals = lazy(() => import("./pages/affiliate/AffiliateReferrals"));
+const AffiliateCommissions = lazy(() => import("./pages/affiliate/AffiliateCommissions"));
+const AffiliateVouchers = lazy(() => import("./pages/affiliate/AffiliateVouchers"));
+const AffiliateReports = lazy(() => import("./pages/affiliate/AffiliateReports"));
+const AffiliateSettings = lazy(() => import("./pages/affiliate/AffiliateSettings"));
+
+// Driver app - lazy loaded
+const DriverApp = lazy(() => import("./pages/driver/DriverApp"));
 
 const queryClient = new QueryClient();
 
@@ -109,6 +118,7 @@ const App = () => (
                 <Sonner />
                 <PWAInstallPrompt />
               <BrowserRouter>
+              <Suspense fallback={<PageSkeleton />}>
               <Routes>
                 <Route path="/" element={<Index />} />
               <Route path="/conheca" element={<Conheca />} />
@@ -225,6 +235,7 @@ const App = () => (
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
+            </Suspense>
             </BrowserRouter>
               </TooltipProvider>
             </NotificationProvider>

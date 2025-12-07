@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap');
+/* Fonts loaded via index.html with preconnect for performance */
 
 @tailwind base;
 @tailwind components;
@@ -417,6 +417,34 @@
   }
   .aspect-banner {
     aspect-ratio: 16/9;
+  }
+
+  /* ========= VilaTok GPU Optimizations ========= */
+  
+  /* VilaTok container - smooth touch scrolling */
+  .vilatok-container {
+    touch-action: pan-y pan-x;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* VilaTok slides - GPU accelerated */
+  .vilatok-slide {
+    transform: translate3d(0, 0, 0);
+    will-change: transform;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    contain: layout style paint;
+  }
+
+  /* Shimmer animation for skeletons */
+  @keyframes shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
   }
 }
 
