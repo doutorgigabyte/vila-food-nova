@@ -45,7 +45,8 @@ const phases: ProgressPhase[] = [
     description: 'APIs e serviços externos',
     items: [
       { name: 'Histórico do App Entregador', status: 'completed', priority: 'medium' },
-      { name: 'GPS em tempo real', status: 'in-progress', priority: 'medium' },
+      { name: 'GPS em tempo real (useDriverGPS)', status: 'completed', priority: 'medium' },
+      { name: 'GPSStatusIndicator component', status: 'completed', priority: 'medium' },
       { name: 'Webhooks Mercado Pago', status: 'completed', priority: 'high' },
     ]
   },

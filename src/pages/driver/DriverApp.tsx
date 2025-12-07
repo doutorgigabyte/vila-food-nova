@@ -2,12 +2,15 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useDriverDeliveries, DeliveryTracking } from '@/hooks/useDriverDeliveries';
+import { useDriverGPS } from '@/hooks/useDriverGPS';
+import { useNotificationSound } from '@/hooks/useNotificationSound';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import GPSStatusIndicator from '@/components/driver/GPSStatusIndicator';
 import { 
   Bike, 
   Package, 
@@ -22,7 +25,9 @@ import {
   History,
   User,
   LogOut,
-  Loader2
+  Loader2,
+  Volume2,
+  VolumeX
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -41,6 +46,22 @@ const DriverApp = () => {
     getTodayStats
   } = useDriverDeliveries();
 
+  // GPS tracking
+  const { 
+    position: gpsPosition, 
+    isTracking: isGPSTracking, 
+    error: gpsError, 
+    lastUpdate: gpsLastUpdate,
+    startTracking,
+    stopTracking 
+  } = useDriverGPS({ 
+    deliveryId: currentDelivery?.id,
+    updateInterval: 15000 // Update every 15 seconds
+  });
+
+  // Notification sounds
+  const { playNotification, preferences: soundPrefs, updatePreferences } = useNotificationSound();
+
   const [stats, setStats] = useState({ deliveries: 0, earnings: 0, distance: 0 });
   const [activeTab, setActiveTab] = useState<'deliveries' | 'history' | 'profile'>('deliveries');
 
@@ -51,6 +72,22 @@ const DriverApp = () => {
     };
     loadStats();
   }, [getTodayStats]);
+
+  // Play sound on new delivery
+  useEffect(() => {
+    if (deliveries.length > 0 && deliveries.some(d => d.status === 'assigned')) {
+      playNotification('new_delivery');
+    }
+  }, [deliveries, playNotification]);
+
+  // Start/stop GPS based on online status
+  useEffect(() => {
+    if (isOnline && currentDelivery) {
+      startTracking();
+    } else if (!isOnline) {
+      stopTracking();
+    }
+  }, [isOnline, currentDelivery, startTracking, stopTracking]);
 
   // Redirect if not logged in
   useEffect(() => {
@@ -284,8 +321,30 @@ const DriverApp = () => {
               <p className="text-sm opacity-80">{driverProfile.vehicle_type || 'Moto'}</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2">
+            {/* Sound toggle */}
+            <button
+              onClick={() => updatePreferences({ sound_enabled: !soundPrefs.sound_enabled })}
+              className="p-2 rounded-full hover:bg-white/10 transition-colors"
+            >
+              {soundPrefs.sound_enabled ? (
+                <Volume2 className="w-5 h-5" />
+              ) : (
+                <VolumeX className="w-5 h-5 opacity-50" />
+              )}
+            </button>
+            
+            {/* GPS Status */}
+            <GPSStatusIndicator
+              isTracking={isGPSTracking}
+              hasError={!!gpsError}
+              lastUpdate={gpsLastUpdate}
+              accuracy={gpsPosition?.accuracy}
+              className="bg-white/10"
+            />
+            
+            {/* Online toggle */}
+            <div className="flex items-center gap-2 ml-2">
               <span className="text-sm">{isOnline ? 'Online' : 'Offline'}</span>
               <Switch
                 checked={isOnline}
