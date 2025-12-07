@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
+import { DeliveryConfigTab } from "@/components/dashboard/DeliveryConfigTab";
 import { 
   Menu, 
   Store, 
@@ -23,7 +24,8 @@ import {
   Bell, 
   Settings,
   Save,
-  Palette
+  Palette,
+  Users
 } from "lucide-react";
 import { ImageUpload } from "@/components/ImageUpload";
 
@@ -295,6 +297,10 @@ const EstablishmentSettings = () => {
               <TabsTrigger value="notifications" className="gap-2">
                 <Bell className="w-4 h-4" />
                 Notificações
+              </TabsTrigger>
+              <TabsTrigger value="drivers" className="gap-2">
+                <Users className="w-4 h-4" />
+                Entregadores
               </TabsTrigger>
             </TabsList>
 
@@ -769,6 +775,11 @@ const EstablishmentSettings = () => {
                   </div>
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            {/* Drivers Tab */}
+            <TabsContent value="drivers">
+              <DeliveryConfigTab establishmentId={establishment?.id || null} />
             </TabsContent>
           </Tabs>
         </div>

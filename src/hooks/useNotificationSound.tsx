@@ -21,21 +21,30 @@ const DEFAULT_PREFERENCES: NotificationPreferences = {
   disabled_types: [],
 };
 
-// Frequências para sons gerados programaticamente
-const SOUND_FREQUENCIES: Record<NotificationPriority, { freq: number; duration: number; repeats: number }> = {
-  critical: { freq: 880, duration: 200, repeats: 3 },
-  high: { freq: 660, duration: 250, repeats: 2 },
-  medium: { freq: 520, duration: 300, repeats: 1 },
-  low: { freq: 440, duration: 400, repeats: 1 },
+// Map notification types to sound files
+const SOUND_FILES: Record<NotificationPriority, string> = {
+  critical: '/sounds/new-order.mp3',
+  high: '/sounds/new-delivery.mp3',
+  medium: '/sounds/order-ready.mp3',
+  low: '/sounds/payment-success.mp3',
 };
+
+// Types that should loop until dismissed
+const LOOPING_TYPES: NotificationType[] = [
+  'new_order',
+  'new_delivery',
+  'payment_received',
+];
 
 export const useNotificationSound = () => {
   const { user } = useAuth();
-  const audioContextRef = useRef<AudioContext | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const loopingRef = useRef<boolean>(false);
   const [preferences, setPreferences] = useState<NotificationPreferences>(DEFAULT_PREFERENCES);
   const [loading, setLoading] = useState(true);
+  const [isPlaying, setIsPlaying] = useState(false);
 
-  // Carregar preferências do usuário
+  // Load user preferences
   useEffect(() => {
     const fetchPreferences = async () => {
       if (!user) {
@@ -74,7 +83,7 @@ export const useNotificationSound = () => {
     fetchPreferences();
   }, [user]);
 
-  // Verificar se está no horário silencioso
+  // Check if in quiet hours
   const isQuietHours = useCallback(() => {
     if (!preferences.quiet_hours_start || !preferences.quiet_hours_end) {
       return false;
@@ -92,49 +101,56 @@ export const useNotificationSound = () => {
     if (startTime <= endTime) {
       return currentTime >= startTime && currentTime <= endTime;
     } else {
-      // Horário atravessa meia-noite
+      // Quiet hours cross midnight
       return currentTime >= startTime || currentTime <= endTime;
     }
   }, [preferences.quiet_hours_start, preferences.quiet_hours_end]);
 
-  // Criar AudioContext sob demanda
-  const getAudioContext = useCallback(() => {
-    if (!audioContextRef.current) {
-      audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+  // Play sound from file
+  const playSoundFile = useCallback((soundFile: string, loop: boolean = false) => {
+    try {
+      // Stop any currently playing audio
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      }
+
+      const audio = new Audio(soundFile);
+      audio.volume = preferences.volume / 100;
+      audio.loop = loop;
+      audioRef.current = audio;
+      loopingRef.current = loop;
+      
+      audio.play()
+        .then(() => {
+          setIsPlaying(true);
+        })
+        .catch((err) => {
+          console.error('Error playing audio:', err);
+          setIsPlaying(false);
+        });
+
+      audio.onended = () => {
+        if (!loopingRef.current) {
+          setIsPlaying(false);
+        }
+      };
+    } catch (error) {
+      console.error('Error creating audio:', error);
     }
-    return audioContextRef.current;
+  }, [preferences.volume]);
+
+  // Stop looping sound
+  const stopSound = useCallback(() => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      loopingRef.current = false;
+      setIsPlaying(false);
+    }
   }, []);
 
-  // Tocar som gerado programaticamente
-  const playGeneratedSound = useCallback((priority: NotificationPriority) => {
-    const ctx = getAudioContext();
-    const config = SOUND_FREQUENCIES[priority];
-    const volume = preferences.volume / 100;
-
-    for (let i = 0; i < config.repeats; i++) {
-      const startTime = ctx.currentTime + (i * (config.duration + 100) / 1000);
-      
-      const oscillator = ctx.createOscillator();
-      const gainNode = ctx.createGain();
-      
-      oscillator.connect(gainNode);
-      gainNode.connect(ctx.destination);
-      
-      oscillator.type = priority === 'critical' ? 'square' : 'sine';
-      oscillator.frequency.setValueAtTime(config.freq, startTime);
-      
-      // Envelope ADSR simples
-      gainNode.gain.setValueAtTime(0, startTime);
-      gainNode.gain.linearRampToValueAtTime(volume * 0.5, startTime + 0.02);
-      gainNode.gain.linearRampToValueAtTime(volume * 0.3, startTime + config.duration / 2000);
-      gainNode.gain.linearRampToValueAtTime(0, startTime + config.duration / 1000);
-      
-      oscillator.start(startTime);
-      oscillator.stop(startTime + config.duration / 1000);
-    }
-  }, [getAudioContext, preferences.volume]);
-
-  // Vibrar dispositivo
+  // Vibrate device
   const vibrate = useCallback((priority: NotificationPriority) => {
     if (!preferences.vibration_enabled || !navigator.vibrate) return;
 
@@ -148,31 +164,33 @@ export const useNotificationSound = () => {
     navigator.vibrate(patterns[priority]);
   }, [preferences.vibration_enabled]);
 
-  // Tocar notificação
+  // Play notification
   const playNotification = useCallback((type: NotificationType) => {
-    // Verificar se som está habilitado
+    // Check if sound is enabled
     if (!preferences.sound_enabled) return;
     
-    // Verificar horário silencioso
+    // Check quiet hours
     if (isQuietHours()) return;
     
-    // Verificar se tipo está desabilitado
+    // Check if type is disabled
     if (preferences.disabled_types.includes(type)) return;
 
     const config = NOTIFICATION_CONFIG[type];
     
-    // Tocar som
+    // Play sound
     if (config.hasSound) {
-      playGeneratedSound(config.priority);
+      const soundFile = SOUND_FILES[config.priority];
+      const shouldLoop = LOOPING_TYPES.includes(type);
+      playSoundFile(soundFile, shouldLoop);
     }
     
-    // Vibrar
+    // Vibrate
     if (config.vibrate) {
       vibrate(config.priority);
     }
-  }, [preferences, isQuietHours, playGeneratedSound, vibrate]);
+  }, [preferences, isQuietHours, playSoundFile, vibrate]);
 
-  // Atualizar preferências
+  // Update preferences
   const updatePreferences = useCallback(async (updates: Partial<NotificationPreferences>) => {
     if (!user) return;
 
@@ -191,21 +209,34 @@ export const useNotificationSound = () => {
 
     if (error) {
       console.error('Error updating preferences:', error);
-      // Reverter em caso de erro
+      // Revert on error
       setPreferences(preferences);
     }
   }, [user, preferences]);
 
-  // Testar som
+  // Test sound
   const testSound = useCallback((priority: NotificationPriority = 'medium') => {
-    playGeneratedSound(priority);
+    const soundFile = SOUND_FILES[priority];
+    playSoundFile(soundFile, false);
     vibrate(priority);
-  }, [playGeneratedSound, vibrate]);
+  }, [playSoundFile, vibrate]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    };
+  }, []);
 
   return {
     preferences,
     loading,
+    isPlaying,
     playNotification,
+    stopSound,
     updatePreferences,
     testSound,
     isQuietHours: isQuietHours(),
