@@ -55,7 +55,10 @@ export const UserMenu = () => {
   if (!user) {
     return (
       <div className="flex items-center gap-2">
-        <Link to="/auth" className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+        <Link 
+          to="/auth" 
+          className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-white/20 hover:bg-white/30 rounded-full transition-colors"
+        >
           <User className="w-4 h-4" />
           <span className="hidden sm:inline">Entrar</span>
         </Link>
