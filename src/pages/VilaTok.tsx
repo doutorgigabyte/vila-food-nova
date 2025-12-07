@@ -357,78 +357,74 @@ export default function VilaTok() {
             >
               {est.videos.map((video, vidIndex) => {
                 const isVideoActive = !showTutorial && estIndex === activeEstablishmentIndex && vidIndex === (activeVideoIndices.get(estIndex) || 0);
-                // Only render full content for nearby slides (performance)
                 const isNearby = Math.abs(estIndex - activeEstablishmentIndex) <= 1;
                 
                 return (
-                <SwiperSlide key={video.id} className="w-full h-full vilatok-slide">
-                  <div className="relative w-full h-full">
-                    {/* Video Player - only load for nearby slides */}
-                    {isNearby && (
-                      <VilaTokPlayer
-                        videoUrl={video.video_url}
-                        thumbnailUrl={video.thumbnail_url}
-                        musicUrl={video.music_url}
-                        isActive={isVideoActive}
-                        onViewCountIncrement={() => incrementViews(video.id)}
-                        onVideoEnd={() => {}}
-                        onAutoAdvance={handleAutoAdvance}
-                        onProgressUpdate={handleProgressUpdate}
-                      />
-                    )}
+                  <SwiperSlide key={video.id} className="w-full h-full vilatok-slide">
+                    <div className="relative w-full h-full">
+                      {isNearby && (
+                        <VilaTokPlayer
+                          videoUrl={video.video_url}
+                          thumbnailUrl={video.thumbnail_url}
+                          musicUrl={video.music_url}
+                          isActive={isVideoActive}
+                          onViewCountIncrement={() => incrementViews(video.id)}
+                          onVideoEnd={() => {}}
+                          onAutoAdvance={handleAutoAdvance}
+                          onProgressUpdate={handleProgressUpdate}
+                        />
+                      )}
 
-                    {/* Overlay */}
-                    <VilaTokOverlay
-                      establishment={est.establishment}
-                      video={{
-                        title: video.title,
-                        description: video.description,
-                      }}
-                      product={video.product}
-                      onProductClick={handleAddToCart}
-                    />
-
-                    {/* Sidebar */}
-                    <div className="absolute right-4 bottom-32 z-20">
-                      <VilaTokSidebar
-                        videoId={video.id}
-                        likesCount={video.likes_count}
-                        sharesCount={video.shares_count}
-                        commentsCount={video.comments_count || 0}
-                        isLiked={likedVideos.has(video.id)}
-                        onLike={async () => {
-                          const success = await toggleLike(video.id);
-                          if (!success) {
-                            toast.error('Faça login para curtir', {
-                              action: {
-                                label: 'Entrar',
-                                onClick: () => navigate('/auth'),
-                              },
-                            });
-                          }
+                      <VilaTokOverlay
+                        establishment={est.establishment}
+                        video={{
+                          title: video.title,
+                          description: video.description,
                         }}
-                        onShare={handleShare}
-                        onComment={() => {
-                          if (!user) {
-                            toast.error('Faça login para comentar', {
-                              action: {
-                                label: 'Entrar',
-                                onClick: () => navigate('/auth'),
-                              },
-                            });
-                            return;
-                          }
-                          setShowComments(true);
-                        }}
-                        onViewProduct={handleAddToCart}
-                        onGoToStore={handleGoToStore}
-                        hasProduct={!!video.product}
+                        product={video.product}
+                        onProductClick={handleAddToCart}
                       />
+
+                      <div className="absolute right-4 bottom-32 z-20">
+                        <VilaTokSidebar
+                          videoId={video.id}
+                          likesCount={video.likes_count}
+                          sharesCount={video.shares_count}
+                          commentsCount={video.comments_count || 0}
+                          isLiked={likedVideos.has(video.id)}
+                          onLike={async () => {
+                            const success = await toggleLike(video.id);
+                            if (!success) {
+                              toast.error('Faça login para curtir', {
+                                action: {
+                                  label: 'Entrar',
+                                  onClick: () => navigate('/auth'),
+                                },
+                              });
+                            }
+                          }}
+                          onShare={handleShare}
+                          onComment={() => {
+                            if (!user) {
+                              toast.error('Faça login para comentar', {
+                                action: {
+                                  label: 'Entrar',
+                                  onClick: () => navigate('/auth'),
+                                },
+                              });
+                              return;
+                            }
+                            setShowComments(true);
+                          }}
+                          onViewProduct={handleAddToCart}
+                          onGoToStore={handleGoToStore}
+                          hasProduct={!!video.product}
+                        />
+                      </div>
                     </div>
-                    </div>
-                  </div>
-                </SwiperSlide>
-              )})}
+                  </SwiperSlide>
+                );
+              })}
             </Swiper>
           </SwiperSlide>
         ))}
