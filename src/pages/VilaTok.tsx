@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useState } from 'react';
+import { useEffect, useCallback, useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Flame } from 'lucide-react';
 import { useVilaTok } from '@/hooks/useVilaTok';
@@ -6,18 +6,19 @@ import { VilaTokPlayer } from '@/components/vilatok/VilaTokPlayer';
 import { VilaTokSidebar } from '@/components/vilatok/VilaTokSidebar';
 import { VilaTokOverlay } from '@/components/vilatok/VilaTokOverlay';
 import { VilaTokNavigation } from '@/components/vilatok/VilaTokNavigation';
+import { VilaTokProgressBars } from '@/components/vilatok/VilaTokProgressBars';
 import { VilaTokTutorial } from '@/components/vilatok/VilaTokTutorial';
 import { useCart } from '@/hooks/useCart';
 import { toast } from 'sonner';
-import { Skeleton } from '@/components/ui/skeleton';
 import VideoComments from '@/components/stories/VideoComments';
 
 const TUTORIAL_STORAGE_KEY = 'vilatok_tutorial_completed';
 
 export default function VilaTok() {
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const categorySlug = searchParams.get('category');
+  const containerRef = useRef<HTMLDivElement>(null);
   
   const { addToCart } = useCart();
   const {
@@ -43,34 +44,94 @@ export default function VilaTok() {
   const [showTutorial, setShowTutorial] = useState(() => {
     return !localStorage.getItem(TUTORIAL_STORAGE_KEY);
   });
+  const [currentProgress, setCurrentProgress] = useState(0);
 
   const handleTutorialComplete = useCallback(() => {
     localStorage.setItem(TUTORIAL_STORAGE_KEY, 'true');
     setShowTutorial(false);
   }, []);
 
+  // Handle auto-advance: go to next video, or next establishment if last video
+  const handleAutoAdvance = useCallback(() => {
+    if (currentVideoIndex < totalVideosInCurrent - 1) {
+      // More videos in current establishment
+      goToNextVideo();
+    } else {
+      // Last video, go to next establishment
+      goToNextEstablishment();
+    }
+  }, [currentVideoIndex, totalVideosInCurrent, goToNextVideo, goToNextEstablishment]);
+
+  // Reset progress when video changes
+  useEffect(() => {
+    setCurrentProgress(0);
+  }, [currentVideoIndex, currentEstablishmentIndex]);
+
   // Handle keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (showTutorial) return;
+      
       switch (e.key) {
         case 'ArrowUp':
+          e.preventDefault();
           goToPreviousEstablishment();
           break;
         case 'ArrowDown':
+          e.preventDefault();
           goToNextEstablishment();
           break;
         case 'ArrowLeft':
+          e.preventDefault();
           goToPreviousVideo();
           break;
         case 'ArrowRight':
-          goToNextVideo();
+          e.preventDefault();
+          handleAutoAdvance();
           break;
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [goToNextEstablishment, goToPreviousEstablishment, goToNextVideo, goToPreviousVideo]);
+  }, [showTutorial, goToNextEstablishment, goToPreviousEstablishment, goToNextVideo, goToPreviousVideo, handleAutoAdvance]);
+
+  // Handle mouse wheel navigation
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      if (showTutorial) return;
+      
+      e.preventDefault();
+      
+      // Debounce wheel events
+      const now = Date.now();
+      const lastWheel = container.dataset.lastWheel ? parseInt(container.dataset.lastWheel) : 0;
+      if (now - lastWheel < 300) return;
+      container.dataset.lastWheel = now.toString();
+
+      if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+        // Vertical scroll - change establishment
+        if (e.deltaY > 0) {
+          goToNextEstablishment();
+        } else {
+          goToPreviousEstablishment();
+        }
+      } else {
+        // Horizontal scroll - change video
+        if (e.deltaX > 0) {
+          handleAutoAdvance();
+        } else {
+          goToPreviousVideo();
+        }
+      }
+    };
+
+    container.addEventListener('wheel', handleWheel, { passive: false });
+    return () => container.removeEventListener('wheel', handleWheel);
+  }, [showTutorial, goToNextEstablishment, goToPreviousEstablishment, goToPreviousVideo, handleAutoAdvance]);
 
   // Handle touch swipe
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
@@ -93,7 +154,7 @@ export default function VilaTok() {
         if (deltaX > 0) {
           goToPreviousVideo();
         } else {
-          goToNextVideo();
+          handleAutoAdvance();
         }
       }
     } else {
@@ -108,7 +169,7 @@ export default function VilaTok() {
     }
 
     setTouchStart(null);
-  }, [touchStart, goToNextEstablishment, goToPreviousEstablishment, goToNextVideo, goToPreviousVideo]);
+  }, [touchStart, goToNextEstablishment, goToPreviousEstablishment, goToPreviousVideo, handleAutoAdvance]);
 
   const handleShare = useCallback(async () => {
     if (!currentVideo || !currentEstablishment) return;
@@ -169,6 +230,10 @@ export default function VilaTok() {
     navigate(`/loja/${currentEstablishment.establishment.slug}`);
   }, [currentEstablishment, navigate]);
 
+  const handleProgressUpdate = useCallback((progress: number) => {
+    setCurrentProgress(progress);
+  }, []);
+
   if (isLoading) {
     return (
       <div className="fixed inset-0 bg-black flex items-center justify-center">
@@ -224,6 +289,7 @@ export default function VilaTok() {
 
   return (
     <div 
+      ref={containerRef}
       className="fixed inset-0 bg-black overflow-hidden"
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
@@ -245,8 +311,14 @@ export default function VilaTok() {
 
           <div className="w-10" />
         </div>
-        
       </div>
+
+      {/* Instagram-style Progress Bars */}
+      <VilaTokProgressBars
+        totalVideos={totalVideosInCurrent}
+        currentVideoIndex={currentVideoIndex}
+        currentProgress={currentProgress}
+      />
 
       {/* Video Player */}
       <VilaTokPlayer
@@ -255,8 +327,9 @@ export default function VilaTok() {
         musicUrl={currentVideo.music_url}
         isActive={!showTutorial}
         onViewCountIncrement={() => incrementViews(currentVideo.id)}
-        onVideoEnd={goToNextEstablishment}
-        onAutoAdvance={goToNextVideo}
+        onVideoEnd={() => {}}
+        onAutoAdvance={handleAutoAdvance}
+        onProgressUpdate={handleProgressUpdate}
       />
 
       {/* Navigation Indicators */}
