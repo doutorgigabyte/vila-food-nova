@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Play, Pause, Volume2, VolumeX, Music } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getImageUrl } from '@/lib/s3';
@@ -17,6 +17,16 @@ interface VilaTokPlayerProps {
   onAutoAdvance?: () => void;
   onProgressUpdate?: (progress: number) => void;
 }
+
+// Check if URL is an image (not a video)
+const isImageUrl = (url: string): boolean => {
+  const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'];
+  const lowerUrl = url.toLowerCase();
+  // Check for image extensions or known image hosts
+  return imageExtensions.some(ext => lowerUrl.includes(ext)) || 
+         lowerUrl.includes('unsplash.com') ||
+         lowerUrl.includes('images.');
+};
 
 export function VilaTokPlayer({
   videoUrl,
@@ -41,6 +51,9 @@ export function VilaTokPlayer({
   const [hasCountedView, setHasCountedView] = useState(false);
   const [hasMusicPlaying, setHasMusicPlaying] = useState(false);
   const [videoLoaded, setVideoLoaded] = useState(false);
+
+  // Determine if URL is an image
+  const isImage = useMemo(() => isImageUrl(videoUrl), [videoUrl]);
 
   // Clear progress interval
   const clearProgressInterval = useCallback(() => {
@@ -74,29 +87,31 @@ export function VilaTokPlayer({
 
   // Load video when it becomes active or nearby
   useEffect(() => {
-    if (!videoRef.current) return;
+    if (isImage || !videoRef.current) return;
     
     // Pre-load video data when component mounts
     if (!videoLoaded) {
       videoRef.current.load();
       setVideoLoaded(true);
     }
-  }, [videoLoaded]);
+  }, [videoLoaded, isImage]);
 
   // Auto-play and countdown when active
   useEffect(() => {
-    if (!videoRef.current) return;
-
     if (isActive) {
-      videoRef.current.currentTime = 0;
-      videoRef.current.play().catch(() => {
-        setIsPlaying(false);
-      });
-      setIsPlaying(true);
       setHasCountedView(false);
       pausedAtRef.current = 0;
       onProgressUpdate?.(0);
       startProgressTimer();
+      setIsPlaying(true);
+
+      // For video content
+      if (!isImage && videoRef.current) {
+        videoRef.current.currentTime = 0;
+        videoRef.current.play().catch(() => {
+          setIsPlaying(false);
+        });
+      }
 
       // Start music if available
       if (audioRef.current && musicUrl) {
@@ -106,11 +121,14 @@ export function VilaTokPlayer({
         setHasMusicPlaying(true);
       }
     } else {
-      videoRef.current.pause();
-      videoRef.current.currentTime = 0;
       setIsPlaying(false);
       clearProgressInterval();
       pausedAtRef.current = 0;
+
+      if (!isImage && videoRef.current) {
+        videoRef.current.pause();
+        videoRef.current.currentTime = 0;
+      }
 
       // Stop music
       if (audioRef.current) {
@@ -123,7 +141,7 @@ export function VilaTokPlayer({
     return () => {
       clearProgressInterval();
     };
-  }, [isActive, musicUrl, startProgressTimer, clearProgressInterval, onProgressUpdate]);
+  }, [isActive, musicUrl, isImage, startProgressTimer, clearProgressInterval, onProgressUpdate]);
 
   // Count view after 3 seconds of playback
   useEffect(() => {
@@ -143,10 +161,7 @@ export function VilaTokPlayer({
   }, [onVideoEnd]);
 
   const togglePlay = useCallback(() => {
-    if (!videoRef.current) return;
-
     if (isPlaying) {
-      videoRef.current.pause();
       setIsPlaying(false);
       setShowPlayIcon(true);
       setTimeout(() => setShowPlayIcon(false), 500);
@@ -156,12 +171,15 @@ export function VilaTokPlayer({
       pausedAtRef.current = elapsed;
       clearProgressInterval();
 
+      if (!isImage && videoRef.current) {
+        videoRef.current.pause();
+      }
+
       // Pause music too
       if (audioRef.current) {
         audioRef.current.pause();
       }
     } else {
-      videoRef.current.play();
       setIsPlaying(true);
       setShowPlayIcon(true);
       setTimeout(() => setShowPlayIcon(false), 500);
@@ -169,12 +187,16 @@ export function VilaTokPlayer({
       // Resume from where we paused
       startProgressTimer();
 
+      if (!isImage && videoRef.current) {
+        videoRef.current.play();
+      }
+
       // Resume music
       if (audioRef.current && musicUrl) {
         audioRef.current.play().catch(() => {});
       }
     }
-  }, [isPlaying, musicUrl, startProgressTimer, clearProgressInterval]);
+  }, [isPlaying, isImage, musicUrl, startProgressTimer, clearProgressInterval]);
 
   const toggleMute = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
@@ -201,18 +223,27 @@ export function VilaTokPlayer({
       className="relative w-full h-full bg-black vilatok-slide"
       onClick={togglePlay}
     >
-      {/* Video - lazy loaded with metadata preload */}
-      <video
-        ref={videoRef}
-        src={videoUrl}
-        poster={thumbnailUrl ? getImageUrl(thumbnailUrl) : undefined}
-        className="w-full h-full object-cover"
-        muted={isMuted}
-        playsInline
-        preload={isActive ? "auto" : "metadata"}
-        loop
-        onEnded={handleVideoEnd}
-      />
+      {/* Render image or video based on URL type */}
+      {isImage ? (
+        <img
+          src={videoUrl}
+          alt="Story"
+          className="w-full h-full object-cover"
+          draggable={false}
+        />
+      ) : (
+        <video
+          ref={videoRef}
+          src={videoUrl}
+          poster={thumbnailUrl ? getImageUrl(thumbnailUrl) : undefined}
+          className="w-full h-full object-cover"
+          muted={isMuted}
+          playsInline
+          preload={isActive ? "auto" : "metadata"}
+          loop
+          onEnded={handleVideoEnd}
+        />
+      )}
 
       {/* Background Music */}
       {musicUrl && (
@@ -242,17 +273,19 @@ export function VilaTokPlayer({
 
       {/* Controls */}
       <div className="absolute top-24 right-4 flex flex-col gap-2 z-30">
-        {/* Mute button */}
-        <button
-          onClick={toggleMute}
-          className="w-9 h-9 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center"
-        >
-          {isMuted ? (
-            <VolumeX className="w-5 h-5 text-white" />
-          ) : (
-            <Volume2 className="w-5 h-5 text-white" />
-          )}
-        </button>
+        {/* Mute button - only for videos */}
+        {!isImage && (
+          <button
+            onClick={toggleMute}
+            className="w-9 h-9 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center"
+          >
+            {isMuted ? (
+              <VolumeX className="w-5 h-5 text-white" />
+            ) : (
+              <Volume2 className="w-5 h-5 text-white" />
+            )}
+          </button>
+        )}
 
         {/* Music toggle button */}
         {musicUrl && (
