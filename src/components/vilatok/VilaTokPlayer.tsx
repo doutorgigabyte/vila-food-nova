@@ -12,10 +12,10 @@ interface VilaTokPlayerProps {
   musicUrl?: string | null;
   isActive: boolean;
   autoAdvance?: boolean;
-  autoAdvanceDelay?: number;
   onViewCountIncrement?: () => void;
   onVideoEnd?: () => void;
   onAutoAdvance?: () => void;
+  onProgressUpdate?: (progress: number) => void;
 }
 
 export function VilaTokPlayer({
@@ -24,22 +24,22 @@ export function VilaTokPlayer({
   musicUrl,
   isActive,
   autoAdvance = true,
-  autoAdvanceDelay = 500,
   onViewCountIncrement,
   onVideoEnd,
   onAutoAdvance,
+  onProgressUpdate,
 }: VilaTokPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number>(0);
+  const pausedAtRef = useRef<number>(0);
   
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
   const [showPlayIcon, setShowPlayIcon] = useState(false);
   const [hasCountedView, setHasCountedView] = useState(false);
   const [hasMusicPlaying, setHasMusicPlaying] = useState(false);
-  const [progress, setProgress] = useState(100); // Countdown from 100% to 0%
 
   // Clear progress interval
   const clearProgressInterval = useCallback(() => {
@@ -49,27 +49,27 @@ export function VilaTokPlayer({
     }
   }, []);
 
-  // Start countdown timer
-  const startCountdown = useCallback(() => {
+  // Start countdown timer - progress fills UP (0 to 100)
+  const startProgressTimer = useCallback(() => {
     clearProgressInterval();
-    startTimeRef.current = Date.now();
-    setProgress(100);
+    startTimeRef.current = Date.now() - pausedAtRef.current;
 
     progressIntervalRef.current = setInterval(() => {
       const elapsed = Date.now() - startTimeRef.current;
-      const remaining = Math.max(0, 100 - (elapsed / STORY_DURATION) * 100);
+      const progress = Math.min(100, (elapsed / STORY_DURATION) * 100);
       
-      setProgress(remaining);
+      onProgressUpdate?.(progress);
 
-      // Auto-advance when countdown reaches 0
-      if (remaining <= 0) {
+      // Auto-advance when progress reaches 100%
+      if (progress >= 100) {
         clearProgressInterval();
+        pausedAtRef.current = 0;
         if (autoAdvance && onAutoAdvance) {
           onAutoAdvance();
         }
       }
     }, PROGRESS_INTERVAL);
-  }, [autoAdvance, onAutoAdvance, clearProgressInterval]);
+  }, [autoAdvance, onAutoAdvance, onProgressUpdate, clearProgressInterval]);
 
   // Auto-play and countdown when active
   useEffect(() => {
@@ -82,7 +82,9 @@ export function VilaTokPlayer({
       });
       setIsPlaying(true);
       setHasCountedView(false);
-      startCountdown();
+      pausedAtRef.current = 0;
+      onProgressUpdate?.(0);
+      startProgressTimer();
 
       // Start music if available
       if (audioRef.current && musicUrl) {
@@ -95,8 +97,8 @@ export function VilaTokPlayer({
       videoRef.current.pause();
       videoRef.current.currentTime = 0;
       setIsPlaying(false);
-      setProgress(100);
       clearProgressInterval();
+      pausedAtRef.current = 0;
 
       // Stop music
       if (audioRef.current) {
@@ -109,7 +111,7 @@ export function VilaTokPlayer({
     return () => {
       clearProgressInterval();
     };
-  }, [isActive, musicUrl, startCountdown, clearProgressInterval]);
+  }, [isActive, musicUrl, startProgressTimer, clearProgressInterval, onProgressUpdate]);
 
   // Count view after 3 seconds of playback
   useEffect(() => {
@@ -123,15 +125,10 @@ export function VilaTokPlayer({
     return () => clearTimeout(timer);
   }, [isPlaying, hasCountedView, onViewCountIncrement]);
 
-  // Handle video end
+  // Handle video end (if video is shorter than 15s)
   const handleVideoEnd = useCallback(() => {
     onVideoEnd?.();
-    // Countdown will handle auto-advance, but if video ends first, advance
-    if (autoAdvance && onAutoAdvance && progress > 0) {
-      clearProgressInterval();
-      onAutoAdvance();
-    }
-  }, [autoAdvance, onAutoAdvance, onVideoEnd, progress, clearProgressInterval]);
+  }, [onVideoEnd]);
 
   const togglePlay = useCallback(() => {
     if (!videoRef.current) return;
@@ -141,6 +138,10 @@ export function VilaTokPlayer({
       setIsPlaying(false);
       setShowPlayIcon(true);
       setTimeout(() => setShowPlayIcon(false), 500);
+      
+      // Pause the timer and save elapsed time
+      const elapsed = Date.now() - startTimeRef.current;
+      pausedAtRef.current = elapsed;
       clearProgressInterval();
 
       // Pause music too
@@ -153,30 +154,15 @@ export function VilaTokPlayer({
       setShowPlayIcon(true);
       setTimeout(() => setShowPlayIcon(false), 500);
       
-      // Resume countdown from current progress
-      const remainingTime = (progress / 100) * STORY_DURATION;
-      startTimeRef.current = Date.now() - (STORY_DURATION - remainingTime);
-      
-      progressIntervalRef.current = setInterval(() => {
-        const elapsed = Date.now() - startTimeRef.current;
-        const remaining = Math.max(0, 100 - (elapsed / STORY_DURATION) * 100);
-        
-        setProgress(remaining);
-
-        if (remaining <= 0) {
-          clearProgressInterval();
-          if (autoAdvance && onAutoAdvance) {
-            onAutoAdvance();
-          }
-        }
-      }, PROGRESS_INTERVAL);
+      // Resume from where we paused
+      startProgressTimer();
 
       // Resume music
       if (audioRef.current && musicUrl) {
         audioRef.current.play().catch(() => {});
       }
     }
-  }, [isPlaying, musicUrl, progress, autoAdvance, onAutoAdvance, clearProgressInterval]);
+  }, [isPlaying, musicUrl, startProgressTimer, clearProgressInterval]);
 
   const toggleMute = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
@@ -212,7 +198,7 @@ export function VilaTokPlayer({
         muted={isMuted}
         playsInline
         preload="auto"
-        loop={false}
+        loop
         onEnded={handleVideoEnd}
       />
 
@@ -224,16 +210,6 @@ export function VilaTokPlayer({
           loop
           preload="auto"
         />
-      )}
-
-      {/* Countdown Progress Bar - White bar that decreases over 15 seconds */}
-      {isActive && (
-        <div className="absolute top-14 left-4 right-4 h-1 bg-white/30 rounded-full z-40 overflow-hidden">
-          <div 
-            className="h-full bg-white rounded-full transition-all duration-75 ease-linear"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
       )}
 
       {/* Play/Pause indicator */}
