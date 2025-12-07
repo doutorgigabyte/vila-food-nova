@@ -125,14 +125,18 @@ export function useVilaTok(options: UseVilaTokOptions = {}) {
 
       setEstablishments(Object.values(grouped));
 
-      // Fetch user's liked videos
-      const likeQuery = user?.id
-        ? supabase.from('video_likes').select('video_id').eq('user_id', user.id)
-        : supabase.from('video_likes').select('video_id').eq('session_id', sessionId);
-
-      const { data: likes } = await likeQuery;
-      if (likes) {
-        setLikedVideos(new Set(likes.map(l => l.video_id)));
+      // Fetch user's liked videos (only if logged in)
+      if (user?.id) {
+        const { data: likes } = await supabase
+          .from('video_likes')
+          .select('video_id')
+          .eq('user_id', user.id);
+        
+        if (likes) {
+          setLikedVideos(new Set(likes.map(l => l.video_id)));
+        }
+      } else {
+        setLikedVideos(new Set());
       }
     } catch (error) {
       console.error('Error fetching VilaTok videos:', error);
@@ -180,17 +184,18 @@ export function useVilaTok(options: UseVilaTokOptions = {}) {
     }
   }, [currentVideoIndex]);
 
-  const toggleLike = useCallback(async (videoId: string) => {
+  const toggleLike = useCallback(async (videoId: string): Promise<boolean> => {
+    // Require authentication for likes
+    if (!user?.id) {
+      return false; // Signal that auth is required
+    }
+
     const isLiked = likedVideos.has(videoId);
 
     try {
       if (isLiked) {
         // Unlike
-        const deleteQuery = user?.id
-          ? supabase.from('video_likes').delete().eq('video_id', videoId).eq('user_id', user.id)
-          : supabase.from('video_likes').delete().eq('video_id', videoId).eq('session_id', sessionId);
-
-        await deleteQuery;
+        await supabase.from('video_likes').delete().eq('video_id', videoId).eq('user_id', user.id);
         
         // Update local count
         await supabase
@@ -205,11 +210,7 @@ export function useVilaTok(options: UseVilaTokOptions = {}) {
         });
       } else {
         // Like
-        const insertData = user?.id
-          ? { video_id: videoId, user_id: user.id }
-          : { video_id: videoId, session_id: sessionId };
-
-        await supabase.from('video_likes').insert(insertData);
+        await supabase.from('video_likes').insert({ video_id: videoId, user_id: user.id });
 
         // Update local count
         await supabase
@@ -221,10 +222,12 @@ export function useVilaTok(options: UseVilaTokOptions = {}) {
       }
 
       fetchVideos(); // Refresh to get updated counts
+      return true;
     } catch (error) {
       console.error('Error toggling like:', error);
+      return true;
     }
-  }, [likedVideos, user?.id, sessionId, currentVideo, fetchVideos]);
+  }, [likedVideos, user?.id, currentVideo, fetchVideos]);
 
   const incrementViews = useCallback(async (videoId: string) => {
     try {
