@@ -48,11 +48,13 @@ export const Price = ({
         className={cn(
           "whitespace-nowrap font-bold",
           sizeClasses[size],
-          variant === "promotional" || hasDiscount
-            ? "text-destructive"
-            : variant === "muted"
-            ? "text-muted-foreground"
-            : "text-foreground"
+          className?.includes("text-white") 
+            ? "" // Don't override if text-white is passed
+            : variant === "promotional" || hasDiscount
+              ? "text-destructive"
+              : variant === "muted"
+              ? "text-muted-foreground"
+              : "text-foreground"
         )}
       >
         {showCurrency && "R$\u00A0"}
