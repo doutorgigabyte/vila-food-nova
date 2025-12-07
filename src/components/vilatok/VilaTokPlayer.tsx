@@ -16,6 +16,7 @@ interface VilaTokPlayerProps {
   onVideoEnd?: () => void;
   onAutoAdvance?: () => void;
   onProgressUpdate?: (progress: number) => void;
+  onPlayStateChange?: (isPlaying: boolean) => void;
 }
 
 // Check if URL is an image (not a video)
@@ -38,6 +39,7 @@ export function VilaTokPlayer({
   onVideoEnd,
   onAutoAdvance,
   onProgressUpdate,
+  onPlayStateChange,
 }: VilaTokPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -104,12 +106,14 @@ export function VilaTokPlayer({
       onProgressUpdate?.(0);
       startProgressTimer();
       setIsPlaying(true);
+      onPlayStateChange?.(true);
 
       // For video content
       if (!isImage && videoRef.current) {
         videoRef.current.currentTime = 0;
         videoRef.current.play().catch(() => {
           setIsPlaying(false);
+          onPlayStateChange?.(false);
         });
       }
 
@@ -122,6 +126,7 @@ export function VilaTokPlayer({
       }
     } else {
       setIsPlaying(false);
+      onPlayStateChange?.(false);
       clearProgressInterval();
       pausedAtRef.current = 0;
 
@@ -141,7 +146,7 @@ export function VilaTokPlayer({
     return () => {
       clearProgressInterval();
     };
-  }, [isActive, musicUrl, isImage, startProgressTimer, clearProgressInterval, onProgressUpdate]);
+  }, [isActive, musicUrl, isImage, startProgressTimer, clearProgressInterval, onProgressUpdate, onPlayStateChange]);
 
   // Count view after 3 seconds of playback
   useEffect(() => {
@@ -163,6 +168,7 @@ export function VilaTokPlayer({
   const togglePlay = useCallback(() => {
     if (isPlaying) {
       setIsPlaying(false);
+      onPlayStateChange?.(false);
       setShowPlayIcon(true);
       setTimeout(() => setShowPlayIcon(false), 500);
       
@@ -181,6 +187,7 @@ export function VilaTokPlayer({
       }
     } else {
       setIsPlaying(true);
+      onPlayStateChange?.(true);
       setShowPlayIcon(true);
       setTimeout(() => setShowPlayIcon(false), 500);
       
@@ -196,7 +203,7 @@ export function VilaTokPlayer({
         audioRef.current.play().catch(() => {});
       }
     }
-  }, [isPlaying, isImage, musicUrl, startProgressTimer, clearProgressInterval]);
+  }, [isPlaying, isImage, musicUrl, startProgressTimer, clearProgressInterval, onPlayStateChange]);
 
   const toggleMute = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
