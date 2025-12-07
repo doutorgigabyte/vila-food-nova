@@ -1,6 +1,5 @@
 import { useState, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -9,10 +8,6 @@ import {
   Upload, 
   Video, 
   Image, 
-  Music, 
-  Scissors, 
-  Play, 
-  Pause,
   X,
   Check,
   Loader2
@@ -22,6 +17,7 @@ import { toast } from "sonner";
 import VideoTrimmer from "./VideoTrimmer";
 import MusicSelector from "./MusicSelector";
 import StoryPreview from "./StoryPreview";
+import { uploadVideoToS3, uploadToS3 } from "@/lib/s3";
 
 interface StoriesCreatorProps {
   establishmentId: string;
@@ -47,7 +43,8 @@ const StoriesCreator = ({ establishmentId, onClose, onPublish }: StoriesCreatorP
   const [mediaPreviewUrl, setMediaPreviewUrl] = useState<string>("");
   const [mediaType, setMediaType] = useState<"video" | "image" | null>(null);
   const [trimmedVideoBlob, setTrimmedVideoBlob] = useState<Blob | null>(null);
-  const [thumbnailUrl, setThumbnailUrl] = useState<string>("");
+  const [thumbnailBlob, setThumbnailBlob] = useState<Blob | null>(null);
+  const [thumbnailPreviewUrl, setThumbnailPreviewUrl] = useState<string>("");
   const [selectedMusic, setSelectedMusic] = useState<string | null>(null);
   const [description, setDescription] = useState("");
   const [displayInStore, setDisplayInStore] = useState(true);
@@ -86,8 +83,16 @@ const StoriesCreator = ({ establishmentId, onClose, onPublish }: StoriesCreatorP
 
   const handleTrimComplete = useCallback((blob: Blob, thumbnail: string, videoDuration: number) => {
     setTrimmedVideoBlob(blob);
-    setThumbnailUrl(thumbnail);
+    setThumbnailPreviewUrl(thumbnail);
     setDuration(videoDuration);
+    
+    // Convert thumbnail data URL to blob
+    fetch(thumbnail)
+      .then(res => res.blob())
+      .then(thumbnailBlob => {
+        setThumbnailBlob(thumbnailBlob);
+      });
+    
     setCurrentStep("music");
   }, []);
 
@@ -104,16 +109,44 @@ const StoriesCreator = ({ establishmentId, onClose, onPublish }: StoriesCreatorP
     if (!mediaFile && !trimmedVideoBlob) return;
 
     setIsProcessing(true);
+    setUploadProgress(0);
+
     try {
-      // In a real implementation, we'd upload to S3 here
-      // For now, create a mock URL
-      const videoUrl = trimmedVideoBlob 
-        ? URL.createObjectURL(trimmedVideoBlob) 
-        : mediaPreviewUrl;
+      let videoUrl: string;
+      let thumbnailUrl: string;
+
+      // Upload video to S3
+      if (mediaType === "video") {
+        const videoToUpload = trimmedVideoBlob 
+          ? new File([trimmedVideoBlob], 'video.mp4', { type: 'video/mp4' })
+          : mediaFile!;
+        
+        setUploadProgress(10);
+        const videoResult = await uploadVideoToS3(videoToUpload, establishmentId);
+        videoUrl = videoResult.url;
+        setUploadProgress(60);
+
+        // Upload thumbnail
+        if (thumbnailBlob) {
+          const thumbnailFile = new File([thumbnailBlob], 'thumbnail.jpg', { type: 'image/jpeg' });
+          const thumbResult = await uploadToS3(thumbnailFile, 'videos', establishmentId);
+          thumbnailUrl = thumbResult.url;
+        } else {
+          thumbnailUrl = thumbnailPreviewUrl;
+        }
+        setUploadProgress(80);
+      } else {
+        // For images, upload directly
+        setUploadProgress(10);
+        const imageResult = await uploadToS3(mediaFile!, 'videos', establishmentId);
+        videoUrl = imageResult.url;
+        thumbnailUrl = imageResult.url;
+        setUploadProgress(80);
+      }
 
       const storyData: StoryData = {
         videoUrl,
-        thumbnailUrl: thumbnailUrl || mediaPreviewUrl,
+        thumbnailUrl,
         description,
         musicUrl: selectedMusic || undefined,
         duration: mediaType === "image" ? 5 : duration,
@@ -121,12 +154,15 @@ const StoriesCreator = ({ establishmentId, onClose, onPublish }: StoriesCreatorP
         displayInMarketplace,
       };
 
+      setUploadProgress(90);
       await onPublish(storyData);
+      setUploadProgress(100);
+      
       toast.success("Story publicado com sucesso!");
       onClose();
     } catch (error) {
       console.error("Error publishing story:", error);
-      toast.error("Erro ao publicar story");
+      toast.error(error instanceof Error ? error.message : "Erro ao publicar story");
     } finally {
       setIsProcessing(false);
     }
@@ -360,10 +396,12 @@ const StoriesCreator = ({ establishmentId, onClose, onPublish }: StoriesCreatorP
       {/* Processing overlay */}
       {isProcessing && (
         <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="text-center">
+          <div className="text-center max-w-xs">
             <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto mb-4" />
             <p className="font-medium">Publicando story...</p>
-            <p className="text-sm text-muted-foreground">Aguarde um momento</p>
+            <p className="text-sm text-muted-foreground mb-4">Fazendo upload dos arquivos</p>
+            <Progress value={uploadProgress} className="h-2" />
+            <p className="text-xs text-muted-foreground mt-2">{uploadProgress}%</p>
           </div>
         </div>
       )}

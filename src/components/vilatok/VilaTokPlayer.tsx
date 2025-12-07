@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Play, Pause, Volume2, VolumeX } from 'lucide-react';
+import { Play, Pause, Volume2, VolumeX, Music } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getImageUrl } from '@/lib/s3';
 
 interface VilaTokPlayerProps {
   videoUrl: string;
   thumbnailUrl?: string | null;
+  musicUrl?: string | null;
   isActive: boolean;
   onViewCountIncrement?: () => void;
 }
@@ -13,14 +14,17 @@ interface VilaTokPlayerProps {
 export function VilaTokPlayer({
   videoUrl,
   thumbnailUrl,
+  musicUrl,
   isActive,
   onViewCountIncrement,
 }: VilaTokPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
   const [showPlayIcon, setShowPlayIcon] = useState(false);
   const [hasCountedView, setHasCountedView] = useState(false);
+  const [hasMusicPlaying, setHasMusicPlaying] = useState(false);
 
   // Auto-play when active
   useEffect(() => {
@@ -33,12 +37,27 @@ export function VilaTokPlayer({
       });
       setIsPlaying(true);
       setHasCountedView(false);
+
+      // Start music if available
+      if (audioRef.current && musicUrl) {
+        audioRef.current.currentTime = 0;
+        audioRef.current.volume = 0.3;
+        audioRef.current.play().catch(() => {});
+        setHasMusicPlaying(true);
+      }
     } else {
       videoRef.current.pause();
       videoRef.current.currentTime = 0;
       setIsPlaying(false);
+
+      // Stop music
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+        setHasMusicPlaying(false);
+      }
     }
-  }, [isActive]);
+  }, [isActive, musicUrl]);
 
   // Count view after 3 seconds of playback
   useEffect(() => {
@@ -60,13 +79,23 @@ export function VilaTokPlayer({
       setIsPlaying(false);
       setShowPlayIcon(true);
       setTimeout(() => setShowPlayIcon(false), 500);
+
+      // Pause music too
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
     } else {
       videoRef.current.play();
       setIsPlaying(true);
       setShowPlayIcon(true);
       setTimeout(() => setShowPlayIcon(false), 500);
+
+      // Resume music
+      if (audioRef.current && musicUrl) {
+        audioRef.current.play().catch(() => {});
+      }
     }
-  }, [isPlaying]);
+  }, [isPlaying, musicUrl]);
 
   const toggleMute = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
@@ -74,6 +103,19 @@ export function VilaTokPlayer({
     videoRef.current.muted = !isMuted;
     setIsMuted(!isMuted);
   }, [isMuted]);
+
+  const toggleMusic = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!audioRef.current) return;
+    
+    if (hasMusicPlaying) {
+      audioRef.current.pause();
+      setHasMusicPlaying(false);
+    } else {
+      audioRef.current.play().catch(() => {});
+      setHasMusicPlaying(true);
+    }
+  }, [hasMusicPlaying]);
 
   return (
     <div 
@@ -92,6 +134,16 @@ export function VilaTokPlayer({
         preload="auto"
       />
 
+      {/* Background Music */}
+      {musicUrl && (
+        <audio
+          ref={audioRef}
+          src={musicUrl}
+          loop
+          preload="auto"
+        />
+      )}
+
       {/* Play/Pause indicator */}
       <div 
         className={cn(
@@ -108,17 +160,36 @@ export function VilaTokPlayer({
         </div>
       </div>
 
-      {/* Mute button */}
-      <button
-        onClick={toggleMute}
-        className="absolute top-20 right-4 w-9 h-9 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center z-30"
-      >
-        {isMuted ? (
-          <VolumeX className="w-5 h-5 text-white" />
-        ) : (
-          <Volume2 className="w-5 h-5 text-white" />
+      {/* Controls */}
+      <div className="absolute top-24 right-4 flex flex-col gap-2 z-30">
+        {/* Mute button */}
+        <button
+          onClick={toggleMute}
+          className="w-9 h-9 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center"
+        >
+          {isMuted ? (
+            <VolumeX className="w-5 h-5 text-white" />
+          ) : (
+            <Volume2 className="w-5 h-5 text-white" />
+          )}
+        </button>
+
+        {/* Music toggle button - only show if music available */}
+        {musicUrl && (
+          <button
+            onClick={toggleMusic}
+            className={cn(
+              "w-9 h-9 rounded-full backdrop-blur-sm flex items-center justify-center transition-colors",
+              hasMusicPlaying ? "bg-primary/80" : "bg-black/40"
+            )}
+          >
+            <Music className={cn(
+              "w-5 h-5",
+              hasMusicPlaying ? "text-primary-foreground" : "text-white"
+            )} />
+          </button>
         )}
-      </button>
+      </div>
 
       {/* Gradient overlays */}
       <div className="absolute inset-0 pointer-events-none">

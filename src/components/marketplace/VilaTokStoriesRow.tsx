@@ -12,7 +12,11 @@ interface EstablishmentStory {
   hasVideos: boolean;
 }
 
-const VilaTokStoriesRow = () => {
+interface VilaTokStoriesRowProps {
+  mainCategorySlug?: string | null;
+}
+
+const VilaTokStoriesRow = ({ mainCategorySlug }: VilaTokStoriesRowProps) => {
   const navigate = useNavigate();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [establishments, setEstablishments] = useState<EstablishmentStory[]>([]);
@@ -31,15 +35,41 @@ const VilaTokStoriesRow = () => {
           videosData?.map((v) => v.establishment_id) || []
         );
 
-        // Get all open establishments
-        const { data: establishments } = await supabase
+        // Build establishments query
+        let establishmentQuery = supabase
           .from("establishments")
-          .select("id, name, slug, logo_url")
+          .select("id, name, slug, logo_url, segment_id")
           .eq("is_open", true)
           .limit(20);
 
+        const { data: establishments } = await establishmentQuery;
+
         if (establishments) {
-          const sorted = establishments
+          let filteredEstablishments = establishments;
+
+          // Filter by category if specified
+          if (mainCategorySlug) {
+            const { data: mainCategory } = await supabase
+              .from('main_categories')
+              .select('id')
+              .eq('slug', mainCategorySlug)
+              .single();
+
+            if (mainCategory) {
+              const { data: segments } = await supabase
+                .from('segments')
+                .select('id')
+                .eq('parent_category_id', mainCategory.id);
+
+              const segmentIds = new Set(segments?.map(s => s.id) || []);
+              
+              filteredEstablishments = establishments.filter(est => 
+                est.segment_id && segmentIds.has(est.segment_id)
+              );
+            }
+          }
+
+          const sorted = filteredEstablishments
             .map((est) => ({
               ...est,
               hasVideos: establishmentIdsWithVideos.has(est.id),
@@ -56,18 +86,24 @@ const VilaTokStoriesRow = () => {
     };
 
     fetchEstablishmentsWithVideos();
-  }, []);
+  }, [mainCategorySlug]);
 
   const handleStoryClick = (est: EstablishmentStory) => {
     if (est.hasVideos) {
-      navigate("/vilatok");
+      const url = mainCategorySlug 
+        ? `/vilatok?category=${mainCategorySlug}` 
+        : "/vilatok";
+      navigate(url);
     } else {
       navigate(`/loja/${est.slug}`);
     }
   };
 
   const handleViewAll = () => {
-    navigate("/vilatok");
+    const url = mainCategorySlug 
+      ? `/vilatok?category=${mainCategorySlug}` 
+      : "/vilatok";
+    navigate(url);
   };
 
   if (loading) {
@@ -85,6 +121,10 @@ const VilaTokStoriesRow = () => {
         </div>
       </section>
     );
+  }
+
+  if (establishments.length === 0) {
+    return null;
   }
 
   return (
