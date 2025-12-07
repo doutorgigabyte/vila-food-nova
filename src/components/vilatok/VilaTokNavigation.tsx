@@ -13,49 +13,86 @@ export function VilaTokNavigation({
   totalVideos,
   currentVideoIndex,
 }: VilaTokNavigationProps) {
-  return (
-    <>
-      {/* Vertical dots (establishments) - LEFT side */}
-      <div className="absolute left-3 top-1/2 -translate-y-1/2 flex flex-col gap-2 z-20">
-        {Array.from({ length: Math.min(totalEstablishments, 8) }).map((_, i) => (
-          <div
-            key={`v-${i}`}
-            className={cn(
-              "rounded-full transition-all duration-300",
-              i === currentEstablishmentIndex
-                ? "w-2.5 h-6 bg-primary shadow-lg shadow-primary/50"
-                : "w-2 h-2 bg-white/40 hover:bg-white/60"
-            )}
-          />
-        ))}
-        {totalEstablishments > 8 && (
-          <span className="text-white/50 text-[10px] font-medium mt-1">
-            +{totalEstablishments - 8}
-          </span>
-        )}
-      </div>
+  const maxVisibleDots = 7;
+  const halfVisible = Math.floor(maxVisibleDots / 2);
+  
+  // Calculate visible range for establishments
+  let startIndex = 0;
+  let endIndex = Math.min(totalEstablishments, maxVisibleDots);
+  
+  if (totalEstablishments > maxVisibleDots) {
+    if (currentEstablishmentIndex <= halfVisible) {
+      startIndex = 0;
+      endIndex = maxVisibleDots;
+    } else if (currentEstablishmentIndex >= totalEstablishments - halfVisible - 1) {
+      startIndex = totalEstablishments - maxVisibleDots;
+      endIndex = totalEstablishments;
+    } else {
+      startIndex = currentEstablishmentIndex - halfVisible;
+      endIndex = currentEstablishmentIndex + halfVisible + 1;
+    }
+  }
 
-      {/* Horizontal dots (videos/stories) - RIGHT side */}
-      {totalVideos > 1 && (
-        <div className="absolute right-3 top-1/2 -translate-y-1/2 flex flex-col gap-2 z-20">
-          {Array.from({ length: Math.min(totalVideos, 8) }).map((_, i) => (
+  const visibleEstablishments = Array.from(
+    { length: endIndex - startIndex },
+    (_, i) => startIndex + i
+  );
+
+  return (
+    <div className="absolute left-3 top-1/2 -translate-y-1/2 flex flex-col gap-2 z-20">
+      {/* Show ellipsis if there are hidden dots above */}
+      {startIndex > 0 && (
+        <span className="text-white/40 text-[10px] font-medium text-center">
+          •••
+        </span>
+      )}
+      
+      {visibleEstablishments.map((estIndex) => {
+        const isActive = estIndex === currentEstablishmentIndex;
+        
+        return (
+          <div key={`est-${estIndex}`} className="flex items-center gap-1.5">
+            {/* Establishment dot */}
             <div
-              key={`h-${i}`}
               className={cn(
-                "rounded-full transition-all duration-300",
-                i === currentVideoIndex
-                  ? "w-2.5 h-6 bg-white shadow-lg"
-                  : "w-2 h-2 bg-white/30 hover:bg-white/50"
+                "rounded-full transition-all duration-300 flex-shrink-0",
+                isActive
+                  ? "w-3 h-3 bg-primary shadow-lg shadow-primary/50"
+                  : "w-2 h-2 bg-white/40"
               )}
             />
-          ))}
-          {totalVideos > 8 && (
-            <span className="text-white/40 text-[10px] font-medium mt-1">
-              +{totalVideos - 8}
-            </span>
-          )}
-        </div>
+            
+            {/* Story bars - only show for active establishment */}
+            {isActive && totalVideos > 1 && (
+              <div className="flex items-center gap-1 overflow-hidden">
+                {Array.from({ length: Math.min(totalVideos, 6) }).map((_, videoIndex) => (
+                  <div
+                    key={`video-${videoIndex}`}
+                    className={cn(
+                      "rounded-full transition-all duration-300",
+                      videoIndex === currentVideoIndex
+                        ? "w-4 h-1.5 bg-white shadow-md"
+                        : "w-2 h-1.5 bg-white/40"
+                    )}
+                  />
+                ))}
+                {totalVideos > 6 && (
+                  <span className="text-white/40 text-[8px] font-medium ml-0.5">
+                    +{totalVideos - 6}
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })}
+      
+      {/* Show ellipsis if there are hidden dots below */}
+      {endIndex < totalEstablishments && (
+        <span className="text-white/40 text-[10px] font-medium text-center">
+          •••
+        </span>
       )}
-    </>
+    </div>
   );
 }
