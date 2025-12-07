@@ -16,7 +16,9 @@ import {
   Package,
   Store,
   Grid3X3,
-  Loader2
+  Loader2,
+  AlertTriangle,
+  Wrench
 } from "lucide-react";
 
 interface MissingImageItem {
@@ -25,8 +27,17 @@ interface MissingImageItem {
   type: 'product' | 'category' | 'establishment_logo' | 'establishment_banner';
   establishmentId?: string;
   establishmentName?: string;
+  image_url?: string;
   generating?: boolean;
   generated?: boolean;
+}
+
+interface BrokenImageStats {
+  products: number;
+  categories: number;
+  logos: number;
+  banners: number;
+  total: number;
 }
 
 export default function ImageFillManager() {
@@ -35,8 +46,18 @@ export default function ImageFillManager() {
   const [missingCategories, setMissingCategories] = useState<MissingImageItem[]>([]);
   const [missingLogos, setMissingLogos] = useState<MissingImageItem[]>([]);
   const [missingBanners, setMissingBanners] = useState<MissingImageItem[]>([]);
+  
+  // Broken CloudFront images
+  const [brokenProducts, setBrokenProducts] = useState<MissingImageItem[]>([]);
+  const [brokenCategories, setBrokenCategories] = useState<MissingImageItem[]>([]);
+  const [brokenLogos, setBrokenLogos] = useState<MissingImageItem[]>([]);
+  const [brokenBanners, setBrokenBanners] = useState<MissingImageItem[]>([]);
+  const [brokenStats, setBrokenStats] = useState<BrokenImageStats>({ products: 0, categories: 0, logos: 0, banners: 0, total: 0 });
+  
   const [batchProcessing, setBatchProcessing] = useState(false);
   const [batchProgress, setBatchProgress] = useState(0);
+  const [fixingAll, setFixingAll] = useState(false);
+  
   const [stats, setStats] = useState({
     totalProducts: 0,
     productsWithImage: 0,
@@ -50,7 +71,7 @@ export default function ImageFillManager() {
   const fetchMissingImages = async () => {
     setLoading(true);
     try {
-      // Fetch products without images
+      // Fetch products without images (NULL or empty)
       const { data: products } = await supabase
         .from('products')
         .select('id, name, establishment_id, establishments(name)')
@@ -143,6 +164,9 @@ export default function ImageFillManager() {
         establishmentsWithBanner
       });
 
+      // Fetch broken CloudFront images
+      await fetchBrokenImages();
+
     } catch (error) {
       console.error('Error fetching missing images:', error);
       toast.error('Erro ao carregar dados');
@@ -151,12 +175,66 @@ export default function ImageFillManager() {
     }
   };
 
+  const fetchBrokenImages = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('fix-broken-images', {
+        body: { action: 'list', limit: 100 }
+      });
+
+      if (error) throw error;
+
+      setBrokenProducts(
+        (data.products || []).map((p: any) => ({
+          id: p.id,
+          name: p.name,
+          type: 'product' as const,
+          image_url: p.image_url,
+          establishmentId: p.establishmentId,
+          establishmentName: p.establishmentName
+        }))
+      );
+
+      setBrokenCategories(
+        (data.categories || []).map((c: any) => ({
+          id: c.id,
+          name: c.name,
+          type: 'category' as const,
+          image_url: c.image_url,
+          establishmentId: c.establishmentId,
+          establishmentName: c.establishmentName
+        }))
+      );
+
+      setBrokenLogos(
+        (data.logos || []).map((e: any) => ({
+          id: e.id,
+          name: e.name,
+          type: 'establishment_logo' as const,
+          image_url: e.image_url
+        }))
+      );
+
+      setBrokenBanners(
+        (data.banners || []).map((e: any) => ({
+          id: e.id,
+          name: e.name,
+          type: 'establishment_banner' as const,
+          image_url: e.image_url
+        }))
+      );
+
+      setBrokenStats(data.counts || { products: 0, categories: 0, logos: 0, banners: 0, total: 0 });
+
+    } catch (error) {
+      console.error('Error fetching broken images:', error);
+    }
+  };
+
   useEffect(() => {
     fetchMissingImages();
   }, []);
 
   const generateSingleImage = async (item: MissingImageItem) => {
-    // Update UI to show generating
     const updateList = (list: MissingImageItem[], setList: React.Dispatch<React.SetStateAction<MissingImageItem[]>>) => {
       setList(prev => prev.map(i => i.id === item.id ? { ...i, generating: true } : i));
     };
@@ -180,7 +258,6 @@ export default function ImageFillManager() {
 
       toast.success(`Imagem gerada para: ${item.name}`);
 
-      // Remove from list
       const removeFromList = (list: MissingImageItem[], setList: React.Dispatch<React.SetStateAction<MissingImageItem[]>>) => {
         setList(prev => prev.filter(i => i.id !== item.id));
       };
@@ -190,7 +267,6 @@ export default function ImageFillManager() {
       else if (item.type === 'establishment_logo') removeFromList(missingLogos, setMissingLogos);
       else removeFromList(missingBanners, setMissingBanners);
 
-      // Update stats
       setStats(prev => {
         if (item.type === 'product') return { ...prev, productsWithImage: prev.productsWithImage + 1 };
         if (item.type === 'category') return { ...prev, categoriesWithImage: prev.categoriesWithImage + 1 };
@@ -202,7 +278,6 @@ export default function ImageFillManager() {
       console.error('Error generating image:', error);
       toast.error(`Erro ao gerar imagem: ${error.message}`);
       
-      // Reset generating state
       const resetList = (list: MissingImageItem[], setList: React.Dispatch<React.SetStateAction<MissingImageItem[]>>) => {
         setList(prev => prev.map(i => i.id === item.id ? { ...i, generating: false } : i));
       };
@@ -211,6 +286,85 @@ export default function ImageFillManager() {
       else if (item.type === 'category') resetList(missingCategories, setMissingCategories);
       else if (item.type === 'establishment_logo') resetList(missingLogos, setMissingLogos);
       else resetList(missingBanners, setMissingBanners);
+    }
+  };
+
+  const fixSingleBrokenImage = async (item: MissingImageItem) => {
+    const updateList = (list: MissingImageItem[], setList: React.Dispatch<React.SetStateAction<MissingImageItem[]>>) => {
+      setList(prev => prev.map(i => i.id === item.id ? { ...i, generating: true } : i));
+    };
+
+    if (item.type === 'product') updateList(brokenProducts, setBrokenProducts);
+    else if (item.type === 'category') updateList(brokenCategories, setBrokenCategories);
+    else if (item.type === 'establishment_logo') updateList(brokenLogos, setBrokenLogos);
+    else updateList(brokenBanners, setBrokenBanners);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('fix-broken-images', {
+        body: {
+          action: 'fix',
+          type: item.type,
+          id: item.id,
+          name: item.name
+        }
+      });
+
+      if (error) throw error;
+
+      toast.success(`Imagem corrigida: ${item.name}`);
+
+      const removeFromList = (list: MissingImageItem[], setList: React.Dispatch<React.SetStateAction<MissingImageItem[]>>) => {
+        setList(prev => prev.filter(i => i.id !== item.id));
+      };
+
+      if (item.type === 'product') removeFromList(brokenProducts, setBrokenProducts);
+      else if (item.type === 'category') removeFromList(brokenCategories, setBrokenCategories);
+      else if (item.type === 'establishment_logo') removeFromList(brokenLogos, setBrokenLogos);
+      else removeFromList(brokenBanners, setBrokenBanners);
+
+      setBrokenStats(prev => ({
+        ...prev,
+        [item.type === 'product' ? 'products' : item.type === 'category' ? 'categories' : item.type === 'establishment_logo' ? 'logos' : 'banners']: 
+          prev[item.type === 'product' ? 'products' : item.type === 'category' ? 'categories' : item.type === 'establishment_logo' ? 'logos' : 'banners'] - 1,
+        total: prev.total - 1
+      }));
+
+    } catch (error: any) {
+      console.error('Error fixing image:', error);
+      toast.error(`Erro ao corrigir imagem: ${error.message}`);
+      
+      const resetList = (list: MissingImageItem[], setList: React.Dispatch<React.SetStateAction<MissingImageItem[]>>) => {
+        setList(prev => prev.map(i => i.id === item.id ? { ...i, generating: false } : i));
+      };
+
+      if (item.type === 'product') resetList(brokenProducts, setBrokenProducts);
+      else if (item.type === 'category') resetList(brokenCategories, setBrokenCategories);
+      else if (item.type === 'establishment_logo') resetList(brokenLogos, setBrokenLogos);
+      else resetList(brokenBanners, setBrokenBanners);
+    }
+  };
+
+  const fixAllBrokenImages = async (type: string) => {
+    setFixingAll(true);
+    setBatchProgress(0);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('fix-broken-images', {
+        body: { action: 'fix-all', type }
+      });
+
+      if (error) throw error;
+
+      toast.success(`${data.updated} imagens corrigidas com sucesso!`);
+      
+      // Refresh the list
+      await fetchBrokenImages();
+
+    } catch (error: any) {
+      console.error('Error fixing all images:', error);
+      toast.error(`Erro ao corrigir imagens: ${error.message}`);
+    } finally {
+      setFixingAll(false);
     }
   };
 
@@ -231,7 +385,6 @@ export default function ImageFillManager() {
         await generateSingleImage(item);
         processed++;
         setBatchProgress(Math.round((processed / items.length) * 100));
-        // Delay maior para evitar rate limiting da API Google (5 segundos)
         await new Promise(resolve => setTimeout(resolve, 5000));
       } catch (error) {
         errors++;
@@ -250,50 +403,58 @@ export default function ImageFillManager() {
        (stats.totalProducts + stats.totalCategories + stats.totalEstablishments * 2)) * 100)
     : 0;
 
-  const renderItemList = (items: MissingImageItem[], type: string) => (
+  const renderItemList = (items: MissingImageItem[], type: string, isBroken: boolean = false) => (
     <div className="space-y-2">
       {items.length === 0 ? (
         <div className="text-center py-8 text-muted-foreground">
           <CheckCircle2 className="h-12 w-12 mx-auto mb-2 text-green-500" />
-          <p>Todas as imagens estão preenchidas!</p>
+          <p>{isBroken ? 'Nenhuma imagem quebrada!' : 'Todas as imagens estão preenchidas!'}</p>
         </div>
       ) : (
         <>
           <div className="flex justify-between items-center mb-4">
-            <Badge variant="outline">{items.length} pendentes</Badge>
+            <Badge variant={isBroken ? "destructive" : "outline"}>{items.length} {isBroken ? 'quebradas' : 'pendentes'}</Badge>
             <Button 
               size="sm" 
-              onClick={() => generateAllImages(items, type)}
-              disabled={batchProcessing}
+              onClick={() => isBroken ? fixAllBrokenImages(type) : generateAllImages(items, type)}
+              disabled={batchProcessing || fixingAll}
+              variant={isBroken ? "destructive" : "default"}
             >
-              {batchProcessing ? (
+              {(batchProcessing || fixingAll) ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : isBroken ? (
+                <Wrench className="h-4 w-4 mr-2" />
               ) : (
                 <Sparkles className="h-4 w-4 mr-2" />
               )}
-              Gerar Todas
+              {isBroken ? 'Corrigir Todas' : 'Gerar Todas'}
             </Button>
           </div>
           <div className="max-h-[400px] overflow-y-auto space-y-2">
             {items.map(item => (
               <div 
                 key={item.id} 
-                className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
+                className={`flex items-center justify-between p-3 rounded-lg ${isBroken ? 'bg-destructive/10' : 'bg-muted/50'}`}
               >
                 <div className="flex-1">
                   <p className="font-medium">{item.name}</p>
                   {item.establishmentName && (
                     <p className="text-sm text-muted-foreground">{item.establishmentName}</p>
                   )}
+                  {isBroken && item.image_url && (
+                    <p className="text-xs text-destructive truncate max-w-[300px]">{item.image_url}</p>
+                  )}
                 </div>
                 <Button
                   size="sm"
-                  variant="outline"
-                  onClick={() => generateSingleImage(item)}
-                  disabled={item.generating || batchProcessing}
+                  variant={isBroken ? "destructive" : "outline"}
+                  onClick={() => isBroken ? fixSingleBrokenImage(item) : generateSingleImage(item)}
+                  disabled={item.generating || batchProcessing || fixingAll}
                 >
                   {item.generating ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : isBroken ? (
+                    <Wrench className="h-4 w-4" />
                   ) : (
                     <Sparkles className="h-4 w-4" />
                   )}
@@ -312,13 +473,51 @@ export default function ImageFillManager() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold">Preenchimento de Imagens</h1>
-            <p className="text-muted-foreground">Gere imagens automaticamente com IA para itens sem foto</p>
+            <p className="text-muted-foreground">Gere imagens automaticamente com IA ou corrija imagens quebradas</p>
           </div>
           <Button variant="outline" onClick={fetchMissingImages} disabled={loading}>
             <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Atualizar
           </Button>
         </div>
+
+        {/* Broken Images Alert */}
+        {brokenStats.total > 0 && (
+          <Card className="border-destructive bg-destructive/5">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-destructive">
+                <AlertTriangle className="h-5 w-5" />
+                {brokenStats.total} Imagens com CloudFront Quebrado
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground mb-4">
+                Essas imagens apontam para o CDN antigo (d2fhl3f70zfvod.cloudfront.net) que está offline.
+                Clique em "Corrigir Todas" para substituir por imagens do Unsplash.
+              </p>
+              <div className="flex gap-2 flex-wrap">
+                <Badge variant="destructive">{brokenStats.products} produtos</Badge>
+                <Badge variant="destructive">{brokenStats.categories} categorias</Badge>
+                <Badge variant="destructive">{brokenStats.logos} logos</Badge>
+                <Badge variant="destructive">{brokenStats.banners} banners</Badge>
+              </div>
+              <div className="mt-4">
+                <Button 
+                  variant="destructive" 
+                  onClick={() => fixAllBrokenImages('all')}
+                  disabled={fixingAll}
+                >
+                  {fixingAll ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Wrench className="h-4 w-4 mr-2" />
+                  )}
+                  Corrigir Todas as {brokenStats.total} Imagens
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Overview Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -399,9 +598,9 @@ export default function ImageFillManager() {
           </CardHeader>
           <CardContent>
             <Progress value={overallProgress} className="h-3" />
-            {batchProcessing && (
+            {(batchProcessing || fixingAll) && (
               <div className="mt-4">
-                <p className="text-sm text-muted-foreground mb-2">Processando lote...</p>
+                <p className="text-sm text-muted-foreground mb-2">Processando...</p>
                 <Progress value={batchProgress} className="h-2" />
               </div>
             )}
@@ -409,12 +608,21 @@ export default function ImageFillManager() {
         </Card>
 
         {/* Tabs for each type */}
-        <Tabs defaultValue="products">
-          <TabsList className="grid w-full grid-cols-4">
+        <Tabs defaultValue="broken">
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="broken" className="relative">
+              <AlertTriangle className="h-4 w-4 mr-1" />
+              Quebradas
+              {brokenStats.total > 0 && (
+                <Badge variant="destructive" className="ml-2 text-xs">
+                  {brokenStats.total}
+                </Badge>
+              )}
+            </TabsTrigger>
             <TabsTrigger value="products" className="relative">
               Produtos
               {missingProducts.length > 0 && (
-                <Badge variant="destructive" className="ml-2 text-xs">
+                <Badge variant="secondary" className="ml-2 text-xs">
                   {missingProducts.length}
                 </Badge>
               )}
@@ -422,7 +630,7 @@ export default function ImageFillManager() {
             <TabsTrigger value="categories" className="relative">
               Categorias
               {missingCategories.length > 0 && (
-                <Badge variant="destructive" className="ml-2 text-xs">
+                <Badge variant="secondary" className="ml-2 text-xs">
                   {missingCategories.length}
                 </Badge>
               )}
@@ -430,7 +638,7 @@ export default function ImageFillManager() {
             <TabsTrigger value="logos" className="relative">
               Logos
               {missingLogos.length > 0 && (
-                <Badge variant="destructive" className="ml-2 text-xs">
+                <Badge variant="secondary" className="ml-2 text-xs">
                   {missingLogos.length}
                 </Badge>
               )}
@@ -438,12 +646,59 @@ export default function ImageFillManager() {
             <TabsTrigger value="banners" className="relative">
               Banners
               {missingBanners.length > 0 && (
-                <Badge variant="destructive" className="ml-2 text-xs">
+                <Badge variant="secondary" className="ml-2 text-xs">
                   {missingBanners.length}
                 </Badge>
               )}
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="broken">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-destructive">
+                  <AlertTriangle className="h-5 w-5" />
+                  Imagens com CloudFront Quebrado
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {loading ? (
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                  </div>
+                ) : (
+                  <Tabs defaultValue="broken-products">
+                    <TabsList className="grid w-full grid-cols-4">
+                      <TabsTrigger value="broken-products">
+                        Produtos ({brokenStats.products})
+                      </TabsTrigger>
+                      <TabsTrigger value="broken-categories">
+                        Categorias ({brokenStats.categories})
+                      </TabsTrigger>
+                      <TabsTrigger value="broken-logos">
+                        Logos ({brokenStats.logos})
+                      </TabsTrigger>
+                      <TabsTrigger value="broken-banners">
+                        Banners ({brokenStats.banners})
+                      </TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="broken-products">
+                      {renderItemList(brokenProducts, 'product', true)}
+                    </TabsContent>
+                    <TabsContent value="broken-categories">
+                      {renderItemList(brokenCategories, 'category', true)}
+                    </TabsContent>
+                    <TabsContent value="broken-logos">
+                      {renderItemList(brokenLogos, 'establishment_logo', true)}
+                    </TabsContent>
+                    <TabsContent value="broken-banners">
+                      {renderItemList(brokenBanners, 'establishment_banner', true)}
+                    </TabsContent>
+                  </Tabs>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           <TabsContent value="products">
             <Card>
