@@ -70,10 +70,24 @@ export default function VilaTok() {
     return activeVideoIndices.get(estIndex) || 0;
   };
 
-  // Handle vertical slide change (establishment)
+  // Handle vertical slide change (establishment) - ALWAYS reset to first video
   const handleVerticalSlideChange = useCallback((swiper: SwiperType) => {
-    setActiveEstablishmentIndex(swiper.activeIndex);
+    const newEstIndex = swiper.activeIndex;
+    setActiveEstablishmentIndex(newEstIndex);
     setCurrentProgress(0);
+    
+    // Reset horizontal swiper to first slide when changing establishments
+    const horizontalSwiper = horizontalSwipersRef.current.get(newEstIndex);
+    if (horizontalSwiper && horizontalSwiper.activeIndex !== 0) {
+      horizontalSwiper.slideTo(0, 0);
+    }
+    
+    // Reset video index for this establishment
+    setActiveVideoIndices(prev => {
+      const next = new Map(prev);
+      next.set(newEstIndex, 0);
+      return next;
+    });
   }, []);
 
   // Handle horizontal slide change (video within establishment)
@@ -372,6 +386,22 @@ export default function VilaTok() {
                           onVideoEnd={() => {}}
                           onAutoAdvance={handleAutoAdvance}
                           onProgressUpdate={handleProgressUpdate}
+                          onTapLeft={() => {
+                            const horizontalSwiper = horizontalSwipersRef.current.get(estIndex);
+                            horizontalSwiper?.slidePrev();
+                          }}
+                          onTapRight={() => {
+                            const horizontalSwiper = horizontalSwipersRef.current.get(estIndex);
+                            if (horizontalSwiper && horizontalSwiper.activeIndex < est.videos.length - 1) {
+                              horizontalSwiper.slideNext();
+                            } else {
+                              // Last video - go to next establishment
+                              verticalSwiperRef.current?.slideNext();
+                            }
+                          }}
+                          onSwipeToProfile={() => {
+                            navigate(`/vilatok/perfil/@${est.establishment.slug}`);
+                          }}
                         />
                       )}
 
@@ -385,42 +415,39 @@ export default function VilaTok() {
                         onProductClick={handleAddToCart}
                       />
 
-                      <div className="absolute right-4 bottom-32 z-20">
-                        <VilaTokSidebar
-                          videoId={video.id}
-                          likesCount={video.likes_count}
-                          sharesCount={video.shares_count}
-                          commentsCount={video.comments_count || 0}
-                          isLiked={likedVideos.has(video.id)}
-                          onLike={async () => {
-                            const success = await toggleLike(video.id);
-                            if (!success) {
-                              toast.error('Faça login para curtir', {
-                                action: {
-                                  label: 'Entrar',
-                                  onClick: () => navigate('/auth'),
-                                },
-                              });
-                            }
-                          }}
-                          onShare={handleShare}
-                          onComment={() => {
-                            if (!user) {
-                              toast.error('Faça login para comentar', {
-                                action: {
-                                  label: 'Entrar',
-                                  onClick: () => navigate('/auth'),
-                                },
-                              });
-                              return;
-                            }
-                            setShowComments(true);
-                          }}
-                          onViewProduct={handleAddToCart}
-                          onGoToStore={handleGoToStore}
-                          hasProduct={!!video.product}
-                        />
-                      </div>
+                      <VilaTokSidebar
+                        likesCount={video.likes_count}
+                        sharesCount={video.shares_count}
+                        commentsCount={video.comments_count || 0}
+                        isLiked={likedVideos.has(video.id)}
+                        hasProduct={!!video.product}
+                        onLike={async () => {
+                          const success = await toggleLike(video.id);
+                          if (!success) {
+                            toast.error('Faça login para curtir', {
+                              action: {
+                                label: 'Entrar',
+                                onClick: () => navigate('/auth'),
+                              },
+                            });
+                          }
+                        }}
+                        onComment={() => {
+                          if (!user) {
+                            toast.error('Faça login para comentar', {
+                              action: {
+                                label: 'Entrar',
+                                onClick: () => navigate('/auth'),
+                              },
+                            });
+                            return;
+                          }
+                          setShowComments(true);
+                        }}
+                        onShare={handleShare}
+                        onProduct={handleAddToCart}
+                        onStore={handleGoToStore}
+                      />
                     </div>
                   </SwiperSlide>
                 );

@@ -1,111 +1,130 @@
-import { Heart, Share2, ShoppingCart, Store, MessageCircle } from 'lucide-react';
+import { Heart, Share2, ShoppingBag, Store, MessageCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface VilaTokSidebarProps {
-  videoId: string;
   likesCount: number;
   sharesCount: number;
-  commentsCount?: number;
+  commentsCount: number;
   isLiked: boolean;
-  onLike: () => void;
-  onShare: () => void;
-  onComment: () => void;
-  onViewProduct: () => void;
-  onGoToStore: () => void;
   hasProduct: boolean;
+  onLike: () => void;
+  onComment: () => void;
+  onShare: () => void;
+  onProduct: () => void;
+  onStore: () => void;
 }
 
 export function VilaTokSidebar({
   likesCount,
   sharesCount,
-  commentsCount = 0,
+  commentsCount,
   isLiked,
-  onLike,
-  onShare,
-  onComment,
-  onViewProduct,
-  onGoToStore,
   hasProduct,
+  onLike,
+  onComment,
+  onShare,
+  onProduct,
+  onStore,
 }: VilaTokSidebarProps) {
-  const formatCount = (count: number) => {
+  const formatCount = (count: number): string => {
     if (count >= 1000000) return `${(count / 1000000).toFixed(1)}M`;
     if (count >= 1000) return `${(count / 1000).toFixed(1)}K`;
     return count.toString();
   };
 
-  return (
-    <div className="flex flex-col items-center gap-5">
-      {/* Like Button */}
-      <button
-        onClick={onLike}
-        className="flex flex-col items-center gap-1 transition-transform active:scale-90"
-      >
-        <div className={cn(
-          "w-12 h-12 rounded-full flex items-center justify-center",
-          "bg-black/30 backdrop-blur-sm",
-          isLiked && "text-red-500"
-        )}>
-          <Heart 
-            className={cn(
-              "w-7 h-7 transition-all",
-              isLiked && "fill-red-500 text-red-500 scale-110"
-            )} 
-          />
-        </div>
+  const SidebarButton = ({ 
+    icon: Icon, 
+    count, 
+    onClick, 
+    active, 
+    activeColor,
+    label,
+    isPrimary
+  }: { 
+    icon: typeof Heart; 
+    count?: number; 
+    onClick: () => void; 
+    active?: boolean;
+    activeColor?: string;
+    label?: string;
+    isPrimary?: boolean;
+  }) => (
+    <button
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick();
+      }}
+      className="flex flex-col items-center gap-1 group"
+      aria-label={label}
+    >
+      <div className={cn(
+        "w-11 h-11 rounded-full flex items-center justify-center transition-all duration-200",
+        "backdrop-blur-sm border border-white/20",
+        "group-hover:scale-110 group-active:scale-95",
+        isPrimary ? "bg-primary/80" : "bg-black/30",
+        active && activeColor
+      )}>
+        <Icon 
+          className={cn(
+            "w-5 h-5 transition-colors",
+            active ? "text-primary fill-primary" : "text-white"
+          )} 
+        />
+      </div>
+      {count !== undefined && (
         <span className="text-white text-xs font-medium drop-shadow-lg">
-          {formatCount(likesCount)}
+          {formatCount(count)}
         </span>
-      </button>
+      )}
+      {label && count === undefined && (
+        <span className="text-white text-[10px] font-medium drop-shadow-lg">
+          {label}
+        </span>
+      )}
+    </button>
+  );
+
+  return (
+    <div className="absolute right-3 bottom-48 flex flex-col items-center gap-4 z-30">
+      {/* Like Button */}
+      <SidebarButton
+        icon={Heart}
+        count={likesCount}
+        onClick={onLike}
+        active={isLiked}
+        activeColor="bg-red-500/30 border-red-500/50"
+      />
 
       {/* Comment Button */}
-      <button
+      <SidebarButton
+        icon={MessageCircle}
+        count={commentsCount}
         onClick={onComment}
-        className="flex flex-col items-center gap-1 transition-transform active:scale-90"
-      >
-        <div className="w-12 h-12 rounded-full flex items-center justify-center bg-black/30 backdrop-blur-sm">
-          <MessageCircle className="w-7 h-7 text-white" />
-        </div>
-        <span className="text-white text-xs font-medium drop-shadow-lg">
-          {formatCount(commentsCount)}
-        </span>
-      </button>
+      />
 
       {/* Share Button */}
-      <button
+      <SidebarButton
+        icon={Share2}
+        count={sharesCount}
         onClick={onShare}
-        className="flex flex-col items-center gap-1 transition-transform active:scale-90"
-      >
-        <div className="w-12 h-12 rounded-full flex items-center justify-center bg-black/30 backdrop-blur-sm">
-          <Share2 className="w-7 h-7 text-white" />
-        </div>
-        <span className="text-white text-xs font-medium drop-shadow-lg">
-          {formatCount(sharesCount)}
-        </span>
-      </button>
+      />
 
-      {/* View Product Button */}
+      {/* Product Button - Only show if has product */}
       {hasProduct && (
-        <button
-          onClick={onViewProduct}
-          className="flex flex-col items-center gap-1 transition-transform active:scale-90"
-        >
-          <div className="w-12 h-12 rounded-full flex items-center justify-center bg-primary/80 backdrop-blur-sm">
-            <ShoppingCart className="w-7 h-7 text-white" />
-          </div>
-          <span className="text-white text-xs font-medium drop-shadow-lg">Comprar</span>
-        </button>
+        <SidebarButton
+          icon={ShoppingBag}
+          onClick={onProduct}
+          label="Comprar"
+          isPrimary
+        />
       )}
 
-      {/* Go to Store Button */}
-      <button
-        onClick={onGoToStore}
-        className="flex flex-col items-center gap-1 transition-transform active:scale-90"
-      >
-        <div className="w-12 h-12 rounded-full flex items-center justify-center bg-black/30 backdrop-blur-sm">
-          <Store className="w-7 h-7 text-white" />
-        </div>
-        <span className="text-white text-xs font-medium drop-shadow-lg">Loja</span>
-      </button>
+      {/* Store Button */}
+      <SidebarButton
+        icon={Store}
+        onClick={onStore}
+        label="Loja"
+      />
     </div>
   );
 }

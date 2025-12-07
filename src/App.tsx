@@ -32,6 +32,7 @@ const Favorites = lazy(() => import("./pages/Favorites"));
 const ProductsListing = lazy(() => import("./pages/ProductsListing"));
 const ProductDetail = lazy(() => import("./pages/ProductDetail"));
 const VilaTokPage = lazy(() => import("./pages/VilaTok"));
+const VilaTokProfile = lazy(() => import("./pages/VilaTokProfile"));
 const CategoryPage = lazy(() => import("./pages/CategoryPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -127,6 +128,7 @@ const App = () => (
               <Route path="/recuperar-senha" element={<RecoverPassword />} />
               <Route path="/loja/:slug" element={<Store />} />
               <Route path="/vilatok" element={<VilaTokPage />} />
+              <Route path="/vilatok/perfil/:username" element={<VilaTokProfile />} />
               <Route path="/categoria/:categoryId" element={<CategoryPage />} />
               <Route path="/categoria/:categoryId/:subcategoryId" element={<CategoryPage />} />
               <Route path="/vilas" element={<Vilas />} />
