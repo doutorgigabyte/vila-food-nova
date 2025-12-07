@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useEstablishments } from "@/hooks/useEstablishment";
 import MarketplaceHeader from "@/components/marketplace/MarketplaceHeader";
-import MainCategoriesGrid from "@/components/marketplace/MainCategoriesGrid";
+import VilaTokStoriesRow from "@/components/marketplace/VilaTokStoriesRow";
 import SubcategoriesCarousel from "@/components/marketplace/SubcategoriesCarousel";
 import CategoryBannerSlider from "@/components/marketplace/CategoryBannerSlider";
 import TopOffersSection from "@/components/marketplace/TopOffersSection";
@@ -17,7 +17,6 @@ import MobileBottomNav from "@/components/marketplace/MobileBottomNav";
 import Footer from "@/components/landing/Footer";
 import BusinessCTABanner from "@/components/marketplace/BusinessCTABanner";
 import SmartSearch from "@/components/marketplace/SmartSearch";
-import VilaTokBubble from "@/components/vilatok/VilaTokBubble";
 import { getCategoryTheme } from "@/lib/categoryThemes";
 import { cn } from "@/lib/utils";
 import { setOrderSourceDirect } from "@/hooks/useOrderSource";
@@ -77,11 +76,8 @@ const Index = () => {
       />
 
       <main className="flex-1">
-        {/* Main Categories Grid - Large cards like 6amMart */}
-        <MainCategoriesGrid 
-          selectedCategory={selectedMainCategory}
-          onCategorySelect={handleMainCategorySelect}
-        />
+        {/* VilaTok Stories Row - Instagram-like story bubbles */}
+        <VilaTokStoriesRow />
 
         {/* Subcategories carousel - shows when main category is selected */}
         <SubcategoriesCarousel 
@@ -144,9 +140,6 @@ const Index = () => {
 
       {/* Mobile Bottom Navigation */}
       <MobileBottomNav />
-
-      {/* VilaTok Stories Bubble */}
-      <VilaTokBubble />
 
       {/* Smart Search Overlay */}
       <SmartSearch isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
