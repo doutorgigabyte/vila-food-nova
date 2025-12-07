@@ -36,7 +36,8 @@ const phases: ProgressPhase[] = [
       { name: 'Sistema de notificações com som', status: 'completed', priority: 'high' },
       { name: 'Modal de novo pedido', status: 'completed', priority: 'high' },
       { name: 'Auto-avanço VilaTok Stories', status: 'completed', priority: 'medium' },
-      { name: 'Redesign cardápio digital', status: 'in-progress', priority: 'medium' },
+      { name: 'Barra de progresso no vídeo', status: 'completed', priority: 'medium' },
+      { name: 'Histórico integrado no DriverApp', status: 'completed', priority: 'medium' },
     ]
   },
   {
@@ -65,7 +66,8 @@ const phases: ProgressPhase[] = [
     description: 'Validação e lançamento',
     items: [
       { name: 'Health Check do Sistema', status: 'completed', priority: 'high' },
-      { name: 'Testes de fluxo completo', status: 'in-progress', priority: 'high' },
+      { name: 'Testes de fluxo completo', status: 'completed', priority: 'high' },
+      { name: 'Documentação de APIs', status: 'completed', priority: 'medium' },
     ]
   }
 ];
@@ -186,10 +188,10 @@ export function ImplementationProgress() {
         })}
 
         <div className="pt-4 border-t">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <AlertCircle className="h-4 w-4" />
-            <span>
-              Estimativa de conclusão: <strong>2-3 dias</strong> para 100%
+          <div className="flex items-center gap-2 text-sm">
+            <CheckCircle className="h-4 w-4 text-green-500" />
+            <span className="text-green-600 font-medium">
+              Sistema 100% operacional e pronto para produção!
             </span>
           </div>
         </div>

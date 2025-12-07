@@ -11,6 +11,7 @@ import { Switch } from '@/components/ui/switch';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import GPSStatusIndicator from '@/components/driver/GPSStatusIndicator';
+import DriverHistory from './DriverHistory';
 import { 
   Bike, 
   Package, 
@@ -401,6 +402,10 @@ const DriverApp = () => {
               </ScrollArea>
             )}
           </>
+        )}
+
+        {activeTab === 'history' && (
+          <DriverHistory />
         )}
 
         {activeTab === 'profile' && (
