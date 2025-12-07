@@ -60,10 +60,10 @@ const JustForYouCarousel = ({ mainCategory }: JustForYouCarouselProps) => {
     setCurrentIndex((prev) => (prev + 1) % carouselItems.length);
   };
 
-  // Get visible items (left, center, right)
+  // Get visible items (far left, left, center, right, far right)
   const getVisibleItems = () => {
     const items = [];
-    for (let offset = -1; offset <= 1; offset++) {
+    for (let offset = -2; offset <= 2; offset++) {
       const index = (currentIndex + offset + carouselItems.length) % carouselItems.length;
       items.push({ ...carouselItems[index], offset, index });
     }
@@ -74,10 +74,10 @@ const JustForYouCarousel = ({ mainCategory }: JustForYouCarouselProps) => {
 
   return (
     <section className={cn(
-      "py-8 md:py-12 overflow-hidden",
+      "py-8 md:py-12",
       mainCategory && `bg-gradient-to-b ${theme.bgGradient}`
     )}>
-      <div className="container mx-auto px-4">
+      <div className="container mx-auto px-4 overflow-visible">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
@@ -103,48 +103,84 @@ const JustForYouCarousel = ({ mainCategory }: JustForYouCarouselProps) => {
         </div>
 
         {/* 3D Carousel */}
-        <div className="relative flex items-center justify-center h-72 md:h-96" style={{ perspective: "1200px" }}>
+        <div className="relative flex items-center justify-center h-80 md:h-[450px]" style={{ perspective: "1500px" }}>
           {/* Navigation Buttons */}
           <Button
             variant="outline"
             size="icon"
-            className="absolute left-0 md:left-4 z-30 shadow-lg bg-card/90 backdrop-blur-sm hover:scale-110 transition-all border-0"
+            className="absolute left-2 md:left-8 z-40 shadow-lg bg-card/90 backdrop-blur-sm hover:scale-110 transition-all border-0"
             onClick={handlePrev}
           >
             <ChevronLeft className="w-5 h-5" />
           </Button>
 
           {/* Carousel Stage */}
-          <div className="relative w-full max-w-4xl h-full flex items-center justify-center">
-            <AnimatePresence mode="popLayout" initial={false}>
+          <div className="relative w-full h-full flex items-center justify-center overflow-visible">
+          <AnimatePresence mode="popLayout" initial={false}>
               {visibleItems.map((item) => {
                 const isCenter = item.offset === 0;
                 const isLeft = item.offset === -1;
                 const isRight = item.offset === 1;
+                const isFarLeft = item.offset === -2;
+                const isFarRight = item.offset === 2;
+
+                // Calculate position and styling based on offset
+                const getPosition = () => {
+                  if (isCenter) return "0%";
+                  if (isLeft) return "-45%";
+                  if (isRight) return "45%";
+                  if (isFarLeft) return "-85%";
+                  if (isFarRight) return "85%";
+                  return "0%";
+                };
+
+                const getScale = () => {
+                  if (isCenter) return 1;
+                  if (isLeft || isRight) return 0.8;
+                  return 0.6;
+                };
+
+                const getOpacity = () => {
+                  if (isCenter) return 1;
+                  if (isLeft || isRight) return 0.7;
+                  return 0.4;
+                };
+
+                const getRotation = () => {
+                  if (isCenter) return 0;
+                  if (isLeft) return 20;
+                  if (isRight) return -20;
+                  if (isFarLeft) return 35;
+                  if (isFarRight) return -35;
+                  return 0;
+                };
+
+                const getZIndex = () => {
+                  if (isCenter) return 30;
+                  if (isLeft || isRight) return 20;
+                  return 10;
+                };
 
                 return (
                   <motion.div
                     key={`${item.id}-${item.index}`}
-                    className={cn(
-                      "absolute rounded-2xl overflow-hidden shadow-2xl cursor-pointer",
-                      isCenter ? "z-20" : "z-10"
-                    )}
+                    className="absolute rounded-2xl overflow-hidden shadow-2xl cursor-pointer"
                     initial={{
                       x: direction > 0 ? "100%" : "-100%",
-                      scale: 0.7,
+                      scale: 0.5,
                       opacity: 0,
                       rotateY: direction > 0 ? -45 : 45,
                     }}
                     animate={{
-                      x: isLeft ? "-55%" : isRight ? "55%" : "0%",
-                      scale: isCenter ? 1 : 0.75,
-                      opacity: isCenter ? 1 : 0.6,
-                      rotateY: isLeft ? 25 : isRight ? -25 : 0,
+                      x: getPosition(),
+                      scale: getScale(),
+                      opacity: getOpacity(),
+                      rotateY: getRotation(),
                       z: isCenter ? 100 : -100,
                     }}
                     exit={{
                       x: direction > 0 ? "-100%" : "100%",
-                      scale: 0.7,
+                      scale: 0.5,
                       opacity: 0,
                       rotateY: direction > 0 ? 45 : -45,
                     }}
@@ -154,14 +190,15 @@ const JustForYouCarousel = ({ mainCategory }: JustForYouCarouselProps) => {
                       damping: 30,
                     }}
                     style={{
-                      width: isCenter ? "280px" : "220px",
-                      height: isCenter ? "340px" : "280px",
+                      width: isCenter ? "320px" : isLeft || isRight ? "260px" : "200px",
+                      height: isCenter ? "380px" : isLeft || isRight ? "320px" : "260px",
                       transformStyle: "preserve-3d",
+                      zIndex: getZIndex(),
                     }}
                     onClick={() => {
                       if (isCenter) {
                         navigate(`/loja/${item.establishment?.slug || ''}`);
-                      } else if (isLeft) {
+                      } else if (isLeft || isFarLeft) {
                         handlePrev();
                       } else {
                         handleNext();
@@ -210,7 +247,7 @@ const JustForYouCarousel = ({ mainCategory }: JustForYouCarouselProps) => {
           <Button
             variant="outline"
             size="icon"
-            className="absolute right-0 md:right-4 z-30 shadow-lg bg-card/90 backdrop-blur-sm hover:scale-110 transition-all border-0"
+            className="absolute right-2 md:right-8 z-40 shadow-lg bg-card/90 backdrop-blur-sm hover:scale-110 transition-all border-0"
             onClick={handleNext}
           >
             <ChevronRight className="w-5 h-5" />
