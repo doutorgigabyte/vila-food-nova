@@ -60,10 +60,21 @@ const JustForYouCarousel = ({ mainCategory }: JustForYouCarouselProps) => {
     setCurrentIndex((prev) => (prev + 1) % carouselItems.length);
   };
 
-  // Get visible items (far left, left, center, right, far right)
+  // Check if mobile for simplified carousel
+  const [isMobile, setIsMobile] = useState(false);
+  
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Get visible items - reduced on mobile for performance (3 items vs 5)
   const getVisibleItems = () => {
     const items = [];
-    for (let offset = -2; offset <= 2; offset++) {
+    const range = isMobile ? 1 : 2; // Mobile: 3 items, Desktop: 5 items
+    for (let offset = -range; offset <= range; offset++) {
       const index = (currentIndex + offset + carouselItems.length) % carouselItems.length;
       items.push({ ...carouselItems[index], offset, index });
     }
@@ -103,7 +114,7 @@ const JustForYouCarousel = ({ mainCategory }: JustForYouCarouselProps) => {
         </div>
 
         {/* 3D Carousel */}
-        <div className="relative flex items-center justify-center h-80 md:h-[450px]" style={{ perspective: "1500px" }}>
+        <div className="relative flex items-center justify-center h-64 md:h-[450px]" style={{ perspective: "1500px" }}>
           {/* Navigation Buttons */}
           <Button
             variant="outline"
@@ -190,8 +201,12 @@ const JustForYouCarousel = ({ mainCategory }: JustForYouCarouselProps) => {
                       damping: 30,
                     }}
                     style={{
-                      width: isCenter ? "320px" : isLeft || isRight ? "260px" : "200px",
-                      height: isCenter ? "380px" : isLeft || isRight ? "320px" : "260px",
+                      width: isMobile 
+                        ? (isCenter ? "200px" : "140px") 
+                        : (isCenter ? "320px" : isLeft || isRight ? "260px" : "200px"),
+                      height: isMobile 
+                        ? (isCenter ? "250px" : "200px")
+                        : (isCenter ? "380px" : isLeft || isRight ? "320px" : "260px"),
                       transformStyle: "preserve-3d",
                       zIndex: getZIndex(),
                     }}
@@ -207,11 +222,12 @@ const JustForYouCarousel = ({ mainCategory }: JustForYouCarouselProps) => {
                     whileHover={isCenter ? { scale: 1.02 } : {}}
                   >
                     {/* Product Image */}
-                    <div className="relative w-full h-full">
+                    <div className="relative w-full h-full gpu-accelerated">
                       <img
                         src={item.image_url || ''}
                         alt={item.name}
                         className="w-full h-full object-cover"
+                        loading="lazy"
                         draggable={false}
                       />
                       
@@ -221,7 +237,7 @@ const JustForYouCarousel = ({ mainCategory }: JustForYouCarouselProps) => {
                       {/* Product Info - Only on center item */}
                       {isCenter && (
                         <motion.div 
-                          className="absolute bottom-0 left-0 right-0 p-4"
+                          className="absolute bottom-0 left-0 right-0 p-3 md:p-4"
                           initial={{ opacity: 0, y: 20 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: 0.2 }}
@@ -229,11 +245,11 @@ const JustForYouCarousel = ({ mainCategory }: JustForYouCarouselProps) => {
                           <p className="text-xs text-white/80 mb-1 truncate drop-shadow">
                             {item.establishment?.name}
                           </p>
-                          <h3 className="font-bold text-white text-base md:text-lg truncate drop-shadow-lg">
+                          <h3 className="font-bold text-white text-sm md:text-lg truncate drop-shadow-lg">
                             {item.name}
                           </h3>
-                          <p className={cn("font-bold text-base drop-shadow", theme.accentColor || "text-primary")}>
-                            R$ {(item.promotional_price || item.price).toFixed(2)}
+                          <p className={cn("font-bold text-sm md:text-base drop-shadow whitespace-nowrap", theme.accentColor || "text-primary")}>
+                            R$&nbsp;{(item.promotional_price || item.price).toFixed(2).replace('.', ',')}
                           </p>
                         </motion.div>
                       )}
