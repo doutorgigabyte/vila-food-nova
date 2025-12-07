@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useAuth } from '@/hooks/useAuth';
 import MobileBottomNav from '@/components/marketplace/MobileBottomNav';
+import { PriceWithDiscount } from '@/components/ui/price';
 
 const Favorites = () => {
   const navigate = useNavigate();
@@ -198,20 +199,11 @@ const Favorites = () => {
                           </Button>
                         </div>
                         <div className="flex items-center gap-2 mt-2">
-                          {product.promotional_price ? (
-                            <>
-                              <span className="text-sm line-through text-muted-foreground">
-                                R$ {product.price.toFixed(2)}
-                              </span>
-                              <span className="text-sm font-bold text-green-600">
-                                R$ {product.promotional_price.toFixed(2)}
-                              </span>
-                            </>
-                          ) : (
-                            <span className="text-sm font-bold">
-                              R$ {product.price.toFixed(2)}
-                            </span>
-                          )}
+                          <PriceWithDiscount 
+                            price={product.price} 
+                            promotionalPrice={product.promotional_price} 
+                            size="sm" 
+                          />
                         </div>
                       </CardContent>
                     </div>

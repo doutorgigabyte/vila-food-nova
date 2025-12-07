@@ -10,6 +10,7 @@ import { useAuth } from '@/hooks/useAuth';
 import MobileBottomNav from '@/components/marketplace/MobileBottomNav';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { Price } from '@/components/ui/price';
 
 const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
   pending: { label: 'Pendente', color: 'bg-yellow-500', icon: <Clock className="h-4 w-4" /> },
@@ -118,9 +119,7 @@ const Orders = () => {
                 <span className="text-sm text-muted-foreground">
                   {format(new Date(order.created_at), "dd 'de' MMM 'às' HH:mm", { locale: ptBR })}
                 </span>
-                <span className="font-bold text-primary">
-                  R$ {order.total.toFixed(2)}
-                </span>
+                <Price value={order.total} size="sm" className="text-primary" />
               </div>
 
               {order.status === 'delivering' && order.delivery_type === 'delivery' && (
@@ -128,7 +127,7 @@ const Orders = () => {
                   variant="outline" 
                   size="sm" 
                   className="mt-3 w-full"
-                  onClick={() => {/* TODO: Open tracking */}}
+                  onClick={() => navigate(`/pedidos/${order.id}/rastreamento`)}
                 >
                   <Truck className="h-4 w-4 mr-2" />
                   Acompanhar Entrega
