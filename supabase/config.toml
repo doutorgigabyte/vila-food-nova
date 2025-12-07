@@ -18,6 +18,9 @@ verify_jwt = false
 [functions.whatsapp-checkout]
 verify_jwt = false
 
+[functions.whatsapp-order-notifications]
+verify_jwt = false
+
 [functions.mercadopago-pix]
 verify_jwt = false
 
