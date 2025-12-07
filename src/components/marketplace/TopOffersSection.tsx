@@ -53,14 +53,14 @@ const TopOffersSection = ({ mainCategory, subcategory }: TopOffersSectionProps) 
 
   if (loading) {
     return (
-      <section className="py-6 md:py-8">
-        <div className="container mx-auto px-4">
+      <section className="py-4 md:py-6">
+        <div className="px-4">
           <Skeleton className="h-8 w-48 mb-4" />
-          <div className="flex gap-4 overflow-hidden">
-            {[1, 2, 3, 4].map((i) => (
-              <Skeleton key={i} className="flex-shrink-0 w-52 h-56 rounded-3xl" />
-            ))}
-          </div>
+        </div>
+        <div className="flex gap-3 overflow-hidden pl-4">
+          {[1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} className="flex-shrink-0 w-56 h-72 rounded-2xl" />
+          ))}
         </div>
       </section>
     );
@@ -71,84 +71,85 @@ const TopOffersSection = ({ mainCategory, subcategory }: TopOffersSectionProps) 
   }
 
   return (
-    <section className="py-6 md:py-8">
-      <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between mb-4 md:mb-6">
-          <div className="flex items-center gap-3">
-            <div className={cn(
-              "p-2 rounded-lg hidden md:flex",
-              mainCategory ? `bg-${mainCategory === 'comida' ? 'amber' : mainCategory === 'mercado' ? 'emerald' : mainCategory === 'farmacia' ? 'red' : 'primary'}-100 dark:bg-${mainCategory}-900/30` : "bg-destructive/10"
-            )}>
-              <Percent className={cn("w-5 h-5", theme.accentColor || "text-destructive")} />
-            </div>
-            <div>
-              <h2 className="text-lg md:text-xl font-bold text-foreground flex items-center gap-2">
-                {theme.offersTitle}
-                <Percent className={cn("w-4 h-4 md:hidden", theme.accentColor || "text-destructive")} />
-              </h2>
-              <p className="text-xs md:text-sm text-muted-foreground hidden md:block">
-                {theme.offersSubtitle}
-              </p>
-            </div>
+    <section className="py-4 md:py-6">
+      {/* Header with padding */}
+      <div className="px-4 flex items-center justify-between mb-3 md:mb-4">
+        <div className="flex items-center gap-2">
+          <div className={cn(
+            "p-1.5 rounded-lg hidden md:flex",
+            mainCategory ? `bg-${mainCategory === 'comida' ? 'amber' : mainCategory === 'mercado' ? 'emerald' : mainCategory === 'farmacia' ? 'red' : 'primary'}-100 dark:bg-${mainCategory}-900/30` : "bg-destructive/10"
+          )}>
+            <Percent className={cn("w-4 h-4", theme.accentColor || "text-destructive")} />
           </div>
-          <Link 
-            to={`/produtos/ofertas${mainCategory ? `?categoria=${mainCategory}` : ''}`}
-            className="text-sm font-medium text-primary hover:underline"
-          >
-            Ver todos
-          </Link>
+          <div>
+            <h2 className="text-base md:text-lg font-bold text-foreground flex items-center gap-2">
+              {theme.offersTitle}
+              <Percent className={cn("w-3.5 h-3.5 md:hidden", theme.accentColor || "text-destructive")} />
+            </h2>
+            <p className="text-xs text-muted-foreground hidden md:block">
+              {theme.offersSubtitle}
+            </p>
+          </div>
+        </div>
+        <Link 
+          to={`/produtos/ofertas${mainCategory ? `?categoria=${mainCategory}` : ''}`}
+          className="text-sm font-medium text-primary hover:underline"
+        >
+          Ver todos
+        </Link>
+      </div>
+
+      {/* Full-width scroll container */}
+      <div className="relative group">
+        <Button
+          variant="outline"
+          size="icon"
+          className={cn(
+            "absolute left-2 top-1/2 -translate-y-1/2 z-10 shadow-md transition-opacity bg-card hidden md:flex",
+            canScrollLeft ? "opacity-0 group-hover:opacity-100" : "opacity-0 pointer-events-none"
+          )}
+          onClick={() => scroll("left", 280)}
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </Button>
+
+        {/* Edge-to-edge scroll */}
+        <div
+          ref={scrollRef}
+          {...handlers}
+          className={cn(
+            "flex gap-3 overflow-x-auto snap-x snap-mandatory pb-2 overscroll-x-contain select-none pl-4",
+            isDragging ? "cursor-grabbing" : "cursor-grab"
+          )}
+          style={{
+            scrollbarWidth: 'none',
+            msOverflowStyle: 'none',
+            WebkitOverflowScrolling: 'touch',
+            paddingRight: '1rem',
+          }}
+        >
+          {offersProducts.map((product) => (
+            <div 
+              key={product.id} 
+              className="flex-shrink-0 snap-start"
+              style={{ pointerEvents: isDragging ? 'none' : 'auto' }}
+            >
+              <ProductOfferCard product={product} variant="large" />
+            </div>
+          ))}
         </div>
 
-        <div className="relative group">
-          <Button
-            variant="outline"
-            size="icon"
-            className={cn(
-              "absolute -left-4 top-1/2 -translate-y-1/2 z-10 shadow-md transition-opacity bg-card hidden md:flex",
-              canScrollLeft ? "opacity-0 group-hover:opacity-100" : "opacity-0 pointer-events-none"
-            )}
-            onClick={() => scroll("left", 320)}
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </Button>
-
-          {/* iOS-style scroll with drag support */}
-          <div
-            ref={scrollRef}
-            {...handlers}
-            className={cn(
-              "flex gap-3 md:gap-4 overflow-x-auto snap-x snap-mandatory pb-2 overscroll-x-contain select-none",
-              isDragging ? "cursor-grabbing" : "cursor-grab"
-            )}
-            style={{
-              scrollbarWidth: 'none',
-              msOverflowStyle: 'none',
-              WebkitOverflowScrolling: 'touch',
-            }}
-          >
-            {offersProducts.map((product) => (
-              <div 
-                key={product.id} 
-                className="flex-shrink-0 snap-center"
-                style={{ pointerEvents: isDragging ? 'none' : 'auto' }}
-              >
-                <ProductOfferCard product={product} variant="large" />
-              </div>
-            ))}
-          </div>
-
-          <Button
-            variant="outline"
-            size="icon"
-            className={cn(
-              "absolute -right-4 top-1/2 -translate-y-1/2 z-10 shadow-md transition-opacity bg-card hidden md:flex",
-              canScrollRight ? "opacity-0 group-hover:opacity-100" : "opacity-0 pointer-events-none"
-            )}
-            onClick={() => scroll("right", 320)}
-          >
-            <ChevronRight className="w-5 h-5" />
-          </Button>
-        </div>
+        <Button
+          variant="outline"
+          size="icon"
+          className={cn(
+            "absolute right-2 top-1/2 -translate-y-1/2 z-10 shadow-md transition-opacity bg-card hidden md:flex",
+            canScrollRight ? "opacity-0 group-hover:opacity-100" : "opacity-0 pointer-events-none"
+          )}
+          onClick={() => scroll("right", 280)}
+        >
+          <ChevronRight className="w-5 h-5" />
+        </Button>
       </div>
     </section>
   );
