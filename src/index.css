@@ -204,11 +204,14 @@
   }
 
   .btn-yellow {
-    @apply bg-accent text-accent-foreground font-semibold shadow-lg hover:shadow-xl transition-all duration-300;
+    @apply font-semibold shadow-lg hover:shadow-xl transition-all duration-300;
+    background: hsl(var(--accent));
+    color: hsl(0 0% 10%);
     box-shadow: var(--shadow-yellow);
   }
 
   .btn-yellow:hover {
+    background: hsl(40 100% 45%);
     transform: translateY(-2px);
   }
 }
