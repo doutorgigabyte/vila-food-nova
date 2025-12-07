@@ -8,6 +8,7 @@ import { useCart } from "@/hooks/useCart";
 import { PriceWithDiscount } from "@/components/ui/price";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useState } from "react";
 
 interface Product {
   id: string;
@@ -34,6 +35,8 @@ const ProductOfferCard = ({ product, variant = "default", className }: ProductOf
   const { isProductFavorite, toggleFavoriteProduct } = useFavorites();
   const { addToCart } = useCart();
   const isFavorite = isProductFavorite(product.id);
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
   
   const discount = product.promotional_price && product.promotional_price < product.price
     ? Math.round(((product.price - product.promotional_price) / product.price) * 100)
@@ -84,45 +87,52 @@ const ProductOfferCard = ({ product, variant = "default", className }: ProductOf
   return (
     <Link 
       to={`/produto/${product.id}`}
-      className={cn("block snap-center", className)}
+      className={cn("block snap-center scroll-card", className)}
     >
       <Card className={cn(
-        "overflow-hidden hover:shadow-lg transition-all relative rounded-3xl border-0 shadow-md",
-        variant === "large" ? "w-56 md:w-64" : variant === "compact" ? "w-40 md:w-44" : "w-44 md:w-52"
+        "overflow-hidden hover:shadow-lg transition-all relative rounded-2xl border-0 shadow-soft card-hover",
+        variant === "large" ? "w-52 md:w-64" : variant === "compact" ? "w-36 md:w-44" : "w-40 md:w-52"
       )}>
         <div className={cn(
           "relative overflow-hidden bg-muted",
-          variant === "large" ? "h-44 md:h-52" : variant === "compact" ? "h-32" : "h-36"
+          variant === "large" ? "h-40 md:h-52" : variant === "compact" ? "h-28" : "h-32 md:h-36"
         )}>
-          {product.image_url ? (
+          {/* Skeleton while loading */}
+          {!imageLoaded && !imageError && product.image_url && (
+            <div className="absolute inset-0 skeleton-shimmer" />
+          )}
+          
+          {product.image_url && !imageError ? (
             <img
               src={product.image_url}
               alt={product.name}
-              className="w-full h-full object-cover hover:scale-110 transition-transform duration-500"
+              loading="lazy"
+              decoding="async"
+              className={cn(
+                "w-full h-full object-cover transition-all duration-500",
+                imageLoaded ? "opacity-100 hover:scale-105" : "opacity-0"
+              )}
               draggable={false}
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                target.style.display = 'none';
-              }}
+              onLoad={() => setImageLoaded(true)}
+              onError={() => setImageError(true)}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">
-              <span className="text-4xl opacity-30">🍽️</span>
+              <span className="text-3xl md:text-4xl opacity-30">🍽️</span>
             </div>
           )}
           
           {/* Not available overlay */}
           {!isAvailable && (
             <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center">
-              <Clock className="w-8 h-8 text-muted-foreground mb-2" />
-              <span className="text-sm font-medium text-muted-foreground">Indisponível</span>
-              <span className="text-xs text-muted-foreground">Abre às 18:00</span>
+              <Clock className="w-6 h-6 md:w-8 md:h-8 text-muted-foreground mb-1" />
+              <span className="text-xs md:text-sm font-medium text-muted-foreground">Indisponível</span>
             </div>
           )}
           
           {/* Discount badge */}
           {discount && isAvailable && (
-            <Badge className="absolute top-3 left-3 bg-destructive text-destructive-foreground font-bold px-2.5 py-1 text-sm shadow-lg rounded-full">
+            <Badge className="absolute top-2 left-2 bg-destructive text-destructive-foreground font-bold px-2 py-0.5 text-xs shadow-lg rounded-full">
               {discount}% OFF
             </Badge>
           )}
@@ -132,7 +142,7 @@ const ProductOfferCard = ({ product, variant = "default", className }: ProductOf
             variant="ghost" 
             size="icon" 
             className={cn(
-              "absolute top-3 right-3 w-9 h-9 bg-card/80 backdrop-blur-sm hover:bg-card transition-all rounded-full shadow-md active:scale-95",
+              "absolute top-2 right-2 w-8 h-8 bg-card/80 backdrop-blur-sm hover:bg-card rounded-full shadow-md btn-press touch-target",
               isFavorite ? "text-red-500 hover:text-red-600" : "text-muted-foreground hover:text-destructive"
             )}
             onClick={handleFavoriteClick}
@@ -144,27 +154,27 @@ const ProductOfferCard = ({ product, variant = "default", className }: ProductOf
           {isAvailable && (
             <Button 
               size="icon" 
-              className="absolute bottom-3 right-3 w-10 h-10 rounded-full shadow-lg bg-primary hover:bg-primary/90 active:scale-95 transition-transform"
+              className="absolute bottom-2 right-2 w-9 h-9 rounded-full shadow-lg bg-primary hover:bg-primary/90 btn-press touch-target"
               onClick={handleAddToCart}
             >
-              <Plus className="w-5 h-5" />
+              <Plus className="w-4 h-4" />
             </Button>
           )}
         </div>
         
-        <CardContent className="p-4">
-          <p className="text-xs text-muted-foreground truncate mb-1">
+        <CardContent className="p-3">
+          <p className="text-xs text-muted-foreground truncate mb-0.5">
             {product.establishment?.name || 'Estabelecimento'}
           </p>
-          <h3 className="font-semibold text-sm truncate">
+          <h3 className="font-semibold text-sm truncate leading-tight">
             {product.name}
           </h3>
           
-          <div className="mt-2">
+          <div className="mt-1.5">
             <PriceWithDiscount
               price={product.price}
               promotionalPrice={product.promotional_price}
-              size={variant === "large" ? "base" : "sm"}
+              size={variant === "large" ? "sm" : "xs"}
             />
           </div>
         </CardContent>
