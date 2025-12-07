@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import AdminSidebar from "@/components/admin/AdminSidebar";
+import { PaymentGatewaySetup } from "@/components/payment/PaymentGatewaySetup";
 import { 
   Menu, 
   Globe, 
@@ -280,51 +281,31 @@ const AdminSettings = () => {
 
             {/* Payments Tab */}
             <TabsContent value="payments">
-              <div className="grid gap-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Mercado Pago (Conta Master)</CardTitle>
-                    <CardDescription>Credenciais da conta principal para split de pagamentos</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid gap-4 md:grid-cols-2">
-                      <div className="space-y-2">
-                        <Label htmlFor="mp_public_key">Public Key</Label>
-                        <Input
-                          id="mp_public_key"
-                          value={paymentSettings.mp_public_key}
-                          onChange={(e) => setPaymentSettings({ ...paymentSettings, mp_public_key: e.target.value })}
-                          placeholder="APP_USR-xxx"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="mp_access_token">Access Token</Label>
-                        <Input
-                          id="mp_access_token"
-                          type="password"
-                          value={paymentSettings.mp_access_token}
-                          onChange={(e) => setPaymentSettings({ ...paymentSettings, mp_access_token: e.target.value })}
-                          placeholder="APP_USR-xxx"
-                        />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+              <div className="space-y-6">
+                {/* Admin Gateway Setup */}
+                <PaymentGatewaySetup 
+                  context="admin" 
+                  entityId="platform" 
+                />
 
+                {/* Additional Platform Payment Settings */}
                 <Card>
                   <CardHeader>
                     <CardTitle>PIX da Plataforma</CardTitle>
-                    <CardDescription>Chave PIX para recebimento de taxas</CardDescription>
+                    <CardDescription>Chave PIX para recebimento de taxas da plataforma</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="platform_pix">Chave PIX</Label>
+                      <Label htmlFor="platform_pix">Chave PIX Master</Label>
                       <Input
                         id="platform_pix"
                         value={paymentSettings.platform_pix_key}
                         onChange={(e) => setPaymentSettings({ ...paymentSettings, platform_pix_key: e.target.value })}
                         placeholder="CPF, CNPJ, E-mail ou Telefone"
                       />
+                      <p className="text-xs text-muted-foreground">
+                        Todas as taxas do marketplace serão creditadas nesta chave
+                      </p>
                     </div>
                   </CardContent>
                 </Card>

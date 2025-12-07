@@ -1,6 +1,6 @@
 /**
  * Payment Gateway Types - Interfaces modulares para integração de gateways
- * Suporta Mercado Pago e preparado para futuros gateways (PagSeguro, Stripe, etc.)
+ * Suporta Mercado Pago e preparado para futuros gateways (PagSeguro, Stone, Getnet, etc.)
  */
 
 export type PaymentStatus = 
@@ -20,9 +20,95 @@ export type PaymentMethod =
   | 'debit_card' 
   | 'boleto' 
   | 'cash'
-  | 'wallet'; // Saldo em carteira (MP)
+  | 'wallet' // Saldo em carteira (MP)
+  | 'static_pix'; // PIX copia e cola
 
-export type GatewayProvider = 'mercadopago' | 'pagseguro' | 'stripe' | 'manual';
+export type GatewayProvider = 
+  | 'mercadopago' 
+  | 'pagseguro' 
+  | 'stone'
+  | 'getnet'
+  | 'cielo'
+  | 'stripe' 
+  | 'manual';
+
+// Gateway configuration for admin management
+export interface GatewayConfig {
+  provider: GatewayProvider;
+  name: string;
+  logo?: string;
+  enabled: boolean;
+  sandbox: boolean;
+  credentials: Record<string, string>;
+  features: GatewayFeature[];
+  fees?: {
+    pix?: number;
+    credit?: number;
+    debit?: number;
+    boleto?: number;
+  };
+}
+
+export type GatewayFeature = 
+  | 'pix'
+  | 'credit_card'
+  | 'debit_card'
+  | 'boleto'
+  | 'split_payment'
+  | 'subscription'
+  | 'refund'
+  | 'webhook';
+
+// Gateway metadata for UI display
+export const GATEWAY_METADATA: Record<GatewayProvider, {
+  name: string;
+  logo: string;
+  features: GatewayFeature[];
+  docsUrl: string;
+}> = {
+  mercadopago: {
+    name: 'Mercado Pago',
+    logo: 'https://http2.mlstatic.com/frontend-assets/mp-web-navigation/ui-navigation/6.6.92/mercadopago/logo__large@2x.png',
+    features: ['pix', 'credit_card', 'debit_card', 'boleto', 'split_payment', 'subscription', 'refund', 'webhook'],
+    docsUrl: 'https://www.mercadopago.com.br/developers'
+  },
+  pagseguro: {
+    name: 'PagSeguro',
+    logo: 'https://logodownload.org/wp-content/uploads/2019/09/pagseguro-logo-0.png',
+    features: ['pix', 'credit_card', 'debit_card', 'boleto', 'refund', 'webhook'],
+    docsUrl: 'https://dev.pagseguro.uol.com.br'
+  },
+  stone: {
+    name: 'Stone',
+    logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/12/Stone_logo.svg/1200px-Stone_logo.svg.png',
+    features: ['pix', 'credit_card', 'debit_card', 'refund', 'webhook'],
+    docsUrl: 'https://docs.openfinance.stone.com.br'
+  },
+  getnet: {
+    name: 'Getnet',
+    logo: 'https://logodownload.org/wp-content/uploads/2020/02/getnet-logo-0.png',
+    features: ['pix', 'credit_card', 'debit_card', 'boleto', 'refund', 'webhook'],
+    docsUrl: 'https://developers.getnet.com.br'
+  },
+  cielo: {
+    name: 'Cielo',
+    logo: 'https://logodownload.org/wp-content/uploads/2014/05/cielo-logo-0.png',
+    features: ['pix', 'credit_card', 'debit_card', 'boleto', 'refund', 'webhook'],
+    docsUrl: 'https://developercielo.github.io/manual/cielo-ecommerce'
+  },
+  stripe: {
+    name: 'Stripe',
+    logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/ba/Stripe_Logo%2C_revised_2016.svg/2560px-Stripe_Logo%2C_revised_2016.svg.png',
+    features: ['credit_card', 'debit_card', 'subscription', 'refund', 'webhook'],
+    docsUrl: 'https://stripe.com/docs'
+  },
+  manual: {
+    name: 'Manual',
+    logo: '',
+    features: [],
+    docsUrl: ''
+  }
+};
 
 export interface PayerInfo {
   email: string;
@@ -193,4 +279,17 @@ export interface PaymentTransaction {
   metadata?: Record<string, unknown>;
   created_at: string;
   updated_at: string;
+}
+
+// Helper functions
+export function getGatewayDisplayName(provider: GatewayProvider): string {
+  return GATEWAY_METADATA[provider]?.name || provider;
+}
+
+export function getGatewayFeatures(provider: GatewayProvider): GatewayFeature[] {
+  return GATEWAY_METADATA[provider]?.features || [];
+}
+
+export function supportsFeature(provider: GatewayProvider, feature: GatewayFeature): boolean {
+  return getGatewayFeatures(provider).includes(feature);
 }

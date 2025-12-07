@@ -89,7 +89,20 @@ export function VilaTokPlayer({
 
       if (!isImage && videoRef.current) {
         videoRef.current.currentTime = 0;
-        videoRef.current.play().catch(() => setIsPlaying(false));
+        // Force autoplay with user gesture simulation
+        const playPromise = videoRef.current.play();
+        if (playPromise !== undefined) {
+          playPromise
+            .then(() => setIsPlaying(true))
+            .catch(() => {
+              // Autoplay blocked - set muted and retry
+              if (videoRef.current) {
+                videoRef.current.muted = true;
+                setIsMuted(true);
+                videoRef.current.play().catch(() => setIsPlaying(false));
+              }
+            });
+        }
       }
 
       if (audioRef.current && musicUrl) {
@@ -225,6 +238,7 @@ export function VilaTokPlayer({
           className="w-full h-full object-cover"
           muted={isMuted}
           playsInline
+          autoPlay={isActive}
           preload={isActive ? "auto" : "metadata"}
           loop
         />

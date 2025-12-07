@@ -201,6 +201,7 @@ export class PaymentGateway {
       boleto: 'bolbradesco',
       cash: 'cash',
       wallet: 'account_money',
+      static_pix: 'pix',
     };
 
     const { data, error } = await supabase.functions.invoke('mercadopago-sale', {
@@ -319,6 +320,7 @@ export class PaymentGateway {
       boleto: 'Boleto',
       cash: 'Dinheiro',
       wallet: 'Carteira Digital',
+      static_pix: 'PIX Copia e Cola',
     };
     return labels[method] || method;
   }
