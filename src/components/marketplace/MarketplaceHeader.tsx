@@ -44,7 +44,7 @@ interface MarketplaceHeaderProps {
 // Separate Sticky Search Bar Component
 export const StickySearchBar = ({ searchTerm, onSearchChange, onSearchClick }: MarketplaceHeaderProps) => {
   return (
-    <div className="sticky top-0 z-50 bg-card/95 backdrop-blur-sm border-b border-border shadow-sm">
+    <div className="fixed top-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-sm border-b border-border shadow-sm animate-in slide-in-from-top duration-200">
       <div className="container mx-auto px-4 py-2">
         <div className="relative" onClick={onSearchClick}>
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
