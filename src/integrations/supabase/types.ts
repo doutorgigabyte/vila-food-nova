@@ -1117,6 +1117,9 @@ export type Database = {
           main_category_id: string | null
           music_url: string | null
           product_id: string | null
+          repost_days: number[] | null
+          repost_schedule: Json | null
+          scheduled_for: string | null
           shares_count: number | null
           sort_order: number | null
           thumbnail_url: string | null
@@ -1137,6 +1140,9 @@ export type Database = {
           main_category_id?: string | null
           music_url?: string | null
           product_id?: string | null
+          repost_days?: number[] | null
+          repost_schedule?: Json | null
+          scheduled_for?: string | null
           shares_count?: number | null
           sort_order?: number | null
           thumbnail_url?: string | null
@@ -1157,6 +1163,9 @@ export type Database = {
           main_category_id?: string | null
           music_url?: string | null
           product_id?: string | null
+          repost_days?: number[] | null
+          repost_schedule?: Json | null
+          scheduled_for?: string | null
           shares_count?: number | null
           sort_order?: number | null
           thumbnail_url?: string | null

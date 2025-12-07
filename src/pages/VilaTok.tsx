@@ -6,10 +6,13 @@ import { VilaTokPlayer } from '@/components/vilatok/VilaTokPlayer';
 import { VilaTokSidebar } from '@/components/vilatok/VilaTokSidebar';
 import { VilaTokOverlay } from '@/components/vilatok/VilaTokOverlay';
 import { VilaTokNavigation } from '@/components/vilatok/VilaTokNavigation';
+import { VilaTokTutorial } from '@/components/vilatok/VilaTokTutorial';
 import { useCart } from '@/hooks/useCart';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 import VideoComments from '@/components/stories/VideoComments';
+
+const TUTORIAL_STORAGE_KEY = 'vilatok_tutorial_completed';
 
 export default function VilaTok() {
   const navigate = useNavigate();
@@ -37,7 +40,14 @@ export default function VilaTok() {
 
   const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null);
   const [showComments, setShowComments] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(() => {
+    return !localStorage.getItem(TUTORIAL_STORAGE_KEY);
+  });
 
+  const handleTutorialComplete = useCallback(() => {
+    localStorage.setItem(TUTORIAL_STORAGE_KEY, 'true');
+    setShowTutorial(false);
+  }, []);
 
   // Handle keyboard navigation
   useEffect(() => {
@@ -243,9 +253,10 @@ export default function VilaTok() {
         videoUrl={currentVideo.video_url}
         thumbnailUrl={currentVideo.thumbnail_url}
         musicUrl={currentVideo.music_url}
-        isActive={true}
+        isActive={!showTutorial}
         onViewCountIncrement={() => incrementViews(currentVideo.id)}
         onVideoEnd={goToNextEstablishment}
+        onAutoAdvance={goToNextVideo}
       />
 
       {/* Navigation Indicators */}
@@ -290,6 +301,11 @@ export default function VilaTok() {
         product={currentVideo.product}
         onProductClick={handleAddToCart}
       />
+
+      {/* Tutorial Overlay - First visit only */}
+      {showTutorial && (
+        <VilaTokTutorial onComplete={handleTutorialComplete} />
+      )}
     </div>
   );
 }

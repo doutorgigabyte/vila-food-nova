@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import VideoTrimmer from "./VideoTrimmer";
 import MusicSelector from "./MusicSelector";
 import StoryPreview from "./StoryPreview";
+import StoryScheduler, { ScheduleData } from "./StoryScheduler";
 import { uploadVideoToS3, uploadToS3 } from "@/lib/s3";
 
 interface StoriesCreatorProps {
@@ -33,9 +34,12 @@ export interface StoryData {
   duration: number;
   displayInStore: boolean;
   displayInMarketplace: boolean;
+  scheduledFor?: Date;
+  repostDays?: number[];
+  repostTimes?: string[];
 }
 
-type Step = "upload" | "trim" | "music" | "details" | "preview";
+type Step = "upload" | "trim" | "music" | "details" | "schedule" | "preview";
 
 const StoriesCreator = ({ establishmentId, onClose, onPublish }: StoriesCreatorProps) => {
   const [currentStep, setCurrentStep] = useState<Step>("upload");
@@ -52,6 +56,7 @@ const StoriesCreator = ({ establishmentId, onClose, onPublish }: StoriesCreatorP
   const [duration, setDuration] = useState(15);
   const [isProcessing, setIsProcessing] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [scheduleData, setScheduleData] = useState<ScheduleData | null>(null);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -102,6 +107,16 @@ const StoriesCreator = ({ establishmentId, onClose, onPublish }: StoriesCreatorP
   }, []);
 
   const handleDetailsComplete = useCallback(() => {
+    setCurrentStep("schedule");
+  }, []);
+
+  const handleScheduleComplete = useCallback((schedule: ScheduleData) => {
+    setScheduleData(schedule);
+    setCurrentStep("preview");
+  }, []);
+
+  const handleSkipSchedule = useCallback(() => {
+    setScheduleData({ publishNow: true, repostDays: [], repostTimes: [] });
     setCurrentStep("preview");
   }, []);
 
@@ -152,13 +167,19 @@ const StoriesCreator = ({ establishmentId, onClose, onPublish }: StoriesCreatorP
         duration: mediaType === "image" ? 5 : duration,
         displayInStore,
         displayInMarketplace,
+        scheduledFor: scheduleData?.scheduledFor,
+        repostDays: scheduleData?.repostDays,
+        repostTimes: scheduleData?.repostTimes,
       };
 
       setUploadProgress(90);
       await onPublish(storyData);
       setUploadProgress(100);
       
-      toast.success("Story publicado com sucesso!");
+      toast.success(scheduleData?.publishNow === false 
+        ? "Story agendado com sucesso!" 
+        : "Story publicado com sucesso!"
+      );
       onClose();
     } catch (error) {
       console.error("Error publishing story:", error);
@@ -173,6 +194,7 @@ const StoriesCreator = ({ establishmentId, onClose, onPublish }: StoriesCreatorP
     { key: "trim", label: "Cortar" },
     { key: "music", label: "Música" },
     { key: "details", label: "Detalhes" },
+    { key: "schedule", label: "Agendar" },
     { key: "preview", label: "Preview" },
   ];
 
@@ -379,6 +401,15 @@ const StoriesCreator = ({ establishmentId, onClose, onPublish }: StoriesCreatorP
           </div>
         )}
 
+        {/* Schedule Step */}
+        {currentStep === "schedule" && (
+          <StoryScheduler
+            onSchedule={handleScheduleComplete}
+            onBack={() => setCurrentStep("details")}
+            onSkip={handleSkipSchedule}
+          />
+        )}
+
         {/* Preview Step */}
         {currentStep === "preview" && (
           <StoryPreview
@@ -386,7 +417,7 @@ const StoriesCreator = ({ establishmentId, onClose, onPublish }: StoriesCreatorP
             mediaType={mediaType || "image"}
             description={description}
             musicUrl={selectedMusic}
-            onBack={() => setCurrentStep("details")}
+            onBack={() => setCurrentStep("schedule")}
             onPublish={handlePublish}
             isPublishing={isProcessing}
           />
