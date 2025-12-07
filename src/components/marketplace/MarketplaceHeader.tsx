@@ -51,7 +51,7 @@ const MarketplaceHeader = ({ searchTerm, onSearchChange, onSearchClick }: Market
   const cartCount = items.reduce((acc, item) => acc + item.quantity, 0);
 
   return (
-    <header className="sticky top-0 z-50 bg-card shadow-sm">
+    <header className="sticky top-0 z-50 bg-card shadow-sm will-change-transform">
       {/* Top Bar - Only visible for logged-in users */}
       {user && (
         <div className="bg-primary text-white">
