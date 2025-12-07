@@ -94,7 +94,9 @@ const phases: ProgressPhase[] = [
       { name: 'Palavras-chave padrão (cardápio, pedido, horário)', status: 'completed', priority: 'high' },
       { name: 'Editor de mensagens automáticas', status: 'completed', priority: 'medium' },
       { name: 'Disparos automáticos de status de pedido', status: 'pending', priority: 'high' },
-      { name: 'Edge Function whatsapp-chatbot', status: 'pending', priority: 'high' },
+      { name: 'Hook useWhatsAppKeywords', status: 'completed', priority: 'high' },
+      { name: 'Hook useWhatsAppAutoMessages', status: 'completed', priority: 'high' },
+      { name: 'Edge Function whatsapp-webhook atualizada (Tier 1)', status: 'completed', priority: 'high' },
       { name: 'Teste de criação de instância Evolution API', status: 'pending', priority: 'high' },
     ]
   },
@@ -103,12 +105,12 @@ const phases: ProgressPhase[] = [
     name: 'Fase 8: WhatsApp - Nível 2 (Agente IA)',
     description: 'Agente IA com vendas conversacionais',
     items: [
-      { name: 'Edge Function whatsapp-agent com Lovable AI', status: 'pending', priority: 'high' },
-      { name: 'Tool Calling: search_products, add_to_cart', status: 'pending', priority: 'high' },
-      { name: 'Tool Calling: validate_address, calculate_delivery', status: 'pending', priority: 'high' },
-      { name: 'Tool Calling: create_pix_payment', status: 'pending', priority: 'high' },
+      { name: 'Edge Function whatsapp-ai-response com Lovable AI', status: 'completed', priority: 'high' },
+      { name: 'Tool Calling: add_to_cart, remove_from_cart', status: 'completed', priority: 'high' },
+      { name: 'Tool Calling: view_cart, checkout', status: 'completed', priority: 'high' },
+      { name: 'Tool Calling: calculate_delivery, request_human', status: 'completed', priority: 'high' },
       { name: 'Envio de imagens de produtos (CloudFront)', status: 'pending', priority: 'medium' },
-      { name: 'Prompt personalizado por estabelecimento', status: 'pending', priority: 'medium' },
+      { name: 'Prompt personalizado por estabelecimento', status: 'completed', priority: 'medium' },
       { name: 'Edge Function whatsapp-followup (reativação)', status: 'pending', priority: 'low' },
     ]
   },

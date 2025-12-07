@@ -12,6 +12,7 @@ interface AIRequest {
   message: string;
   message_type?: string;
   ai_prompt?: string;
+  ai_model?: string;
   context?: Record<string, unknown>;
   cart?: Array<{
     product_id: string;
@@ -33,13 +34,14 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    const GOOGLE_API_KEY = Deno.env.get('GOOGLE_API_KEY');
-    if (!GOOGLE_API_KEY) {
-      throw new Error('GOOGLE_API_KEY not configured');
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    if (!LOVABLE_API_KEY) {
+      throw new Error('LOVABLE_API_KEY not configured');
     }
 
     const body: AIRequest = await req.json();
-    const { session_id, establishment_id, message, message_type, ai_prompt, context, cart } = body;
+    const { session_id, establishment_id, message, message_type, ai_prompt, ai_model, context, cart } = body;
+    const modelToUse = ai_model || 'google/gemini-2.5-flash';
 
     console.log('AI Request:', JSON.stringify(body, null, 2));
 
@@ -214,38 +216,29 @@ ${JSON.stringify(context || {})}`;
       }
     ];
 
-    // Call Google Gemini API directly
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GOOGLE_API_KEY}`;
-    
-    const aiResponse = await fetch(geminiUrl, {
+    // Call Lovable AI Gateway
+    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        contents: [
-          {
-            role: "user",
-            parts: [{ text: `${systemPrompt}\n\nMensagem do cliente: ${message}` }]
-          }
+        model: modelToUse,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: message }
         ],
-        tools: [{
-          functionDeclarations: tools.map(t => ({
-            name: t.function.name,
-            description: t.function.description,
-            parameters: t.function.parameters
-          }))
-        }],
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 1024,
-        }
+        tools,
+        tool_choice: 'auto',
+        temperature: 0.7,
+        max_tokens: 1024,
       }),
     });
 
     if (!aiResponse.ok) {
       const errorText = await aiResponse.text();
-      console.error('Gemini API error:', aiResponse.status, errorText);
+      console.error('Lovable AI error:', aiResponse.status, errorText);
       
       if (aiResponse.status === 429) {
         return new Response(JSON.stringify({ 
@@ -256,34 +249,30 @@ ${JSON.stringify(context || {})}`;
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
+
+      if (aiResponse.status === 402) {
+        return new Response(JSON.stringify({ 
+          error: 'Payment required', 
+          response: 'Serviço temporariamente indisponível. Por favor, aguarde um atendente. 🙏'
+        }), {
+          status: 402,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
       
-      throw new Error(`Gemini API error: ${aiResponse.status}`);
+      throw new Error(`Lovable AI error: ${aiResponse.status}`);
     }
 
     const aiData = await aiResponse.json();
-    console.log('Gemini Response:', JSON.stringify(aiData, null, 2));
+    console.log('Lovable AI Response:', JSON.stringify(aiData, null, 2));
 
-    const candidate = aiData.candidates?.[0];
-    const parts = candidate?.content?.parts || [];
+    const choice = aiData.choices?.[0];
+    const assistantMessage = choice?.message;
     
-    let responseText = '';
-    let toolCalls: Array<{ function: { name: string; arguments: string } }> = [];
+    let responseText = assistantMessage?.content || '';
+    const toolCalls = assistantMessage?.tool_calls || [];
     
-    for (const part of parts) {
-      if (part.text) {
-        responseText += part.text;
-      }
-      if (part.functionCall) {
-        toolCalls.push({
-          function: {
-            name: part.functionCall.name,
-            arguments: JSON.stringify(part.functionCall.args || {})
-          }
-        });
-      }
-    }
-    
-    if (!responseText) {
+    if (!responseText && toolCalls.length === 0) {
       responseText = 'Desculpe, não entendi. Pode repetir?';
     }
 
