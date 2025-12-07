@@ -18,6 +18,7 @@ interface CategoryPageHeaderProps {
   subcategoryIcon?: string;
   onSearch?: (term: string) => void;
   showStories?: boolean;
+  onBack?: () => void;
 }
 
 const CategoryPageHeader = ({
@@ -28,6 +29,7 @@ const CategoryPageHeader = ({
   subcategoryIcon,
   onSearch,
   showStories = true,
+  onBack,
 }: CategoryPageHeaderProps) => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
@@ -79,7 +81,7 @@ const CategoryPageHeader = ({
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate(-1)}
+            onClick={onBack || (() => navigate(-1))}
             className="h-9 w-9 flex-shrink-0"
           >
             <ArrowLeft className="w-5 h-5" />

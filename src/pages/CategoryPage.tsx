@@ -59,7 +59,7 @@ interface Product {
   };
 }
 
-// Category icons mapping
+// Category icons mapping (emojis only, not Lucide icon names)
 const categoryIcons: Record<string, string> = {
   mercado: "🛒",
   farmacia: "💊",
@@ -67,6 +67,34 @@ const categoryIcons: Record<string, string> = {
   comida: "🍔",
   artesanato: "🎨",
   servicos: "🔧",
+};
+
+// Subcategory emojis mapping
+const subcategoryEmojis: Record<string, string> = {
+  "supermercados": "🛒",
+  "bebidas": "🥤",
+  "hortifruti": "🥬",
+  "padaria": "🥖",
+  "açougue": "🥩",
+  "frios": "🧀",
+  "limpeza": "🧹",
+  "congelados": "🧊",
+  "laticínios": "🥛",
+  "doces e bolos": "🍰",
+  "pizza": "🍕",
+  "lanches": "🍔",
+  "japonesa": "🍣",
+  "italiana": "🍝",
+  "brasileira": "🍛",
+  "moda masculina": "👔",
+  "moda feminina": "👗",
+  "pet shop": "🐕",
+  "medicamentos": "💊",
+  "cosméticos": "💄",
+};
+
+const getSubcategoryEmoji = (name: string): string => {
+  return subcategoryEmojis[name.toLowerCase()] || "📦";
 };
 
 const CategoryPage = () => {
@@ -191,18 +219,32 @@ const CategoryPage = () => {
     }
   }, [mainCategory, selectedSubcategory, subcategories]);
 
-  // Handle subcategory selection
+  // Handle subcategory selection with loading state
   const handleSubcategorySelect = (id: string | null) => {
+    // Set loading immediately for visual feedback
+    setLoading(true);
+    
     if (id === null) {
       setSelectedSubcategory(null);
-      navigate(`/categoria/${categoryId}`);
+      navigate(`/categoria/${categoryId}`, { replace: true });
     } else {
       const subcategory = subcategories.find(s => s.id === id);
       if (subcategory) {
         setSelectedSubcategory(subcategory);
         const slug = subcategory.name.toLowerCase().replace(/\s+/g, '-');
-        navigate(`/categoria/${categoryId}/${slug}`);
+        navigate(`/categoria/${categoryId}/${slug}`, { replace: true });
       }
+    }
+  };
+
+  // Handle back navigation
+  const handleGoBack = () => {
+    if (selectedSubcategory) {
+      // If subcategory selected, go back to main category
+      handleSubcategorySelect(null);
+    } else {
+      // If on main category, go to marketplace
+      navigate('/');
     }
   };
 
@@ -239,6 +281,11 @@ const CategoryPage = () => {
   const categoryIcon = mainCategory?.icon || categoryIcons[categoryId || ""] || "📦";
   const categoryName = selectedSubcategory?.name || mainCategory?.name || "Categoria";
 
+  // Get proper emoji for subcategory (not Lucide icon name)
+  const subcategoryIconEmoji = selectedSubcategory 
+    ? getSubcategoryEmoji(selectedSubcategory.name)
+    : undefined;
+
   return (
     <div className="min-h-screen bg-background pb-20 md:pb-0">
       {/* Smart Header */}
@@ -247,9 +294,10 @@ const CategoryPage = () => {
         categoryIcon={categoryIcon}
         categorySlug={categoryId || ""}
         subcategoryName={selectedSubcategory?.name}
-        subcategoryIcon={selectedSubcategory?.icon}
+        subcategoryIcon={subcategoryIconEmoji}
         onSearch={handleSearch}
         showStories={true}
+        onBack={handleGoBack}
       />
 
       <main className="container mx-auto px-4 py-4 space-y-6">
@@ -268,7 +316,7 @@ const CategoryPage = () => {
           {selectedSubcategory && (
             <SubcategoryBanner
               name={selectedSubcategory.name}
-              icon={selectedSubcategory.icon}
+              icon={subcategoryIconEmoji}
               productCount={filteredProducts.length}
               storeCount={establishments.length}
               onClear={() => handleSubcategorySelect(null)}
