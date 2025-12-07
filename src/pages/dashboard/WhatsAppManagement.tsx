@@ -20,6 +20,7 @@ import {
   Trash2, ChevronRight, Lock, Sparkles, Edit, Send
 } from "lucide-react";
 import AdminLayout from "@/components/admin/AdminLayout";
+import { ConversationHistory } from "@/components/whatsapp/ConversationHistory";
 
 interface WhatsAppInstance {
   id: string;
@@ -490,7 +491,7 @@ Seja sempre educado e prestativo. Se não souber responder algo, peça para o cl
           </div>
         ) : (
           <Tabs defaultValue="connection" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="connection" className="gap-2">
                 <Smartphone className="w-4 h-4" />
                 <span className="hidden sm:inline">Conexão</span>
@@ -507,6 +508,10 @@ Seja sempre educado e prestativo. Se não souber responder algo, peça para o cl
               <TabsTrigger value="messages" className="gap-2">
                 <Send className="w-4 h-4" />
                 <span className="hidden sm:inline">Mensagens</span>
+              </TabsTrigger>
+              <TabsTrigger value="history" className="gap-2">
+                <MessageCircle className="w-4 h-4" />
+                <span className="hidden sm:inline">Histórico</span>
               </TabsTrigger>
             </TabsList>
 
@@ -842,6 +847,11 @@ Seja sempre educado e prestativo. Se não souber responder algo, peça para o cl
                   </div>
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            {/* History Tab */}
+            <TabsContent value="history" className="space-y-4 mt-4">
+              <ConversationHistory establishmentId={establishmentId} />
             </TabsContent>
           </Tabs>
         )}

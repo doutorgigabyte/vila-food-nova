@@ -120,10 +120,11 @@ const phases: ProgressPhase[] = [
     description: 'Dashboard completo de WhatsApp',
     items: [
       { name: 'WhatsAppManagement.tsx com abas (Chatbot/Agente IA)', status: 'completed', priority: 'high' },
-      { name: 'Dashboard de conversas (histórico)', status: 'pending', priority: 'medium' },
-      { name: 'Estatísticas de WhatsApp (mensagens, conversões)', status: 'pending', priority: 'medium' },
+      { name: 'Dashboard de conversas (histórico)', status: 'completed', priority: 'medium' },
+      { name: 'ConversationHistory component', status: 'completed', priority: 'medium' },
+      { name: 'Estatísticas de WhatsApp (mensagens, conversões)', status: 'completed', priority: 'medium' },
       { name: 'Preview de conversa em tempo real', status: 'pending', priority: 'low' },
-      { name: 'Bloqueio de features por plano', status: 'pending', priority: 'high' },
+      { name: 'Bloqueio de features por plano', status: 'completed', priority: 'high' },
     ]
   }
 ];
