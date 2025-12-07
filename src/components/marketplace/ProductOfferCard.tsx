@@ -4,7 +4,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useFavorites } from "@/hooks/useFavorites";
+import { useCart } from "@/hooks/useCart";
+import { PriceWithDiscount } from "@/components/ui/price";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface Product {
   id: string;
@@ -29,19 +32,53 @@ interface ProductOfferCardProps {
 
 const ProductOfferCard = ({ product, variant = "default", className }: ProductOfferCardProps) => {
   const { isProductFavorite, toggleFavoriteProduct } = useFavorites();
+  const { addToCart } = useCart();
   const isFavorite = isProductFavorite(product.id);
   
   const discount = product.promotional_price && product.promotional_price < product.price
     ? Math.round(((product.price - product.promotional_price) / product.price) * 100)
     : null;
   
-  const currentPrice = product.promotional_price || product.price;
   const isAvailable = product.is_active !== false && product.establishment?.is_open !== false;
 
   const handleFavoriteClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     toggleFavoriteProduct(product.id);
+  };
+
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!product.establishment) {
+      toast.error("Estabelecimento não encontrado");
+      return;
+    }
+    
+    const cartProduct = {
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      promotional_price: product.promotional_price,
+      image_url: product.image_url,
+      establishment_id: product.establishment.slug,
+    };
+    
+    const establishmentInfo = {
+      id: product.establishment.slug,
+      name: product.establishment.name,
+      slug: product.establishment.slug,
+      logo_url: null,
+      vila_id: null,
+      delivery_base_fee: 0,
+      min_order_value: 0,
+      accepts_pickup: true,
+      accepts_delivery: true,
+    };
+    
+    addToCart(cartProduct, establishmentInfo);
+    toast.success(`${product.name} adicionado ao carrinho`);
   };
 
   return (
@@ -108,7 +145,7 @@ const ProductOfferCard = ({ product, variant = "default", className }: ProductOf
             <Button 
               size="icon" 
               className="absolute bottom-3 right-3 w-10 h-10 rounded-full shadow-lg bg-primary hover:bg-primary/90 active:scale-95 transition-transform"
-              onClick={(e) => e.preventDefault()}
+              onClick={handleAddToCart}
             >
               <Plus className="w-5 h-5" />
             </Button>
@@ -123,19 +160,12 @@ const ProductOfferCard = ({ product, variant = "default", className }: ProductOf
             {product.name}
           </h3>
           
-          <div className="flex items-center gap-2 mt-2">
-            {product.promotional_price && product.promotional_price < product.price && (
-              <span className="text-xs text-muted-foreground line-through">
-                R$ {product.price.toFixed(2)}
-              </span>
-            )}
-            <span className={cn(
-              "font-bold",
-              variant === "large" ? "text-base" : "text-sm",
-              discount && "text-destructive"
-            )}>
-              R$ {currentPrice.toFixed(2)}
-            </span>
+          <div className="mt-2">
+            <PriceWithDiscount
+              price={product.price}
+              promotionalPrice={product.promotional_price}
+              size={variant === "large" ? "base" : "sm"}
+            />
           </div>
         </CardContent>
       </Card>

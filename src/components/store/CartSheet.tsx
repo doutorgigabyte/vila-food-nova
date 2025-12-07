@@ -6,6 +6,7 @@ import { Separator } from "@/components/ui/separator";
 import { Plus, Minus, Trash2, ShoppingBag, ArrowRight, Store, AlertTriangle } from "lucide-react";
 import { AIRecommendations } from "./AIRecommendations";
 import { useCart, type CartProduct, type EstablishmentInfo } from "@/hooks/useCart";
+import { Price } from "@/components/ui/price";
 
 interface CartSheetProps {
   isOpen: boolean;
@@ -156,9 +157,7 @@ export const CartSheet = ({
                                 "{item.observation}"
                               </p>
                             )}
-                            <span className="text-sm font-semibold text-primary">
-                              R$ {(price * item.quantity).toFixed(2)}
-                            </span>
+                            <Price value={price * item.quantity} size="sm" className="text-primary" />
                           </div>
                           <div className="flex items-center gap-1">
                             <Button
@@ -227,9 +226,7 @@ export const CartSheet = ({
                             )}
                             <div className="flex-1 min-w-0">
                               <h4 className="font-medium text-sm">{item.product.name}</h4>
-                              <span className="text-sm font-semibold text-primary">
-                                R$ {(price * item.quantity).toFixed(2)}
-                              </span>
+                            <Price value={price * item.quantity} size="sm" className="text-primary" />
                             </div>
                             <div className="flex items-center gap-1">
                               <Button
@@ -277,13 +274,13 @@ export const CartSheet = ({
             <div className="space-y-2 text-sm">
               {isMultiStore ? (
                 <>
-                  {uniqueEstablishments.map((estId) => {
+                    {uniqueEstablishments.map((estId) => {
                     const estInfo = establishments.get(estId);
                     const estSubtotal = getEstablishmentSubtotal(estId);
                     return (
                       <div key={estId} className="flex justify-between">
                         <span className="text-muted-foreground">{estInfo?.name}</span>
-                        <span>R$ {estSubtotal.toFixed(2)}</span>
+                        <Price value={estSubtotal} size="sm" />
                       </div>
                     );
                   })}
@@ -292,25 +289,25 @@ export const CartSheet = ({
                 <>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Subtotal</span>
-                    <span>R$ {currentSubtotal.toFixed(2)}</span>
+                    <Price value={currentSubtotal} size="sm" />
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Taxa de entrega</span>
-                    <span>R$ {deliveryFee.toFixed(2)}</span>
+                    <Price value={deliveryFee} size="sm" />
                   </div>
                 </>
               )}
               <Separator />
               <div className="flex justify-between text-base font-semibold">
                 <span>Total</span>
-                <span>R$ {(isMultiStore ? totalPrice : currentSubtotal + deliveryFee).toFixed(2)}</span>
+                <Price value={isMultiStore ? totalPrice : currentSubtotal + deliveryFee} size="base" />
               </div>
             </div>
 
             {/* Min order warning */}
             {!canCheckout && (
               <p className="text-xs text-amber-600 bg-amber-50 dark:bg-amber-950/30 p-2 rounded text-center">
-                Pedido mínimo: R$ {minOrder.toFixed(2)} (faltam R$ {(minOrder - currentSubtotal).toFixed(2)})
+                Pedido mínimo: <Price value={minOrder} size="xs" showCurrency /> (faltam <Price value={minOrder - currentSubtotal} size="xs" showCurrency />)
               </p>
             )}
 

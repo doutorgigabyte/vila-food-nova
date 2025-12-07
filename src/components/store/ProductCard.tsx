@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Package } from "lucide-react";
+import { PriceWithDiscount } from "@/components/ui/price";
 import type { StoreProduct } from "@/hooks/useStoreData";
 
 interface ProductCardProps {
@@ -53,15 +54,13 @@ export const ProductCard = ({ product, onClick }: ProductCardProps) => {
                 </p>
               )}
             </div>
-            <div className="flex items-center gap-2 mt-2">
-              <span className="font-bold text-primary text-sm">
-                R$ {displayPrice.toFixed(2)}
-              </span>
-              {hasPromo && (
-                <span className="text-xs text-muted-foreground line-through">
-                  R$ {product.price.toFixed(2)}
-                </span>
-              )}
+            <div className="mt-2">
+              <PriceWithDiscount
+                price={product.price}
+                promotionalPrice={product.promotional_price}
+                size="sm"
+                className="text-primary"
+              />
             </div>
           </div>
           <div className="w-20 h-20 rounded-lg overflow-hidden bg-muted shrink-0">
