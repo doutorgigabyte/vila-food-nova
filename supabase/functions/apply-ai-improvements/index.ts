@@ -6,12 +6,90 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// ==================== Authentication Helper ====================
+async function authenticateRequest(req: Request): Promise<{ userId: string } | null> {
+  const authHeader = req.headers.get('authorization');
+  
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return null;
+  }
+  
+  const token = authHeader.replace('Bearer ', '');
+  
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_ANON_KEY")!
+  );
+  
+  const { data: { user }, error } = await supabase.auth.getUser(token);
+  
+  if (error || !user) {
+    console.log("[apply-ai-improvements] Auth failed:", error?.message);
+    return null;
+  }
+  
+  return { userId: user.id };
+}
+
+// ==================== Ownership Verification ====================
+async function verifyEstablishmentOwnership(userId: string, establishmentId: string): Promise<boolean> {
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+  );
+  
+  // Check if user owns the establishment
+  const { data: establishment } = await supabase
+    .from('establishments')
+    .select('owner_id')
+    .eq('id', establishmentId)
+    .single();
+    
+  if (establishment?.owner_id === userId) {
+    return true;
+  }
+  
+  // Check if user has access via establishment_users
+  const { data: userAccess } = await supabase
+    .from('establishment_users')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('establishment_id', establishmentId)
+    .eq('is_active', true)
+    .single();
+    
+  if (userAccess) {
+    return true;
+  }
+  
+  // Check if user is super_admin
+  const { data: roleData } = await supabase
+    .from('user_roles')
+    .select('role')
+    .eq('user_id', userId)
+    .eq('role', 'super_admin')
+    .single();
+    
+  return !!roleData;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    // ==================== Authentication Required ====================
+    const auth = await authenticateRequest(req);
+    
+    if (!auth) {
+      console.log("[apply-ai-improvements] Unauthorized request rejected");
+      return new Response(
+        JSON.stringify({ error: "Unauthorized - authentication required" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const { establishmentId, actions } = await req.json();
     
     if (!establishmentId || !actions || !Array.isArray(actions)) {
@@ -21,7 +99,21 @@ serve(async (req) => {
       );
     }
 
+    // ==================== Ownership Verification ====================
+    const hasAccess = await verifyEstablishmentOwnership(auth.userId, establishmentId);
+    
+    if (!hasAccess) {
+      console.log(`[apply-ai-improvements] Access denied for user ${auth.userId} to establishment ${establishmentId}`);
+      return new Response(
+        JSON.stringify({ error: "Access denied - you don't have permission for this establishment" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    console.log(`[apply-ai-improvements] Authenticated user ${auth.userId} applying improvements to ${establishmentId}`);
+
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+    const authHeader = req.headers.get('authorization');
 
     const results: { action: string; success: boolean; error?: string }[] = [];
     let totalCreditsUsed = 0;
@@ -35,7 +127,10 @@ serve(async (req) => {
           
           const response = await fetch(`${SUPABASE_URL}/functions/v1/generate-image`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': authHeader || ''
+            },
             body: JSON.stringify({
               type: imageType,
               id: action.target_id,
@@ -56,7 +151,10 @@ serve(async (req) => {
         if (action.type === 'generate_photo') {
           const response = await fetch(`${SUPABASE_URL}/functions/v1/generate-image`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': authHeader || ''
+            },
             body: JSON.stringify({
               type: 'products',
               id: action.target_id,

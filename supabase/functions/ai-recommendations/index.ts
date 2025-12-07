@@ -20,6 +20,31 @@ interface RecommendationRequest {
   limit?: number;
 }
 
+// ==================== Authentication Helper ====================
+async function authenticateRequest(req: Request): Promise<{ userId: string } | null> {
+  const authHeader = req.headers.get('authorization');
+  
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return null;
+  }
+  
+  const token = authHeader.replace('Bearer ', '');
+  
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_ANON_KEY")!
+  );
+  
+  const { data: { user }, error } = await supabase.auth.getUser(token);
+  
+  if (error || !user) {
+    console.log("[ai-recommendations] Auth failed:", error?.message);
+    return null;
+  }
+  
+  return { userId: user.id };
+}
+
 // ==================== Gemini Text API Call ====================
 async function callGeminiText(systemPrompt: string, userPrompt: string): Promise<string> {
   const GOOGLE_API_KEY = Deno.env.get("GOOGLE_API_KEY");
@@ -95,6 +120,17 @@ serve(async (req) => {
   }
 
   try {
+    // ==================== Authentication Required ====================
+    const auth = await authenticateRequest(req);
+    
+    if (!auth) {
+      console.log("[ai-recommendations] Unauthorized request rejected");
+      return new Response(
+        JSON.stringify({ error: "Unauthorized - authentication required" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const { establishment_id, cart_items, limit = 3 }: RecommendationRequest = await req.json();
     
     // Validation
@@ -118,6 +154,8 @@ serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+    
+    console.log(`[ai-recommendations] Authenticated user ${auth.userId} requesting recommendations`);
     
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
