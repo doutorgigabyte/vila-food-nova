@@ -308,7 +308,10 @@ export default function VilaTok() {
               onSlideChange={(swiper) => handleHorizontalSlideChange(estIndex, swiper)}
               nested={true}
             >
-              {est.videos.map((video, vidIndex) => (
+              {est.videos.map((video, vidIndex) => {
+                const isVideoActive = !showTutorial && estIndex === activeEstablishmentIndex && vidIndex === (activeVideoIndices.get(estIndex) || 0);
+                
+                return (
                 <SwiperSlide key={video.id} className="w-full h-full">
                   <div className="relative w-full h-full">
                     {/* Video Player */}
@@ -316,7 +319,7 @@ export default function VilaTok() {
                       videoUrl={video.video_url}
                       thumbnailUrl={video.thumbnail_url}
                       musicUrl={video.music_url}
-                      isActive={!showTutorial && estIndex === activeEstablishmentIndex && vidIndex === getActiveVideoIndex(estIndex)}
+                      isActive={isVideoActive}
                       onViewCountIncrement={() => incrementViews(video.id)}
                       onVideoEnd={() => {}}
                       onAutoAdvance={handleAutoAdvance}
@@ -352,7 +355,7 @@ export default function VilaTok() {
                     </div>
                   </div>
                 </SwiperSlide>
-              ))}
+              )})}
             </Swiper>
           </SwiperSlide>
         ))}
