@@ -93,6 +93,9 @@ const Index = () => {
         {/* Category-specific Banner Slider with real images */}
         <CategoryBannerSlider mainCategory={selectedMainCategory} />
 
+        {/* Just For You Carousel - 3D effect, filtered by category */}
+        <JustForYouCarousel mainCategory={selectedMainCategory} />
+
         {/* Video Highlights - Premium Partner Section */}
         <VideoHighlightsSection />
 
@@ -106,9 +109,6 @@ const Index = () => {
         {(!selectedMainCategory || selectedMainCategory === 'comida') && (
           <VilasSection />
         )}
-
-        {/* Just For You Carousel - filtered by category */}
-        <JustForYouCarousel mainCategory={selectedMainCategory} />
 
         {/* Nearby Stores - Establishments by proximity */}
         <NearbyStoresSection 
