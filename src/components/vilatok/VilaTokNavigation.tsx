@@ -16,27 +16,45 @@ export function VilaTokNavigation({
   const maxVisibleDots = 7;
   const halfVisible = Math.floor(maxVisibleDots / 2);
   
-  // Calculate visible range for establishments
-  let startIndex = 0;
-  let endIndex = Math.min(totalEstablishments, maxVisibleDots);
-  
-  if (totalEstablishments > maxVisibleDots) {
-    if (currentEstablishmentIndex <= halfVisible) {
-      startIndex = 0;
-      endIndex = maxVisibleDots;
-    } else if (currentEstablishmentIndex >= totalEstablishments - halfVisible - 1) {
-      startIndex = totalEstablishments - maxVisibleDots;
-      endIndex = totalEstablishments;
-    } else {
-      startIndex = currentEstablishmentIndex - halfVisible;
-      endIndex = currentEstablishmentIndex + halfVisible + 1;
+  // Calculate which dots to show - active dot stays in fixed center position
+  const getVisibleEstablishments = () => {
+    if (totalEstablishments <= maxVisibleDots) {
+      // If we have fewer than max, show all and calculate center position for active
+      return {
+        dots: Array.from({ length: totalEstablishments }, (_, i) => i),
+        activePosition: currentEstablishmentIndex
+      };
     }
-  }
+    
+    // Active dot is ALWAYS at center position (halfVisible)
+    // Calculate which dots to show around it
+    const dots: number[] = [];
+    
+    for (let pos = 0; pos < maxVisibleDots; pos++) {
+      // Calculate which establishment index should be at this position
+      const offset = pos - halfVisible;
+      const estIndex = currentEstablishmentIndex + offset;
+      
+      if (estIndex >= 0 && estIndex < totalEstablishments) {
+        dots.push(estIndex);
+      } else if (estIndex < 0) {
+        // Before first - push placeholder (-1)
+        dots.push(-1);
+      } else {
+        // After last - push placeholder (-2)
+        dots.push(-2);
+      }
+    }
+    
+    return {
+      dots,
+      activePosition: halfVisible // Always centered
+    };
+  };
 
-  const visibleEstablishments = Array.from(
-    { length: endIndex - startIndex },
-    (_, i) => startIndex + i
-  );
+  const { dots: visibleDots, activePosition } = getVisibleEstablishments();
+  const hasMoreBefore = currentEstablishmentIndex > 0;
+  const hasMoreAfter = currentEstablishmentIndex < totalEstablishments - 1;
 
   // Calculate visible story bars with active one fixed at position 0
   const maxVisibleBars = 5;
@@ -54,23 +72,32 @@ export function VilaTokNavigation({
   };
 
   const visibleBars = getVisibleStoryBars();
-  const hasMoreBefore = currentVideoIndex > 0;
-  const hasMoreAfter = currentVideoIndex + maxVisibleBars < totalVideos;
+  const hasMoreStoriesBefore = currentVideoIndex > 0;
+  const hasMoreStoriesAfter = currentVideoIndex + maxVisibleBars < totalVideos;
 
   return (
     <div className="absolute left-3 top-1/2 -translate-y-1/2 flex flex-col gap-2 z-20">
       {/* Show ellipsis if there are hidden dots above */}
-      {startIndex > 0 && (
+      {hasMoreBefore && visibleDots[0] !== 0 && (
         <span className="text-white/40 text-[10px] font-medium text-center">
           •••
         </span>
       )}
       
-      {visibleEstablishments.map((estIndex) => {
+      {visibleDots.map((estIndex, position) => {
+        // Skip placeholders
+        if (estIndex < 0) return null;
+        
         const isActive = estIndex === currentEstablishmentIndex;
         
         return (
-          <div key={`est-${estIndex}`} className="flex items-center gap-1.5">
+          <div 
+            key={`est-${estIndex}`} 
+            className="flex items-center gap-1.5"
+            style={{
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+            }}
+          >
             {/* Establishment dot */}
             <div
               className={cn(
@@ -85,11 +112,11 @@ export function VilaTokNavigation({
             {isActive && totalVideos > 1 && (
               <div className="flex items-center gap-1 overflow-hidden">
                 {/* Indicator for more stories before */}
-                {hasMoreBefore && (
+                {hasMoreStoriesBefore && (
                   <span className="text-white/30 text-[8px]">‹</span>
                 )}
                 
-                {visibleBars.map((videoIndex, displayIndex) => {
+                {visibleBars.map((videoIndex) => {
                   const isCurrentVideo = videoIndex === currentVideoIndex;
                   
                   return (
@@ -101,16 +128,12 @@ export function VilaTokNavigation({
                           ? "w-5 h-2 bg-white shadow-md"
                           : "w-2 h-1.5 bg-white/40"
                       )}
-                      style={{
-                        transform: `translateX(0)`,
-                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
-                      }}
                     />
                   );
                 })}
                 
                 {/* Indicator for more stories after */}
-                {hasMoreAfter && (
+                {hasMoreStoriesAfter && (
                   <span className="text-white/30 text-[8px]">›</span>
                 )}
               </div>
@@ -120,7 +143,7 @@ export function VilaTokNavigation({
       })}
       
       {/* Show ellipsis if there are hidden dots below */}
-      {endIndex < totalEstablishments && (
+      {hasMoreAfter && visibleDots[visibleDots.length - 1] !== totalEstablishments - 1 && (
         <span className="text-white/40 text-[10px] font-medium text-center">
           •••
         </span>
