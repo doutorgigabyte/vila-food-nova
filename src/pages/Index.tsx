@@ -30,7 +30,18 @@ const Index = () => {
   const [selectedMainCategory, setSelectedMainCategory] = useState<string | null>(null);
   const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [showStickySearch, setShowStickySearch] = useState(false);
   const { establishments, loading } = useEstablishments();
+
+  // Scroll detection for sticky search bar
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowStickySearch(window.scrollY > 200);
+    };
+    
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // Get theme based on selected category
   const theme = getCategoryTheme(selectedMainCategory);
@@ -74,11 +85,13 @@ const Index = () => {
         onSearchClick={handleSearchClick}
       />
 
-      <StickySearchBar
-        searchTerm={searchTerm}
-        onSearchChange={setSearchTerm}
-        onSearchClick={handleSearchClick}
-      />
+      {showStickySearch && (
+        <StickySearchBar
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          onSearchClick={handleSearchClick}
+        />
+      )}
 
       <main className="flex-1">
         {/* Subcategories carousel - shows when main category is selected */}
