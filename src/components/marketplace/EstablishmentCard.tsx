@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Establishment } from "@/hooks/useEstablishment";
 import { useFavorites } from "@/hooks/useFavorites";
+import { Price } from "@/components/ui/price";
 import { cn } from "@/lib/utils";
 
 interface EstablishmentCardProps {
@@ -267,7 +268,9 @@ const EstablishmentCard = ({
           
           <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
             {est.min_order_value && est.min_order_value > 0 && (
-              <span>Pedido mín: R$ {est.min_order_value.toFixed(2)}</span>
+              <span className="whitespace-nowrap">
+                Pedido mín: <Price value={est.min_order_value} size="xs" variant="muted" />
+              </span>
             )}
             <div className="flex gap-1 ml-auto">
               {est.accepts_delivery && (

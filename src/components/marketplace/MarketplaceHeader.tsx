@@ -10,8 +10,8 @@ import {
   Globe,
   ChevronDown,
   Store,
-  X
 } from "lucide-react";
+import NotificationCenter from "@/components/notifications/NotificationCenter";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -117,10 +117,7 @@ const MarketplaceHeader = ({ searchTerm, onSearchChange, onSearchClick }: Market
               />
             </div>
             
-            <Button variant="ghost" size="icon" className="relative">
-              <Bell className="w-5 h-5" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full" />
-            </Button>
+            <NotificationCenter />
             
             {/* Cart - Hidden on mobile (exists in bottom nav) */}
             <Link to="/checkout" className="hidden md:block">
