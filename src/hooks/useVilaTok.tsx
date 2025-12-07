@@ -18,11 +18,14 @@ interface EstablishmentVideo {
   is_active: boolean;
   sort_order: number;
   created_at: string;
+  music_url: string | null;
+  main_category_id: string | null;
   establishment?: {
     id: string;
     name: string;
     slug: string;
     logo_url: string | null;
+    segment_id: string | null;
   };
   product?: {
     id: string;
@@ -43,7 +46,12 @@ interface EstablishmentWithVideos {
   videos: EstablishmentVideo[];
 }
 
-export function useVilaTok() {
+interface UseVilaTokOptions {
+  mainCategorySlug?: string | null;
+}
+
+export function useVilaTok(options: UseVilaTokOptions = {}) {
+  const { mainCategorySlug } = options;
   const { user } = useAuth();
   const [establishments, setEstablishments] = useState<EstablishmentWithVideos[]>([]);
   const [currentEstablishmentIndex, setCurrentEstablishmentIndex] = useState(0);
@@ -62,20 +70,48 @@ export function useVilaTok() {
   const fetchVideos = useCallback(async () => {
     setIsLoading(true);
     try {
-      const { data: videos, error } = await supabase
+      let query = supabase
         .from('establishment_videos')
         .select(`
           *,
-          establishment:establishments(id, name, slug, logo_url),
+          establishment:establishments(id, name, slug, logo_url, segment_id),
           product:products(id, name, price, promotional_price, image_url)
         `)
         .eq('is_active', true)
         .order('created_at', { ascending: false });
 
+      const { data: videos, error } = await query;
+
       if (error) throw error;
 
+      let filteredVideos = videos || [];
+
+      // Filter by category if specified
+      if (mainCategorySlug) {
+        // Fetch segments for this category
+        const { data: mainCategory } = await supabase
+          .from('main_categories')
+          .select('id')
+          .eq('slug', mainCategorySlug)
+          .single();
+
+        if (mainCategory) {
+          const { data: segments } = await supabase
+            .from('segments')
+            .select('id')
+            .eq('parent_category_id', mainCategory.id);
+
+          const segmentIds = new Set(segments?.map(s => s.id) || []);
+          
+          filteredVideos = filteredVideos.filter(video => 
+            video.main_category_id === mainCategory.id ||
+            (video.establishment?.segment_id && segmentIds.has(video.establishment.segment_id))
+          );
+        }
+      }
+
       // Group videos by establishment
-      const grouped = (videos || []).reduce((acc, video) => {
+      const grouped = filteredVideos.reduce((acc, video) => {
         const estId = video.establishment_id;
         if (!acc[estId]) {
           acc[estId] = {
@@ -103,11 +139,17 @@ export function useVilaTok() {
     } finally {
       setIsLoading(false);
     }
-  }, [user?.id, sessionId]);
+  }, [user?.id, sessionId, mainCategorySlug]);
 
   useEffect(() => {
     fetchVideos();
   }, [fetchVideos]);
+
+  // Reset indices when category changes
+  useEffect(() => {
+    setCurrentEstablishmentIndex(0);
+    setCurrentVideoIndex(0);
+  }, [mainCategorySlug]);
 
   const currentEstablishment = establishments[currentEstablishmentIndex];
   const currentVideo = currentEstablishment?.videos[currentVideoIndex];

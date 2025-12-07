@@ -1,11 +1,12 @@
 import { useEffect, useCallback, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Flame } from 'lucide-react';
 import { useVilaTok } from '@/hooks/useVilaTok';
 import { VilaTokPlayer } from '@/components/vilatok/VilaTokPlayer';
 import { VilaTokSidebar } from '@/components/vilatok/VilaTokSidebar';
 import { VilaTokOverlay } from '@/components/vilatok/VilaTokOverlay';
 import { VilaTokNavigation } from '@/components/vilatok/VilaTokNavigation';
+import CategoryPills from '@/components/marketplace/CategoryPills';
 import { useCart } from '@/hooks/useCart';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -13,6 +14,9 @@ import VideoComments from '@/components/stories/VideoComments';
 
 export default function VilaTok() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const categorySlug = searchParams.get('category');
+  
   const { addToCart } = useCart();
   const {
     currentEstablishment,
@@ -30,10 +34,18 @@ export default function VilaTok() {
     incrementShares,
     totalEstablishments,
     totalVideosInCurrent,
-  } = useVilaTok();
+  } = useVilaTok({ mainCategorySlug: categorySlug });
 
   const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null);
   const [showComments, setShowComments] = useState(false);
+
+  const handleCategoryChange = (slug: string | null) => {
+    if (slug) {
+      setSearchParams({ category: slug });
+    } else {
+      setSearchParams({});
+    }
+  };
 
   // Handle keyboard navigation
   useEffect(() => {
@@ -168,18 +180,48 @@ export default function VilaTok() {
 
   if (!currentVideo || !currentEstablishment) {
     return (
-      <div className="fixed inset-0 bg-black flex flex-col items-center justify-center p-8">
-        <Flame className="w-20 h-20 text-primary mb-6" />
-        <h2 className="text-white text-2xl font-bold mb-2">VilaTok</h2>
-        <p className="text-white/70 text-center mb-8">
-          Nenhum vídeo disponível ainda. Em breve, os estabelecimentos vão compartilhar seus melhores momentos aqui!
-        </p>
-        <button
-          onClick={() => navigate('/')}
-          className="px-6 py-3 bg-primary text-primary-foreground rounded-full font-medium"
-        >
-          Voltar ao Marketplace
-        </button>
+      <div className="fixed inset-0 bg-black flex flex-col">
+        {/* Header with category pills */}
+        <div className="absolute top-0 left-0 right-0 z-30 bg-black/80 backdrop-blur-sm">
+          <div className="flex items-center justify-between p-4">
+            <button
+              onClick={() => navigate(-1)}
+              className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center"
+            >
+              <ArrowLeft className="w-5 h-5 text-white" />
+            </button>
+
+            <div className="flex items-center gap-2">
+              <Flame className="w-6 h-6 text-primary" />
+              <span className="text-white font-bold text-lg">VilaTok</span>
+            </div>
+
+            <div className="w-10" />
+          </div>
+          <div className="bg-black/60">
+            <CategoryPills 
+              selectedCategory={categorySlug || undefined} 
+              onCategoryChange={handleCategoryChange}
+            />
+          </div>
+        </div>
+
+        <div className="flex-1 flex flex-col items-center justify-center p-8 pt-32">
+          <Flame className="w-20 h-20 text-primary mb-6" />
+          <h2 className="text-white text-2xl font-bold mb-2">VilaTok</h2>
+          <p className="text-white/70 text-center mb-8">
+            {categorySlug 
+              ? `Nenhum vídeo disponível nesta categoria ainda.`
+              : `Nenhum vídeo disponível ainda. Em breve, os estabelecimentos vão compartilhar seus melhores momentos aqui!`
+            }
+          </p>
+          <button
+            onClick={() => navigate('/')}
+            className="px-6 py-3 bg-primary text-primary-foreground rounded-full font-medium"
+          >
+            Voltar ao Marketplace
+          </button>
+        </div>
       </div>
     );
   }
@@ -190,27 +232,38 @@ export default function VilaTok() {
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
-      {/* Header */}
-      <div className="absolute top-0 left-0 right-0 z-30 flex items-center justify-between p-4">
-        <button
-          onClick={() => navigate(-1)}
-          className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center"
-        >
-          <ArrowLeft className="w-5 h-5 text-white" />
-        </button>
+      {/* Header with category pills */}
+      <div className="absolute top-0 left-0 right-0 z-30">
+        <div className="flex items-center justify-between p-4 bg-gradient-to-b from-black/60 to-transparent">
+          <button
+            onClick={() => navigate(-1)}
+            className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center"
+          >
+            <ArrowLeft className="w-5 h-5 text-white" />
+          </button>
 
-        <div className="flex items-center gap-2">
-          <Flame className="w-6 h-6 text-primary" />
-          <span className="text-white font-bold text-lg">VilaTok</span>
+          <div className="flex items-center gap-2">
+            <Flame className="w-6 h-6 text-primary" />
+            <span className="text-white font-bold text-lg">VilaTok</span>
+          </div>
+
+          <div className="w-10" />
         </div>
-
-        <div className="w-10" /> {/* Spacer */}
+        
+        {/* Category Pills */}
+        <div className="bg-black/40 backdrop-blur-sm">
+          <CategoryPills 
+            selectedCategory={categorySlug || undefined} 
+            onCategoryChange={handleCategoryChange}
+          />
+        </div>
       </div>
 
       {/* Video Player */}
       <VilaTokPlayer
         videoUrl={currentVideo.video_url}
         thumbnailUrl={currentVideo.thumbnail_url}
+        musicUrl={currentVideo.music_url}
         isActive={true}
         onViewCountIncrement={() => incrementViews(currentVideo.id)}
       />

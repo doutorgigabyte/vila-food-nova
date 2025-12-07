@@ -1114,6 +1114,8 @@ export type Database = {
           id: string
           is_active: boolean | null
           likes_count: number | null
+          main_category_id: string | null
+          music_url: string | null
           product_id: string | null
           shares_count: number | null
           sort_order: number | null
@@ -1132,6 +1134,8 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           likes_count?: number | null
+          main_category_id?: string | null
+          music_url?: string | null
           product_id?: string | null
           shares_count?: number | null
           sort_order?: number | null
@@ -1150,6 +1154,8 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           likes_count?: number | null
+          main_category_id?: string | null
+          music_url?: string | null
           product_id?: string | null
           shares_count?: number | null
           sort_order?: number | null
@@ -1165,6 +1171,13 @@ export type Database = {
             columns: ["establishment_id"]
             isOneToOne: false
             referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "establishment_videos_main_category_id_fkey"
+            columns: ["main_category_id"]
+            isOneToOne: false
+            referencedRelation: "main_categories"
             referencedColumns: ["id"]
           },
           {
