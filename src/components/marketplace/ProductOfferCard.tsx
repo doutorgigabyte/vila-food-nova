@@ -84,18 +84,23 @@ const ProductOfferCard = ({ product, variant = "default", className }: ProductOf
     toast.success(`${product.name} adicionado ao carrinho`);
   };
 
+  // When used in a grid, cards should fill the grid cell (no fixed width)
+  const isGridContext = !className?.includes('scroll-card') && variant === 'large';
+
   return (
     <Link 
       to={`/produto/${product.id}`}
-      className={cn("block snap-center scroll-card", className)}
+      className={cn("block", !isGridContext && "snap-center scroll-card", className)}
     >
       <Card className={cn(
         "overflow-hidden hover:shadow-lg transition-all relative rounded-2xl border-0 shadow-soft card-hover",
-        variant === "large" ? "w-52 md:w-64" : variant === "compact" ? "w-36 md:w-44" : "w-40 md:w-52"
+        isGridContext 
+          ? "w-full" 
+          : variant === "large" ? "w-52 md:w-64" : variant === "compact" ? "w-36 md:w-44" : "w-40 md:w-52"
       )}>
         <div className={cn(
           "relative overflow-hidden bg-muted",
-          variant === "large" ? "h-40 md:h-52" : variant === "compact" ? "h-28" : "h-32 md:h-36"
+          isGridContext ? "aspect-square" : variant === "large" ? "h-40 md:h-52" : variant === "compact" ? "h-28" : "h-32 md:h-36"
         )}>
           {/* Skeleton while loading */}
           {!imageLoaded && !imageError && product.image_url && (
