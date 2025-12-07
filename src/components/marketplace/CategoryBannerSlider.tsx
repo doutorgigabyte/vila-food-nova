@@ -261,47 +261,54 @@ const CategoryBannerSlider = ({ mainCategory }: CategoryBannerSliderProps) => {
           <div
             key={banner.id}
             className={cn(
-              "relative flex-shrink-0 w-[90vw] max-w-2xl h-44 md:h-52 snap-center rounded-3xl overflow-hidden transition-all duration-300 ease-out",
-              activeIndex === index ? 'scale-100 opacity-100' : 'scale-[0.98] opacity-80'
+              "relative flex-shrink-0 w-[90vw] max-w-2xl h-48 md:h-56 snap-center rounded-2xl overflow-hidden transition-all duration-300 ease-out shadow-xl",
+              activeIndex === index ? 'scale-100 opacity-100' : 'scale-[0.98] opacity-90'
             )}
           >
-            {/* Background image */}
+            {/* Background image - full prominence */}
             <img
               src={banner.bgImage}
               alt={banner.title}
-              className="absolute inset-0 w-full h-full object-cover"
+              className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
               draggable={false}
             />
             
-            {/* Gradient overlay */}
-            <div className={cn(
-              "absolute inset-0 bg-gradient-to-r",
-              banner.overlayColor
-            )} />
+            {/* Subtle gradient overlay - bottom only for text readability */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
 
-            {/* Content */}
-            <div className="absolute inset-0 flex items-center p-5 md:p-8 z-10">
-              <div className="flex-1 max-w-[60%]">
-                <h3 className="text-xl md:text-3xl font-bold text-white drop-shadow-lg leading-tight">
-                  {banner.title}
-                </h3>
-                <p className="text-white/90 text-sm md:text-base mt-2 drop-shadow">
-                  {banner.subtitle}
-                </p>
-                <Button 
-                  size="sm" 
-                  className="mt-4 bg-card text-foreground hover:bg-card/90 shadow-lg active:scale-95 transition-transform font-semibold"
-                >
-                  {banner.cta} →
-                </Button>
-              </div>
-            </div>
-            
+            {/* Discount badge - top right, subtle glass effect */}
             {banner.discount && (
-              <div className="absolute top-4 right-4 bg-card text-destructive font-bold text-lg px-4 py-2 rounded-full shadow-xl">
-                -{banner.discount} OFF
+              <div className="absolute top-3 right-3 bg-destructive text-destructive-foreground font-bold text-sm px-3 py-1.5 rounded-full shadow-lg backdrop-blur-sm">
+                {banner.discount} OFF
               </div>
             )}
+
+            {/* Content - positioned at bottom */}
+            <div className="absolute inset-x-0 bottom-0 p-4 md:p-6 z-10">
+              <div className="flex items-end justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-lg md:text-2xl font-bold text-white drop-shadow-md leading-tight line-clamp-2">
+                    {banner.title}
+                  </h3>
+                  <p className="text-white/80 text-xs md:text-sm mt-1 drop-shadow line-clamp-1">
+                    {banner.subtitle}
+                  </p>
+                </div>
+                
+                {/* Compact action buttons */}
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <Button 
+                    size="sm" 
+                    className="bg-destructive hover:bg-destructive/90 text-destructive-foreground shadow-lg active:scale-95 transition-all text-xs md:text-sm font-semibold px-3 md:px-4 h-8 md:h-9"
+                  >
+                    {banner.cta} <span className="ml-1">›</span>
+                  </Button>
+                  <button className="text-white/70 hover:text-white text-xs md:text-sm font-medium transition-colors whitespace-nowrap hidden md:block">
+                    Saiba mais
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         ))}
         <div className="flex-shrink-0 w-4" />
