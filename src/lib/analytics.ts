@@ -31,8 +31,19 @@ interface OrderEventData {
 }
 
 // Initialize Facebook Pixel
+// Security: Validate pixel IDs to prevent script injection
+const PIXEL_ID_REGEX = /^[a-zA-Z0-9_-]+$/;
+
+function validatePixelId(id: string): boolean {
+  return id && PIXEL_ID_REGEX.test(id) && id.length <= 50;
+}
+
 export const initFacebookPixel = (pixelId: string) => {
-  if (!pixelId || typeof window === 'undefined') return;
+  if (!pixelId || !validatePixelId(pixelId)) {
+    console.warn('[Analytics] Invalid Facebook Pixel ID format rejected');
+    return;
+  }
+  if (typeof window === 'undefined') return;
 
   const script = document.createElement('script');
   script.innerHTML = `
@@ -52,7 +63,11 @@ export const initFacebookPixel = (pixelId: string) => {
 
 // Initialize Google Analytics (GA4)
 export const initGoogleAnalytics = (measurementId: string) => {
-  if (!measurementId || typeof window === 'undefined') return;
+  if (!measurementId || !validatePixelId(measurementId)) {
+    console.warn('[Analytics] Invalid Google Analytics ID format rejected');
+    return;
+  }
+  if (typeof window === 'undefined') return;
 
   const script = document.createElement('script');
   script.async = true;
@@ -70,7 +85,11 @@ export const initGoogleAnalytics = (measurementId: string) => {
 
 // Initialize TikTok Pixel
 export const initTiktokPixel = (pixelId: string) => {
-  if (!pixelId || typeof window === 'undefined') return;
+  if (!pixelId || !validatePixelId(pixelId)) {
+    console.warn('[Analytics] Invalid TikTok Pixel ID format rejected');
+    return;
+  }
+  if (typeof window === 'undefined') return;
 
   const script = document.createElement('script');
   script.innerHTML = `

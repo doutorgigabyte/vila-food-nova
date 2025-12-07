@@ -15,6 +15,73 @@ interface Suggestion {
   target_name?: string;
 }
 
+// ==================== Authentication Helper ====================
+async function authenticateRequest(req: Request): Promise<{ userId: string } | null> {
+  const authHeader = req.headers.get('authorization');
+  
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return null;
+  }
+  
+  const token = authHeader.replace('Bearer ', '');
+  
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_ANON_KEY")!
+  );
+  
+  const { data: { user }, error } = await supabase.auth.getUser(token);
+  
+  if (error || !user) {
+    console.log("[analyze-establishment] Auth failed:", error?.message);
+    return null;
+  }
+  
+  return { userId: user.id };
+}
+
+// ==================== Ownership Verification ====================
+async function verifyEstablishmentOwnership(userId: string, establishmentId: string): Promise<boolean> {
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+  );
+  
+  // Check if user owns the establishment
+  const { data: establishment } = await supabase
+    .from('establishments')
+    .select('owner_id')
+    .eq('id', establishmentId)
+    .single();
+    
+  if (establishment?.owner_id === userId) {
+    return true;
+  }
+  
+  // Check if user has access via establishment_users
+  const { data: userAccess } = await supabase
+    .from('establishment_users')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('establishment_id', establishmentId)
+    .eq('is_active', true)
+    .single();
+    
+  if (userAccess) {
+    return true;
+  }
+  
+  // Check if user is super_admin
+  const { data: roleData } = await supabase
+    .from('user_roles')
+    .select('role')
+    .eq('user_id', userId)
+    .eq('role', 'super_admin')
+    .single();
+    
+  return !!roleData;
+}
+
 // ==================== Gemini Text API Call ====================
 async function callGeminiForAnalysis(establishmentName: string, description: string | null, productNames: string[]): Promise<string[]> {
   const GOOGLE_API_KEY = Deno.env.get("GOOGLE_API_KEY");
@@ -68,6 +135,17 @@ serve(async (req) => {
   }
 
   try {
+    // ==================== Authentication Required ====================
+    const auth = await authenticateRequest(req);
+    
+    if (!auth) {
+      console.log("[analyze-establishment] Unauthorized request rejected");
+      return new Response(
+        JSON.stringify({ error: "Unauthorized - authentication required" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const { establishmentId } = await req.json();
     
     if (!establishmentId) {
@@ -76,6 +154,19 @@ serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    // ==================== Ownership Verification ====================
+    const hasAccess = await verifyEstablishmentOwnership(auth.userId, establishmentId);
+    
+    if (!hasAccess) {
+      console.log(`[analyze-establishment] Access denied for user ${auth.userId} to establishment ${establishmentId}`);
+      return new Response(
+        JSON.stringify({ error: "Access denied - you don't have permission for this establishment" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    console.log(`[analyze-establishment] Authenticated user ${auth.userId} analyzing establishment ${establishmentId}`);
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
