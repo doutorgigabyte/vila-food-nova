@@ -9,25 +9,18 @@ const Footer = () => {
     product: [
       { label: "Recursos", href: "/conheca#features" },
       { label: "Planos", href: "/conheca#pricing" },
-      { label: "Integrações", href: "/conheca" },
-      { label: "API", href: "/conheca" },
     ],
     company: [
       { label: "Sobre", href: "/conheca" },
-      { label: "Blog", href: "#" },
-      { label: "Carreiras", href: "#" },
-      { label: "Parceiros", href: "#" },
+      { label: "Seja Parceiro", href: "/cadastro-estabelecimento" },
     ],
     support: [
-      { label: "Central de Ajuda", href: "#" },
-      { label: "Documentação", href: "#" },
-      { label: "Status", href: "#" },
       { label: "Contato", href: "/conheca#contact" },
+      { label: "WhatsApp", href: "https://wa.me/5581983655465", external: true },
     ],
     legal: [
-      { label: "Termos de Uso", href: "#" },
-      { label: "Privacidade", href: "#" },
-      { label: "Cookies", href: "#" },
+      { label: "Termos de Uso", href: "/termos" },
+      { label: "Privacidade", href: "/privacidade" },
     ],
   };
 
@@ -93,9 +86,20 @@ const Footer = () => {
             <ul className="space-y-3">
               {links.support.map((link) => (
                 <li key={link.label}>
-                  <Link to={link.href} className="text-background/70 hover:text-background transition-colors">
-                    {link.label}
-                  </Link>
+                  {'external' in link && link.external ? (
+                    <a 
+                      href={link.href} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-background/70 hover:text-background transition-colors"
+                    >
+                      {link.label}
+                    </a>
+                  ) : (
+                    <Link to={link.href} className="text-background/70 hover:text-background transition-colors">
+                      {link.label}
+                    </Link>
+                  )}
                 </li>
               ))}
             </ul>

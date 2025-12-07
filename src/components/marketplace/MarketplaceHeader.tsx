@@ -4,13 +4,13 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { 
   Search, 
-  Bell,
   ShoppingCart,
   Menu,
   Globe,
   ChevronDown,
   Store,
 } from "lucide-react";
+import VilaTokStoriesRow from "./VilaTokStoriesRow";
 import NotificationCenter from "@/components/notifications/NotificationCenter";
 import {
   DropdownMenu,
@@ -202,6 +202,11 @@ const MarketplaceHeader = ({ searchTerm, onSearchChange, onSearchClick }: Market
               readOnly={!!onSearchClick}
             />
           </div>
+        </div>
+
+        {/* Stories Row - Category/Establishment circles below search */}
+        <div className="mt-3 -mx-4">
+          <VilaTokStoriesRow />
         </div>
       </div>
     </header>
