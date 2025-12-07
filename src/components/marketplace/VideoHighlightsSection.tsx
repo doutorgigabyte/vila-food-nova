@@ -248,9 +248,10 @@ const categoryTitles: Record<string, { title: string; subtitle: string }> = {
 interface VideoHighlightsSectionProps {
   highlights?: VideoHighlight[];
   mainCategory?: string | null;
+  subcategory?: string | null;
 }
 
-const VideoHighlightsSection = ({ highlights, mainCategory }: VideoHighlightsSectionProps) => {
+const VideoHighlightsSection = ({ highlights, mainCategory, subcategory }: VideoHighlightsSectionProps) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(true);

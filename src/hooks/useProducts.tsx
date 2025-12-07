@@ -165,8 +165,12 @@ export const useFeaturedProducts = () => {
   return { products, loading };
 };
 
-// Hook para buscar produtos por categoria principal com distribuição justa
-export const useProductsByMainCategory = (mainCategory: string | null, limit?: number) => {
+// Hook para buscar produtos por categoria principal e/ou subcategoria com distribuição justa
+export const useProductsByMainCategory = (
+  mainCategory: string | null, 
+  limit?: number,
+  subcategoryId?: string | null
+) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const seed = useMemo(() => getRandomizationSeed(), []);
@@ -178,51 +182,63 @@ export const useProductsByMainCategory = (mainCategory: string | null, limit?: n
         // Fetch more products to allow fair distribution
         const fetchLimit = limit ? limit * 5 : 300;
 
-        // First, get all segments to identify which belong to the category
-        const { data: segments } = await supabase
-          .from("segments")
-          .select("id, name");
+        let establishmentIds: string[] = [];
 
-        // Map segment IDs that belong to the main category
-        const categorySegmentIds = (segments || [])
-          .filter(segment => {
-            const segmentKey = segment.name.toLowerCase()
-              .normalize("NFD")
-              .replace(/[\u0300-\u036f]/g, "")
-              .replace(/\s+/g, "");
-            const mappedCategory = segmentToCategoryMap[segmentKey];
-            return mainCategory ? mappedCategory === mainCategory : true;
-          })
-          .map(s => s.id);
+        // If subcategory is provided, filter directly by segment_id
+        if (subcategoryId) {
+          const { data: establishments } = await supabase
+            .from("establishments")
+            .select("id")
+            .eq("status", "active")
+            .eq("segment_id", subcategoryId);
 
-        // If category selected but no segments found, return empty
-        if (mainCategory && categorySegmentIds.length === 0) {
-          setProducts([]);
-          setLoading(false);
-          return;
+          establishmentIds = (establishments || []).map(e => e.id);
+
+          // No establishments in this subcategory
+          if (establishmentIds.length === 0) {
+            setProducts([]);
+            setLoading(false);
+            return;
+          }
+        } else if (mainCategory) {
+          // Filter by main category using segment mapping
+          const { data: segments } = await supabase
+            .from("segments")
+            .select("id, name");
+
+          const categorySegmentIds = (segments || [])
+            .filter(segment => {
+              const segmentKey = segment.name.toLowerCase()
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "")
+                .replace(/\s+/g, "");
+              const mappedCategory = segmentToCategoryMap[segmentKey];
+              return mappedCategory === mainCategory;
+            })
+            .map(s => s.id);
+
+          if (categorySegmentIds.length === 0) {
+            setProducts([]);
+            setLoading(false);
+            return;
+          }
+
+          const { data: establishments } = await supabase
+            .from("establishments")
+            .select("id")
+            .eq("status", "active")
+            .in("segment_id", categorySegmentIds);
+
+          establishmentIds = (establishments || []).map(e => e.id);
+
+          if (establishmentIds.length === 0) {
+            setProducts([]);
+            setLoading(false);
+            return;
+          }
         }
 
-        // Get establishments with these segments
-        let estQuery = supabase
-          .from("establishments")
-          .select("id, segment_id")
-          .eq("status", "active");
-
-        if (mainCategory && categorySegmentIds.length > 0) {
-          estQuery = estQuery.in("segment_id", categorySegmentIds);
-        }
-
-        const { data: establishments } = await estQuery;
-        const establishmentIds = (establishments || []).map(e => e.id);
-
-        // If category selected but no establishments found, return empty
-        if (mainCategory && establishmentIds.length === 0) {
-          setProducts([]);
-          setLoading(false);
-          return;
-        }
-
-        // Fetch products from these establishments
+        // Fetch products
         let query = supabase
           .from("products")
           .select(`
@@ -245,8 +261,8 @@ export const useProductsByMainCategory = (mainCategory: string | null, limit?: n
           .eq("is_active", true)
           .limit(fetchLimit);
 
-        // Only filter by establishment if we have a main category selected
-        if (mainCategory && establishmentIds.length > 0) {
+        // Only filter by establishment if we have category or subcategory
+        if (establishmentIds.length > 0) {
           query = query.in("establishment_id", establishmentIds);
         }
 
@@ -274,7 +290,7 @@ export const useProductsByMainCategory = (mainCategory: string | null, limit?: n
     };
 
     fetchProducts();
-  }, [mainCategory, limit, seed]);
+  }, [mainCategory, subcategoryId, limit, seed]);
 
   return { products, loading };
 };
