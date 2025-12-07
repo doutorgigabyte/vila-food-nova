@@ -9,6 +9,7 @@ interface VilaTokPlayerProps {
   musicUrl?: string | null;
   isActive: boolean;
   onViewCountIncrement?: () => void;
+  onVideoEnd?: () => void;
 }
 
 export function VilaTokPlayer({
@@ -17,6 +18,7 @@ export function VilaTokPlayer({
   musicUrl,
   isActive,
   onViewCountIncrement,
+  onVideoEnd,
 }: VilaTokPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -128,10 +130,10 @@ export function VilaTokPlayer({
         src={videoUrl}
         poster={thumbnailUrl ? getImageUrl(thumbnailUrl) : undefined}
         className="w-full h-full object-cover"
-        loop
         muted={isMuted}
         playsInline
         preload="auto"
+        onEnded={onVideoEnd}
       />
 
       {/* Background Music */}
