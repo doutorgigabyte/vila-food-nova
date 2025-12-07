@@ -87,23 +87,15 @@ const ProductOfferCard = ({ product, variant = "default", className }: ProductOf
   // When used in a grid, cards should fill the grid cell (no fixed width)
   const isGridContext = !className?.includes('scroll-card') && variant === 'large';
 
-  // Hero variant for category page - large visual cards
+  // Hero variant for category page - visual cards in carousel
   if (variant === "large") {
     return (
       <Link 
         to={`/produto/${product.id}`}
-        className={cn("block group", !isGridContext && "snap-center scroll-card", className)}
+        className={cn("block group snap-center", className)}
       >
-        <Card className={cn(
-          "overflow-hidden hover:shadow-elevated transition-all relative border-0 shadow-soft",
-          isGridContext 
-            ? "w-full rounded-2xl" 
-            : "w-72 md:w-80 lg:w-96 rounded-3xl"
-        )}>
-          <div className={cn(
-            "relative overflow-hidden bg-muted",
-            isGridContext ? "aspect-[4/3]" : "aspect-[4/3] md:aspect-[16/10]"
-          )}>
+        <Card className="overflow-hidden hover:shadow-elevated transition-all relative border-0 shadow-soft w-56 md:w-64 rounded-2xl">
+          <div className="relative overflow-hidden bg-muted aspect-[3/4]">
             {/* Skeleton while loading */}
             {!imageLoaded && !imageError && product.image_url && (
               <div className="absolute inset-0 skeleton-shimmer" />
@@ -125,30 +117,30 @@ const ProductOfferCard = ({ product, variant = "default", className }: ProductOf
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">
-                <span className="text-5xl md:text-6xl opacity-30">🍽️</span>
+                <span className="text-4xl opacity-30">🍽️</span>
               </div>
             )}
             
             {/* Not available overlay */}
             {!isAvailable && (
               <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center">
-                <Clock className="w-8 h-8 md:w-10 md:h-10 text-muted-foreground mb-2" />
-                <span className="text-sm md:text-base font-medium text-muted-foreground">Indisponível</span>
+                <Clock className="w-6 h-6 text-muted-foreground mb-1" />
+                <span className="text-xs font-medium text-muted-foreground">Indisponível</span>
               </div>
             )}
             
-            {/* Discount badge - prominent */}
+            {/* Discount badge */}
             {discount && isAvailable && (
-              <Badge className="absolute top-3 left-3 bg-destructive text-destructive-foreground font-bold px-3 py-1 text-sm shadow-lg rounded-lg">
+              <Badge className="absolute top-2.5 left-2.5 bg-destructive text-destructive-foreground font-bold px-2.5 py-1 text-xs shadow-lg rounded-lg">
                 {discount}% OFF
               </Badge>
             )}
             
-            {/* Favorite button - larger */}
+            {/* Favorite button */}
             <button 
               type="button"
               className={cn(
-                "absolute top-3 right-3 w-10 h-10 flex items-center justify-center bg-card/90 backdrop-blur-sm hover:bg-card rounded-full shadow-lg transition-all z-10",
+                "absolute top-2.5 right-2.5 w-8 h-8 flex items-center justify-center bg-card/90 backdrop-blur-sm hover:bg-card rounded-full shadow-md transition-all z-10",
                 isFavorite ? "text-red-500 hover:text-red-600" : "text-muted-foreground hover:text-destructive"
               )}
               onClick={handleFavoriteClick}
@@ -158,42 +150,27 @@ const ProductOfferCard = ({ product, variant = "default", className }: ProductOf
                 toggleFavoriteProduct(product.id);
               }}
             >
-              <Heart className={cn("w-5 h-5", isFavorite && "fill-current")} />
+              <Heart className={cn("w-4 h-4", isFavorite && "fill-current")} />
             </button>
             
-            {/* Gradient overlay for text readability */}
-            <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
+            {/* Gradient overlay for text */}
+            <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
             
-            {/* Content overlay on image */}
-            <div className="absolute inset-x-0 bottom-0 p-4 text-white">
-              <p className="text-xs text-white/80 truncate mb-0.5">
+            {/* Content overlay */}
+            <div className="absolute inset-x-0 bottom-0 p-3 text-white">
+              <p className="text-[10px] text-white/70 truncate">
                 {product.establishment?.name || 'Estabelecimento'}
               </p>
-              <h3 className="font-bold text-base md:text-lg truncate leading-tight drop-shadow-md">
+              <h3 className="font-bold text-sm truncate leading-tight drop-shadow-sm">
                 {product.name}
               </h3>
               <div className="mt-1 flex items-center justify-between">
                 <PriceWithDiscount
                   price={product.price}
                   promotionalPrice={product.promotional_price}
-                  size="sm"
+                  size="xs"
                   className="text-white"
                 />
-                {/* Add button */}
-                {isAvailable && (
-                  <button 
-                    type="button"
-                    className="w-10 h-10 flex items-center justify-center rounded-full shadow-lg bg-primary hover:bg-primary/90 text-primary-foreground transition-colors z-10"
-                    onClick={handleAddToCart}
-                    onTouchEnd={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleAddToCart(e as any);
-                    }}
-                  >
-                    <Plus className="w-5 h-5" />
-                  </button>
-                )}
               </div>
             </div>
           </div>
