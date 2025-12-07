@@ -14,13 +14,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import { DeliveryConfigTab } from "@/components/dashboard/DeliveryConfigTab";
+import { PaymentGatewaySetup } from "@/components/payment/PaymentGatewaySetup";
 import { 
   Menu, 
   Store, 
   Clock, 
   CreditCard, 
   Truck, 
-  Link2, 
   Bell, 
   Settings,
   Save,
@@ -485,91 +485,11 @@ const EstablishmentSettings = () => {
 
             {/* Payments Tab */}
             <TabsContent value="payments">
-              <div className="grid gap-6 md:grid-cols-2">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>PIX</CardTitle>
-                    <CardDescription>Configure sua chave PIX para recebimentos</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="pix_key">Chave PIX</Label>
-                      <Input
-                        id="pix_key"
-                        value={formData.pix_key}
-                        onChange={(e) => setFormData({ ...formData, pix_key: e.target.value })}
-                        placeholder="CPF, CNPJ, E-mail ou Telefone"
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Mercado Pago</CardTitle>
-                    <CardDescription>Configure sua integração com Mercado Pago</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="mp_public_key">Public Key</Label>
-                      <Input
-                        id="mp_public_key"
-                        value={formData.mp_public_key}
-                        onChange={(e) => setFormData({ ...formData, mp_public_key: e.target.value })}
-                        placeholder="TEST-xxx ou APP_USR-xxx"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="mercado_pago_token">Access Token</Label>
-                      <Input
-                        id="mercado_pago_token"
-                        type="password"
-                        value={formData.mercado_pago_token}
-                        onChange={(e) => setFormData({ ...formData, mercado_pago_token: e.target.value })}
-                        placeholder="TEST-xxx ou APP_USR-xxx"
-                      />
-                    </div>
-                    <Button variant="outline" asChild className="w-full">
-                      <a href={`/painel/${slug}/integracoes`}>
-                        <Link2 className="w-4 h-4 mr-2" />
-                        Conectar via OAuth
-                      </a>
-                    </Button>
-                  </CardContent>
-                </Card>
-
-                <Card className="md:col-span-2">
-                  <CardHeader>
-                    <CardTitle>Métodos de Pagamento</CardTitle>
-                    <CardDescription>Escolha quais métodos de pagamento aceitar</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid gap-4 md:grid-cols-3">
-                      <div className="flex items-center justify-between p-4 border rounded-lg">
-                        <div className="flex items-center gap-3">
-                          <CreditCard className="w-5 h-5 text-muted-foreground" />
-                          <span>Cartão de Crédito</span>
-                        </div>
-                        <Switch defaultChecked />
-                      </div>
-                      <div className="flex items-center justify-between p-4 border rounded-lg">
-                        <div className="flex items-center gap-3">
-                          <CreditCard className="w-5 h-5 text-muted-foreground" />
-                          <span>Cartão de Débito</span>
-                        </div>
-                        <Switch defaultChecked />
-                      </div>
-                      <div className="flex items-center justify-between p-4 border rounded-lg">
-                        <div className="flex items-center gap-3">
-                          <CreditCard className="w-5 h-5 text-muted-foreground" />
-                          <span>PIX</span>
-                        </div>
-                        <Switch defaultChecked />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
+              <PaymentGatewaySetup 
+                context="establishment" 
+                entityId={establishment?.id || ''} 
+                onConfigured={fetchEstablishment}
+              />
             </TabsContent>
 
             {/* Delivery Tab */}

@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
+import { PaymentGatewaySetup } from "@/components/payment/PaymentGatewaySetup";
 import { 
   Utensils, 
   Bell, 
@@ -21,7 +22,6 @@ import {
   LogOut,
   User,
   Key,
-  Wallet,
   BellRing,
   Save
 } from "lucide-react";
@@ -289,33 +289,10 @@ const AffiliateSettings = () => {
               </Card>
 
               {/* Payment Settings */}
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center gap-2">
-                    <Wallet className="w-5 h-5 text-primary" />
-                    <CardTitle>Dados de Pagamento</CardTitle>
-                  </div>
-                  <CardDescription>Configure sua chave PIX para receber comissões</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="pix">Chave PIX</Label>
-                    <Input
-                      id="pix"
-                      value={pixKey}
-                      onChange={(e) => setPixKey(e.target.value)}
-                      placeholder="CPF, e-mail, telefone ou chave aleatória"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Todos os pagamentos serão enviados para esta chave PIX
-                    </p>
-                  </div>
-                  <Button variant="outline" className="gap-2">
-                    <Save className="w-4 h-4" />
-                    Salvar Chave PIX
-                  </Button>
-                </CardContent>
-              </Card>
+              <PaymentGatewaySetup 
+                context="affiliate" 
+                entityId={affiliate?.id || ''} 
+              />
 
               {/* Notification Settings */}
               <Card>
