@@ -126,6 +126,20 @@ const phases: ProgressPhase[] = [
       { name: 'Preview de conversa em tempo real', status: 'pending', priority: 'low' },
       { name: 'Bloqueio de features por plano', status: 'completed', priority: 'high' },
     ]
+  },
+  {
+    id: 'phase-10',
+    name: 'Fase 10: WhatsApp - Testes & Monitoramento',
+    description: 'Sistema de monitoramento e health check',
+    items: [
+      { name: 'WhatsAppHealthCheck component', status: 'completed', priority: 'high' },
+      { name: 'WhatsAppRealTimeStats component', status: 'completed', priority: 'high' },
+      { name: 'Realtime subscription para estatísticas', status: 'completed', priority: 'medium' },
+      { name: 'Verificação de Evolution API', status: 'completed', priority: 'high' },
+      { name: 'Verificação de Edge Functions', status: 'completed', priority: 'high' },
+      { name: 'Aba de monitoramento no dashboard', status: 'completed', priority: 'medium' },
+      { name: 'Testes end-to-end documentados', status: 'pending', priority: 'high' },
+    ]
   }
 ];
 

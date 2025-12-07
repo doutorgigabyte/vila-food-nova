@@ -17,10 +17,12 @@ import {
   ArrowLeft, Loader2, MessageSquare, Bot, Smartphone, Wifi, WifiOff, 
   RefreshCw, QrCode, Settings, Link2, Copy, ExternalLink, Zap,
   CreditCard, MapPin, Volume2, Activity, MessageCircle, Check, Plus,
-  Trash2, ChevronRight, Lock, Sparkles, Edit, Send
+  Trash2, ChevronRight, Lock, Sparkles, Edit, Send, HeartPulse
 } from "lucide-react";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { ConversationHistory } from "@/components/whatsapp/ConversationHistory";
+import { WhatsAppHealthCheck } from "@/components/whatsapp/WhatsAppHealthCheck";
+import { WhatsAppRealTimeStats } from "@/components/whatsapp/WhatsAppRealTimeStats";
 
 interface WhatsAppInstance {
   id: string;
@@ -491,7 +493,7 @@ Seja sempre educado e prestativo. Se não souber responder algo, peça para o cl
           </div>
         ) : (
           <Tabs defaultValue="connection" className="w-full">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="connection" className="gap-2">
                 <Smartphone className="w-4 h-4" />
                 <span className="hidden sm:inline">Conexão</span>
@@ -512,6 +514,10 @@ Seja sempre educado e prestativo. Se não souber responder algo, peça para o cl
               <TabsTrigger value="history" className="gap-2">
                 <MessageCircle className="w-4 h-4" />
                 <span className="hidden sm:inline">Histórico</span>
+              </TabsTrigger>
+              <TabsTrigger value="monitoring" className="gap-2">
+                <HeartPulse className="w-4 h-4" />
+                <span className="hidden sm:inline">Monitor</span>
               </TabsTrigger>
             </TabsList>
 
@@ -852,6 +858,17 @@ Seja sempre educado e prestativo. Se não souber responder algo, peça para o cl
             {/* History Tab */}
             <TabsContent value="history" className="space-y-4 mt-4">
               <ConversationHistory establishmentId={establishmentId} />
+            </TabsContent>
+
+            {/* Monitoring Tab */}
+            <TabsContent value="monitoring" className="space-y-6 mt-4">
+              <WhatsAppRealTimeStats establishmentId={establishmentId} />
+              <WhatsAppHealthCheck 
+                establishmentId={establishmentId}
+                instanceId={instance?.instance_id || undefined}
+                evolutionApiUrl={form.evolution_api_url || undefined}
+                evolutionApiKey={form.evolution_api_key || undefined}
+              />
             </TabsContent>
           </Tabs>
         )}
