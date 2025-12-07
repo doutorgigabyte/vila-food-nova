@@ -4,72 +4,72 @@ import { Store, ArrowRight, Zap, TrendingUp, Smartphone } from "lucide-react";
 
 const BusinessCTABanner = () => {
   return (
-    <section className="py-12 px-4">
+    <section className="py-8 md:py-12 px-4">
       <div className="container mx-auto">
-        <div className="relative overflow-hidden rounded-3xl bg-hero-pattern text-white">
+        <div className="relative overflow-hidden rounded-2xl md:rounded-3xl bg-hero-pattern text-white">
           {/* Decorative elements */}
-          <div className="absolute top-0 right-0 w-64 h-64 bg-accent/20 rounded-full blur-3xl transform translate-x-1/2 -translate-y-1/2" />
-          <div className="absolute bottom-0 left-0 w-48 h-48 bg-accent/15 rounded-full blur-2xl transform -translate-x-1/2 translate-y-1/2" />
+          <div className="absolute top-0 right-0 w-32 md:w-64 h-32 md:h-64 bg-accent/20 rounded-full blur-3xl transform translate-x-1/2 -translate-y-1/2" />
+          <div className="absolute bottom-0 left-0 w-24 md:w-48 h-24 md:h-48 bg-accent/15 rounded-full blur-2xl transform -translate-x-1/2 translate-y-1/2" />
           
-          <div className="relative z-10 p-8 md:p-12 lg:p-16">
-            <div className="grid lg:grid-cols-2 gap-8 items-center">
+          <div className="relative z-10 p-5 sm:p-8 md:p-12 lg:p-16">
+            <div className="grid lg:grid-cols-2 gap-6 md:gap-8 items-center">
               {/* Content */}
-              <div className="space-y-6">
-                <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 text-sm font-medium">
-                  <Zap className="w-4 h-4 text-accent" />
+              <div className="space-y-4 md:space-y-6">
+                <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium">
+                  <Zap className="w-3 h-3 sm:w-4 sm:h-4 text-accent" />
                   <span>Para Lojistas</span>
                 </div>
                 
-                <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold leading-tight">
+                <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold leading-tight">
                   Tem um restaurante?{" "}
                   <span className="text-accent">Venda mais</span> com a gente!
                 </h2>
                 
-                <p className="text-lg text-white/80 max-w-lg">
+                <p className="text-sm sm:text-base md:text-lg text-white/80 max-w-lg">
                   Aumente suas vendas com nossa plataforma completa. Cardápio digital, 
                   PDV, gestão de pedidos e muito mais. Tudo em um só lugar!
                 </p>
                 
                 {/* Features */}
-                <div className="grid sm:grid-cols-3 gap-4 pt-4">
+                <div className="space-y-3 pt-2 md:pt-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-accent/20 flex items-center justify-center">
-                      <TrendingUp className="w-5 h-5 text-accent" />
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-accent/20 flex items-center justify-center flex-shrink-0">
+                      <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-accent" />
                     </div>
                     <div>
-                      <div className="font-semibold">- Taxas</div>
-                      <div className="text-sm text-white/60">Menores do mercado</div>
+                      <div className="font-semibold text-sm sm:text-base">- Taxas</div>
+                      <div className="text-xs sm:text-sm text-white/60">Menores do mercado</div>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-accent/20 flex items-center justify-center">
-                      <Store className="w-5 h-5 text-accent" />
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-accent/20 flex items-center justify-center flex-shrink-0">
+                      <Store className="w-4 h-4 sm:w-5 sm:h-5 text-accent" />
                     </div>
                     <div>
-                      <div className="font-semibold">+ Pedidos</div>
-                      <div className="text-sm text-white/60">Mais visibilidade</div>
+                      <div className="font-semibold text-sm sm:text-base">+ Pedidos</div>
+                      <div className="text-xs sm:text-sm text-white/60">Mais visibilidade</div>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-accent/20 flex items-center justify-center">
-                      <Smartphone className="w-5 h-5 text-accent" />
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-accent/20 flex items-center justify-center flex-shrink-0">
+                      <Smartphone className="w-4 h-4 sm:w-5 sm:h-5 text-accent" />
                     </div>
                     <div>
-                      <div className="font-semibold">+ Resultados</div>
-                      <div className="text-sm text-white/60">IA integrada</div>
+                      <div className="font-semibold text-sm sm:text-base">+ Resultados</div>
+                      <div className="text-xs sm:text-sm text-white/60">IA integrada</div>
                     </div>
                   </div>
                 </div>
                 
-                <div className="flex flex-col sm:flex-row gap-4 pt-4">
-                  <Link to="/conheca">
-                    <Button size="lg" className="btn-yellow w-full sm:w-auto group">
+                <div className="flex flex-col sm:flex-row gap-3 pt-2 md:pt-4">
+                  <Link to="/conheca" className="w-full sm:w-auto">
+                    <Button size="lg" className="btn-yellow w-full group text-sm sm:text-base">
                       Conhecer a Plataforma
                       <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
                     </Button>
                   </Link>
-                  <Link to="/cadastro-estabelecimento">
-                    <Button size="lg" variant="outline" className="w-full sm:w-auto border-white/30 text-white hover:bg-white/10">
+                  <Link to="/cadastro-estabelecimento" className="w-full sm:w-auto">
+                    <Button size="lg" variant="outline" className="w-full border-white/30 text-white hover:bg-white/10 text-sm sm:text-base">
                       Começar Grátis
                     </Button>
                   </Link>
