@@ -86,6 +86,7 @@ const navItems: NavItem[] = [
       { icon: Heart, label: "Health Check", href: "/admin/health" },
       { icon: Rocket, label: "Roadmap", href: "/admin/roadmap" },
       { icon: Database, label: "Migração", href: "/admin/migracao" },
+      { icon: Database, label: "Banco de Dados", href: "/admin/banco-dados" },
       { icon: Image, label: "Preencher Imagens", href: "/admin/preencher-imagens" },
     ]
   },

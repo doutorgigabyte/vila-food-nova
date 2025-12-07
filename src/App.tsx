@@ -90,6 +90,7 @@ import AffiliateReports from "./pages/affiliate/AffiliateReports";
 import AffiliateSettings from "./pages/affiliate/AffiliateSettings";
 // Admin settings
 import AdminSettings from "./pages/admin/AdminSettings";
+import DatabaseManagement from "./pages/admin/DatabaseManagement";
 // Driver app
 import DriverApp from "./pages/driver/DriverApp";
 
@@ -209,6 +210,7 @@ const App = () => (
               <Route path="/admin/health" element={<ProtectedAdminRoute><SystemHealthCheck /></ProtectedAdminRoute>} />
               <Route path="/admin/preencher-imagens" element={<ProtectedAdminRoute><ImageFillManager /></ProtectedAdminRoute>} />
               <Route path="/admin/configuracoes" element={<ProtectedAdminRoute><AdminSettings /></ProtectedAdminRoute>} />
+              <Route path="/admin/banco-dados" element={<ProtectedAdminRoute><DatabaseManagement /></ProtectedAdminRoute>} />
               {/* Affiliate routes */}
               <Route path="/afiliado" element={<AffiliateDashboard />} />
               <Route path="/afiliado/indicacoes" element={<AffiliateReferrals />} />
