@@ -74,38 +74,29 @@ const CategoryPageHeader = ({
     <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b border-border/50">
       {/* Main Navigation Bar */}
       <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-14 gap-3">
-          {/* Left: Back + Breadcrumb */}
-          <div className="flex items-center gap-2 flex-1 min-w-0">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate(-1)}
-              className="h-9 w-9 flex-shrink-0"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-            
-            <CategoryBreadcrumb 
-              items={breadcrumbItems}
-              className="hidden sm:flex"
-            />
-            
-            {/* Mobile: Show only current category/subcategory */}
-            <div className="flex sm:hidden items-center gap-1.5">
-              <span className="text-lg">{subcategoryIcon || categoryIcon}</span>
-              <span className="font-medium text-sm truncate">
-                {subcategoryName || categoryName}
-              </span>
-            </div>
+        <div className="flex items-center h-14 gap-2">
+          {/* Back Button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate(-1)}
+            className="h-9 w-9 flex-shrink-0"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+          
+          {/* Center: Category Name */}
+          <div className="flex-1 min-w-0 text-center">
+            <h1 className="font-semibold text-base truncate px-2">
+              {subcategoryName || categoryName}
+            </h1>
           </div>
 
           {/* Right: Actions */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5">
             <Link to="/vilatok">
               <Button variant="ghost" size="icon" className="h-9 w-9 relative">
                 <Flame className="w-5 h-5 text-orange-500" />
-                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-orange-500 rounded-full animate-pulse" />
               </Button>
             </Link>
             
@@ -117,13 +108,11 @@ const CategoryPageHeader = ({
           </div>
         </div>
 
-        {/* Location Selector */}
-        <div className="pb-2">
-          <LocationSelector onLocationChange={() => {}} />
-        </div>
+        {/* Location Selector - Compact */}
+        <LocationSelector onLocationChange={() => {}} />
 
         {/* Search Bar */}
-        <div className="pb-3">
+        <div className="py-2">
           <div className={cn(
             "relative transition-all duration-200",
             isSearchFocused && "scale-[1.01]"
@@ -137,9 +126,9 @@ const CategoryPageHeader = ({
               onFocus={() => setIsSearchFocused(true)}
               onBlur={() => setIsSearchFocused(false)}
               className={cn(
-                "pl-10 pr-10 h-11 rounded-xl border-border/50 bg-muted/30",
+                "pl-10 pr-10 h-10 rounded-xl border-border/50 bg-muted/30",
                 "focus:bg-background focus:border-primary/50 focus:ring-2 focus:ring-primary/20",
-                "placeholder:text-muted-foreground/60"
+                "placeholder:text-muted-foreground/60 text-sm"
               )}
             />
             <AnimatePresence>
@@ -156,6 +145,13 @@ const CategoryPageHeader = ({
               )}
             </AnimatePresence>
           </div>
+        </div>
+      </div>
+
+      {/* Breadcrumb - Desktop only */}
+      <div className="hidden sm:block border-t border-border/30 bg-muted/20 px-4 py-2">
+        <div className="container mx-auto">
+          <CategoryBreadcrumb items={breadcrumbItems} />
         </div>
       </div>
 
