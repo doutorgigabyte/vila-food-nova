@@ -1,145 +1,234 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { getCategoryConfig, CategoryConfig } from "@/lib/categoryConfig";
 import { supabase } from "@/integrations/supabase/client";
-import CategoryHeader from "@/components/marketplace/CategoryHeader";
-import SubcategoryGrid from "@/components/marketplace/SubcategoryGrid";
-import CategoryStoresSection from "@/components/marketplace/CategoryStoresSection";
-import CategoryProductsSection from "@/components/marketplace/CategoryProductsSection";
-import MobileBottomNav from "@/components/marketplace/MobileBottomNav";
+import { AnimatePresence } from "framer-motion";
+
+// Components
+import CategoryPageHeader from "@/components/marketplace/CategoryPageHeader";
+import SubcategoryCarousel from "@/components/marketplace/SubcategoryCarousel";
+import SubcategoryBanner from "@/components/marketplace/SubcategoryBanner";
 import VideoHighlightsSection from "@/components/marketplace/VideoHighlightsSection";
 import TopOffersSection from "@/components/marketplace/TopOffersSection";
+import CategoryProductsSection from "@/components/marketplace/CategoryProductsSection";
 import BestStoresSection from "@/components/marketplace/BestStoresSection";
+import CategoryStoresSection from "@/components/marketplace/CategoryStoresSection";
+import MobileBottomNav from "@/components/marketplace/MobileBottomNav";
 import Footer from "@/components/landing/Footer";
 import { Skeleton } from "@/components/ui/skeleton";
 
+// Types
+interface MainCategory {
+  id: string;
+  name: string;
+  slug: string;
+  icon: string | null;
+  bg_color: string | null;
+  icon_color: string | null;
+}
+
+interface Subcategory {
+  id: string;
+  name: string;
+  icon?: string;
+}
+
+interface Establishment {
+  id: string;
+  name: string;
+  slug: string;
+  logo_url: string | null;
+  banner_url: string | null;
+  description: string | null;
+  is_open: boolean;
+  avg_delivery_time: number | null;
+  min_order_value: number | null;
+  segment_id: string | null;
+}
+
+interface Product {
+  id: string;
+  name: string;
+  price: number;
+  promotional_price: number | null;
+  image_url: string | null;
+  establishment_id: string;
+  establishments?: {
+    name: string;
+    slug: string;
+    logo_url: string | null;
+  };
+}
+
+// Category icons mapping
+const categoryIcons: Record<string, string> = {
+  mercado: "🛒",
+  farmacia: "💊",
+  compras: "🛍️",
+  comida: "🍔",
+  artesanato: "🎨",
+  servicos: "🔧",
+};
+
 const CategoryPage = () => {
-  const { categoryId, subcategoryId } = useParams<{ categoryId: string; subcategoryId?: string }>();
+  const { categoryId, subcategoryId } = useParams();
   const navigate = useNavigate();
-  const [category, setCategory] = useState<CategoryConfig | null>(null);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(subcategoryId || null);
-  const [establishments, setEstablishments] = useState<any[]>([]);
-  const [products, setProducts] = useState<any[]>([]);
+  
+  // State
   const [loading, setLoading] = useState(true);
+  const [mainCategory, setMainCategory] = useState<MainCategory | null>(null);
+  const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
+  const [selectedSubcategory, setSelectedSubcategory] = useState<Subcategory | null>(null);
+  const [establishments, setEstablishments] = useState<Establishment[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
 
-  // Load category config
+  // Fetch main category and subcategories
   useEffect(() => {
-    if (categoryId) {
-      const config = getCategoryConfig(categoryId);
-      if (config) {
-        setCategory(config);
-      } else {
-        navigate("/");
-      }
-    }
-  }, [categoryId, navigate]);
+    const fetchCategoryData = async () => {
+      if (!categoryId) return;
 
-  // Fetch establishments and products for this category
-  useEffect(() => {
-    const fetchData = async () => {
-      if (!category) return;
-
-      setLoading(true);
       try {
-        // Fetch establishments with segments that match this category
-        const { data: establishmentsData, error: estError } = await supabase
-          .from("establishments")
-          .select(`
-            id,
-            name,
-            slug,
-            logo_url,
-            banner_url,
-            description,
-            is_open,
-            avg_delivery_time,
-            segment_id,
-            segments:segment_id (
-              id,
-              name
-            )
-          `)
-          .eq("status", "active")
-          .order("name");
+        // Fetch main category
+        const { data: categoryData } = await supabase
+          .from("main_categories")
+          .select("*")
+          .eq("slug", categoryId)
+          .eq("is_active", true)
+          .single();
 
-        if (estError) throw estError;
+        if (categoryData) {
+          setMainCategory(categoryData);
 
-        // Filter by category based on segment name keywords
-        const categoryKeywords = getCategoryKeywords(category.id);
-        const filteredEstablishments = establishmentsData?.filter(est => {
-          const segmentName = (est.segments as any)?.name?.toLowerCase() || "";
-          return categoryKeywords.some(keyword => segmentName.includes(keyword));
-        }) || [];
-
-        setEstablishments(filteredEstablishments);
-
-        // Fetch products from these establishments
-        if (filteredEstablishments.length > 0) {
-          const establishmentIds = filteredEstablishments.map(e => e.id);
-          const { data: productsData, error: prodError } = await supabase
-            .from("products")
-            .select(`
-              id,
-              name,
-              price,
-              promotional_price,
-              image_url,
-              establishment_id,
-              establishments:establishment_id (
-                slug,
-                name
-              )
-            `)
-            .in("establishment_id", establishmentIds)
+          // Fetch subcategories (segments) for this main category
+          const { data: segmentsData } = await supabase
+            .from("segments")
+            .select("id, name, icon")
+            .eq("parent_category_id", categoryData.id)
             .eq("is_active", true)
-            .eq("is_featured", true)
-            .limit(20);
+            .order("name");
 
-          if (prodError) throw prodError;
-          setProducts(productsData || []);
+          if (segmentsData) {
+            setSubcategories(segmentsData);
+            
+            // If subcategoryId in URL, find and select it
+            if (subcategoryId) {
+              const found = segmentsData.find(
+                s => s.name.toLowerCase().replace(/\s+/g, '-') === subcategoryId ||
+                     s.id === subcategoryId
+              );
+              if (found) {
+                setSelectedSubcategory(found);
+              }
+            }
+          }
         }
       } catch (error) {
-        console.error("Error fetching category data:", error);
+        console.error("Error fetching category:", error);
+      }
+    };
+
+    fetchCategoryData();
+  }, [categoryId, subcategoryId]);
+
+  // Fetch establishments and products based on category/subcategory
+  useEffect(() => {
+    const fetchContent = async () => {
+      if (!mainCategory) return;
+      
+      setLoading(true);
+
+      try {
+        // Get segment IDs to filter by
+        let segmentIds: string[] = [];
+        
+        if (selectedSubcategory) {
+          segmentIds = [selectedSubcategory.id];
+        } else {
+          segmentIds = subcategories.map(s => s.id);
+        }
+
+        // Fetch establishments
+        let estQuery = supabase
+          .from("establishments")
+          .select("id, name, slug, logo_url, banner_url, description, is_open, avg_delivery_time, min_order_value, segment_id")
+          .eq("status", "active")
+          .eq("is_open", true);
+
+        if (segmentIds.length > 0) {
+          estQuery = estQuery.in("segment_id", segmentIds);
+        }
+
+        const { data: estData } = await estQuery.limit(20);
+        setEstablishments(estData || []);
+
+        // Fetch products from these establishments
+        if (estData && estData.length > 0) {
+          const estIds = estData.map(e => e.id);
+          
+          const { data: prodData } = await supabase
+            .from("products")
+            .select(`
+              id, name, price, promotional_price, image_url, establishment_id,
+              establishments:establishment_id (name, slug, logo_url)
+            `)
+            .in("establishment_id", estIds)
+            .eq("is_active", true)
+            .limit(30);
+
+          setProducts(prodData || []);
+        } else {
+          setProducts([]);
+        }
+      } catch (error) {
+        console.error("Error fetching content:", error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchData();
-  }, [category]);
+    if (mainCategory && subcategories.length >= 0) {
+      fetchContent();
+    }
+  }, [mainCategory, selectedSubcategory, subcategories]);
 
-  const getCategoryKeywords = (catId: string): string[] => {
-    const keywordMap: Record<string, string[]> = {
-      mercado: ["mercado", "supermercado", "minimercado", "mercearia", "açougue", "padaria", "hortifruti"],
-      farmacia: ["farmacia", "farmácia", "drogaria", "saúde"],
-      compras: ["loja", "shopping", "roupa", "moda", "eletronico", "eletrônico", "pet", "presente"],
-      comida: ["pizzaria", "pizza", "hamburgueria", "hamburguer", "restaurante", "lanchonete", "bar", "japonesa", "sushi", "italiana", "churrasco", "açaí", "acai", "sorveteria", "doceria", "confeitaria", "pastelaria", "tapioca", "comida"],
-      artesanato: ["artesanato", "arte", "artesão", "cerâmica", "bordado", "renda", "madeira"],
-      servicos: ["serviço", "servico", "manutenção", "limpeza", "evento", "entrega"],
-    };
-    return keywordMap[catId] || [];
-  };
-
-  const handleSubcategoryClick = (subId: string) => {
-    if (selectedSubcategory === subId) {
+  // Handle subcategory selection
+  const handleSubcategorySelect = (id: string | null) => {
+    if (id === null) {
       setSelectedSubcategory(null);
       navigate(`/categoria/${categoryId}`);
     } else {
-      setSelectedSubcategory(subId);
-      navigate(`/categoria/${categoryId}/${subId}`);
+      const subcategory = subcategories.find(s => s.id === id);
+      if (subcategory) {
+        setSelectedSubcategory(subcategory);
+        const slug = subcategory.name.toLowerCase().replace(/\s+/g, '-');
+        navigate(`/categoria/${categoryId}/${slug}`);
+      }
     }
   };
 
-  if (!category) {
+  // Handle search
+  const handleSearch = (term: string) => {
+    setSearchTerm(term);
+  };
+
+  // Filter products by search term
+  const filteredProducts = searchTerm
+    ? products.filter(p => 
+        p.name.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    : products;
+
+  // Loading skeleton
+  if (!mainCategory && loading) {
     return (
       <div className="min-h-screen bg-background">
-        <div className="p-4 space-y-4">
-          <Skeleton className="h-32 w-full" />
-          <Skeleton className="h-20 w-full" />
-          <div className="grid grid-cols-3 gap-3">
-            {[...Array(6)].map((_, i) => (
-              <Skeleton key={i} className="h-24 rounded-2xl" />
+        <div className="container mx-auto px-4 py-4">
+          <Skeleton className="h-14 w-full mb-4" />
+          <Skeleton className="h-10 w-full mb-4" />
+          <Skeleton className="h-12 w-full mb-6" />
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[...Array(8)].map((_, i) => (
+              <Skeleton key={i} className="h-48 rounded-xl" />
             ))}
           </div>
         </div>
@@ -147,48 +236,86 @@ const CategoryPage = () => {
     );
   }
 
+  const categoryIcon = mainCategory?.icon || categoryIcons[categoryId || ""] || "📦";
+  const categoryName = selectedSubcategory?.name || mainCategory?.name || "Categoria";
+
   return (
     <div className="min-h-screen bg-background pb-20 md:pb-0">
-      <CategoryHeader
-        category={category}
-        searchTerm={searchTerm}
-        onSearchChange={setSearchTerm}
+      {/* Smart Header */}
+      <CategoryPageHeader
+        categoryName={mainCategory?.name || "Categoria"}
+        categoryIcon={categoryIcon}
+        categorySlug={categoryId || ""}
+        subcategoryName={selectedSubcategory?.name}
+        subcategoryIcon={selectedSubcategory?.icon}
+        onSearch={handleSearch}
+        showStories={true}
       />
 
-      <SubcategoryGrid
-        subcategories={category.subcategories}
-        selectedSubcategory={selectedSubcategory}
-        onSubcategoryClick={handleSubcategoryClick}
-        categoryColor={category.color}
-        categoryBgColor={category.bgColor}
-      />
+      <main className="container mx-auto px-4 py-4 space-y-6">
+        {/* Subcategory Carousel */}
+        {subcategories.length > 0 && (
+          <SubcategoryCarousel
+            subcategories={subcategories}
+            selectedId={selectedSubcategory?.id || null}
+            onSelect={handleSubcategorySelect}
+            categoryIcon={categoryIcon}
+          />
+        )}
 
-      {/* Video Highlights for this category */}
-      <VideoHighlightsSection mainCategory={categoryId} />
+        {/* Subcategory Banner (when selected) */}
+        <AnimatePresence>
+          {selectedSubcategory && (
+            <SubcategoryBanner
+              name={selectedSubcategory.name}
+              icon={selectedSubcategory.icon}
+              productCount={filteredProducts.length}
+              storeCount={establishments.length}
+              onClear={() => handleSubcategorySelect(null)}
+            />
+          )}
+        </AnimatePresence>
 
-      {/* Top Offers for this category */}
-      <TopOffersSection mainCategory={categoryId} />
+        {/* Content Sections */}
+        {loading ? (
+          <div className="space-y-6">
+            <Skeleton className="h-48 w-full rounded-xl" />
+            <Skeleton className="h-48 w-full rounded-xl" />
+          </div>
+        ) : (
+          <>
+            {/* Video Highlights */}
+            <VideoHighlightsSection mainCategory={categoryId} />
 
-      <CategoryProductsSection
-        products={products}
-        categoryName={category.name}
-        loading={loading}
-      />
+            {/* Top Offers - using existing component props */}
+            <TopOffersSection mainCategory={categoryId} />
 
-      {/* Best Stores Section */}
-      <BestStoresSection 
-        mainCategory={categoryId} 
-        subcategory={selectedSubcategory}
-      />
+            {/* Products Grid */}
+            <CategoryProductsSection
+              products={filteredProducts}
+              categoryName={categoryName}
+              loading={false}
+            />
 
-      <CategoryStoresSection
-        establishments={establishments}
-        categoryName={category.name}
-        loading={loading}
-      />
+            {/* Best Stores */}
+            <BestStoresSection 
+              mainCategory={categoryId}
+              subcategory={selectedSubcategory?.id}
+            />
+
+            {/* All Stores */}
+            <CategoryStoresSection
+              establishments={establishments}
+              categoryName={categoryName}
+              loading={false}
+            />
+          </>
+        )}
+      </main>
 
       <Footer />
-
+      
+      {/* Mobile Bottom Navigation */}
       <MobileBottomNav />
     </div>
   );
