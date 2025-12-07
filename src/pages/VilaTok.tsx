@@ -2,10 +2,11 @@ import { useEffect, useCallback, useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Flame } from 'lucide-react';
 import { Swiper, SwiperSlide } from 'swiper/react';
-import { Mousewheel, Keyboard } from 'swiper/modules';
+import { Mousewheel, Keyboard, FreeMode } from 'swiper/modules';
 import type { Swiper as SwiperType } from 'swiper';
 import 'swiper/css';
 import 'swiper/css/mousewheel';
+import 'swiper/css/free-mode';
 
 import { useVilaTok } from '@/hooks/useVilaTok';
 import { VilaTokPlayer } from '@/components/vilatok/VilaTokPlayer';
@@ -267,17 +268,26 @@ export default function VilaTok() {
       {/* Vertical Swiper (Establishments) */}
       <Swiper
         direction="vertical"
-        modules={[Mousewheel, Keyboard]}
+        modules={[Mousewheel, Keyboard, FreeMode]}
         mousewheel={{
-          sensitivity: 1,
-          thresholdDelta: 50,
+          sensitivity: 0.8,
+          thresholdDelta: 20,
+          forceToAxis: true,
         }}
         keyboard={{
           enabled: !showTutorial,
           onlyInViewport: true,
         }}
-        speed={400}
+        speed={300}
         slidesPerView={1}
+        threshold={10}
+        touchRatio={1.5}
+        shortSwipes={true}
+        longSwipesRatio={0.2}
+        longSwipesMs={150}
+        followFinger={true}
+        resistanceRatio={0.6}
+        cssMode={false}
         className="w-full h-full"
         onSwiper={(swiper) => {
           verticalSwiperRef.current = swiper;
@@ -289,18 +299,25 @@ export default function VilaTok() {
             {/* Horizontal Swiper (Videos within Establishment) */}
             <Swiper
               direction="horizontal"
-              modules={[Mousewheel, Keyboard]}
+              modules={[Mousewheel, Keyboard, FreeMode]}
               mousewheel={{
-                sensitivity: 1,
-                thresholdDelta: 50,
+                sensitivity: 0.8,
+                thresholdDelta: 20,
                 forceToAxis: true,
               }}
               keyboard={{
                 enabled: !showTutorial && estIndex === activeEstablishmentIndex,
                 onlyInViewport: true,
               }}
-              speed={300}
+              speed={250}
               slidesPerView={1}
+              threshold={10}
+              touchRatio={1.5}
+              shortSwipes={true}
+              longSwipesRatio={0.2}
+              longSwipesMs={150}
+              followFinger={true}
+              resistanceRatio={0.6}
               className="w-full h-full"
               onSwiper={(swiper) => {
                 horizontalSwipersRef.current.set(estIndex, swiper);
