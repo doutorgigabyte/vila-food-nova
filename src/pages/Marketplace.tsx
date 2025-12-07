@@ -80,9 +80,6 @@ const Marketplace = () => {
         {/* Promotional Banners - filtered by category */}
         <PromoBanners mainCategory={selectedMainCategory} />
 
-        {/* Video Highlights - Premium Partner Section - filtered by category */}
-        <VideoHighlightsSection mainCategory={selectedMainCategory} />
-
         {/* Top Offers - filtered by category */}
         <TopOffersSection mainCategory={selectedMainCategory} />
 
@@ -90,6 +87,9 @@ const Marketplace = () => {
         {(!selectedMainCategory || selectedMainCategory === 'comida') && (
           <VilasSection />
         )}
+
+        {/* Video Highlights - Premium Partner Section - filtered by category */}
+        <VideoHighlightsSection mainCategory={selectedMainCategory} />
 
         {/* Just For You Carousel - filtered by category */}
         <JustForYouCarousel mainCategory={selectedMainCategory} />
