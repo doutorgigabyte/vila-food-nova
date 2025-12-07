@@ -143,27 +143,36 @@ const ProductOfferCard = ({ product, variant = "default", className }: ProductOf
           )}
           
           {/* Favorite button */}
-          <Button 
-            variant="ghost" 
-            size="icon" 
+          <button 
+            type="button"
             className={cn(
-              "absolute top-2 right-2 w-8 h-8 bg-card/80 backdrop-blur-sm hover:bg-card rounded-full shadow-md btn-press touch-target",
+              "absolute top-2 right-2 w-8 h-8 flex items-center justify-center bg-card/80 backdrop-blur-sm hover:bg-card rounded-full shadow-md transition-colors z-10",
               isFavorite ? "text-red-500 hover:text-red-600" : "text-muted-foreground hover:text-destructive"
             )}
             onClick={handleFavoriteClick}
+            onTouchEnd={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              toggleFavoriteProduct(product.id);
+            }}
           >
             <Heart className={cn("w-4 h-4", isFavorite && "fill-current")} />
-          </Button>
+          </button>
           
           {/* Add button */}
           {isAvailable && (
-            <Button 
-              size="icon" 
-              className="absolute bottom-2 right-2 w-9 h-9 rounded-full shadow-lg bg-primary hover:bg-primary/90 btn-press touch-target"
+            <button 
+              type="button"
+              className="absolute bottom-2 right-2 w-9 h-9 flex items-center justify-center rounded-full shadow-lg bg-primary hover:bg-primary/90 text-primary-foreground transition-colors z-10"
               onClick={handleAddToCart}
+              onTouchEnd={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleAddToCart(e as any);
+              }}
             >
               <Plus className="w-4 h-4" />
-            </Button>
+            </button>
           )}
         </div>
         
