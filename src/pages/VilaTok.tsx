@@ -173,10 +173,15 @@ export default function VilaTok() {
   return (
     <div className="fixed inset-0 bg-black overflow-hidden">
       {/* Header */}
-      <div className="absolute top-0 left-0 right-0 z-30 flex items-center justify-between p-4 bg-gradient-to-b from-black/60 to-transparent">
+      <div className="absolute top-0 left-0 right-0 z-50 flex items-center justify-between p-4 bg-gradient-to-b from-black/60 to-transparent pointer-events-none">
         <button
           onClick={() => navigate(-1)}
-          className="w-10 h-10 rounded-full bg-black/40 flex items-center justify-center"
+          onTouchEnd={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            navigate(-1);
+          }}
+          className="w-10 h-10 rounded-full bg-black/40 flex items-center justify-center pointer-events-auto active:bg-black/60"
         >
           <ArrowLeft className="w-5 h-5 text-white" />
         </button>
