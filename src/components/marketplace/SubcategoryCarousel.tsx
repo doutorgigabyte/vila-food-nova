@@ -18,10 +18,12 @@ interface SubcategoryCarouselProps {
   categoryIcon?: string;
 }
 
-// Emojis para subcategorias - mapeamento completo
+// Emojis para subcategorias - mapeamento completo baseado no banco de dados
 const subcategoryEmojis: Record<string, string> = {
-  // Mercado
+  // Todos
   "todos": "🏠",
+  
+  // Mercado
   "supermercados": "🛒",
   "bebidas": "🥤",
   "hortifruti": "🥬",
@@ -33,6 +35,7 @@ const subcategoryEmojis: Record<string, string> = {
   "congelados": "🧊",
   "laticínios": "🥛",
   "mercearia": "🛒",
+  
   // Comida
   "doces e bolos": "🍰",
   "árabe": "🥙",
@@ -50,10 +53,17 @@ const subcategoryEmojis: Record<string, string> = {
   "sorvetes": "🍦",
   "japonesa": "🍣",
   "marmita": "🍱",
+  "hambúrguer": "🍔",
   "hamburguer": "🍔",
   "pizzaria": "🍕",
   "restaurante": "🍽️",
-  // Moda
+  "nordestina": "🦐",
+  "mexicana": "🌮",
+  "doces": "🍰",
+  "acai": "🍇",
+  
+  // Compras - Moda
+  "moda": "👔",
   "moda masculina": "👔",
   "moda feminina": "👗",
   "moda infantil": "👶",
@@ -63,42 +73,101 @@ const subcategoryEmojis: Record<string, string> = {
   "joias": "💎",
   "óculos": "🕶️",
   "relógios": "⌚",
-  // Beleza
+  
+  // Compras - Beleza
+  "beleza": "💄",
   "cosméticos": "💄",
   "perfumaria": "🌸",
   "cuidados pessoais": "🧴",
   "maquiagem": "💅",
-  // Casa
+  
+  // Compras - Casa
+  "casa e jardim": "🏡",
   "decoração": "🏠",
   "móveis": "🛋️",
   "eletrodomésticos": "🔌",
   "utilidades": "🧹",
-  // Pet
+  
+  // Compras - Pet
   "pet shop": "🐕",
   "ração": "🦴",
   "acessórios pet": "🐾",
-  // Tech
+  
+  // Compras - Tech
   "eletrônicos": "📱",
   "informática": "💻",
   "games": "🎮",
-  // Farmácia
-  "medicamentos": "💊",
-  "vitaminas": "💪",
-  "suplementos": "🏋️",
-  "dermocosméticos": "✨",
-  // Outros
+  
+  // Compras - Outros
+  "outros": "📦",
   "esportes": "⚽",
   "brinquedos": "🧸",
   "papelaria": "📚",
   "jardim": "🌱",
   "automotivo": "🚗",
+  "presentes": "🎁",
+  
+  // Farmácia
+  "farmácia": "💊",
+  "farmacia": "💊",
+  "medicamentos": "💊",
+  "vitaminas": "💪",
+  "suplementos": "🏋️",
+  "dermocosméticos": "✨",
+  "primeiros socorros": "🩹",
+  "cuidados bebê": "👶",
+  "saúde bucal": "🦷",
+  "saúde feminina": "💜",
+  "cuidados olhos": "👁️",
+  "cuidados pele": "🧴",
+  "dispositivos": "📱",
+  
+  // Artesanato
   "artesanato": "🎨",
+  "cerâmica": "🏺",
+  "bordados": "🧵",
+  "renda": "🪡",
+  "palha": "🌾",
+  "madeira": "🪵",
+  "pintura": "🎨",
+  "bijuterias": "📿",
+  "têxtil": "🧶",
+  "couro": "👜",
+  "barro": "🪴",
+  "crochê": "🧶",
+  
+  // Serviços
   "serviços": "🔧",
+  "servicos": "🔧",
+  "entregas": "📦",
+  "manutenção": "🔧",
+  "eventos": "🎉",
+  "educação": "📚",
+  "tecnologia": "💻",
+  "saúde": "❤️",
 };
 
 const getEmoji = (name: string): string => {
   const normalized = name.toLowerCase().trim();
-  return subcategoryEmojis[normalized] || "📦";
+  // Tentar match exato primeiro
+  if (subcategoryEmojis[normalized]) {
+    return subcategoryEmojis[normalized];
+  }
+  // Tentar match sem acentos
+  const withoutAccents = normalized.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  for (const [key, emoji] of Object.entries(subcategoryEmojis)) {
+    const keyWithoutAccents = key.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    if (keyWithoutAccents === withoutAccents) {
+      return emoji;
+    }
+  }
+  // Tentar match parcial
+  for (const [key, emoji] of Object.entries(subcategoryEmojis)) {
+    if (normalized.includes(key) || key.includes(normalized)) {
+      return emoji;
+    }
+  }
+  return "📦";
 };
 
 const subcategoryColors = [
