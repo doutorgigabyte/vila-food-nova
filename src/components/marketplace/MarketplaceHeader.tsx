@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { 
@@ -12,6 +12,9 @@ import {
 } from "lucide-react";
 import VilaTokStoriesRow from "./VilaTokStoriesRow";
 import NotificationCenter from "@/components/notifications/NotificationCenter";
+import { useMainCategories, getIconComponent } from "@/hooks/useMainCategories";
+import { cn } from "@/lib/utils";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,7 +41,9 @@ interface MarketplaceHeaderProps {
 
 const MarketplaceHeader = ({ searchTerm, onSearchChange, onSearchClick }: MarketplaceHeaderProps) => {
   const { items } = useCart();
+  const { categories } = useMainCategories();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const navigate = useNavigate();
   const cartCount = items.reduce((acc, item) => acc + item.quantity, 0);
 
   return (
@@ -204,8 +209,35 @@ const MarketplaceHeader = ({ searchTerm, onSearchChange, onSearchClick }: Market
           </div>
         </div>
 
-        {/* Stories Row - Category/Establishment circles below search */}
-        <div className="mt-3 -mx-4">
+        {/* Category Quick Access Buttons - Minimalist Pills */}
+        <div className="mt-3 -mx-4 px-4">
+          <ScrollArea className="w-full whitespace-nowrap">
+            <div className="flex items-center gap-2 pb-2">
+              {categories.slice(0, 8).map((category) => {
+                const IconComponent = getIconComponent(category.icon);
+                return (
+                  <button
+                    key={category.id}
+                    onClick={() => navigate(`/categoria/${category.slug}`)}
+                    className={cn(
+                      "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium",
+                      "bg-muted/60 hover:bg-primary hover:text-primary-foreground",
+                      "transition-all duration-200 shrink-0 border border-transparent",
+                      "hover:border-primary/20 hover:shadow-sm"
+                    )}
+                  >
+                    <IconComponent className="w-3.5 h-3.5" />
+                    <span>{category.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <ScrollBar orientation="horizontal" className="h-1.5" />
+          </ScrollArea>
+        </div>
+
+        {/* Stories Row - Category/Establishment circles below categories */}
+        <div className="mt-2 -mx-4">
           <VilaTokStoriesRow />
         </div>
       </div>

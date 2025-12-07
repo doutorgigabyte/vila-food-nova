@@ -76,13 +76,15 @@ const JustForYouCarousel = ({ mainCategory }: JustForYouCarouselProps) => {
   }, []);
 
   // Calculate spread factor based on viewport width (desktop only)
+  // Much wider spread to fill horizontal space
   const getSpreadFactor = () => {
     if (isMobile) return 1;
-    if (viewportWidth >= 1920) return 1.5;
-    if (viewportWidth >= 1600) return 1.35;
-    if (viewportWidth >= 1440) return 1.25;
-    if (viewportWidth >= 1280) return 1.15;
-    return 1;
+    if (viewportWidth >= 1920) return 2.2;
+    if (viewportWidth >= 1600) return 2.0;
+    if (viewportWidth >= 1440) return 1.8;
+    if (viewportWidth >= 1280) return 1.6;
+    if (viewportWidth >= 1024) return 1.4;
+    return 1.2;
   };
 
   // Get visible items - reduced on mobile for performance (3 items vs 5)
