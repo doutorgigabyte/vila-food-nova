@@ -22,7 +22,7 @@ const HighlightsSection = ({ mainCategory, subcategory }: HighlightsSectionProps
 
   if (loading) {
     return (
-      <section className="py-6 md:py-8">
+      <section className="py-3 md:py-4">
         <div className="container mx-auto px-4">
           <Skeleton className="h-8 w-64 mb-4" />
           <div className="flex gap-4 overflow-hidden">
@@ -41,7 +41,7 @@ const HighlightsSection = ({ mainCategory, subcategory }: HighlightsSectionProps
 
   return (
     <section className={cn(
-      "py-6 md:py-8",
+      "py-3 md:py-4",
       mainCategory && `bg-gradient-to-b ${theme.bgGradient}`
     )}>
       <div className="container mx-auto px-4">

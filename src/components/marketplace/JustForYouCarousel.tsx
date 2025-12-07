@@ -74,7 +74,7 @@ const JustForYouCarousel = ({ mainCategory }: JustForYouCarouselProps) => {
 
   return (
     <section className={cn(
-      "py-8 md:py-12",
+      "py-4 md:py-6",
       mainCategory && `bg-gradient-to-b ${theme.bgGradient}`
     )}>
       <div className="container mx-auto px-4 overflow-visible">
