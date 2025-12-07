@@ -2076,9 +2076,12 @@ export type Database = {
           max_orders: number | null
           max_products: number | null
           max_videos: number | null
+          max_whatsapp_messages: number | null
           name: string
           price: number
           updated_at: string | null
+          whatsapp_ai_agent: boolean | null
+          whatsapp_chatbot: boolean | null
         }
         Insert: {
           ai_unlimited?: boolean | null
@@ -2091,9 +2094,12 @@ export type Database = {
           max_orders?: number | null
           max_products?: number | null
           max_videos?: number | null
+          max_whatsapp_messages?: number | null
           name: string
           price?: number
           updated_at?: string | null
+          whatsapp_ai_agent?: boolean | null
+          whatsapp_chatbot?: boolean | null
         }
         Update: {
           ai_unlimited?: boolean | null
@@ -2106,9 +2112,12 @@ export type Database = {
           max_orders?: number | null
           max_products?: number | null
           max_videos?: number | null
+          max_whatsapp_messages?: number | null
           name?: string
           price?: number
           updated_at?: string | null
+          whatsapp_ai_agent?: boolean | null
+          whatsapp_chatbot?: boolean | null
         }
         Relationships: []
       }
@@ -2919,13 +2928,153 @@ export type Database = {
           },
         ]
       }
+      whatsapp_auto_messages: {
+        Row: {
+          created_at: string | null
+          establishment_id: string
+          event_type: string
+          id: string
+          is_active: boolean | null
+          message_template: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          establishment_id: string
+          event_type: string
+          id?: string
+          is_active?: boolean | null
+          message_template: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          establishment_id?: string
+          event_type?: string
+          id?: string
+          is_active?: boolean | null
+          message_template?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_auto_messages_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_carts: {
+        Row: {
+          created_at: string | null
+          customer_name: string | null
+          customer_phone: string
+          delivery_address: Json | null
+          delivery_fee: number | null
+          establishment_id: string
+          expires_at: string | null
+          id: string
+          items: Json | null
+          status: string | null
+          subtotal: number | null
+          total: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          customer_name?: string | null
+          customer_phone: string
+          delivery_address?: Json | null
+          delivery_fee?: number | null
+          establishment_id: string
+          expires_at?: string | null
+          id?: string
+          items?: Json | null
+          status?: string | null
+          subtotal?: number | null
+          total?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          customer_name?: string | null
+          customer_phone?: string
+          delivery_address?: Json | null
+          delivery_fee?: number | null
+          establishment_id?: string
+          expires_at?: string | null
+          id?: string
+          items?: Json | null
+          status?: string | null
+          subtotal?: number | null
+          total?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_carts_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_conversations: {
+        Row: {
+          created_at: string | null
+          customer_name: string | null
+          customer_phone: string
+          establishment_id: string
+          id: string
+          last_message_at: string | null
+          messages: Json | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          customer_name?: string | null
+          customer_phone: string
+          establishment_id: string
+          id?: string
+          last_message_at?: string | null
+          messages?: Json | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          customer_name?: string | null
+          customer_phone?: string
+          establishment_id?: string
+          id?: string
+          last_message_at?: string | null
+          messages?: Json | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_conversations_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       whatsapp_instances: {
         Row: {
           ai_enabled: boolean | null
+          ai_model: string | null
           ai_prompt: string | null
           api_key: string | null
           audio_enabled: boolean | null
           auto_response_enabled: boolean | null
+          business_hours_message: string | null
           created_at: string | null
           description: string | null
           establishment_id: string | null
@@ -2935,19 +3084,25 @@ export type Database = {
           instance_id: string | null
           instance_name: string | null
           instance_type: string | null
+          keywords_enabled: boolean | null
+          outside_hours_message: string | null
           phone_number: string | null
           pix_enabled: boolean | null
           qr_code: string | null
           status: string | null
           updated_at: string | null
           webhook_url: string | null
+          welcome_message: string | null
+          whatsapp_level: number | null
         }
         Insert: {
           ai_enabled?: boolean | null
+          ai_model?: string | null
           ai_prompt?: string | null
           api_key?: string | null
           audio_enabled?: boolean | null
           auto_response_enabled?: boolean | null
+          business_hours_message?: string | null
           created_at?: string | null
           description?: string | null
           establishment_id?: string | null
@@ -2957,19 +3112,25 @@ export type Database = {
           instance_id?: string | null
           instance_name?: string | null
           instance_type?: string | null
+          keywords_enabled?: boolean | null
+          outside_hours_message?: string | null
           phone_number?: string | null
           pix_enabled?: boolean | null
           qr_code?: string | null
           status?: string | null
           updated_at?: string | null
           webhook_url?: string | null
+          welcome_message?: string | null
+          whatsapp_level?: number | null
         }
         Update: {
           ai_enabled?: boolean | null
+          ai_model?: string | null
           ai_prompt?: string | null
           api_key?: string | null
           audio_enabled?: boolean | null
           auto_response_enabled?: boolean | null
+          business_hours_message?: string | null
           created_at?: string | null
           description?: string | null
           establishment_id?: string | null
@@ -2979,16 +3140,70 @@ export type Database = {
           instance_id?: string | null
           instance_name?: string | null
           instance_type?: string | null
+          keywords_enabled?: boolean | null
+          outside_hours_message?: string | null
           phone_number?: string | null
           pix_enabled?: boolean | null
           qr_code?: string | null
           status?: string | null
           updated_at?: string | null
           webhook_url?: string | null
+          welcome_message?: string | null
+          whatsapp_level?: number | null
         }
         Relationships: [
           {
             foreignKeyName: "whatsapp_instances_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_keywords: {
+        Row: {
+          category: string
+          created_at: string | null
+          establishment_id: string
+          id: string
+          is_active: boolean | null
+          keywords: string[]
+          response_link: string | null
+          response_text: string | null
+          send_menu_link: boolean | null
+          sort_order: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          establishment_id: string
+          id?: string
+          is_active?: boolean | null
+          keywords?: string[]
+          response_link?: string | null
+          response_text?: string | null
+          send_menu_link?: boolean | null
+          sort_order?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          establishment_id?: string
+          id?: string
+          is_active?: boolean | null
+          keywords?: string[]
+          response_link?: string | null
+          response_text?: string | null
+          send_menu_link?: boolean | null
+          sort_order?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_keywords_establishment_id_fkey"
             columns: ["establishment_id"]
             isOneToOne: false
             referencedRelation: "establishments"
