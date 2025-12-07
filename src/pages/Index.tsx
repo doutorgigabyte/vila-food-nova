@@ -63,7 +63,7 @@ const Index = () => {
 
   return (
     <div className={cn(
-      "min-h-screen flex flex-col pb-16 md:pb-0 transition-colors duration-300",
+      "min-h-screen flex flex-col pb-16 md:pb-0 transition-colors duration-300 overflow-x-hidden",
       selectedMainCategory 
         ? `bg-gradient-to-b ${theme.bgGradient} bg-background`
         : "bg-background"
