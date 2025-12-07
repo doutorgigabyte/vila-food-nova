@@ -67,6 +67,7 @@ import PaymentsManagement from "./pages/dashboard/PaymentsManagement";
 import DataMigration from "./pages/admin/DataMigration";
 import ExternalDataMigration from "./pages/admin/ExternalDataMigration";
 import Roadmap from "./pages/admin/Roadmap";
+import ImplementationRoadmap from "./pages/admin/ImplementationRoadmap";
 import SystemHealthCheck from "./pages/admin/SystemHealthCheck";
 import AffiliatesManagement from "./pages/admin/AffiliatesManagement";
 import ImageFillManager from "./pages/admin/ImageFillManager";
@@ -208,6 +209,7 @@ const App = () => (
               <Route path="/admin/migracao-externa" element={<ProtectedAdminRoute><ExternalDataMigration /></ProtectedAdminRoute>} />
               <Route path="/admin/roadmap" element={<ProtectedAdminRoute><Roadmap /></ProtectedAdminRoute>} />
               <Route path="/admin/health" element={<ProtectedAdminRoute><SystemHealthCheck /></ProtectedAdminRoute>} />
+              <Route path="/admin/progresso" element={<ProtectedAdminRoute><ImplementationRoadmap /></ProtectedAdminRoute>} />
               <Route path="/admin/preencher-imagens" element={<ProtectedAdminRoute><ImageFillManager /></ProtectedAdminRoute>} />
               <Route path="/admin/configuracoes" element={<ProtectedAdminRoute><AdminSettings /></ProtectedAdminRoute>} />
               <Route path="/admin/banco-dados" element={<ProtectedAdminRoute><DatabaseManagement /></ProtectedAdminRoute>} />

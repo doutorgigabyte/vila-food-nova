@@ -1,239 +1,236 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  ArrowLeft, 
-  Clock, 
-  CheckCircle, 
-  XCircle, 
-  Package, 
-  Bike,
-  MessageCircle,
-  RotateCcw,
-  Utensils
-} from "lucide-react";
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, Package, Clock, CheckCircle, XCircle, Truck, ChefHat, Loader2, RefreshCw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { useUserOrders, UserOrder } from '@/hooks/useUserOrders';
+import { useAuth } from '@/hooks/useAuth';
+import MobileBottomNav from '@/components/marketplace/MobileBottomNav';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
-// Mock orders data
-const orders = [
-  {
-    id: 1234,
-    establishment: {
-      name: "Pizza do Bairro",
-      logo: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=100",
-    },
-    status: "delivering",
-    statusText: "Saiu para entrega",
-    items: [
-      { name: "Pizza Margherita", quantity: 2, price: 45.90 },
-      { name: "Refrigerante 2L", quantity: 1, price: 12.90 },
-    ],
-    total: 110.69,
-    date: "Hoje, 19:30",
-    deliveryTime: "15-20 min",
-  },
-  {
-    id: 1233,
-    establishment: {
-      name: "Burger House",
-      logo: "https://images.unsplash.com/photo-1550547660-d9450f859349?w=100",
-    },
-    status: "delivered",
-    statusText: "Entregue",
-    items: [
-      { name: "Combo Burger Duplo", quantity: 1, price: 42.90 },
-    ],
-    total: 47.89,
-    date: "Ontem, 20:15",
-    deliveryTime: null,
-  },
-  {
-    id: 1232,
-    establishment: {
-      name: "Sushi Master",
-      logo: "https://images.unsplash.com/photo-1553621042-f6e147245754?w=100",
-    },
-    status: "cancelled",
-    statusText: "Cancelado",
-    items: [
-      { name: "Combo 30 Peças", quantity: 1, price: 89.90 },
-    ],
-    total: 97.89,
-    date: "10/12/2024, 21:00",
-    deliveryTime: null,
-  },
-];
-
-const getStatusIcon = (status: string) => {
-  switch (status) {
-    case "pending":
-      return <Clock className="w-5 h-5 text-yellow-500" />;
-    case "preparing":
-      return <Package className="w-5 h-5 text-blue-500" />;
-    case "delivering":
-      return <Bike className="w-5 h-5 text-primary animate-pulse" />;
-    case "delivered":
-      return <CheckCircle className="w-5 h-5 text-green-500" />;
-    case "cancelled":
-      return <XCircle className="w-5 h-5 text-red-500" />;
-    default:
-      return <Clock className="w-5 h-5 text-muted-foreground" />;
-  }
-};
-
-const getStatusBadge = (status: string, statusText: string) => {
-  const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-    pending: "secondary",
-    preparing: "secondary",
-    delivering: "default",
-    delivered: "outline",
-    cancelled: "destructive",
-  };
-  return <Badge variant={variants[status] || "secondary"}>{statusText}</Badge>;
+const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
+  pending: { label: 'Pendente', color: 'bg-yellow-500', icon: <Clock className="h-4 w-4" /> },
+  confirmed: { label: 'Confirmado', color: 'bg-blue-500', icon: <CheckCircle className="h-4 w-4" /> },
+  preparing: { label: 'Preparando', color: 'bg-orange-500', icon: <ChefHat className="h-4 w-4" /> },
+  ready: { label: 'Pronto', color: 'bg-green-500', icon: <Package className="h-4 w-4" /> },
+  delivering: { label: 'Em entrega', color: 'bg-purple-500', icon: <Truck className="h-4 w-4" /> },
+  delivered: { label: 'Entregue', color: 'bg-green-600', icon: <CheckCircle className="h-4 w-4" /> },
+  cancelled: { label: 'Cancelado', color: 'bg-red-500', icon: <XCircle className="h-4 w-4" /> },
 };
 
 const Orders = () => {
-  const [activeTab, setActiveTab] = useState("all");
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState('active');
+  const { user } = useAuth();
+  const { orders, activeOrders, completedOrders, cancelledOrders, loading, refetch } = useUserOrders();
 
-  const filteredOrders = orders.filter((order) => {
-    if (activeTab === "all") return true;
-    if (activeTab === "active") return ["pending", "preparing", "delivering"].includes(order.status);
-    if (activeTab === "completed") return order.status === "delivered";
-    if (activeTab === "cancelled") return order.status === "cancelled";
-    return true;
-  });
+  const getImageUrl = (url: string | null) => {
+    if (!url) return '/placeholder.svg';
+    if (url.startsWith('http')) return url;
+    return `https://d2fhl3f70zfvod.cloudfront.net/${url}`;
+  };
+
+  const getOrderItems = (items: any) => {
+    if (!items) return [];
+    if (Array.isArray(items)) return items;
+    return [];
+  };
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col">
+        <header className="sticky top-0 z-50 bg-background border-b p-4">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <h1 className="text-xl font-bold">Meus Pedidos</h1>
+          </div>
+        </header>
+
+        <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
+          <Package className="h-16 w-16 text-muted-foreground mb-4" />
+          <h2 className="text-xl font-semibold mb-2">Faça login para ver seus pedidos</h2>
+          <p className="text-muted-foreground mb-6">
+            Acompanhe o status dos seus pedidos em tempo real.
+          </p>
+          <Button onClick={() => navigate('/auth')}>
+            Entrar ou Cadastrar
+          </Button>
+        </div>
+
+        <MobileBottomNav />
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  const renderOrderCard = (order: UserOrder) => {
+    const status = statusConfig[order.status] || statusConfig.pending;
+    const items = getOrderItems(order.items);
+
+    return (
+      <Card key={order.id} className="overflow-hidden">
+        <CardContent className="p-4">
+          <div className="flex items-start gap-3">
+            <img
+              src={getImageUrl(order.establishments?.logo_url || null)}
+              alt={order.establishments?.name}
+              className="w-16 h-16 rounded-lg object-cover"
+            />
+            <div className="flex-1 min-w-0">
+              <div className="flex items-start justify-between">
+                <div>
+                  <h3 className="font-semibold">{order.establishments?.name || 'Estabelecimento'}</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Pedido #{order.order_number}
+                  </p>
+                </div>
+                <Badge className={`${status.color} text-white shrink-0`}>
+                  <span className="flex items-center gap-1">
+                    {status.icon}
+                    {status.label}
+                  </span>
+                </Badge>
+              </div>
+
+              <div className="mt-2 text-sm text-muted-foreground">
+                {items.slice(0, 2).map((item: any, idx: number) => (
+                  <span key={idx}>
+                    {item.quantity}x {item.name}
+                    {idx < Math.min(items.length, 2) - 1 && ', '}
+                  </span>
+                ))}
+                {items.length > 2 && ` +${items.length - 2} itens`}
+              </div>
+
+              <div className="flex items-center justify-between mt-3">
+                <span className="text-sm text-muted-foreground">
+                  {format(new Date(order.created_at), "dd 'de' MMM 'às' HH:mm", { locale: ptBR })}
+                </span>
+                <span className="font-bold text-primary">
+                  R$ {order.total.toFixed(2)}
+                </span>
+              </div>
+
+              {order.status === 'delivering' && order.delivery_type === 'delivery' && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="mt-3 w-full"
+                  onClick={() => {/* TODO: Open tracking */}}
+                >
+                  <Truck className="h-4 w-4 mr-2" />
+                  Acompanhar Entrega
+                </Button>
+              )}
+
+              {order.status === 'delivered' && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="mt-3 w-full"
+                  onClick={() => navigate(`/loja/${order.establishments?.slug}`)}
+                >
+                  Pedir novamente
+                </Button>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+
+  const isEmpty = orders.length === 0;
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b border-border">
-        <div className="container mx-auto px-4 py-3">
+    <div className="min-h-screen bg-background pb-20">
+      <header className="sticky top-0 z-50 bg-background border-b p-4">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link to="/marketplace" className="p-2 hover:bg-muted rounded-full transition-colors">
-              <ArrowLeft className="w-5 h-5" />
-            </Link>
-            <h1 className="text-lg font-semibold">Meus pedidos</h1>
+            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <h1 className="text-xl font-bold">Meus Pedidos</h1>
           </div>
+          <Button variant="ghost" size="icon" onClick={refetch}>
+            <RefreshCw className="h-5 w-5" />
+          </Button>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-6 max-w-2xl">
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4 mb-6">
-            <TabsTrigger value="all">Todos</TabsTrigger>
-            <TabsTrigger value="active">Ativos</TabsTrigger>
-            <TabsTrigger value="completed">Concluídos</TabsTrigger>
-            <TabsTrigger value="cancelled">Cancelados</TabsTrigger>
-          </TabsList>
+      {isEmpty ? (
+        <div className="flex flex-col items-center justify-center p-8 text-center mt-12">
+          <Package className="h-16 w-16 text-muted-foreground mb-4" />
+          <h2 className="text-xl font-semibold mb-2">Nenhum pedido ainda</h2>
+          <p className="text-muted-foreground mb-6">
+            Faça seu primeiro pedido e acompanhe aqui.
+          </p>
+          <Button onClick={() => navigate('/')}>
+            Explorar Marketplace
+          </Button>
+        </div>
+      ) : (
+        <div className="p-4">
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="grid w-full grid-cols-3 mb-4">
+              <TabsTrigger value="active" className="relative">
+                Ativos
+                {activeOrders.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                    {activeOrders.length}
+                  </span>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="completed">Concluídos</TabsTrigger>
+              <TabsTrigger value="cancelled">Cancelados</TabsTrigger>
+            </TabsList>
 
-          <TabsContent value={activeTab} className="space-y-4">
-            {filteredOrders.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Package className="w-8 h-8 text-muted-foreground" />
+            <TabsContent value="active" className="space-y-4">
+              {activeOrders.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  Nenhum pedido ativo
                 </div>
-                <h3 className="font-semibold mb-2">Nenhum pedido encontrado</h3>
-                <p className="text-muted-foreground text-sm mb-4">
-                  {activeTab === "active" 
-                    ? "Você não tem pedidos ativos no momento"
-                    : "Comece a fazer pedidos para vê-los aqui"
-                  }
-                </p>
-                <Link to="/marketplace">
-                  <Button>Explorar restaurantes</Button>
-                </Link>
-              </div>
-            ) : (
-              filteredOrders.map((order) => (
-                <Card key={order.id} className="overflow-hidden">
-                  <CardContent className="p-0">
-                    {/* Order Header */}
-                    <div className="p-4 border-b border-border flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <img
-                          src={order.establishment.logo}
-                          alt={order.establishment.name}
-                          className="w-10 h-10 rounded-full object-cover"
-                        />
-                        <div>
-                          <h3 className="font-medium">{order.establishment.name}</h3>
-                          <p className="text-xs text-muted-foreground">{order.date}</p>
-                        </div>
-                      </div>
-                      {getStatusBadge(order.status, order.statusText)}
-                    </div>
+              ) : (
+                activeOrders.map(renderOrderCard)
+              )}
+            </TabsContent>
 
-                    {/* Order Status Progress */}
-                    {order.status === "delivering" && (
-                      <div className="px-4 py-3 bg-primary/5 border-b border-border">
-                        <div className="flex items-center gap-3">
-                          {getStatusIcon(order.status)}
-                          <div className="flex-1">
-                            <p className="text-sm font-medium">{order.statusText}</p>
-                            <p className="text-xs text-muted-foreground">
-                              Previsão: {order.deliveryTime}
-                            </p>
-                          </div>
-                          <Button variant="outline" size="sm" className="gap-2">
-                            <MessageCircle className="w-4 h-4" />
-                            Contato
-                          </Button>
-                        </div>
-                      </div>
-                    )}
+            <TabsContent value="completed" className="space-y-4">
+              {completedOrders.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  Nenhum pedido concluído
+                </div>
+              ) : (
+                completedOrders.map(renderOrderCard)
+              )}
+            </TabsContent>
 
-                    {/* Order Items */}
-                    <div className="p-4 space-y-2">
-                      {order.items.map((item, index) => (
-                        <div key={index} className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">
-                            {item.quantity}x {item.name}
-                          </span>
-                          <span>R$ {(item.price * item.quantity).toFixed(2)}</span>
-                        </div>
-                      ))}
-                      <div className="flex justify-between font-medium pt-2 border-t border-border">
-                        <span>Total</span>
-                        <span>R$ {order.total.toFixed(2)}</span>
-                      </div>
-                    </div>
+            <TabsContent value="cancelled" className="space-y-4">
+              {cancelledOrders.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  Nenhum pedido cancelado
+                </div>
+              ) : (
+                cancelledOrders.map(renderOrderCard)
+              )}
+            </TabsContent>
+          </Tabs>
+        </div>
+      )}
 
-                    {/* Order Actions */}
-                    <div className="px-4 pb-4 flex gap-2">
-                      {order.status === "delivered" && (
-                        <>
-                          <Button variant="outline" size="sm" className="flex-1 gap-2">
-                            <RotateCcw className="w-4 h-4" />
-                            Pedir novamente
-                          </Button>
-                          <Button variant="outline" size="sm" className="flex-1">
-                            Avaliar
-                          </Button>
-                        </>
-                      )}
-                      {order.status === "cancelled" && (
-                        <Button variant="outline" size="sm" className="flex-1 gap-2">
-                          <RotateCcw className="w-4 h-4" />
-                          Pedir novamente
-                        </Button>
-                      )}
-                      {["pending", "preparing", "delivering"].includes(order.status) && (
-                        <Link to={`/pedidos/${order.id}`} className="flex-1">
-                          <Button variant="outline" size="sm" className="w-full">
-                            Ver detalhes
-                          </Button>
-                        </Link>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
-            )}
-          </TabsContent>
-        </Tabs>
-      </main>
+      <MobileBottomNav />
     </div>
   );
 };
