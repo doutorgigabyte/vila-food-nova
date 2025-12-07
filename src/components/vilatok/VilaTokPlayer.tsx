@@ -40,6 +40,7 @@ export function VilaTokPlayer({
   const [showPlayIcon, setShowPlayIcon] = useState(false);
   const [hasCountedView, setHasCountedView] = useState(false);
   const [hasMusicPlaying, setHasMusicPlaying] = useState(false);
+  const [videoLoaded, setVideoLoaded] = useState(false);
 
   // Clear progress interval
   const clearProgressInterval = useCallback(() => {
@@ -70,6 +71,17 @@ export function VilaTokPlayer({
       }
     }, PROGRESS_INTERVAL);
   }, [autoAdvance, onAutoAdvance, onProgressUpdate, clearProgressInterval]);
+
+  // Load video when it becomes active or nearby
+  useEffect(() => {
+    if (!videoRef.current) return;
+    
+    // Pre-load video data when component mounts
+    if (!videoLoaded) {
+      videoRef.current.load();
+      setVideoLoaded(true);
+    }
+  }, [videoLoaded]);
 
   // Auto-play and countdown when active
   useEffect(() => {
@@ -186,10 +198,10 @@ export function VilaTokPlayer({
 
   return (
     <div 
-      className="relative w-full h-full bg-black"
+      className="relative w-full h-full bg-black vilatok-slide"
       onClick={togglePlay}
     >
-      {/* Video */}
+      {/* Video - lazy loaded with metadata preload */}
       <video
         ref={videoRef}
         src={videoUrl}
@@ -197,7 +209,7 @@ export function VilaTokPlayer({
         className="w-full h-full object-cover"
         muted={isMuted}
         playsInline
-        preload="auto"
+        preload={isActive ? "auto" : "metadata"}
         loop
         onEnded={handleVideoEnd}
       />
@@ -208,14 +220,14 @@ export function VilaTokPlayer({
           ref={audioRef}
           src={musicUrl}
           loop
-          preload="auto"
+          preload="none"
         />
       )}
 
       {/* Play/Pause indicator */}
       <div 
         className={cn(
-          "absolute inset-0 flex items-center justify-center pointer-events-none transition-opacity duration-300",
+          "absolute inset-0 flex items-center justify-center pointer-events-none transition-opacity duration-200",
           showPlayIcon ? "opacity-100" : "opacity-0"
         )}
       >

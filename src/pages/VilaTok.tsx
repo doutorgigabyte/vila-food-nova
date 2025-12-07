@@ -2,11 +2,12 @@ import { useEffect, useCallback, useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Flame } from 'lucide-react';
 import { Swiper, SwiperSlide } from 'swiper/react';
-import { Mousewheel, Keyboard, FreeMode } from 'swiper/modules';
+import { Mousewheel, Keyboard, FreeMode, Virtual } from 'swiper/modules';
 import type { Swiper as SwiperType } from 'swiper';
 import 'swiper/css';
 import 'swiper/css/mousewheel';
 import 'swiper/css/free-mode';
+import 'swiper/css/virtual';
 
 import { useVilaTok } from '@/hooks/useVilaTok';
 import { VilaTokPlayer } from '@/components/vilatok/VilaTokPlayer';
@@ -236,7 +237,7 @@ export default function VilaTok() {
   }
 
   return (
-    <div className="fixed inset-0 bg-black overflow-hidden">
+    <div className="fixed inset-0 bg-black overflow-hidden vilatok-container">
       {/* Header */}
       <div className="absolute top-0 left-0 right-0 z-30">
         <div className="flex items-center justify-between p-4 bg-gradient-to-b from-black/60 to-transparent">
@@ -265,29 +266,43 @@ export default function VilaTok() {
         />
       )}
 
-      {/* Vertical Swiper (Establishments) */}
+      {/* Vertical Swiper (Establishments) - Ultra-fluid config */}
       <Swiper
         direction="vertical"
-        modules={[Mousewheel, Keyboard, FreeMode]}
+        modules={[Mousewheel, Keyboard, FreeMode, Virtual]}
+        virtual
         mousewheel={{
-          sensitivity: 0.8,
-          thresholdDelta: 20,
+          sensitivity: 1.2,
+          thresholdDelta: 10,
           forceToAxis: true,
+          releaseOnEdges: true,
         }}
         keyboard={{
           enabled: !showTutorial,
           onlyInViewport: true,
         }}
-        speed={300}
+        speed={200}
         slidesPerView={1}
-        threshold={10}
-        touchRatio={1.5}
+        threshold={5}
+        touchRatio={1.2}
         shortSwipes={true}
-        longSwipesRatio={0.2}
-        longSwipesMs={150}
+        longSwipesRatio={0.15}
+        longSwipesMs={100}
         followFinger={true}
-        resistanceRatio={0.6}
+        resistanceRatio={0.85}
         cssMode={false}
+        touchStartPreventDefault={false}
+        touchMoveStopPropagation={true}
+        passiveListeners={true}
+        edgeSwipeDetection={true}
+        edgeSwipeThreshold={20}
+        freeMode={{
+          enabled: false,
+          momentum: true,
+          momentumRatio: 0.8,
+          momentumBounce: true,
+          momentumBounceRatio: 0.6,
+        }}
         className="w-full h-full"
         onSwiper={(swiper) => {
           verticalSwiperRef.current = swiper;
@@ -295,29 +310,42 @@ export default function VilaTok() {
         onSlideChange={handleVerticalSlideChange}
       >
         {establishments.map((est, estIndex) => (
-          <SwiperSlide key={est.establishment.id} className="w-full h-full">
-            {/* Horizontal Swiper (Videos within Establishment) */}
+          <SwiperSlide 
+            key={est.establishment.id} 
+            className="w-full h-full vilatok-slide"
+            virtualIndex={estIndex}
+          >
+            {/* Horizontal Swiper (Videos within Establishment) - Ultra-fluid config */}
             <Swiper
               direction="horizontal"
               modules={[Mousewheel, Keyboard, FreeMode]}
               mousewheel={{
-                sensitivity: 0.8,
-                thresholdDelta: 20,
+                sensitivity: 1.2,
+                thresholdDelta: 10,
                 forceToAxis: true,
+                releaseOnEdges: true,
               }}
               keyboard={{
                 enabled: !showTutorial && estIndex === activeEstablishmentIndex,
                 onlyInViewport: true,
               }}
-              speed={250}
+              speed={180}
               slidesPerView={1}
-              threshold={10}
-              touchRatio={1.5}
+              threshold={5}
+              touchRatio={1.2}
               shortSwipes={true}
-              longSwipesRatio={0.2}
-              longSwipesMs={150}
+              longSwipesRatio={0.15}
+              longSwipesMs={100}
               followFinger={true}
-              resistanceRatio={0.6}
+              resistanceRatio={0.85}
+              touchStartPreventDefault={false}
+              touchMoveStopPropagation={true}
+              passiveListeners={true}
+              freeMode={{
+                enabled: false,
+                momentum: true,
+                momentumRatio: 0.8,
+              }}
               className="w-full h-full"
               onSwiper={(swiper) => {
                 horizontalSwipersRef.current.set(estIndex, swiper);
@@ -327,21 +355,25 @@ export default function VilaTok() {
             >
               {est.videos.map((video, vidIndex) => {
                 const isVideoActive = !showTutorial && estIndex === activeEstablishmentIndex && vidIndex === (activeVideoIndices.get(estIndex) || 0);
+                // Only render full content for nearby slides (performance)
+                const isNearby = Math.abs(estIndex - activeEstablishmentIndex) <= 1;
                 
                 return (
-                <SwiperSlide key={video.id} className="w-full h-full">
+                <SwiperSlide key={video.id} className="w-full h-full vilatok-slide">
                   <div className="relative w-full h-full">
-                    {/* Video Player */}
-                    <VilaTokPlayer
-                      videoUrl={video.video_url}
-                      thumbnailUrl={video.thumbnail_url}
-                      musicUrl={video.music_url}
-                      isActive={isVideoActive}
-                      onViewCountIncrement={() => incrementViews(video.id)}
-                      onVideoEnd={() => {}}
-                      onAutoAdvance={handleAutoAdvance}
-                      onProgressUpdate={handleProgressUpdate}
-                    />
+                    {/* Video Player - only load for nearby slides */}
+                    {isNearby && (
+                      <VilaTokPlayer
+                        videoUrl={video.video_url}
+                        thumbnailUrl={video.thumbnail_url}
+                        musicUrl={video.music_url}
+                        isActive={isVideoActive}
+                        onViewCountIncrement={() => incrementViews(video.id)}
+                        onVideoEnd={() => {}}
+                        onAutoAdvance={handleAutoAdvance}
+                        onProgressUpdate={handleProgressUpdate}
+                      />
+                    )}
 
                     {/* Overlay */}
                     <VilaTokOverlay
