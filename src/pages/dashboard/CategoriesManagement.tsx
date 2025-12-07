@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -8,12 +8,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { SidebarProvider } from "@/components/ui/sidebar";
 import { ImageUpload } from "@/components/ImageUpload";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
+import { useUserEstablishment } from "@/hooks/useDashboardData";
+import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import { toast } from "sonner";
 import {
-  ArrowLeft,
   Plus,
   Search,
   Edit,
@@ -21,6 +22,7 @@ import {
   Tag,
   Loader2,
   GripVertical,
+  Menu,
 } from "lucide-react";
 
 interface Category {
@@ -33,14 +35,17 @@ interface Category {
 }
 
 const CategoriesManagement = () => {
-  const { user } = useAuth();
+  const { slug } = useParams();
+  const { establishmentId, establishment, loading: estLoading } = useUserEstablishment();
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [saving, setSaving] = useState(false);
-  const [establishmentId, setEstablishmentId] = useState<string | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const baseUrl = slug ? `/painel/${slug}` : '/painel';
 
   // Form state
   const [form, setForm] = useState({
@@ -52,35 +57,14 @@ const CategoriesManagement = () => {
   });
 
   useEffect(() => {
-    if (user) {
-      fetchEstablishment();
-    }
-  }, [user]);
-
-  useEffect(() => {
     if (establishmentId) {
       fetchCategories();
     }
   }, [establishmentId]);
 
-  const fetchEstablishment = async () => {
-    const { data, error } = await supabase
-      .from("establishments")
-      .select("id")
-      .eq("owner_id", user?.id)
-      .maybeSingle();
-
-    if (error) {
-      toast.error("Erro ao carregar estabelecimento");
-      return;
-    }
-
-    if (data) {
-      setEstablishmentId(data.id);
-    }
-  };
-
   const fetchCategories = async () => {
+    if (!establishmentId) return;
+    
     setLoading(true);
     const { data, error } = await supabase
       .from("categories")
@@ -122,6 +106,11 @@ const CategoriesManagement = () => {
   const handleSave = async () => {
     if (!form.name) {
       toast.error("Nome é obrigatório");
+      return;
+    }
+
+    if (!establishmentId) {
+      toast.error("Estabelecimento não encontrado");
       return;
     }
 
@@ -184,110 +173,123 @@ const CategoriesManagement = () => {
   );
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b border-border">
-        <div className="flex items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-3">
-            <Link to="/painel">
-              <Button variant="ghost" size="icon">
-                <ArrowLeft className="w-5 h-5" />
-              </Button>
-            </Link>
-            <h1 className="text-lg font-semibold">Categorias</h1>
-          </div>
-          <Button onClick={() => handleOpenDialog()}>
-            <Plus className="w-4 h-4 mr-2" />
-            Nova Categoria
-          </Button>
-        </div>
-      </header>
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full bg-background">
+        <DashboardSidebar 
+          isOpen={sidebarOpen} 
+          onClose={() => setSidebarOpen(false)}
+          establishment={establishment}
+        />
 
-      <div className="p-4 md:p-6 space-y-6">
-        {/* Search */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar categorias..."
-            className="pl-10"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-
-        {/* Categories List */}
-        {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-          </div>
-        ) : filteredCategories.length === 0 ? (
-          <Card>
-            <CardContent className="py-12 text-center">
-              <Tag className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">
-                {searchTerm ? "Nenhuma categoria encontrada" : "Nenhuma categoria cadastrada"}
-              </p>
-              {!searchTerm && (
-                <Button className="mt-4" onClick={() => handleOpenDialog()}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Adicionar primeira categoria
+        <div className="flex-1 lg:ml-64">
+          <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b border-border">
+            <div className="flex items-center justify-between px-4 py-3">
+              <div className="flex items-center gap-3">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="lg:hidden"
+                  onClick={() => setSidebarOpen(true)}
+                >
+                  <Menu className="w-5 h-5" />
                 </Button>
-              )}
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="space-y-2">
-            {filteredCategories.map((category) => (
-              <Card key={category.id}>
-                <CardContent className="p-4 flex items-center gap-4">
-                  <GripVertical className="w-5 h-5 text-muted-foreground cursor-grab" />
-                  
-                  {category.image_url ? (
-                    <img
-                      src={category.image_url}
-                      alt={category.name}
-                      className="w-14 h-14 rounded-lg object-cover"
-                    />
-                  ) : (
-                    <div className="w-14 h-14 rounded-lg bg-muted flex items-center justify-center">
-                      <Tag className="w-6 h-6 text-muted-foreground" />
-                    </div>
+                <h1 className="text-lg font-semibold">Categorias</h1>
+              </div>
+              <Button onClick={() => handleOpenDialog()}>
+                <Plus className="w-4 h-4 mr-2" />
+                Nova Categoria
+              </Button>
+            </div>
+          </header>
+
+          <div className="p-4 md:p-6 space-y-6">
+            {/* Search */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar categorias..."
+                className="pl-10"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+
+            {/* Categories List */}
+            {loading || estLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : filteredCategories.length === 0 ? (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <Tag className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground">
+                    {searchTerm ? "Nenhuma categoria encontrada" : "Nenhuma categoria cadastrada"}
+                  </p>
+                  {!searchTerm && (
+                    <Button className="mt-4" onClick={() => handleOpenDialog()}>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Adicionar primeira categoria
+                    </Button>
                   )}
-
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-medium">{category.name}</h3>
-                      {!category.is_active && (
-                        <Badge variant="secondary">Inativa</Badge>
-                      )}
-                    </div>
-                    {category.description && (
-                      <p className="text-sm text-muted-foreground line-clamp-1">
-                        {category.description}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="flex gap-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleOpenDialog(category)}
-                    >
-                      <Edit className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDelete(category)}
-                    >
-                      <Trash2 className="w-4 h-4 text-destructive" />
-                    </Button>
-                  </div>
                 </CardContent>
               </Card>
-            ))}
+            ) : (
+              <div className="space-y-2">
+                {filteredCategories.map((category) => (
+                  <Card key={category.id}>
+                    <CardContent className="p-4 flex items-center gap-4">
+                      <GripVertical className="w-5 h-5 text-muted-foreground cursor-grab" />
+                      
+                      {category.image_url ? (
+                        <img
+                          src={category.image_url}
+                          alt={category.name}
+                          className="w-14 h-14 rounded-lg object-cover"
+                        />
+                      ) : (
+                        <div className="w-14 h-14 rounded-lg bg-muted flex items-center justify-center">
+                          <Tag className="w-6 h-6 text-muted-foreground" />
+                        </div>
+                      )}
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-medium">{category.name}</h3>
+                          {!category.is_active && (
+                            <Badge variant="secondary">Inativa</Badge>
+                          )}
+                        </div>
+                        {category.description && (
+                          <p className="text-sm text-muted-foreground line-clamp-1">
+                            {category.description}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="flex gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleOpenDialog(category)}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDelete(category)}
+                        >
+                          <Trash2 className="w-4 h-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
 
       {/* Category Dialog */}
@@ -300,13 +302,15 @@ const CategoriesManagement = () => {
           </DialogHeader>
 
           <div className="space-y-4">
-            <ImageUpload
-              bucket="establishments"
-              currentImage={form.image_url}
-              onUpload={(url) => setForm({ ...form, image_url: url })}
-              onRemove={() => setForm({ ...form, image_url: "" })}
-              aspectRatio="banner"
-            />
+            {establishmentId && (
+              <ImageUpload
+                bucket="establishments"
+                currentImage={form.image_url}
+                onUpload={(url) => setForm({ ...form, image_url: url })}
+                onRemove={() => setForm({ ...form, image_url: "" })}
+                aspectRatio="banner"
+              />
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="name">Nome *</Label>
@@ -358,7 +362,7 @@ const CategoriesManagement = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </SidebarProvider>
   );
 };
 

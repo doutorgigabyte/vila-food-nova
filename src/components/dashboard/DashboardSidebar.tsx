@@ -31,7 +31,9 @@ import {
   Brain,
   Video,
   Camera,
-  Cog
+  Cog,
+  Settings,
+  Plug,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -78,8 +80,8 @@ const getMenuItems = (baseUrl: string) => [
   { icon: LineChart, label: "Pixels Analytics", href: `${baseUrl}/pixels` },
   { icon: QrCode, label: "QR Code", href: `${baseUrl}/qrcode` },
   { icon: Eye, label: "Banners", href: `${baseUrl}/banners` },
-  { icon: Cog, label: "Integrações", href: `${baseUrl}/integracoes` },
-  { icon: Cog, label: "Configurações", href: `${baseUrl}/configuracoes` },
+  { icon: Plug, label: "Integrações", href: `${baseUrl}/integracoes` },
+  { icon: Settings, label: "Configurações", href: `${baseUrl}/configuracoes` },
 ];
 
 const DashboardSidebar = ({ 
