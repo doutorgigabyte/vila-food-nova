@@ -59,8 +59,8 @@ const EstablishmentCard = ({
           loading="lazy"
           decoding="async"
           className={cn(
-            "w-full h-full object-cover transition-all duration-500",
-            imageLoaded ? "opacity-100 hover:scale-105" : "opacity-0",
+            "w-full h-full object-cover transition-opacity duration-300",
+            imageLoaded ? "opacity-100" : "opacity-0",
             imgClass
           )}
           draggable={false}

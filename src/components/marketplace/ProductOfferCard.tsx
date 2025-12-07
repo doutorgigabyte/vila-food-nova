@@ -94,7 +94,7 @@ const ProductOfferCard = ({ product, variant = "default", className }: ProductOf
         to={`/produto/${product.id}`}
         className={cn("block group snap-center", className)}
       >
-        <Card className="overflow-hidden hover:shadow-elevated transition-all relative border-0 shadow-soft w-56 md:w-64 rounded-2xl">
+        <Card className="overflow-hidden hover:shadow-elevated transition-all relative border-0 shadow-soft w-56 md:w-64 rounded-2xl group-hover:scale-[1.02]">
           <div className="relative overflow-hidden bg-muted aspect-[3/4]">
             {/* Skeleton while loading */}
             {!imageLoaded && !imageError && product.image_url && (
@@ -108,7 +108,7 @@ const ProductOfferCard = ({ product, variant = "default", className }: ProductOf
                 loading="lazy"
                 decoding="async"
                 className={cn(
-                  "w-full h-full object-cover transition-transform duration-500 group-hover:scale-105",
+                  "w-full h-full object-cover transition-opacity duration-300",
                   imageLoaded ? "opacity-100" : "opacity-0"
                 )}
                 draggable={false}
@@ -205,8 +205,8 @@ const ProductOfferCard = ({ product, variant = "default", className }: ProductOf
               loading="lazy"
               decoding="async"
               className={cn(
-                "w-full h-full object-cover transition-all duration-500",
-                imageLoaded ? "opacity-100 hover:scale-105" : "opacity-0"
+                "w-full h-full object-cover transition-opacity duration-300",
+                imageLoaded ? "opacity-100" : "opacity-0"
               )}
               draggable={false}
               onLoad={() => setImageLoaded(true)}
