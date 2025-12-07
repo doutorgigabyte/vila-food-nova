@@ -334,10 +334,16 @@ const CategoryPage = () => {
         ) : (
           <>
             {/* Video Highlights */}
-            <VideoHighlightsSection mainCategory={categoryId} />
+            <VideoHighlightsSection 
+              mainCategory={categoryId} 
+              subcategory={selectedSubcategory?.id}
+            />
 
-            {/* Top Offers - using existing component props */}
-            <TopOffersSection mainCategory={categoryId} />
+            {/* Top Offers - with subcategory filter */}
+            <TopOffersSection 
+              mainCategory={categoryId} 
+              subcategory={selectedSubcategory?.id}
+            />
 
             {/* Products Grid */}
             <CategoryProductsSection

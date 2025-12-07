@@ -11,13 +11,14 @@ import { useDragScroll } from "@/hooks/useDragScroll";
 
 interface TopOffersSectionProps {
   mainCategory?: string | null;
+  subcategory?: string | null;
 }
 
-const TopOffersSection = ({ mainCategory }: TopOffersSectionProps) => {
+const TopOffersSection = ({ mainCategory, subcategory }: TopOffersSectionProps) => {
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
   
-  const { products, loading } = useProductsByMainCategory(mainCategory || null, 30);
+  const { products, loading } = useProductsByMainCategory(mainCategory || null, 30, subcategory);
   const theme = getCategoryTheme(mainCategory || null);
 
   // Use drag scroll hook for mouse + touch drag support
