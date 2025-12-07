@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { HelpCircle, ChevronDown } from "lucide-react";
+import { HelpCircle } from "lucide-react";
 import {
   Accordion,
   AccordionContent,
@@ -88,7 +88,7 @@ const faqCategories = [
 
 const FAQSection = () => {
   return (
-    <section className="py-20 md:py-32 relative overflow-hidden" id="faq">
+    <section className="py-12 md:py-20 lg:py-32 relative overflow-hidden" id="faq">
       {/* Background */}
       <div className="absolute inset-0 bg-gradient-to-b from-background via-muted/20 to-background" />
       <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-primary/5 rounded-full blur-3xl" />
@@ -100,26 +100,26 @@ const FAQSection = () => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="text-center mb-16"
+          className="text-center mb-10 md:mb-16"
         >
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-6">
-            <HelpCircle className="h-4 w-4 text-primary" />
-            <span className="text-sm font-medium text-primary">Perguntas Frequentes</span>
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-full bg-primary/10 border border-primary/20 mb-4 md:mb-6">
+            <HelpCircle className="h-3 w-3 md:h-4 md:w-4 text-primary" />
+            <span className="text-xs md:text-sm font-medium text-primary">Perguntas Frequentes</span>
           </div>
-          <h2 className="text-3xl md:text-5xl font-bold text-foreground mb-4">
+          <h2 className="text-2xl md:text-4xl lg:text-5xl font-bold text-foreground mb-3 md:mb-4">
             Tire suas{" "}
             <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
               Dúvidas
             </span>
           </h2>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-sm md:text-lg text-muted-foreground max-w-2xl mx-auto px-4">
             Reunimos as perguntas mais comuns para ajudar você a entender 
             como o VilaFood pode transformar seu negócio.
           </p>
         </motion.div>
 
         {/* FAQ Categories */}
-        <div className="max-w-4xl mx-auto space-y-8">
+        <div className="max-w-4xl mx-auto space-y-6 md:space-y-8">
           {faqCategories.map((category, categoryIndex) => (
             <motion.div
               key={category.title}
@@ -129,7 +129,7 @@ const FAQSection = () => {
               transition={{ duration: 0.5, delay: categoryIndex * 0.1 }}
             >
               {/* Category Title */}
-              <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+              <h3 className="text-base md:text-lg font-semibold text-foreground mb-3 md:mb-4 flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-primary" />
                 {category.title}
               </h3>
@@ -139,10 +139,10 @@ const FAQSection = () => {
                 <Accordion type="single" collapsible className="divide-y divide-border/30">
                   {category.questions.map((item, index) => (
                     <AccordionItem key={index} value={`${category.title}-${index}`} className="border-none">
-                      <AccordionTrigger className="px-6 py-4 hover:bg-muted/30 transition-colors text-left [&[data-state=open]]:bg-muted/20">
-                        <span className="text-foreground font-medium pr-4">{item.question}</span>
+                      <AccordionTrigger className="px-4 md:px-6 py-3 md:py-4 hover:bg-muted/30 transition-colors text-left [&[data-state=open]]:bg-muted/20">
+                        <span className="text-sm md:text-base text-foreground font-medium pr-4">{item.question}</span>
                       </AccordionTrigger>
-                      <AccordionContent className="px-6 pb-4 text-muted-foreground leading-relaxed">
+                      <AccordionContent className="px-4 md:px-6 pb-3 md:pb-4 text-xs md:text-sm text-muted-foreground leading-relaxed">
                         {item.answer}
                       </AccordionContent>
                     </AccordionItem>
@@ -159,11 +159,16 @@ const FAQSection = () => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5, delay: 0.5 }}
-          className="mt-12 text-center"
+          className="mt-8 md:mt-12 text-center"
         >
-          <p className="text-muted-foreground">
+          <p className="text-sm md:text-base text-muted-foreground">
             Ainda tem dúvidas?{" "}
-            <a href="#" className="text-primary font-semibold hover:underline">
+            <a 
+              href="https://wa.me/5581999999999" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-primary font-semibold hover:underline"
+            >
               Fale conosco pelo WhatsApp
             </a>
           </p>

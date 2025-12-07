@@ -11,34 +11,38 @@ const HeroSection = () => {
       </div>
 
       <div className="container mx-auto px-4 relative z-10">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
+        <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
           {/* Left content */}
           <div className="text-center lg:text-left text-white">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm text-white font-medium text-sm mb-6 animate-fade-up border border-white/20">
-              <Zap className="w-4 h-4 text-accent" />
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-full bg-white/10 backdrop-blur-sm text-white font-medium text-xs md:text-sm mb-4 md:mb-6 animate-fade-up border border-white/20">
+              <Zap className="w-3 h-3 md:w-4 md:h-4 text-accent" />
               Delivery local também é inovação!
             </div>
 
-            <h1 className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold leading-tight mb-6 animate-fade-up">
+            <h1 className="text-3xl md:text-5xl lg:text-6xl xl:text-7xl font-bold leading-tight mb-4 md:mb-6 animate-fade-up">
               Sua loja de{" "}
               <span className="text-accent">delivery</span>
               {" "}pronta em minutos
             </h1>
 
-            <p className="text-lg md:text-xl text-white/80 mb-8 max-w-xl mx-auto lg:mx-0 animate-fade-up-delayed">
+            <p className="text-base md:text-xl text-white/80 mb-6 md:mb-8 max-w-xl mx-auto lg:mx-0 animate-fade-up-delayed">
               Crie sua loja virtual com subdomínio próprio, gestão completa de pedidos, 
               integração com pagamentos e atendimento automatizado via WhatsApp com IA.
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start animate-fade-up-delayed">
+            <div className="flex flex-col sm:flex-row gap-3 md:gap-4 justify-center lg:justify-start animate-fade-up-delayed">
               <Link to="/cadastro-estabelecimento">
-                <Button className="btn-yellow text-lg px-8 py-6 h-auto group">
+                <Button className="btn-yellow text-base md:text-lg px-6 md:px-8 py-5 md:py-6 h-auto group w-full sm:w-auto">
                   Criar Minha Loja Grátis
                   <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
                 </Button>
               </Link>
               <Link to="/">
-                <Button variant="outline" size="lg" className="border-white/30 text-white hover:bg-white/10 px-8 py-6 h-auto">
+                <Button 
+                  variant="outline" 
+                  size="lg" 
+                  className="bg-white/10 border-white/30 text-white hover:bg-white/20 hover:text-white px-6 md:px-8 py-5 md:py-6 h-auto w-full sm:w-auto"
+                >
                   <Store className="mr-2" size={18} />
                   Ver Lojas
                 </Button>
@@ -46,15 +50,15 @@ const HeroSection = () => {
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-3 gap-6 mt-12 pt-8 border-t border-white/20">
+            <div className="grid grid-cols-3 gap-4 md:gap-6 mt-8 md:mt-12 pt-6 md:pt-8 border-t border-white/20">
               {[
                 { value: "20+", label: "Estabelecimentos" },
                 { value: "1k+", label: "Pedidos/mês" },
                 { value: "24/7", label: "IA Ativa" },
               ].map((stat) => (
                 <div key={stat.label} className="text-center lg:text-left">
-                  <div className="text-2xl md:text-3xl font-bold text-accent">{stat.value}</div>
-                  <div className="text-sm text-white/70">{stat.label}</div>
+                  <div className="text-xl md:text-3xl font-bold text-accent">{stat.value}</div>
+                  <div className="text-xs md:text-sm text-white/70">{stat.label}</div>
                 </div>
               ))}
             </div>
@@ -128,7 +132,7 @@ const HeroSection = () => {
       </div>
 
       {/* Wave decoration at bottom */}
-      <div className="absolute bottom-0 left-0 right-0 h-24 bg-background" style={{ clipPath: 'ellipse(60% 100% at 50% 100%)' }} />
+      <div className="absolute bottom-0 left-0 right-0 h-16 md:h-24 bg-background" style={{ clipPath: 'ellipse(60% 100% at 50% 100%)' }} />
     </section>
   );
 };

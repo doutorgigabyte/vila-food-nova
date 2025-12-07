@@ -41,7 +41,7 @@ const differentials = [
 
 const UniqueSellingPointsSection = () => {
   return (
-    <section className="py-20 md:py-32 relative overflow-hidden" id="diferenciais">
+    <section className="py-12 md:py-20 lg:py-32 relative overflow-hidden" id="diferenciais">
       {/* Background decoration */}
       <div className="absolute inset-0 bg-gradient-to-b from-background via-muted/30 to-background" />
       <div className="absolute top-1/4 -left-64 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
@@ -54,27 +54,27 @@ const UniqueSellingPointsSection = () => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="text-center mb-16"
+          className="text-center mb-10 md:mb-16"
         >
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-6">
-            <Sparkles className="h-4 w-4 text-primary" />
-            <span className="text-sm font-medium text-primary">O que nos torna únicos</span>
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-full bg-primary/10 border border-primary/20 mb-4 md:mb-6">
+            <Sparkles className="h-3 w-3 md:h-4 md:w-4 text-primary" />
+            <span className="text-xs md:text-sm font-medium text-primary">O que nos torna únicos</span>
           </div>
-          <h2 className="text-3xl md:text-5xl font-bold text-foreground mb-4">
+          <h2 className="text-2xl md:text-4xl lg:text-5xl font-bold text-foreground mb-3 md:mb-4 px-2">
             Diferenciais que{" "}
             <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
               Transformam
             </span>{" "}
             seu Negócio
           </h2>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-sm md:text-lg text-muted-foreground max-w-2xl mx-auto px-4">
             Funcionalidades exclusivas que você não encontra em nenhum outro lugar. 
             Tecnologia de ponta para impulsionar suas vendas.
           </p>
         </motion.div>
 
         {/* Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-8">
           {differentials.map((item, index) => (
             <motion.div
               key={item.title}
@@ -85,27 +85,27 @@ const UniqueSellingPointsSection = () => {
               className={`group relative ${index === 4 ? 'md:col-span-2 lg:col-span-1' : ''}`}
             >
               {/* Glassmorphism Card */}
-              <div className="relative h-full p-6 md:p-8 rounded-2xl bg-card/50 backdrop-blur-xl border border-border/50 hover:border-primary/30 transition-all duration-500 hover:shadow-2xl hover:shadow-primary/5 hover:-translate-y-1">
+              <div className="relative h-full p-5 md:p-6 lg:p-8 rounded-2xl bg-card/50 backdrop-blur-xl border border-border/50 hover:border-primary/30 transition-all duration-500 hover:shadow-2xl hover:shadow-primary/5 hover:-translate-y-1">
                 {/* Gradient border effect on hover */}
                 <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-primary/20 via-transparent to-accent/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                 
                 {/* Icon */}
-                <div className={`relative z-10 inline-flex p-4 rounded-xl bg-gradient-to-br ${item.gradient} shadow-lg mb-6`}>
-                  <item.icon className="h-6 w-6 text-white" />
+                <div className={`relative z-10 inline-flex p-3 md:p-4 rounded-xl bg-gradient-to-br ${item.gradient} shadow-lg mb-4 md:mb-6`}>
+                  <item.icon className="h-5 w-5 md:h-6 md:w-6 text-white" />
                 </div>
 
                 {/* Content */}
                 <div className="relative z-10">
-                  <h3 className="text-xl font-bold text-foreground mb-3 group-hover:text-primary transition-colors">
+                  <h3 className="text-lg md:text-xl font-bold text-foreground mb-2 md:mb-3 group-hover:text-primary transition-colors">
                     {item.title}
                   </h3>
-                  <p className="text-muted-foreground leading-relaxed">
+                  <p className="text-sm md:text-base text-muted-foreground leading-relaxed">
                     {item.description}
                   </p>
                 </div>
 
                 {/* Decorative corner */}
-                <div className="absolute top-4 right-4 w-20 h-20 bg-gradient-to-br from-primary/5 to-transparent rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700" />
+                <div className="absolute top-4 right-4 w-16 md:w-20 h-16 md:h-20 bg-gradient-to-br from-primary/5 to-transparent rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700" />
               </div>
             </motion.div>
           ))}
@@ -117,9 +117,9 @@ const UniqueSellingPointsSection = () => {
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6, delay: 0.5 }}
-          className="mt-12 text-center"
+          className="mt-8 md:mt-12 text-center"
         >
-          <p className="text-sm text-muted-foreground">
+          <p className="text-xs md:text-sm text-muted-foreground">
             E muito mais recursos exclusivos esperando por você
           </p>
         </motion.div>
