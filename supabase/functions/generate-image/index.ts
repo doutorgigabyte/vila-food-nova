@@ -6,6 +6,65 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// ==================== Authentication Helpers ====================
+async function authenticateRequest(req: Request): Promise<{ userId: string } | null> {
+  const authHeader = req.headers.get('Authorization');
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return null;
+  }
+
+  const token = authHeader.replace('Bearer ', '');
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_ANON_KEY')!
+  );
+
+  const { data: { user }, error } = await supabase.auth.getUser(token);
+  if (error || !user) {
+    console.error('Auth error:', error?.message);
+    return null;
+  }
+
+  return { userId: user.id };
+}
+
+async function verifyEstablishmentOwnership(userId: string, establishmentId: string): Promise<boolean> {
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+  );
+
+  // Check if user is owner
+  const { data: establishment } = await supabase
+    .from('establishments')
+    .select('owner_id')
+    .eq('id', establishmentId)
+    .single();
+
+  if (establishment?.owner_id === userId) return true;
+
+  // Check if user is an active establishment user
+  const { data: estUser } = await supabase
+    .from('establishment_users')
+    .select('id')
+    .eq('establishment_id', establishmentId)
+    .eq('user_id', userId)
+    .eq('is_active', true)
+    .single();
+
+  if (estUser) return true;
+
+  // Check if user is super admin
+  const { data: roleData } = await supabase
+    .from('user_roles')
+    .select('role')
+    .eq('user_id', userId)
+    .eq('role', 'super_admin')
+    .single();
+
+  return !!roleData;
+}
+
 // ==================== AWS S3 Upload Helpers ====================
 async function sha256Hex(data: Uint8Array | string): Promise<string> {
   const buffer = typeof data === 'string' ? new TextEncoder().encode(data) : data;
@@ -206,6 +265,15 @@ serve(async (req) => {
   }
 
   try {
+    // Authenticate the request
+    const auth = await authenticateRequest(req);
+    if (!auth) {
+      console.log('[generate-image] Unauthorized request - no valid auth token');
+      return new Response(JSON.stringify({ error: 'Authentication required' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
     const { type, id, name, establishmentId } = await req.json();
     
     if (!name || !type) {
@@ -214,7 +282,19 @@ serve(async (req) => {
       });
     }
 
-    console.log(`[generate-image] Generating ${type} for: ${name}`);
+    // Verify ownership if establishmentId is provided
+    const targetEstablishmentId = establishmentId || id;
+    if (targetEstablishmentId && targetEstablishmentId !== 'general') {
+      const hasAccess = await verifyEstablishmentOwnership(auth.userId, targetEstablishmentId);
+      if (!hasAccess) {
+        console.log(`[generate-image] Access denied for user ${auth.userId} to establishment ${targetEstablishmentId}`);
+        return new Response(JSON.stringify({ error: 'Access denied to this establishment' }), {
+          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+    }
+
+    console.log(`[generate-image] User ${auth.userId} generating ${type} for: ${name}`);
 
     // Use Pollinations.ai for image generation (free, no rate limits)
     const imageBytes = await generateImageWithPollinations(type, name);
