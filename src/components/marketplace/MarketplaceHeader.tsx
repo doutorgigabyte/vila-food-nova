@@ -14,7 +14,7 @@ import VilaTokStoriesRow from "./VilaTokStoriesRow";
 import NotificationCenter from "@/components/notifications/NotificationCenter";
 import { useMainCategories, getIconComponent } from "@/hooks/useMainCategories";
 import { cn } from "@/lib/utils";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { useDragScroll } from "@/hooks/useDragScroll";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -44,6 +44,7 @@ const MarketplaceHeader = ({ searchTerm, onSearchChange, onSearchClick }: Market
   const { categories } = useMainCategories();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
+  const { scrollRef, isDragging, handlers } = useDragScroll({ direction: 'horizontal' });
   const cartCount = items.reduce((acc, item) => acc + item.quantity, 0);
 
   return (
@@ -211,29 +212,35 @@ const MarketplaceHeader = ({ searchTerm, onSearchChange, onSearchClick }: Market
 
         {/* Category Quick Access Buttons - Minimalist Pills */}
         <div className="mt-3 -mx-4 px-4">
-          <ScrollArea className="w-full whitespace-nowrap">
-            <div className="flex items-center gap-2 pb-2">
-              {categories.slice(0, 8).map((category) => {
-                const IconComponent = getIconComponent(category.icon);
-                return (
-                  <button
-                    key={category.id}
-                    onClick={() => navigate(`/categoria/${category.slug}`)}
-                    className={cn(
-                      "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium",
-                      "bg-muted/60 hover:bg-primary hover:text-primary-foreground",
-                      "transition-all duration-200 shrink-0 border border-transparent",
-                      "hover:border-primary/20 hover:shadow-sm"
-                    )}
-                  >
-                    <IconComponent className="w-3.5 h-3.5" />
-                    <span>{category.name}</span>
-                  </button>
-                );
-              })}
-            </div>
-            <ScrollBar orientation="horizontal" className="h-1.5" />
-          </ScrollArea>
+          <div 
+            ref={scrollRef}
+            {...handlers}
+            className={cn(
+              "flex items-center gap-2 pb-2 overflow-x-auto scrollbar-hide",
+              "cursor-grab active:cursor-grabbing select-none",
+              isDragging && "cursor-grabbing"
+            )}
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          >
+            {categories.slice(0, 8).map((category) => {
+              const IconComponent = getIconComponent(category.icon);
+              return (
+                <button
+                  key={category.id}
+                  onClick={() => !isDragging && navigate(`/categoria/${category.slug}`)}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium",
+                    "bg-muted/60 hover:bg-primary hover:text-primary-foreground",
+                    "transition-all duration-200 shrink-0 border border-transparent",
+                    "hover:border-primary/20 hover:shadow-sm"
+                  )}
+                >
+                  <IconComponent className="w-3.5 h-3.5" />
+                  <span>{category.name}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* Stories Row - Category/Establishment circles below categories */}
