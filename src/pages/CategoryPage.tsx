@@ -278,7 +278,8 @@ const CategoryPage = () => {
     );
   }
 
-  const categoryIcon = mainCategory?.icon || categoryIcons[categoryId || ""] || "📦";
+  // Sempre usar o mapeamento local de emojis (não o icon do banco que contém nomes de Lucide)
+  const categoryIcon = categoryIcons[categoryId || ""] || "📦";
   const categoryName = selectedSubcategory?.name || mainCategory?.name || "Categoria";
 
   // Get proper emoji for subcategory (not Lucide icon name)
