@@ -164,13 +164,19 @@ const ProductsManagement = () => {
                 <h1 className="text-lg font-semibold">Produtos</h1>
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" onClick={handleOpenImport}>
+                <Button variant="outline" onClick={handleOpenImport} size="sm" className="hidden sm:flex">
                   <Upload className="w-4 h-4 mr-2" />
                   Importar
                 </Button>
-                <Button onClick={() => handleOpenDialog()}>
+                <Button variant="outline" onClick={handleOpenImport} size="icon" className="sm:hidden">
+                  <Upload className="w-4 h-4" />
+                </Button>
+                <Button onClick={() => handleOpenDialog()} size="sm" className="hidden sm:flex">
                   <Plus className="w-4 h-4 mr-2" />
                   Novo Produto
+                </Button>
+                <Button onClick={() => handleOpenDialog()} size="icon" className="sm:hidden">
+                  <Plus className="w-4 h-4" />
                 </Button>
               </div>
             </div>

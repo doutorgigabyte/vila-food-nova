@@ -195,9 +195,12 @@ const CategoriesManagement = () => {
                 </Button>
                 <h1 className="text-lg font-semibold">Categorias</h1>
               </div>
-              <Button onClick={() => handleOpenDialog()}>
+              <Button onClick={() => handleOpenDialog()} size="sm" className="hidden sm:flex">
                 <Plus className="w-4 h-4 mr-2" />
                 Nova Categoria
+              </Button>
+              <Button onClick={() => handleOpenDialog()} size="icon" className="sm:hidden">
+                <Plus className="w-4 h-4" />
               </Button>
             </div>
           </header>
