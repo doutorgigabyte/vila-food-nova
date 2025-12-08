@@ -180,10 +180,10 @@ const phases: ProgressPhase[] = [
     description: 'Módulo de relatórios e analytics',
     category: 'admin',
     items: [
-      { name: 'Criar módulo de relatórios básico', status: 'pending', priority: 'high' },
-      { name: 'Filtros por período, loja, vila', status: 'pending', priority: 'high' },
-      { name: 'Health Check como ferramenta de monitoramento técnico', status: 'pending', priority: 'medium' },
-      { name: 'Pedidos admin com visão analítica', status: 'pending', priority: 'medium' },
+      { name: 'Criar módulo de relatórios básico', status: 'completed', priority: 'high' },
+      { name: 'Filtros por período, loja, vila', status: 'completed', priority: 'high' },
+      { name: 'Health Check como ferramenta de monitoramento técnico', status: 'completed', priority: 'medium' },
+      { name: 'Pedidos admin com visão analítica', status: 'completed', priority: 'medium' },
     ]
   },
 
