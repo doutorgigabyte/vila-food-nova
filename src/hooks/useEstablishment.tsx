@@ -23,6 +23,8 @@ export interface Establishment {
   accepts_pickup: boolean | null;
   accepts_table: boolean | null;
   segment_id: string | null;
+  created_at?: string | null;
+  orders_count?: number;
 }
 
 export interface Category {

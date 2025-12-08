@@ -286,7 +286,7 @@ const phases: ProgressPhase[] = [
       { name: 'Cards de produtos com tamanho padronizado', status: 'completed', priority: 'high' },
       { name: 'Clique em produto abre page view', status: 'completed', priority: 'high' },
       { name: 'Clique em estabelecimento abre cardápio', status: 'completed', priority: 'critical' },
-      { name: 'Filtros "Todos, Recém-chegados, Popular" não funcionam', status: 'pending', priority: 'high' },
+      { name: 'Filtros "Todos, Recém-chegados, Popular" funcionando', status: 'completed', priority: 'high' },
       { name: 'Ordenação não altera listagem', status: 'pending', priority: 'high' },
       { name: 'Vilas não abrem ao clique', status: 'pending', priority: 'high' },
       { name: 'Scroll horizontal tremendo/travando', status: 'pending', priority: 'medium' },
