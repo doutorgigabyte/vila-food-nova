@@ -144,8 +144,8 @@ const WaiterApp = () => {
       if (tabsRes.data) {
         setTabs(tabsRes.data.map(t => ({
           ...t,
-          items: (t.items as unknown as TabItem[]) || []
-        })));
+          items: Array.isArray(t.items) ? (t.items as unknown as TabItem[]) : []
+        } as Tab)));
       }
       if (productsRes.data) setProducts(productsRes.data);
       if (categoriesRes.data) setCategories(categoriesRes.data);
@@ -221,7 +221,11 @@ const WaiterApp = () => {
         throw new Error("Nenhum dado retornado ao criar comanda");
       }
 
-      const newTabData = { ...data, items: data.items || [] };
+      const newTabData: Tab = { 
+        ...data, 
+        items: Array.isArray(data.items) ? (data.items as unknown as TabItem[]) : [],
+        notes: data.notes || undefined
+      };
       setTabs([newTabData, ...tabs]);
       setSelectedTab(newTabData);
       setNewTabDialog(false);

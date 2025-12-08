@@ -29,16 +29,16 @@ const AllRestaurants = ({ establishments, loading, mainCategory, subcategory }: 
     let filtered = establishments.filter((est) => {
       switch (activeFilter) {
         case "new":
-          // Recém-chegados - establishments created in last 30 days
-          const thirtyDaysAgo = new Date();
-          thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-          return est.created_at ? new Date(est.created_at) >= thirtyDaysAgo : false;
+          // Recém-chegados - for now show all since created_at is not available
+          // TODO: Add created_at to Establishment type when available
+          return true;
         case "popular":
-          // Popular - based on order count or rating (simplified: use rating for now)
-          return (est.rating || 0) >= 4.0;
+          // Popular - show open establishments as proxy for popularity
+          return est.is_open === true;
         case "top_rated":
-          // Melhor avaliados - highest rating first
-          return (est.rating || 0) >= 4.5;
+          // Melhor avaliados - show all for now
+          // TODO: Add rating field to Establishment type when available
+          return true;
         default:
           return true;
       }
@@ -48,7 +48,8 @@ const AllRestaurants = ({ establishments, loading, mainCategory, subcategory }: 
     return [...filtered].sort((a, b) => {
       switch (sortBy) {
         case "rating":
-          return (b.rating || 0) - (a.rating || 0);
+          // TODO: Implement rating sort when rating field is available
+          return 0;
         case "delivery_time":
           return (a.avg_delivery_time || 999) - (b.avg_delivery_time || 999);
         case "distance":
