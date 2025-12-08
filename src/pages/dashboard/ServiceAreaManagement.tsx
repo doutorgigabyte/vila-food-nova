@@ -6,12 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useAdminAccess } from "@/contexts/AdminAccessContext";
 import { toast } from "sonner";
 import ServiceAreaMap from "@/components/maps/ServiceAreaMap";
 import { ArrowLeft, MapPin, Loader2, Save, Navigation } from "lucide-react";
 
 const ServiceAreaManagement = () => {
   const { user } = useAuth();
+  const { accessingEstablishmentId } = useAdminAccess();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [establishment, setEstablishment] = useState<{
@@ -33,16 +35,23 @@ const ServiceAreaManagement = () => {
   const [feePerKm, setFeePerKm] = useState("1.5");
 
   useEffect(() => {
-    if (user) fetchEstablishment();
-  }, [user]);
+    if (user || accessingEstablishmentId) fetchEstablishment();
+  }, [user, accessingEstablishmentId]);
 
   const fetchEstablishment = async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    let query = supabase
       .from("establishments")
-      .select("id, latitude, longitude, address, max_delivery_radius_km, delivery_base_fee, delivery_fee_per_km")
-      .eq("owner_id", user?.id)
-      .maybeSingle();
+      .select("id, latitude, longitude, address, max_delivery_radius_km, delivery_base_fee, delivery_fee_per_km");
+    
+    // Priority: Admin context > owner_id
+    if (accessingEstablishmentId) {
+      query = query.eq("id", accessingEstablishmentId);
+    } else {
+      query = query.eq("owner_id", user?.id);
+    }
+    
+    const { data, error } = await query.maybeSingle();
 
     if (error) {
       toast.error("Erro ao carregar dados do estabelecimento");

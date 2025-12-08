@@ -12,6 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useAdminAccess } from "@/contexts/AdminAccessContext";
 import { toast } from "sonner";
 import { 
   ArrowLeft, Loader2, MessageSquare, Bot, Smartphone, Wifi, WifiOff, 
@@ -122,6 +123,7 @@ const CATEGORY_LABELS: Record<string, { label: string; icon: React.ReactNode; co
 
 const WhatsAppManagement = () => {
   const { user } = useAuth();
+  const { accessingEstablishmentId } = useAdminAccess();
   const { slug } = useParams();
   const [instance, setInstance] = useState<WhatsAppInstance | null>(null);
   const [keywords, setKeywords] = useState<WhatsAppKeyword[]>([]);
@@ -158,8 +160,8 @@ const WhatsAppManagement = () => {
 Seja sempre educado e prestativo. Se não souber responder algo, peça para o cliente aguardar atendimento humano.`;
 
   useEffect(() => {
-    if (user) fetchEstablishment();
-  }, [user, slug]);
+    if (user || accessingEstablishmentId) fetchEstablishment();
+  }, [user, slug, accessingEstablishmentId]);
 
   useEffect(() => {
     if (establishmentId) {
@@ -173,7 +175,10 @@ Seja sempre educado e prestativo. Se não souber responder algo, peça para o cl
   const fetchEstablishment = async () => {
     let query = supabase.from("establishments").select("id, name, slug, address, plan_id");
     
-    if (slug) {
+    // Priority: Admin context > slug > owner_id
+    if (accessingEstablishmentId) {
+      query = query.eq("id", accessingEstablishmentId);
+    } else if (slug) {
       query = query.eq("slug", slug);
     } else {
       query = query.eq("owner_id", user?.id);

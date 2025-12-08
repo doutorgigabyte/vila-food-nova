@@ -16,7 +16,8 @@ import {
   DollarSign,
   Store,
   Map,
-  Database
+  Database,
+  AlertCircle
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -45,6 +46,13 @@ const dashboardCards: DashboardCard[] = [
     icon: Database,
     href: '/admin/migracao',
     color: 'bg-gradient-to-br from-teal-100 to-cyan-100 text-teal-600'
+  },
+  {
+    title: 'Diagnóstico do Sistema',
+    description: 'Verificar produtos e imagens',
+    icon: AlertCircle,
+    href: '/admin/diagnostico',
+    color: 'bg-gradient-to-br from-yellow-100 to-orange-100 text-orange-600'
   },
   {
     title: 'Usuários',

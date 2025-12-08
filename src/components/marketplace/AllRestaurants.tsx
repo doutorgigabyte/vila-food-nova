@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Store } from "lucide-react";
@@ -17,9 +17,49 @@ interface AllRestaurantsProps {
 }
 
 const AllRestaurants = ({ establishments, loading, mainCategory, subcategory }: AllRestaurantsProps) => {
+  // All hooks must be called before any early returns
   const [activeFilter, setActiveFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("recommended");
   const titles = useCategoryTitle(mainCategory || null);
   const theme = getCategoryTheme(mainCategory || null);
+
+  // Filter and sort establishments - memoized for performance
+  // MUST be called before any early returns to maintain hook order
+  const filteredEstablishments = useMemo(() => {
+    let filtered = establishments.filter((est) => {
+      switch (activeFilter) {
+        case "new":
+          // Recém-chegados - establishments created in last 30 days
+          const thirtyDaysAgo = new Date();
+          thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+          return est.created_at ? new Date(est.created_at) >= thirtyDaysAgo : false;
+        case "popular":
+          // Popular - based on order count or rating (simplified: use rating for now)
+          return (est.rating || 0) >= 4.0;
+        case "top_rated":
+          // Melhor avaliados - highest rating first
+          return (est.rating || 0) >= 4.5;
+        default:
+          return true;
+      }
+    });
+
+    // Sort establishments
+    return [...filtered].sort((a, b) => {
+      switch (sortBy) {
+        case "rating":
+          return (b.rating || 0) - (a.rating || 0);
+        case "delivery_time":
+          return (a.avg_delivery_time || 999) - (b.avg_delivery_time || 999);
+        case "distance":
+          // TODO: Implement distance sorting when location is available
+          return 0;
+        default:
+          // Recommended - default order
+          return 0;
+      }
+    });
+  }, [establishments, activeFilter, sortBy]);
 
   if (loading) {
     return (
@@ -64,20 +104,6 @@ const AllRestaurants = ({ establishments, loading, mainCategory, subcategory }: 
     );
   }
 
-  // Filter establishments based on active filter
-  const filteredEstablishments = establishments.filter((est) => {
-    switch (activeFilter) {
-      case "open":
-        return est.is_open === true;
-      case "delivery":
-        return est.accepts_delivery === true;
-      case "pickup":
-        return est.accepts_pickup === true;
-      default:
-        return true;
-    }
-  });
-
   return (
     <section className={cn(
       "py-8",
@@ -93,6 +119,8 @@ const AllRestaurants = ({ establishments, loading, mainCategory, subcategory }: 
           activeFilter={activeFilter}
           onFilterChange={setActiveFilter}
           totalCount={filteredEstablishments.length}
+          sortBy={sortBy}
+          onSortChange={setSortBy}
         />
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">

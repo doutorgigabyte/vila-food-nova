@@ -302,27 +302,79 @@ const PDV = () => {
     let pixInfo = '';
     
     // Try to generate dynamic PIX if Mercado Pago is configured
-    if (establishment.mercado_pago_token) {
+    if (establishment.mercado_pago_token && paymentMethod === 'pix') {
       setGeneratingPix(true);
       try {
+        // First, create the order to get a valid order_id
+        const orderItems: Json = cart.map(item => ({
+          product_id: item.id,
+          name: item.name,
+          quantity: item.quantity,
+          price: item.promotional_price || item.price,
+          notes: item.notes || null
+        }));
+
+        const orderData: any = {
+          establishment_id: establishment.id,
+          status: 'pending_payment',
+          delivery_type: orderType === 'table' ? 'table' : orderType === 'delivery' ? 'delivery' : 'pickup',
+          payment_method: 'pix',
+          items: orderItems,
+          subtotal: subtotal,
+          discount: discountAmount,
+          delivery_fee: orderType === 'delivery' ? deliveryFee : 0,
+          platform_fee: serviceFee,
+          order_source: 'pdv',
+          total: total,
+          table_number: orderType === 'table' ? tableNumber : null,
+          observations: observations || null,
+          change_for: changeFor,
+          delivery_address: orderType === 'delivery' && customerAddress ? { address: customerAddress } : null
+        };
+
+        if (customerName) orderData.customer_name = customerName;
+        if (customerPhone) orderData.customer_phone = customerPhone;
+
+        const { data: order, error: orderError } = await supabase
+          .from('orders')
+          .insert(orderData)
+          .select()
+          .single();
+
+        if (orderError || !order) {
+          throw new Error('Erro ao criar pedido para PIX');
+        }
+
+        // Now generate PIX with valid order_id
         const { data, error } = await supabase.functions.invoke('mercadopago-pix', {
           body: {
             establishment_id: establishment.id,
-            order_id: `temp-${Date.now()}`,
+            order_id: order.id,
             amount: total,
             description: `Pedido ${establishment.name}`,
-            payer: {
-              email: 'cliente@email.com',
-              name: customerName || 'Cliente'
-            }
+            payer_email: customerPhone ? `${customerPhone.replace(/\D/g, '')}@temp.com` : 'cliente@email.com',
+            payer_name: customerName || 'Cliente'
           }
         });
 
-        if (!error && data?.qr_code_base64) {
-          pixInfo = `\n\n💳 *Pagar via PIX:*\nCopia e Cola: ${data.qr_code || 'Escaneie o QR Code'}`;
+        if (!error && data?.success) {
+          if (data.qr_code) {
+            pixInfo = `\n\n💳 *Pagar via PIX:*\n\n📱 Escaneie o QR Code ou copie o código:\n\n\`\`\`${data.qr_code}\`\`\`\n\n⏰ Válido por 30 minutos`;
+          } else if (data.pix_key) {
+            pixInfo = `\n\n💳 *Chave PIX:* ${data.pix_key}`;
+          }
+        } else {
+          // Fallback to static PIX if dynamic generation fails
+          if (establishment.pix_key) {
+            pixInfo = `\n\n💳 *Chave PIX:* ${establishment.pix_key}`;
+          }
         }
       } catch (error) {
         console.error('Error generating PIX:', error);
+        // Fallback to static PIX
+        if (establishment.pix_key) {
+          pixInfo = `\n\n💳 *Chave PIX:* ${establishment.pix_key}`;
+        }
       } finally {
         setGeneratingPix(false);
       }
@@ -439,8 +491,18 @@ const PDV = () => {
     }
   };
 
+  // Store payment ID for order creation
+  const [currentPaymentId, setCurrentPaymentId] = useState<string | undefined>(undefined);
+
+  // Memoize payment modal callbacks to prevent hook re-render issues
+  const handlePaymentModalClose = useCallback(() => {
+    setShowPaymentModal(false);
+    // Reset payment method when closing
+    setPaymentMethod('cash');
+  }, []);
+
   // Process order
-  const processOrder = async () => {
+  const processOrder = useCallback(async (paymentId?: string) => {
     if (!establishment) {
       toast.error('Estabelecimento não encontrado');
       return;
@@ -462,25 +524,40 @@ const PDV = () => {
         notes: item.notes || null
       }));
 
+      const orderData: any = {
+        establishment_id: establishment.id,
+        status: paymentMethod === 'cash' ? 'confirmed' : paymentMethod === 'pix' ? 'pending_payment' : 'confirmed',
+        delivery_type: orderType === 'table' ? 'table' : orderType === 'delivery' ? 'delivery' : 'pickup',
+        payment_method: paymentMethod,
+        items: orderItems,
+        subtotal: subtotal,
+        discount: discountAmount,
+        delivery_fee: orderType === 'delivery' ? deliveryFee : 0,
+        platform_fee: serviceFee,
+        order_source: 'pdv',
+        total: total,
+        table_number: orderType === 'table' ? tableNumber : null,
+        observations: observations || null,
+        change_for: changeFor,
+        delivery_address: orderType === 'delivery' && customerAddress ? { address: customerAddress } : null
+      };
+
+      // Add payment ID if available
+      if (paymentId) {
+        orderData.payment_id = paymentId;
+      }
+
+      // Add customer info if available
+      if (customerName) {
+        orderData.customer_name = customerName;
+      }
+      if (customerPhone) {
+        orderData.customer_phone = customerPhone;
+      }
+
       const { data: order, error } = await supabase
         .from('orders')
-        .insert({
-          establishment_id: establishment.id,
-          status: 'confirmed',
-          delivery_type: orderType === 'table' ? 'table' : orderType === 'delivery' ? 'delivery' : 'pickup',
-          payment_method: paymentMethod,
-          items: orderItems,
-          subtotal: subtotal,
-          discount: discountAmount,
-          delivery_fee: orderType === 'delivery' ? deliveryFee : 0,
-          platform_fee: serviceFee,
-          order_source: 'pdv',
-          total: total,
-          table_number: orderType === 'table' ? tableNumber : null,
-          observations: observations || null,
-          change_for: changeFor,
-          delivery_address: orderType === 'delivery' && customerAddress ? { address: customerAddress } : null
-        })
+        .insert(orderData)
         .select()
         .single();
 
@@ -490,13 +567,32 @@ const PDV = () => {
       printReceipt(order.order_number);
       clearCart();
       setShowPaymentModal(false);
-    } catch (error) {
+      setCurrentPaymentId(undefined);
+      
+      // Reset form
+      setCustomerName("");
+      setCustomerPhone("");
+      setCustomerAddress("");
+      setTableNumber("");
+      setObservations("");
+      setChangeFor(null);
+    } catch (error: any) {
       console.error('Error creating order:', error);
-      toast.error('Erro ao criar pedido');
+      toast.error(error.message || 'Erro ao criar pedido');
     } finally {
       setProcessingOrder(false);
     }
-  };
+  }, [establishment, cart, paymentMethod, orderType, subtotal, discountAmount, deliveryFee, serviceFee, total, tableNumber, observations, changeFor, customerName, customerPhone, customerAddress]);
+
+  const handlePaymentModalSuccess = useCallback((method: string, paymentId?: string, changeAmount?: number) => {
+    setPaymentMethod(method as any);
+    // Set change amount if provided (for cash payments)
+    if (method === 'cash' && changeAmount !== undefined) {
+      setChangeFor(changeAmount);
+    }
+    // Process order with payment ID
+    processOrder(paymentId);
+  }, [processOrder]);
 
   // Calculate grid columns based on mode
   const gridCols = tokenMode 
@@ -1238,11 +1334,8 @@ const PDV = () => {
       {/* Payment Modal - New Version with PIX QR, Cash Change, Terminal */}
       <PDVPaymentModal
         open={showPaymentModal}
-        onClose={() => setShowPaymentModal(false)}
-        onSuccess={(method, paymentId) => {
-          setPaymentMethod(method as any);
-          processOrder();
-        }}
+        onClose={handlePaymentModalClose}
+        onSuccess={handlePaymentModalSuccess}
         total={total}
         establishmentId={establishment?.id || ''}
         establishmentName={establishment?.name || ''}

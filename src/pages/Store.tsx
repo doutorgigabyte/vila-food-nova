@@ -37,6 +37,11 @@ const Store = () => {
       setOrderSourceDirect('direct');
     }
   }, [slug]);
+
+  // Force scroll to top when page loads
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [slug]);
   const {
     establishment,
     products,
@@ -64,6 +69,19 @@ const Store = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<StoreProduct | null>(null);
   const [isCartOpen, setIsCartOpen] = useState(false);
+
+  // Abrir produto via query param
+  useEffect(() => {
+    const productId = searchParams.get('product');
+    if (productId && products.length > 0) {
+      const product = products.find(p => p.id === productId);
+      if (product) {
+        setSelectedProduct(product);
+        // Limpar query param
+        navigate(`/loja/${slug}`, { replace: true });
+      }
+    }
+  }, [searchParams, products, slug, navigate]);
 
   // Fetch stories for this establishment
   const { data: stories } = useQuery({
@@ -262,7 +280,12 @@ const Store = () => {
           )}
 
           {/* Hero Section */}
-          <StoreHero establishment={establishment} cashbackPercentage={5} />
+          <StoreHero 
+            establishment={establishment} 
+            cashbackPercentage={5}
+            hasStories={stories && stories.length > 0}
+            storiesCount={stories?.length || 0}
+          />
 
           {/* Promotional Banners */}
           <StoreBanners banners={[]} primaryColor={establishment.primary_color || undefined} />

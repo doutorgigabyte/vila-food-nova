@@ -43,13 +43,13 @@ const phases: ProgressPhase[] = [
     description: 'Correções críticas de logout, contexto e autenticação',
     category: 'security',
     items: [
-      { name: 'Bug crítico: logout não invalida sessão (botão voltar loga novamente)', status: 'pending', priority: 'critical' },
-      { name: 'Limpar storage/cookies no logout', status: 'pending', priority: 'critical' },
+      { name: 'Bug crítico: logout não invalida sessão (botão voltar loga novamente)', status: 'completed', priority: 'critical' },
+      { name: 'Limpar storage/cookies no logout', status: 'completed', priority: 'critical' },
       { name: 'Validação de e-mail com código na criação de conta', status: 'pending', priority: 'high' },
-      { name: 'Contexto de estabelecimento quebrado em WhatsApp & IA', status: 'pending', priority: 'high' },
-      { name: 'Contexto de estabelecimento quebrado em Área de Atendimento', status: 'pending', priority: 'high' },
-      { name: 'Erro RLS ao criar cupom no Admin', status: 'pending', priority: 'high' },
-      { name: 'Visitante vê menus de usuário logado (ocultar)', status: 'pending', priority: 'medium' },
+      { name: 'Contexto de estabelecimento quebrado em WhatsApp & IA', status: 'completed', priority: 'high' },
+      { name: 'Contexto de estabelecimento quebrado em Área de Atendimento', status: 'completed', priority: 'high' },
+      { name: 'Erro RLS ao criar cupom no Admin', status: 'completed', priority: 'high' },
+      { name: 'Visitante vê menus de usuário logado (ocultar)', status: 'completed', priority: 'medium' },
     ]
   },
 
@@ -60,8 +60,8 @@ const phases: ProgressPhase[] = [
     description: 'Sistema de vendas presenciais',
     category: 'operation',
     items: [
-      { name: 'PIX: Corrigir geração de QR Code (erro atual)', status: 'pending', priority: 'critical' },
-      { name: 'Dinheiro: Confirmação de pagamento não funciona', status: 'pending', priority: 'critical' },
+      { name: 'PIX: Corrigir geração de QR Code (erro atual)', status: 'completed', priority: 'critical' },
+      { name: 'Dinheiro: Confirmação de pagamento não funciona', status: 'completed', priority: 'critical' },
       { name: 'Cartão: Integração com Mercado Pago', status: 'pending', priority: 'critical' },
       { name: 'Criar pedido após pagamento confirmado', status: 'pending', priority: 'high' },
       { name: 'Atualização de status do pedido', status: 'pending', priority: 'high' },
@@ -74,7 +74,7 @@ const phases: ProgressPhase[] = [
     description: 'Sistema de mesas e garçom',
     category: 'operation',
     items: [
-      { name: 'Botão "Abrir comanda" não funciona', status: 'pending', priority: 'critical' },
+      { name: 'Botão "Abrir comanda" não funciona', status: 'completed', priority: 'critical' },
       { name: 'Nome do garçom vir do usuário logado (não digitado)', status: 'pending', priority: 'high' },
       { name: 'Mudar estado visual da mesa ao abrir comanda', status: 'pending', priority: 'high' },
       { name: 'Interface adaptada para tablet (touch)', status: 'pending', priority: 'medium' },

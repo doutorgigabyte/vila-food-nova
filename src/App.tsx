@@ -88,6 +88,7 @@ const AdminOrdersManagement = lazy(() => import("./pages/admin/AdminOrdersManage
 const AdminVouchersManagement = lazy(() => import("./pages/admin/AdminVouchersManagement"));
 const DataMigration = lazy(() => import("./pages/admin/DataMigration"));
 const ExternalDataMigration = lazy(() => import("./pages/admin/ExternalDataMigration"));
+const DiagnosticoSistema = lazy(() => import("./pages/admin/DiagnosticoSistema"));
 const Roadmap = lazy(() => import("./pages/admin/Roadmap"));
 const ImplementationRoadmap = lazy(() => import("./pages/admin/ImplementationRoadmap"));
 const SystemHealthCheck = lazy(() => import("./pages/admin/SystemHealthCheck"));
@@ -219,6 +220,7 @@ const App = () => (
               <Route path="/admin/vouchers" element={<ProtectedAdminRoute><AdminVouchersManagement /></ProtectedAdminRoute>} />
               <Route path="/admin/migracao" element={<DataMigration />} />
               <Route path="/admin/migracao-externa" element={<ProtectedAdminRoute><ExternalDataMigration /></ProtectedAdminRoute>} />
+              <Route path="/admin/diagnostico" element={<ProtectedAdminRoute><DiagnosticoSistema /></ProtectedAdminRoute>} />
               <Route path="/admin/roadmap" element={<ProtectedAdminRoute><Roadmap /></ProtectedAdminRoute>} />
               <Route path="/admin/health" element={<ProtectedAdminRoute><SystemHealthCheck /></ProtectedAdminRoute>} />
               <Route path="/admin/progresso" element={<ProtectedAdminRoute><ImplementationRoadmap /></ProtectedAdminRoute>} />

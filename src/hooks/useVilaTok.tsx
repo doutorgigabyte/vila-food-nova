@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { generateUUID, safeLocalStorage } from '@/lib/utils';
 
 interface EstablishmentVideo {
   id: string;
@@ -61,7 +62,7 @@ export function useVilaTok(options: UseVilaTokOptions = {}) {
   const [sessionId] = useState(() => {
     let id = localStorage.getItem('vilatok_session_id');
     if (!id) {
-      id = crypto.randomUUID();
+      id = generateUUID();
       localStorage.setItem('vilatok_session_id', id);
     }
     return id;
@@ -193,39 +194,57 @@ export function useVilaTok(options: UseVilaTokOptions = {}) {
     const isLiked = likedVideos.has(videoId);
 
     try {
+      // Update otimista - atualizar estado local primeiro
       if (isLiked) {
-        // Unlike
-        await supabase.from('video_likes').delete().eq('video_id', videoId).eq('user_id', user.id);
-        
-        // Update local count
-        await supabase
-          .from('establishment_videos')
-          .update({ likes_count: (currentVideo?.likes_count || 1) - 1 })
-          .eq('id', videoId);
-
         setLikedVideos(prev => {
           const next = new Set(prev);
           next.delete(videoId);
           return next;
         });
       } else {
+        setLikedVideos(prev => new Set([...prev, videoId]));
+      }
+
+      if (isLiked) {
+        // Unlike
+        const { error } = await supabase.from('video_likes').delete().eq('video_id', videoId).eq('user_id', user.id);
+        
+        if (error) throw error;
+        
+        // Update local count
+        await supabase
+          .from('establishment_videos')
+          .update({ likes_count: (currentVideo?.likes_count || 1) - 1 })
+          .eq('id', videoId);
+      } else {
         // Like
-        await supabase.from('video_likes').insert({ video_id: videoId, user_id: user.id });
+        const { error } = await supabase.from('video_likes').insert({ video_id: videoId, user_id: user.id });
+
+        if (error) throw error;
 
         // Update local count
         await supabase
           .from('establishment_videos')
           .update({ likes_count: (currentVideo?.likes_count || 0) + 1 })
           .eq('id', videoId);
-
-        setLikedVideos(prev => new Set([...prev, videoId]));
       }
 
-      fetchVideos(); // Refresh to get updated counts
+      // Refresh apenas para sincronizar contagens, não para reverter o like
+      fetchVideos();
       return true;
     } catch (error) {
       console.error('Error toggling like:', error);
-      return true;
+      // Reverter em caso de erro
+      if (isLiked) {
+        setLikedVideos(prev => new Set([...prev, videoId]));
+      } else {
+        setLikedVideos(prev => {
+          const next = new Set(prev);
+          next.delete(videoId);
+          return next;
+        });
+      }
+      return false;
     }
   }, [likedVideos, user?.id, currentVideo, fetchVideos]);
 

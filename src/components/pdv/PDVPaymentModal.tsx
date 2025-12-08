@@ -26,7 +26,7 @@ import confetti from "canvas-confetti";
 interface PDVPaymentModalProps {
   open: boolean;
   onClose: () => void;
-  onSuccess: (paymentMethod: string, paymentId?: string) => void;
+  onSuccess: (paymentMethod: string, paymentId?: string, changeAmount?: number) => void;
   total: number;
   establishmentId: string;
   establishmentName: string;
@@ -46,6 +46,14 @@ export function PDVPaymentModal({
   hasTerminal,
   hasMercadoPago
 }: PDVPaymentModalProps) {
+  // Use ref to store onSuccess callback to avoid useEffect dependency issues
+  const onSuccessRef = useRef(onSuccess);
+  
+  // Update ref when onSuccess changes
+  useEffect(() => {
+    onSuccessRef.current = onSuccess;
+  }, [onSuccess]);
+  
   // Cash state
   const [receivedAmount, setReceivedAmount] = useState<string>("");
   const changeAmount = receivedAmount ? parseFloat(receivedAmount) - total : 0;
@@ -82,47 +90,109 @@ export function PDVPaymentModal({
     setPixStatus('generating');
     
     try {
-      const { data, error } = await supabase.functions.invoke('mercadopago-pix', {
-        body: {
-          establishment_id: establishmentId,
-          order_id: `pdv-${Date.now()}`,
-          amount: total,
-          description: `Pedido PDV - ${establishmentName}`,
-          payer: {
-            email: 'cliente@pdv.local',
-            name: 'Cliente PDV'
-          }
-        }
-      });
+      // First, try to get establishment to check for static PIX key
+      const { data: establishment } = await supabase
+        .from('establishments')
+        .select('pix_key, mercado_pago_token')
+        .eq('id', establishmentId)
+        .single();
 
-      if (error) throw error;
-
-      if (data?.qr_code_base64) {
-        setPixData({
-          qrCode: data.qr_code || '',
-          qrCodeBase64: data.qr_code_base64,
-          copyPaste: data.qr_code || data.pix_copy_paste || '',
-          paymentId: data.payment_id || '',
-          expiration: data.expiration
-        });
-        setPixStatus('waiting');
-      } else if (data?.pix_key) {
-        // Static PIX fallback
+      // If no Mercado Pago token, use static PIX key
+      if (!establishment?.mercado_pago_token && establishment?.pix_key) {
         setPixData({
           qrCode: '',
           qrCodeBase64: '',
-          copyPaste: data.pix_key,
+          copyPaste: establishment.pix_key,
           paymentId: '',
           expiration: undefined
         });
         setPixStatus('waiting');
+        return;
+      }
+
+      // Try to generate dynamic PIX (will fail if no order_id, but we handle it)
+      const { data, error } = await supabase.functions.invoke('mercadopago-pix', {
+        body: {
+          establishment_id: establishmentId,
+          order_id: `pdv-temp-${Date.now()}`,
+          amount: total,
+          description: `Pedido PDV - ${establishmentName}`,
+          payer_email: 'cliente@pdv.local',
+          payer_name: 'Cliente PDV'
+        }
+      });
+
+      // If error and we have static PIX key, use it
+      if (error && establishment?.pix_key) {
+        setPixData({
+          qrCode: '',
+          qrCodeBase64: '',
+          copyPaste: establishment.pix_key,
+          paymentId: '',
+          expiration: undefined
+        });
+        setPixStatus('waiting');
+        toast.info('Usando chave PIX estática (crie o pedido primeiro para PIX dinâmico)');
+        return;
+      }
+
+      if (error) throw error;
+
+      if (data?.success) {
+        if (data.qr_code_base64 || data.qr_code) {
+          setPixData({
+            qrCode: data.qr_code || '',
+            qrCodeBase64: data.qr_code_base64 || '',
+            copyPaste: data.qr_code || data.pix_copy_paste || '',
+            paymentId: data.payment_id || '',
+            expiration: data.expiration
+          });
+          setPixStatus('waiting');
+        } else if (data.pix_key) {
+          // Static PIX fallback from response
+          setPixData({
+            qrCode: '',
+            qrCodeBase64: '',
+            copyPaste: data.pix_key,
+            paymentId: '',
+            expiration: undefined
+          });
+          setPixStatus('waiting');
+        } else {
+          throw new Error('Falha ao gerar PIX');
+        }
       } else {
-        throw new Error('Falha ao gerar PIX');
+        throw new Error(data?.error || 'Falha ao gerar PIX');
       }
     } catch (error) {
       console.error('Error generating PIX:', error);
-      setPixStatus('error');
-      toast.error('Erro ao gerar PIX');
+      
+      // Final fallback: try to get static PIX key
+      try {
+        const { data: establishment } = await supabase
+          .from('establishments')
+          .select('pix_key')
+          .eq('id', establishmentId)
+          .single();
+
+        if (establishment?.pix_key) {
+          setPixData({
+            qrCode: '',
+            qrCodeBase64: '',
+            copyPaste: establishment.pix_key,
+            paymentId: '',
+            expiration: undefined
+          });
+          setPixStatus('waiting');
+          toast.info('Usando chave PIX estática');
+        } else {
+          setPixStatus('error');
+          toast.error('Erro ao gerar PIX. Configure uma chave PIX no estabelecimento.');
+        }
+      } catch (fallbackError) {
+        setPixStatus('error');
+        toast.error('Erro ao gerar PIX');
+      }
     }
   };
 
@@ -144,7 +214,7 @@ export function PDVPaymentModal({
           setPixStatus('approved');
           confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
           toast.success('Pagamento PIX confirmado!');
-          setTimeout(() => onSuccess('pix', pixData.paymentId), 1500);
+          setTimeout(() => onSuccessRef.current('pix', pixData.paymentId), 1500);
         }
       } catch (error) {
         console.error('Error checking PIX status:', error);
@@ -152,7 +222,7 @@ export function PDVPaymentModal({
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [pixStatus, pixData?.paymentId, establishmentId, onSuccess]);
+  }, [pixStatus, pixData?.paymentId, establishmentId]);
 
   // Copy PIX code
   const copyPixCode = () => {
@@ -213,7 +283,7 @@ export function PDVPaymentModal({
           setTerminalPolling(false);
           confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
           toast.success('Pagamento na maquineta confirmado!');
-          setTimeout(() => onSuccess('credit_card', data.payment_id), 1500);
+          setTimeout(() => onSuccessRef.current('credit_card', data.payment_id), 1500);
         } else if (data?.status === 'cancelled' || data?.status === 'error') {
           setTerminalStatus('error');
           setTerminalPolling(false);
@@ -225,7 +295,7 @@ export function PDVPaymentModal({
     }, 3000);
 
     return () => clearInterval(interval);
-  }, [terminalPolling, paymentIntentId, establishmentId, onSuccess]);
+  }, [terminalPolling, paymentIntentId, establishmentId]);
 
   // Cancel terminal payment
   const cancelTerminal = async () => {
@@ -251,11 +321,24 @@ export function PDVPaymentModal({
 
   // Handle cash payment
   const handleCashPayment = () => {
-    if (parseFloat(receivedAmount) < total) {
+    if (!receivedAmount || parseFloat(receivedAmount) < total) {
       toast.error('Valor recebido menor que o total');
       return;
     }
-    onSuccess('cash');
+    
+    const change = changeAmount;
+    
+    // Show success feedback
+    toast.success('Pagamento em dinheiro confirmado!');
+    
+    // Cash payment doesn't have a payment ID
+    // Pass change amount to callback
+    onSuccessRef.current('cash', undefined, change);
+    
+    // Close modal after a brief delay to show feedback
+    setTimeout(() => {
+      onClose();
+    }, 500);
   };
 
   return (
@@ -461,7 +544,7 @@ export function PDVPaymentModal({
                     <Button 
                       variant="outline" 
                       className="w-full"
-                      onClick={() => onSuccess('credit_card')}
+                      onClick={() => onSuccessRef.current('credit_card')}
                     >
                       Registrar Pagamento Manual
                     </Button>
@@ -548,7 +631,7 @@ export function PDVPaymentModal({
                   <Button 
                     variant="outline"
                     className="h-14 flex-col"
-                    onClick={() => onSuccess('debit_card')}
+                    onClick={() => onSuccessRef.current('debit_card')}
                   >
                     <CreditCard className="h-5 w-5 mb-1" />
                     Débito

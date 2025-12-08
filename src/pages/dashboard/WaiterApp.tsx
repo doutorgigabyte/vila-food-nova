@@ -77,23 +77,48 @@ const WaiterApp = () => {
   const [paymentMethod, setPaymentMethod] = useState<string>("cash");
   const [splitCount, setSplitCount] = useState(1);
   const [establishmentId, setEstablishmentId] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string>("");
 
   useEffect(() => {
     fetchData();
+    fetchUserName();
   }, []);
+
+  const fetchUserName = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const name = user.user_metadata?.full_name || user.email?.split("@")[0] || "Garçom";
+        setUserName(name);
+        // Pre-fill waiter name with user name
+        setNewTab(prev => ({ ...prev, waiter_name: name }));
+      }
+    } catch (error) {
+      console.error("Error fetching user:", error);
+    }
+  };
 
   const fetchData = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        console.error("Error getting user:", userError);
+        toast.error("Erro ao obter dados do usuário");
+        return;
+      }
 
-      const { data: establishment } = await supabase
+      const { data: establishment, error: estError } = await supabase
         .from("establishments")
         .select("id")
         .eq("owner_id", user.id)
         .single();
 
-      if (!establishment) return;
+      if (estError || !establishment) {
+        console.error("Error getting establishment:", estError);
+        toast.error("Estabelecimento não encontrado");
+        return;
+      }
+      
       setEstablishmentId(establishment.id);
 
       const [tabsRes, productsRes, categoriesRes] = await Promise.all([
@@ -147,37 +172,69 @@ const WaiterApp = () => {
     if (existingTab) {
       setSelectedTab(existingTab);
     } else {
-      setNewTab({ table_number: `Mesa ${tableNumber}`, waiter_name: "", customer_name: "" });
+      setNewTab({ table_number: `Mesa ${tableNumber}`, waiter_name: userName, customer_name: "" });
       setNewTabDialog(true);
     }
   };
 
   const createTab = async () => {
-    if (!establishmentId) return;
+    if (!establishmentId) {
+      toast.error("Estabelecimento não encontrado");
+      return;
+    }
+
+    // Validate required fields
+    if (!newTab.table_number || !newTab.table_number.trim()) {
+      toast.error("Informe o número da mesa");
+      return;
+    }
+
+    if (!newTab.waiter_name || !newTab.waiter_name.trim()) {
+      toast.error("Informe o nome do garçom");
+      return;
+    }
 
     try {
+      const tabData = {
+        establishment_id: establishmentId,
+        table_number: newTab.table_number.trim(),
+        waiter_name: newTab.waiter_name.trim(),
+        customer_name: newTab.customer_name?.trim() || null,
+        items: [],
+        subtotal: 0,
+        total: 0,
+        status: 'open'
+      };
+
       const { data, error } = await supabase
         .from("waiter_tabs")
-        .insert({
-          establishment_id: establishmentId,
-          ...newTab,
-          items: [],
-          subtotal: 0,
-          total: 0
-        })
+        .insert(tabData)
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error creating tab:", error);
+        throw error;
+      }
 
-      const newTabData = { ...data, items: [] };
+      if (!data) {
+        throw new Error("Nenhum dado retornado ao criar comanda");
+      }
+
+      const newTabData = { ...data, items: data.items || [] };
       setTabs([newTabData, ...tabs]);
       setSelectedTab(newTabData);
       setNewTabDialog(false);
-      setNewTab({ table_number: "", waiter_name: "", customer_name: "" });
+      // Reset form but keep waiter name
+      setNewTab({ table_number: "", waiter_name: userName || "", customer_name: "" });
       toast.success("Comanda aberta com sucesso!");
-    } catch (error) {
-      toast.error("Erro ao criar comanda");
+      
+      // Refresh data to ensure consistency
+      await fetchData();
+    } catch (error: any) {
+      console.error("Error creating tab:", error);
+      const errorMessage = error?.message || "Erro ao criar comanda";
+      toast.error(errorMessage);
     }
   };
 

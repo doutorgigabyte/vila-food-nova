@@ -14,6 +14,7 @@ import { VilaTokSidebar } from '@/components/vilatok/VilaTokSidebar';
 import { VilaTokOverlay } from '@/components/vilatok/VilaTokOverlay';
 import { VilaTokNavigation } from '@/components/vilatok/VilaTokNavigation';
 import { VilaTokProgressBars } from '@/components/vilatok/VilaTokProgressBars';
+import { VilaTokComments } from '@/components/vilatok/VilaTokComments';
 import { useCart } from '@/hooks/useCart';
 import { toast } from 'sonner';
 
@@ -39,6 +40,7 @@ export default function VilaTok() {
   const [currentProgress, setCurrentProgress] = useState(0);
   const [activeEstablishmentIndex, setActiveEstablishmentIndex] = useState(0);
   const [activeVideoIndices, setActiveVideoIndices] = useState<Map<number, number>>(new Map());
+  const [showComments, setShowComments] = useState(false);
 
   const getActiveVideoIndex = (estIndex: number) => activeVideoIndices.get(estIndex) || 0;
 
@@ -81,9 +83,13 @@ export default function VilaTok() {
   }, [activeEstablishmentIndex, establishments]);
 
   const handleShare = useCallback(async () => {
+    console.log('handleShare called');
     const est = establishments[activeEstablishmentIndex];
     const video = est?.videos[getActiveVideoIndex(activeEstablishmentIndex)];
-    if (!video || !est) return;
+    if (!video || !est) {
+      console.log('No video or establishment found');
+      return;
+    }
 
     const shareUrl = `${window.location.origin}/vilatok?v=${video.id}`;
     
@@ -99,7 +105,9 @@ export default function VilaTok() {
         toast.success('Link copiado!');
       }
       incrementShares(video.id);
-    } catch {}
+    } catch (error) {
+      console.error('Error sharing:', error);
+    }
   }, [activeEstablishmentIndex, establishments, incrementShares]);
 
   const handleAddToCart = useCallback(async () => {
@@ -133,7 +141,13 @@ export default function VilaTok() {
 
   const handleGoToStore = useCallback(() => {
     const est = establishments[activeEstablishmentIndex];
-    if (est) navigate(`/loja/${est.establishment.slug}`);
+    const video = est?.videos[getActiveVideoIndex(activeEstablishmentIndex)];
+    if (est && video?.product) {
+      // Navegar para a loja com o produto selecionado
+      navigate(`/loja/${est.establishment.slug}?product=${video.product.id}`);
+    } else if (est) {
+      navigate(`/loja/${est.establishment.slug}`);
+    }
   }, [activeEstablishmentIndex, establishments, navigate]);
 
   const activeEst = establishments[activeEstablishmentIndex];
@@ -172,50 +186,57 @@ export default function VilaTok() {
 
   return (
     <div className="fixed inset-0 bg-black overflow-hidden">
-      {/* Header */}
-      <div className="absolute top-0 left-0 right-0 z-50 flex items-center justify-between p-4 bg-gradient-to-b from-black/60 to-transparent pointer-events-none">
-        <button
-          onClick={() => navigate(-1)}
-          onTouchEnd={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            navigate(-1);
-          }}
-          className="w-10 h-10 rounded-full bg-black/40 flex items-center justify-center pointer-events-auto active:bg-black/60"
-        >
-          <ArrowLeft className="w-5 h-5 text-white" />
-        </button>
-        <div className="flex items-center gap-2">
-          <Flame className="w-6 h-6 text-primary" />
-          <span className="text-white font-bold text-lg">VilaTok</span>
-        </div>
-        <div className="w-10" />
-      </div>
+      {/* Container com proporção 9:16 no desktop e comentários ao lado */}
+      <div className="w-full h-full flex items-center justify-center md:flex-row">
+        <div className="relative w-full h-full md:w-auto md:h-full md:flex-shrink-0" style={{ 
+          maxWidth: 'calc(100vh * 9 / 16)',
+          maxHeight: '100vh',
+          aspectRatio: '9/16'
+        }}>
+          {/* Header */}
+          <div className="absolute top-0 left-0 right-0 z-50 flex items-center justify-between p-4 bg-gradient-to-b from-black/60 to-transparent pointer-events-none">
+            <button
+              onClick={() => navigate(-1)}
+              onTouchEnd={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                navigate(-1);
+              }}
+              className="w-10 h-10 rounded-full bg-black/40 flex items-center justify-center pointer-events-auto active:bg-black/60"
+            >
+              <ArrowLeft className="w-5 h-5 text-white" />
+            </button>
+            <div className="flex items-center gap-2">
+              <Flame className="w-6 h-6 text-primary" />
+              <span className="text-white font-bold text-lg">VilaTok</span>
+            </div>
+            <div className="w-10" />
+          </div>
 
-      {/* Progress Bars */}
-      {activeEst && (
-        <VilaTokProgressBars
-          totalVideos={activeEst.videos.length}
-          currentVideoIndex={activeVideoIdx}
-          currentProgress={currentProgress}
-        />
-      )}
+          {/* Progress Bars */}
+          {activeEst && (
+            <VilaTokProgressBars
+              totalVideos={activeEst.videos.length}
+              currentVideoIndex={activeVideoIdx}
+              currentProgress={currentProgress}
+            />
+          )}
 
-      {/* Vertical Swiper */}
-      <Swiper
-        direction="vertical"
-        modules={[Virtual]}
-        virtual
-        speed={200}
-        slidesPerView={1}
-        threshold={10}
-        touchRatio={1}
-        longSwipesRatio={0.2}
-        resistanceRatio={0.8}
-        className="w-full h-full"
-        onSwiper={(swiper) => { verticalSwiperRef.current = swiper; }}
-        onSlideChange={handleVerticalSlideChange}
-      >
+          {/* Vertical Swiper */}
+          <Swiper
+            direction="vertical"
+            modules={[Virtual]}
+            virtual
+            speed={200}
+            slidesPerView={1}
+            threshold={10}
+            touchRatio={1}
+            longSwipesRatio={0.2}
+            resistanceRatio={0.8}
+            className="w-full h-full"
+            onSwiper={(swiper) => { verticalSwiperRef.current = swiper; }}
+            onSlideChange={handleVerticalSlideChange}
+          >
         {establishments.map((est, estIndex) => (
           <SwiperSlide key={est.establishment.id} virtualIndex={estIndex} className="w-full h-full">
             {/* Horizontal Swiper */}
@@ -275,22 +296,44 @@ export default function VilaTok() {
                         isLiked={likedVideos.has(video.id)}
                         hasProduct={!!video.product}
                         onLike={async () => {
-                          if (!(await toggleLike(video.id))) {
-                            toast.error('Faça login para curtir', {
-                              action: { label: 'Entrar', onClick: () => navigate('/auth') },
-                            });
+                          console.log('Like button clicked for video:', video.id);
+                          try {
+                            const result = await toggleLike(video.id);
+                            if (!result) {
+                              toast.error('Faça login para curtir', {
+                                action: { label: 'Entrar', onClick: () => navigate('/auth') },
+                              });
+                            }
+                          } catch (error) {
+                            console.error('Error toggling like:', error);
+                            toast.error('Erro ao curtir');
                           }
                         }}
                         onComment={() => {
+                          console.log('Comment button clicked');
                           if (!user) {
                             toast.error('Faça login para comentar', {
                               action: { label: 'Entrar', onClick: () => navigate('/auth') },
                             });
+                            return;
+                          }
+                          setShowComments(true);
+                        }}
+                        onShare={() => {
+                          console.log('Share button clicked');
+                          handleShare();
+                        }}
+                        onProduct={handleAddToCart}
+                        onStore={() => {
+                          const est = establishments[activeEstablishmentIndex];
+                          const video = est?.videos[getActiveVideoIndex(activeEstablishmentIndex)];
+                          if (est && video?.product) {
+                            // Navegar para a loja com o produto selecionado
+                            navigate(`/loja/${est.establishment.slug}?product=${video.product.id}`);
+                          } else if (est) {
+                            navigate(`/loja/${est.establishment.slug}`);
                           }
                         }}
-                        onShare={handleShare}
-                        onProduct={handleAddToCart}
-                        onStore={handleGoToStore}
                       />
                     </div>
                   </SwiperSlide>
@@ -307,6 +350,19 @@ export default function VilaTok() {
         currentEstablishmentIndex={activeEstablishmentIndex}
         totalVideos={activeEst?.videos.length || 0}
         currentVideoIndex={activeVideoIdx}
+      />
+        </div>
+      </div>
+
+      {/* Comments Panel - sempre renderizado para evitar erro de hooks */}
+      <VilaTokComments
+        videoId={activeVideo?.id || ''}
+        isOpen={showComments && !!activeVideo}
+        onClose={() => setShowComments(false)}
+        commentsCount={activeVideo?.comments_count || 0}
+        onCommentsCountChange={(count) => {
+          // Update comments count if needed
+        }}
       />
     </div>
   );

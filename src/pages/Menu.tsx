@@ -135,21 +135,23 @@ const Menu = () => {
           </Card>
         )}
 
-        {/* Menu Items */}
-        <Card className="overflow-hidden">
-          {menuItems.map((item, index) => (
-            <Link key={item.path} to={item.path}>
-              <div className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
-                <div className="flex items-center gap-3">
-                  <item.icon className="h-5 w-5 text-muted-foreground" />
-                  <span className="font-medium">{item.label}</span>
+        {/* Menu Items - Only for logged-in users */}
+        {user && (
+          <Card className="overflow-hidden">
+            {menuItems.map((item, index) => (
+              <Link key={item.path} to={item.path}>
+                <div className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <item.icon className="h-5 w-5 text-muted-foreground" />
+                    <span className="font-medium">{item.label}</span>
+                  </div>
+                  <ChevronRight className="h-5 w-5 text-muted-foreground" />
                 </div>
-                <ChevronRight className="h-5 w-5 text-muted-foreground" />
-              </div>
-              {index < menuItems.length - 1 && <Separator />}
-            </Link>
-          ))}
-        </Card>
+                {index < menuItems.length - 1 && <Separator />}
+              </Link>
+            ))}
+          </Card>
+        )}
 
         {/* Settings */}
         <Card className="overflow-hidden">

@@ -12,13 +12,48 @@ serve(async (req) => {
   }
 
   try {
+    console.log('Request method:', req.method);
+    console.log('Request URL:', req.url);
+
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
       { auth: { persistSession: false } }
     );
 
-    const { action, data } = await req.json();
+    let requestBody;
+    try {
+      const bodyText = await req.text();
+      console.log('Request body text:', bodyText);
+      requestBody = JSON.parse(bodyText);
+      console.log('Parsed request body:', JSON.stringify(requestBody));
+    } catch (err: any) {
+      console.error('Error parsing JSON:', err.message);
+      return new Response(JSON.stringify({ 
+        error: `Invalid JSON in request body: ${err.message}`,
+        success: false 
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    const { action, data } = requestBody || {};
+
+    console.log('Action received:', action);
+    console.log('Data received:', data ? 'present' : 'missing');
+
+    if (!action) {
+      console.error('No action provided in request');
+      return new Response(JSON.stringify({ 
+        error: 'Action is required',
+        success: false,
+        received: requestBody
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
 
     if (action === 'migrate_segments') {
       const segments = [
@@ -401,6 +436,411 @@ serve(async (req) => {
       });
     }
 
+    if (action === 'import_products_csv') {
+      console.log('Starting CSV products import');
+
+      const csvData = data?.csvData;
+      if (!csvData || !Array.isArray(csvData)) {
+        return new Response(JSON.stringify({ 
+          error: 'csvData deve ser um array de produtos',
+          success: false 
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      console.log(`CSV data received: ${csvData.length} products`);
+
+      const newImageBase = 'https://d2fhl3f70zfvod.cloudfront.net/_uploads';
+      let imported = 0;
+      let skipped = 0;
+      let errors: string[] = [];
+
+      // Process products in batches of 100
+      const batchSize = 100;
+      for (let i = 0; i < csvData.length; i += batchSize) {
+        const batch = csvData.slice(i, i + batchSize);
+        const productsToInsert = [];
+
+        for (const row of batch) {
+          try {
+            // Parse image_url from JSON array format
+            let imageUrl: string | null = null;
+            if (row.image_url) {
+              try {
+                const imageArray = typeof row.image_url === 'string' 
+                  ? JSON.parse(row.image_url) 
+                  : row.image_url;
+                if (Array.isArray(imageArray) && imageArray.length > 0) {
+                  const imagePath = imageArray[0];
+                  // Build full URL
+                  imageUrl = `${newImageBase}/${imagePath}`;
+                }
+              } catch (e) {
+                // If parsing fails, try to use as string directly
+                if (typeof row.image_url === 'string' && row.image_url.trim()) {
+                  imageUrl = row.image_url.startsWith('http') 
+                    ? row.image_url 
+                    : `${newImageBase}/${row.image_url}`;
+                }
+              }
+            }
+
+            // Check if product already exists (by id or name+establishment)
+            const { data: existing } = await supabaseAdmin
+              .from('products')
+              .select('id')
+              .eq('id', row.id)
+              .maybeSingle();
+
+            if (existing) {
+              skipped++;
+              continue;
+            }
+
+            const product = {
+              id: row.id,
+              establishment_id: row.establishment_id,
+              category_id: row.category_id || null,
+              name: row.name || 'Produto sem nome',
+              description: row.description || null,
+              price: parseFloat(row.price) || 0,
+              promotional_price: row.promotional_price ? parseFloat(row.promotional_price) : null,
+              image_url: imageUrl,
+              is_active: row.is_active === true || row.is_active === 'true',
+              is_featured: row.is_featured === true || row.is_featured === 'true',
+              stock_quantity: row.stock_quantity ? parseInt(row.stock_quantity) : null,
+              preparation_time: row.preparation_time ? parseInt(row.preparation_time) : 30,
+              variations: row.variations || [],
+              additionals: row.additionals || [],
+              created_at: row.created_at || new Date().toISOString(),
+              updated_at: row.updated_at || new Date().toISOString(),
+            };
+
+            productsToInsert.push(product);
+          } catch (err: any) {
+            errors.push(`Linha ${i + batch.indexOf(row) + 1}: ${err.message}`);
+          }
+        }
+
+        if (productsToInsert.length > 0) {
+          console.log(`Inserting batch ${Math.floor(i/batchSize) + 1} with ${productsToInsert.length} products`);
+
+          const { error: insertError } = await supabaseAdmin
+            .from('products')
+            .insert(productsToInsert as any);
+
+          if (insertError) {
+            errors.push(`Batch ${Math.floor(i/batchSize) + 1}: ${insertError.message}`);
+          } else {
+            imported += productsToInsert.length;
+          }
+        }
+      }
+
+      console.log(`CSV import completed: ${imported} imported, ${skipped} skipped, ${errors.length} errors`);
+
+      return new Response(JSON.stringify({
+        success: true,
+        imported,
+        skipped,
+        errors: errors.length > 0 ? errors.slice(0, 10) : undefined, // Limit errors shown
+        message: `Importados ${imported} produtos, ${skipped} já existiam`
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    if (action === 'update_cloudfront_images') {
+      console.log('Starting CloudFront image URL update');
+
+      const oldCloudFront = 'https://d2fhl3f70zfvod.cloudfront.net';
+      const newImageBase = 'https://legacy-images.vilafood.com.br';
+      
+      let updatedCount = 0;
+      const errors: string[] = [];
+
+      // Update establishment images
+      console.log('Fetching establishments with CloudFront images');
+
+      const { data: establishments, error: estError } = await supabaseAdmin
+        .from('establishments')
+        .select('id, logo_url, banner_url')
+        .or(`logo_url.ilike.%${oldCloudFront}%,banner_url.ilike.%${oldCloudFront}%`);
+
+      if (estError) throw estError;
+
+      console.log(`Found ${establishments?.length || 0} establishments with CloudFront images`);
+
+      for (const est of establishments || []) {
+        const updates: { logo_url?: string; banner_url?: string } = {};
+        
+        if (est.logo_url?.includes(oldCloudFront)) {
+          const path = est.logo_url.replace(oldCloudFront, '').replace(/^\/+/, '');
+          updates.logo_url = `${newImageBase}/${path}`;
+        }
+        
+        if (est.banner_url?.includes(oldCloudFront)) {
+          const path = est.banner_url.replace(oldCloudFront, '').replace(/^\/+/, '');
+          updates.banner_url = `${newImageBase}/${path}`;
+        }
+
+        if (Object.keys(updates).length > 0) {
+          const { error: updateError } = await supabaseAdmin
+            .from('establishments')
+            .update(updates)
+            .eq('id', est.id);
+
+          if (updateError) {
+            errors.push(`Est ${est.id}: ${updateError.message}`);
+          } else {
+            updatedCount++;
+          }
+        }
+      }
+
+      // Update product images
+      console.log('Fetching products with CloudFront images');
+
+      const { data: products, error: prodError } = await supabaseAdmin
+        .from('products')
+        .select('id, image_url')
+        .ilike('image_url', `%${oldCloudFront}%`);
+
+      if (prodError) throw prodError;
+
+      console.log(`Found ${products?.length || 0} products with CloudFront images`);
+
+      for (const prod of products || []) {
+        if (prod.image_url?.includes(oldCloudFront)) {
+          const path = prod.image_url.replace(oldCloudFront, '').replace(/^\/+/, '');
+          const newUrl = `${newImageBase}/${path}`;
+
+          const { error: updateError } = await supabaseAdmin
+            .from('products')
+            .update({ image_url: newUrl })
+            .eq('id', prod.id);
+
+          if (updateError) {
+            errors.push(`Prod ${prod.id}: ${updateError.message}`);
+          } else {
+            updatedCount++;
+          }
+        }
+      }
+
+      console.log(`CloudFront image update completed: ${updatedCount} updated, ${errors.length} errors`);
+
+      return new Response(JSON.stringify({
+        success: true,
+        updated: updatedCount,
+        errors: errors.length > 0 ? errors : undefined,
+        message: `Atualizadas ${updatedCount} URLs de imagens`
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    if (action === 'check_duplicate_tables') {
+      console.log('Starting duplicate tables check');
+
+      // Check all duplicate table pairs
+      const tablePairs = [
+        { pt: 'produtos', en: 'products' },
+        { pt: 'estabelecimentos', en: 'establishments' },
+        { pt: 'categorias', en: 'categories' },
+        { pt: 'segmentos', en: 'segments' },
+        { pt: 'pedidos', en: 'orders' }
+      ];
+
+      const tableStats: any = {};
+
+      for (const pair of tablePairs) {
+        // Check Portuguese table
+        try {
+          const { count: countPt, error: errorPt } = await supabaseAdmin
+            .from(pair.pt)
+            .select('*', { count: 'exact', head: true });
+
+          tableStats[pair.pt] = {
+            exists: !errorPt,
+            count: !errorPt ? (countPt || 0) : 0,
+            error: errorPt?.message
+          };
+        } catch (err: any) {
+          tableStats[pair.pt] = {
+            exists: false,
+            count: 0,
+            error: err.message
+          };
+        }
+
+        // Check English table
+        try {
+          const { count: countEn, error: errorEn } = await supabaseAdmin
+            .from(pair.en)
+            .select('*', { count: 'exact', head: true });
+
+          tableStats[pair.en] = {
+            exists: !errorEn,
+            count: !errorEn ? (countEn || 0) : 0,
+            error: errorEn?.message
+          };
+        } catch (err: any) {
+          tableStats[pair.en] = {
+            exists: false,
+            count: 0,
+            error: err.message
+          };
+        }
+      }
+
+      console.log('Table check completed', tableStats);
+
+      const productsInPortuguese = tableStats.produtos?.count || 0;
+      const productsInEnglish = tableStats.products?.count || 0;
+
+      let recommendation = '';
+      if (productsInPortuguese > 0 && productsInEnglish === 0) {
+        recommendation = 'Produtos estão na tabela "produtos" (português). Use a função de migração para mover para "products" (inglês).';
+      } else if (productsInEnglish > 0 && productsInPortuguese === 0) {
+        recommendation = 'Produtos estão na tabela "products" (inglês) - correto!';
+      } else if (productsInPortuguese > 0 && productsInEnglish > 0) {
+        recommendation = 'ATENÇÃO: Produtos existem em AMBAS as tabelas! Há duplicação. Considere consolidar.';
+      } else {
+        recommendation = 'Nenhum produto encontrado nas tabelas verificadas.';
+      }
+
+      return new Response(JSON.stringify({
+        success: true,
+        tables: tableStats,
+        productsInPortuguese,
+        productsInEnglish,
+        recommendation
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    if (action === 'migrate_products_pt_to_en') {
+      console.log('Starting products migration from PT to EN');
+
+      let migrated = 0;
+      let skipped = 0;
+      const errors: string[] = [];
+
+      // Fetch all products from Portuguese table
+      console.log('Fetching products from PT table');
+
+      const { data: produtosPt, error: fetchError } = await supabaseAdmin
+        .from('produtos')
+        .select('*')
+        .limit(10000); // Limit to prevent timeout
+
+      if (fetchError) {
+        throw new Error(`Erro ao buscar produtos: ${fetchError.message}`);
+      }
+
+      if (!produtosPt || produtosPt.length === 0) {
+        return new Response(JSON.stringify({
+          success: true,
+          migrated: 0,
+          skipped: 0,
+          message: 'Nenhum produto encontrado na tabela "produtos"'
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      console.log(`Products found in PT table: ${produtosPt.length}`);
+
+      // Process in batches
+      const batchSize = 100;
+      for (let i = 0; i < produtosPt.length; i += batchSize) {
+        const batch = produtosPt.slice(i, i + batchSize);
+        const productsToInsert = [];
+
+        for (const produto of batch) {
+          try {
+            // Check if product already exists in English table
+            const { data: existing } = await supabaseAdmin
+              .from('products')
+              .select('id')
+              .eq('id', produto.id)
+              .maybeSingle();
+
+            if (existing) {
+              skipped++;
+              continue;
+            }
+
+            // Map Portuguese table structure to English table structure
+            // Based on the schema, both tables should have similar structure
+            // But we need to handle potential field name differences
+            const product: any = {
+              id: produto.id,
+              establishment_id: produto.establishment_id || produto.estabelecimento_id,
+              category_id: produto.category_id || produto.categoria_id || null,
+              name: produto.name || produto.nome || 'Produto sem nome',
+              description: produto.description || produto.descricao || null,
+              price: parseFloat(String(produto.price || produto.preco || produto.valor || '0')),
+              promotional_price: (produto.promotional_price || produto.preco_promocional || produto.valor_promocional) 
+                ? parseFloat(String(produto.promotional_price || produto.preco_promocional || produto.valor_promocional)) 
+                : null,
+              image_url: produto.image_url || produto.imagem_url || produto.destaque || null,
+              is_active: produto.is_active !== undefined 
+                ? Boolean(produto.is_active) 
+                : (produto.status === '1' || produto.status === 1 || produto.ativo === true || produto.ativo === 'true'),
+              is_featured: produto.is_featured !== undefined 
+                ? Boolean(produto.is_featured) 
+                : (produto.destaque === '1' || produto.destaque === 1 || produto.em_destaque === true || produto.em_destaque === 'true'),
+              stock_quantity: (produto.stock_quantity || produto.estoque) 
+                ? parseInt(String(produto.stock_quantity || produto.estoque)) 
+                : null,
+              preparation_time: (produto.preparation_time || produto.tempo_preparo) 
+                ? parseInt(String(produto.preparation_time || produto.tempo_preparo)) 
+                : 30,
+              variations: produto.variations || produto.variacoes || (Array.isArray(produto.variations) ? produto.variations : []),
+              additionals: produto.additionals || produto.adicionais || (Array.isArray(produto.additionals) ? produto.additionals : []),
+              created_at: produto.created_at || produto.criado_em || new Date().toISOString(),
+              updated_at: produto.updated_at || produto.atualizado_em || new Date().toISOString(),
+            };
+
+            productsToInsert.push(product);
+          } catch (err: any) {
+            errors.push(`Produto ${produto.id || 'unknown'}: ${err.message}`);
+          }
+        }
+
+        if (productsToInsert.length > 0) {
+          console.log(`Inserting batch ${Math.floor(i/batchSize) + 1} with ${productsToInsert.length} products`);
+
+          const { error: insertError } = await supabaseAdmin
+            .from('products')
+            .insert(productsToInsert as any);
+
+          if (insertError) {
+            errors.push(`Batch ${Math.floor(i/batchSize) + 1}: ${insertError.message}`);
+          } else {
+            migrated += productsToInsert.length;
+          }
+        }
+      }
+
+      console.log(`Migration completed: ${migrated} migrated, ${skipped} skipped, ${errors.length} errors`);
+
+      return new Response(JSON.stringify({
+        success: true,
+        migrated,
+        skipped,
+        errors: errors.length > 0 ? errors.slice(0, 10) : undefined,
+        message: `Migrados ${migrated} produtos de "produtos" para "products", ${skipped} já existiam`
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
     if (action === 'get_migration_status') {
       const [segments, plans, states, establishments, categories, products] = await Promise.all([
         supabaseAdmin.from('segments').select('id', { count: 'exact', head: true }),
@@ -426,17 +866,25 @@ serve(async (req) => {
       });
     }
 
-    return new Response(JSON.stringify({ error: 'Unknown action' }), {
+    console.error('Unknown action:', action);
+    return new Response(JSON.stringify({ 
+      error: `Unknown action: ${action}`,
+      success: false 
+    }), {
       status: 400,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    console.error('Migration error:', error);
+    const errorStack = error instanceof Error ? error.stack : String(error);
+    console.error('Migration error:', errorMessage);
+    console.error('Error stack:', errorStack);
+    console.error('Full error:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
     return new Response(JSON.stringify({ 
       error: errorMessage,
-      success: false 
+      success: false,
+      details: errorStack
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }

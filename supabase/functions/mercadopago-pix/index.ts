@@ -178,20 +178,68 @@ serve(async (req) => {
 
     const pixData = paymentData.point_of_interaction?.transaction_data;
 
+    // Validate PIX data exists
+    if (!pixData) {
+      console.error('PIX data not found in payment response:', paymentData);
+      
+      // Fallback to static PIX if available
+      if (establishment.pix_key) {
+        return new Response(JSON.stringify({
+          success: true,
+          type: 'static_pix',
+          pix_key: establishment.pix_key,
+          amount,
+          description,
+          order_id,
+          message: `💰 *Pagamento via PIX*\n\nValor: R$ ${amount.toFixed(2)}\n\nChave PIX: ${establishment.pix_key}\n\nApós o pagamento, envie o comprovante para confirmarmos seu pedido! 📸`,
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      throw new Error('Dados PIX não encontrados na resposta do Mercado Pago');
+    }
+
     // Log analytics
-    await supabase.from('whatsapp_analytics').insert({
-      establishment_id,
-      event_type: 'pix_generated',
-      event_data: {
-        payment_id: paymentData.id,
-        order_id,
-        amount,
-        status: paymentData.status,
-      },
-    });
+    try {
+      await supabase.from('whatsapp_analytics').insert({
+        establishment_id,
+        event_type: 'pix_generated',
+        event_data: {
+          payment_id: paymentData.id,
+          order_id,
+          amount,
+          status: paymentData.status,
+        },
+      });
+    } catch (analyticsError) {
+      console.error('Error logging analytics:', analyticsError);
+      // Don't fail the request if analytics fails
+    }
 
     const qrCodeBase64 = pixData?.qr_code_base64;
     const qrCode = pixData?.qr_code;
+
+    if (!qrCode) {
+      console.error('QR Code not found in PIX data:', pixData);
+      
+      // Fallback to static PIX if available
+      if (establishment.pix_key) {
+        return new Response(JSON.stringify({
+          success: true,
+          type: 'static_pix',
+          pix_key: establishment.pix_key,
+          amount,
+          description,
+          order_id,
+          message: `💰 *Pagamento via PIX*\n\nValor: R$ ${amount.toFixed(2)}\n\nChave PIX: ${establishment.pix_key}\n\nApós o pagamento, envie o comprovante para confirmarmos seu pedido! 📸`,
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      throw new Error('QR Code PIX não encontrado na resposta');
+    }
 
     return new Response(JSON.stringify({
       success: true,

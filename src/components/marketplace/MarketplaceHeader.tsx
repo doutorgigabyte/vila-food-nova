@@ -163,7 +163,8 @@ const MarketplaceHeader = ({ searchTerm, onSearchChange, onSearchClick }: Market
 
             {/* Actions */}
             <div className="flex items-center gap-2 md:gap-3">
-              <NotificationCenter />
+              {/* NotificationCenter - Only for logged-in users */}
+              {user && <NotificationCenter />}
               
               {/* Cart - Hidden on mobile (exists in bottom nav) */}
               <Link to="/checkout" className="hidden md:block">

@@ -140,8 +140,27 @@ export function VilaTokPlayer({
   }, [isPlaying, hasCountedView, onViewCountIncrement]);
 
   const handleTouchStart = useCallback((e: React.TouchEvent | React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    // Ignorar se o clique foi em um botão, elemento interativo ou área da sidebar
+    if (
+      target.closest('button') || 
+      target.closest('[role="button"]') || 
+      target.closest('a') ||
+      target.closest('[data-vilatok-sidebar]') ||
+      window.getComputedStyle(target).zIndex === '60' ||
+      parseInt(window.getComputedStyle(target).zIndex || '0') >= 60
+    ) {
+      return;
+    }
+    
     const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
     const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    
+    // Verificar se o clique está na área da sidebar (direita da tela)
+    const screenWidth = window.innerWidth;
+    if (clientX > screenWidth * 0.75) {
+      return;
+    }
     
     touchStartRef.current = { x: clientX, y: clientY, time: Date.now() };
 
@@ -155,6 +174,19 @@ export function VilaTokPlayer({
   }, [clearProgress]);
 
   const handleTouchEnd = useCallback((e: React.TouchEvent | React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    // Ignorar se o clique foi em um botão, elemento interativo ou área da sidebar
+    if (
+      target.closest('button') || 
+      target.closest('[role="button"]') || 
+      target.closest('a') ||
+      target.closest('[data-vilatok-sidebar]') ||
+      window.getComputedStyle(target).zIndex === '60' ||
+      parseInt(window.getComputedStyle(target).zIndex || '0') >= 60
+    ) {
+      return;
+    }
+    
     if (longPressRef.current) {
       clearTimeout(longPressRef.current);
       longPressRef.current = null;
@@ -172,6 +204,12 @@ export function VilaTokPlayer({
 
     const clientX = 'changedTouches' in e ? e.changedTouches[0].clientX : e.clientX;
     const clientY = 'changedTouches' in e ? e.changedTouches[0].clientY : e.clientY;
+    
+    // Verificar se o clique está na área da sidebar (direita da tela)
+    const screenWidth = window.innerWidth;
+    if (clientX > screenWidth * 0.75) {
+      return;
+    }
     
     const deltaX = clientX - touchStartRef.current.x;
     const deltaY = clientY - touchStartRef.current.y;
@@ -227,9 +265,15 @@ export function VilaTokPlayer({
       onTouchEnd={handleTouchEnd}
       onMouseDown={handleTouchStart}
       onMouseUp={handleTouchEnd}
+      style={{ aspectRatio: '9/16' }}
     >
       {isImage ? (
-        <img src={videoUrl} alt="" className="w-full h-full object-cover" draggable={false} />
+        <img 
+          src={videoUrl} 
+          alt="" 
+          className="w-full h-full object-cover" 
+          draggable={false} 
+        />
       ) : (
         <video
           ref={videoRef}
