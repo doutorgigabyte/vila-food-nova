@@ -83,49 +83,97 @@ async function verifyEstablishmentOwnership(userId: string, establishmentId: str
 }
 
 // ==================== Gemini Text API Call ====================
-async function callGeminiForAnalysis(establishmentName: string, description: string | null, productNames: string[]): Promise<string[]> {
-  const GOOGLE_API_KEY = Deno.env.get("GOOGLE_API_KEY");
+interface AIAnalysisResult {
+  suggestions: string[];
+  improvedDescription?: string;
+  bannerSuggestions?: string[];
+  categoryOrganization?: string[];
+  strategicReport?: string;
+}
+
+async function callGeminiForAnalysis(
+  establishmentName: string, 
+  description: string | null, 
+  productNames: string[],
+  segmentName?: string
+): Promise<AIAnalysisResult> {
+  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
   
-  if (!GOOGLE_API_KEY) {
-    console.log("[analyze-establishment] No GOOGLE_API_KEY, skipping AI analysis");
-    return [];
+  if (!LOVABLE_API_KEY) {
+    console.log("[analyze-establishment] No LOVABLE_API_KEY, skipping AI analysis");
+    return { suggestions: [] };
   }
 
-  const systemPrompt = `Você é um consultor de marketing para restaurantes. Analise o estabelecimento e sugira melhorias.`;
-  
-  const userPrompt = `Estabelecimento: ${establishmentName}
-Descrição atual: ${description || "Sem descrição"}
-Produtos: ${productNames.slice(0, 20).join(", ")}
+  const systemPrompt = `Você é um consultor de marketing especializado em cardápios digitais para restaurantes e lojas de delivery. 
+Seu objetivo é fornecer análises estratégicas, poéticas e inspiradoras que motivem o lojista a melhorar seu estabelecimento.
+Seja específico, use números quando possível, e escreva de forma envolvente e profissional.`;
 
-Sugira 3 melhorias práticas para aumentar vendas (máx 60 caracteres cada). Retorne JSON:
-{"suggestions": ["sugestão 1", "sugestão 2", "sugestão 3"]}`;
+  const userPrompt = `Analise este estabelecimento e forneça recomendações estratégicas:
+
+**Estabelecimento:** ${establishmentName}
+**Segmento:** ${segmentName || 'Não especificado'}
+**Descrição atual:** ${description || "Sem descrição - este é um problema crítico!"}
+**Produtos (${productNames.length} itens):** ${productNames.slice(0, 25).join(", ")}
+
+Por favor, retorne um JSON com EXATAMENTE esta estrutura:
+{
+  "suggestions": [
+    "Sugestão prática 1 (máx 80 caracteres)",
+    "Sugestão prática 2 (máx 80 caracteres)", 
+    "Sugestão prática 3 (máx 80 caracteres)"
+  ],
+  "improvedDescription": "Uma descrição otimizada e vendedora para o estabelecimento (máx 200 caracteres). Destaque o diferencial, use gatilhos emocionais, seja convidativo.",
+  "bannerSuggestions": [
+    "Ideia para banner 1: tema, cores e mensagem",
+    "Ideia para banner 2: tema, cores e mensagem"
+  ],
+  "categoryOrganization": [
+    "Sugestão de organização de cardápio 1",
+    "Sugestão de organização de cardápio 2"
+  ],
+  "strategicReport": "Um parágrafo estratégico e inspirador (máx 300 caracteres) que resuma o potencial do estabelecimento e as oportunidades de crescimento. Use linguagem envolvente e motivadora."
+}`;
 
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GOOGLE_API_KEY}`;
-    
-    const response = await fetch(url, {
+    const response = await fetch("https://api.lovable.dev/v1/chat/completions", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${LOVABLE_API_KEY}`
+      },
       body: JSON.stringify({
-        contents: [{ role: "user", parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }] }],
-        generationConfig: { temperature: 0.7, maxOutputTokens: 300 }
+        model: "google/gemini-2.5-flash",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt }
+        ],
+        temperature: 0.7,
+        max_tokens: 1000
       }),
     });
 
     if (!response.ok) {
-      console.log("[analyze-establishment] Gemini failed:", response.status);
-      return [];
+      console.log("[analyze-establishment] Lovable AI failed:", response.status);
+      return { suggestions: [] };
     }
 
     const data = await response.json();
-    const content = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    const content = data.choices?.[0]?.message?.content || "";
     
+    // Clean and parse JSON
     const cleanContent = content.replace(/```json\n?|\n?```/g, "").trim();
     const parsed = JSON.parse(cleanContent);
-    return parsed.suggestions || [];
+    
+    return {
+      suggestions: parsed.suggestions || [],
+      improvedDescription: parsed.improvedDescription,
+      bannerSuggestions: parsed.bannerSuggestions || [],
+      categoryOrganization: parsed.categoryOrganization || [],
+      strategicReport: parsed.strategicReport
+    };
   } catch (error) {
     console.error("[analyze-establishment] AI analysis failed:", error);
-    return [];
+    return { suggestions: [] };
   }
 }
 
@@ -266,13 +314,61 @@ serve(async (req) => {
 
     // ==================== AI-Powered Suggestions ====================
     const productNames = (products || []).map(p => p.name);
-    const aiSuggestions = await callGeminiForAnalysis(establishment.name, establishment.description, productNames);
     
-    for (const suggestion of aiSuggestions) {
+    // Get segment name for context
+    let segmentName = null;
+    if (establishment.segment_id) {
+      const { data: segment } = await supabase
+        .from('segments')
+        .select('name')
+        .eq('id', establishment.segment_id)
+        .single();
+      segmentName = segment?.name;
+    }
+    
+    const aiAnalysis = await callGeminiForAnalysis(
+      establishment.name, 
+      establishment.description, 
+      productNames,
+      segmentName
+    );
+    
+    // Add general suggestions
+    for (const suggestion of aiAnalysis.suggestions) {
       suggestions.push({
         type: 'general',
         priority: 'medium',
         message: suggestion
+      });
+    }
+    
+    // Add description improvement suggestion if we have one
+    if (aiAnalysis.improvedDescription && (!establishment.description || establishment.description.length < 50)) {
+      suggestions.push({
+        type: 'description',
+        priority: 'high',
+        message: 'Melhore sua descrição para atrair mais clientes',
+        action: 'improve_description',
+        target_id: establishment.id,
+        target_name: aiAnalysis.improvedDescription
+      });
+    }
+    
+    // Add banner suggestions
+    for (const bannerSuggestion of aiAnalysis.bannerSuggestions || []) {
+      suggestions.push({
+        type: 'banner',
+        priority: 'medium',
+        message: bannerSuggestion
+      });
+    }
+    
+    // Add category organization suggestions
+    for (const orgSuggestion of aiAnalysis.categoryOrganization || []) {
+      suggestions.push({
+        type: 'general',
+        priority: 'low',
+        message: orgSuggestion
       });
     }
 
@@ -308,7 +404,9 @@ serve(async (req) => {
         products_analyzed: totalProducts, 
         products_without_photo: productsWithoutPhoto,
         suggestions: suggestions.slice(0, 15),
-        ai_powered: aiSuggestions.length > 0
+        ai_powered: aiAnalysis.suggestions.length > 0,
+        improved_description: aiAnalysis.improvedDescription,
+        strategic_report: aiAnalysis.strategicReport
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

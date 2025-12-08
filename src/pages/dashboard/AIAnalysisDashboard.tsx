@@ -7,7 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { 
   Brain, Sparkles, Image, FileText, Store, AlertTriangle, Loader2, 
   Zap, Crown, CheckCircle, Camera, Palette, Tag, DollarSign, 
-  Layout, Lightbulb, ChevronRight, RefreshCw, Search, Lock
+  Layout, Lightbulb, ChevronRight, RefreshCw, Search, Lock, Edit, X
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useEstablishment } from "@/hooks/useEstablishment";
@@ -15,6 +15,8 @@ import { useEstablishmentPlan } from "@/hooks/useEstablishmentPlan";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 
 interface Suggestion {
   type: 'description' | 'photo' | 'banner' | 'logo' | 'general' | 'pricing' | 'promotion' | 'design';
@@ -35,6 +37,8 @@ interface AnalysisResult {
   logo_score: number;
   products_analyzed: number;
   suggestions: Suggestion[];
+  improved_description?: string;
+  strategic_report?: string;
 }
 
 interface AnalysisStep {
@@ -52,6 +56,14 @@ const AIAnalysisDashboard = () => {
   const [applying, setApplying] = useState(false);
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [credits, setCredits] = useState(0);
+  
+  // Confirmation modal state
+  const [confirmModal, setConfirmModal] = useState<{
+    open: boolean;
+    type: 'description' | 'action' | null;
+    suggestion: Suggestion | null;
+    editedValue: string;
+  }>({ open: false, type: null, suggestion: null, editedValue: '' });
   const [analysisSteps, setAnalysisSteps] = useState<AnalysisStep[]>([
     { id: 'connect', label: 'Conectando com seu cardápio digital', status: 'pending' },
     { id: 'extract', label: 'Extraindo informações do menu', status: 'pending' },
@@ -97,7 +109,9 @@ const AIAnalysisDashboard = () => {
         banner_score: data.banner_score || 0,
         logo_score: data.logo_score || 0,
         products_analyzed: data.products_analyzed || 0,
-        suggestions: (data.suggestions as unknown as Suggestion[]) || []
+        suggestions: (data.suggestions as unknown as Suggestion[]) || [],
+        improved_description: undefined,
+        strategic_report: undefined
       });
     }
   };
@@ -139,7 +153,11 @@ const AIAnalysisDashboard = () => {
         s.id === 'generate' ? { ...s, status: 'complete' } : s
       ));
       
-      setAnalysis(response.data);
+      setAnalysis({
+        ...response.data,
+        improved_description: response.data.improved_description,
+        strategic_report: response.data.strategic_report
+      });
       toast.success("Análise concluída!");
     } catch (error: unknown) {
       toast.error("Erro na análise: " + (error instanceof Error ? error.message : 'Erro'));
@@ -168,6 +186,52 @@ const AIAnalysisDashboard = () => {
     } catch (error: unknown) {
       toast.error("Erro: " + (error instanceof Error ? error.message : 'Erro'));
     } finally { setApplying(false); }
+  };
+
+  const openConfirmModal = (suggestion: Suggestion) => {
+    if (suggestion.action === 'improve_description') {
+      setConfirmModal({
+        open: true,
+        type: 'description',
+        suggestion,
+        editedValue: suggestion.target_name || ''
+      });
+    } else {
+      // For other actions, apply directly
+      applySingleAction(suggestion);
+    }
+  };
+
+  const confirmAndApply = async () => {
+    if (!confirmModal.suggestion || !establishment?.id) return;
+    
+    setApplying(true);
+    try {
+      const actionToApply = {
+        ...confirmModal.suggestion,
+        target_name: confirmModal.editedValue
+      };
+      
+      const response = await supabase.functions.invoke('apply-ai-improvements', {
+        body: { 
+          establishmentId: establishment.id, 
+          actions: [{ 
+            type: actionToApply.action, 
+            target_id: actionToApply.target_id, 
+            target_name: actionToApply.target_name 
+          }] 
+        }
+      });
+      
+      if (response.error) throw new Error(response.error.message);
+      toast.success("Melhoria aplicada com sucesso!");
+      setConfirmModal({ open: false, type: null, suggestion: null, editedValue: '' });
+      await loadLatestAnalysis();
+    } catch (error: unknown) {
+      toast.error("Erro: " + (error instanceof Error ? error.message : 'Erro'));
+    } finally { 
+      setApplying(false); 
+    }
   };
 
   const applySingleAction = async (suggestion: Suggestion) => {
@@ -412,6 +476,23 @@ const AIAnalysisDashboard = () => {
                   </div>
                 </div>
               )}
+
+              {/* Strategic Report */}
+              {analysis.strategic_report && (
+                <div className="bg-primary/10 border border-primary/30 rounded-lg p-4 max-w-2xl mx-auto mt-4">
+                  <div className="flex items-start gap-3">
+                    <Brain className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-primary mb-1">
+                        Análise Estratégica IA
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {analysis.strategic_report}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -640,12 +721,17 @@ const AIAnalysisDashboard = () => {
                       <Button 
                         size="sm" 
                         variant="outline"
-                        onClick={() => applySingleAction(suggestion)}
+                        onClick={() => openConfirmModal(suggestion)}
                         disabled={applying}
                         className="flex-shrink-0"
                       >
                         {applying ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : suggestion.action === 'improve_description' ? (
+                          <>
+                            <Edit className="w-4 h-4 mr-1" />
+                            Revisar e Aplicar
+                          </>
                         ) : (
                           <>
                             <Sparkles className="w-4 h-4 mr-1" />
@@ -659,6 +745,64 @@ const AIAnalysisDashboard = () => {
               </div>
             </CardContent>
           </Card>
+
+          {/* Confirmation Modal */}
+          <Dialog open={confirmModal.open} onOpenChange={(open) => !open && setConfirmModal({ open: false, type: null, suggestion: null, editedValue: '' })}>
+            <DialogContent className="sm:max-w-lg">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <Edit className="w-5 h-5 text-primary" />
+                  Revisar e Confirmar Melhoria
+                </DialogTitle>
+                <DialogDescription>
+                  A IA gerou uma sugestão de texto otimizado. Você pode editar antes de aplicar.
+                </DialogDescription>
+              </DialogHeader>
+              
+              {confirmModal.type === 'description' && (
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Nova descrição sugerida:</label>
+                    <Textarea
+                      value={confirmModal.editedValue}
+                      onChange={(e) => setConfirmModal(prev => ({ ...prev, editedValue: e.target.value }))}
+                      placeholder="Descrição do estabelecimento..."
+                      className="min-h-[120px]"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {confirmModal.editedValue.length}/200 caracteres
+                    </p>
+                  </div>
+                  
+                  <div className="p-3 bg-muted/50 rounded-lg">
+                    <p className="text-xs text-muted-foreground mb-1">Prévia:</p>
+                    <p className="text-sm italic">"{confirmModal.editedValue}"</p>
+                  </div>
+                </div>
+              )}
+
+              <DialogFooter className="gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setConfirmModal({ open: false, type: null, suggestion: null, editedValue: '' })}
+                >
+                  <X className="w-4 h-4 mr-1" />
+                  Cancelar
+                </Button>
+                <Button 
+                  onClick={confirmAndApply}
+                  disabled={applying || !confirmModal.editedValue.trim()}
+                >
+                  {applying ? (
+                    <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                  ) : (
+                    <CheckCircle className="w-4 h-4 mr-1" />
+                  )}
+                  Aplicar Melhoria
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </DashboardLayout>
     );
