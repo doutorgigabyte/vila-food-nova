@@ -51,44 +51,21 @@ export const StoreHero = ({ establishment, cashbackPercentage, hasStories = fals
       <div className="mx-4 -mt-12 relative z-10">
         <div className="bg-card rounded-xl shadow-xl p-4 border">
           <div className="flex gap-4">
-            {/* Logo - Circular with story ring if has stories */}
+            {/* Logo - Simple circular, no ring here since StoreStories shows the ring */}
             <div className="relative shrink-0">
-              {hasStories ? (
-                <div 
-                  className="w-20 h-20 rounded-full p-0.5 bg-gradient-to-br from-primary via-accent to-primary"
-                  style={establishment.primary_color ? {
-                    background: `linear-gradient(135deg, ${establishment.primary_color}, hsl(45 100% 50%), ${establishment.primary_color})`
-                  } : undefined}
-                >
-                  <div className="w-full h-full rounded-full bg-background p-0.5">
-                    {establishment.logo_url ? (
-                      <img
-                        src={establishment.logo_url}
-                        alt={establishment.name}
-                        className="w-full h-full rounded-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full rounded-full bg-muted flex items-center justify-center text-2xl font-bold text-muted-foreground">
-                        {establishment.name.charAt(0)}
-                      </div>
-                    )}
+              <div className="w-20 h-20 rounded-full overflow-hidden border-4 border-background shadow-lg bg-background">
+                {establishment.logo_url ? (
+                  <img
+                    src={establishment.logo_url}
+                    alt={establishment.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-muted flex items-center justify-center text-2xl font-bold text-muted-foreground">
+                    {establishment.name.charAt(0)}
                   </div>
-                </div>
-              ) : (
-                <div className="w-20 h-20 rounded-full overflow-hidden border-4 border-background shadow-lg bg-background">
-                  {establishment.logo_url ? (
-                    <img
-                      src={establishment.logo_url}
-                      alt={establishment.name}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-muted flex items-center justify-center text-2xl font-bold text-muted-foreground">
-                      {establishment.name.charAt(0)}
-                    </div>
-                  )}
-                </div>
-              )}
+                )}
+              </div>
               {/* WhatsApp Button */}
               {whatsappLink && (
                 <a
