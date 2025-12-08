@@ -300,12 +300,21 @@ const StoriesManagement = () => {
       </div>
 
       {/* Stories Creator Modal */}
-      {isCreatorOpen && establishment && (
-        <StoriesCreator
-          establishmentId={establishment.id}
-          onClose={() => setIsCreatorOpen(false)}
-          onPublish={handlePublish}
-        />
+      {isCreatorOpen && (
+        establishment ? (
+          <StoriesCreator
+            establishmentId={establishment.id}
+            onClose={() => setIsCreatorOpen(false)}
+            onPublish={handlePublish}
+          />
+        ) : (
+          <div className="fixed inset-0 z-50 bg-background flex items-center justify-center">
+            <div className="text-center">
+              <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+              <p className="text-muted-foreground">Carregando...</p>
+            </div>
+          </div>
+        )
       )}
     </DashboardLayout>
   );
