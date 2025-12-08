@@ -26,18 +26,23 @@ const AllRestaurants = ({ establishments, loading, mainCategory, subcategory }: 
   // Filter and sort establishments - memoized for performance
   // MUST be called before any early returns to maintain hook order
   const filteredEstablishments = useMemo(() => {
+    // Calculate date threshold for "new" (last 30 days)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
     let filtered = establishments.filter((est) => {
       switch (activeFilter) {
         case "new":
-          // Recém-chegados - for now show all since created_at is not available
-          // TODO: Add created_at to Establishment type when available
-          return true;
+          // Recém-chegados - establishments created in the last 30 days
+          if (est.created_at) {
+            return new Date(est.created_at) >= thirtyDaysAgo;
+          }
+          return false;
         case "popular":
-          // Popular - show open establishments as proxy for popularity
+          // Popular - establishments that are open (proxy for active/popular)
           return est.is_open === true;
         case "top_rated":
-          // Melhor avaliados - show all for now
-          // TODO: Add rating field to Establishment type when available
+          // Melhor avaliados - show all for now (TODO: add rating field)
           return true;
         default:
           return true;
