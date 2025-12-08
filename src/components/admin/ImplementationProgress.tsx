@@ -113,8 +113,8 @@ const phases: ProgressPhase[] = [
     description: 'Correções da micro rede social',
     category: 'vilatok',
     items: [
-      { name: 'Botão "Novo vídeo" abre tela branca (bug crítico)', status: 'pending', priority: 'critical' },
-      { name: 'Fluxo completo: Upload → Cortar → Música → Detalhes → Agendar → Preview', status: 'pending', priority: 'high' },
+      { name: 'Botão "Novo vídeo" abre tela branca (bug crítico)', status: 'completed', priority: 'critical' },
+      { name: 'Fluxo completo: Upload → Cortar → Música → Detalhes → Agendar → Preview', status: 'completed', priority: 'high' },
       { name: 'Limitar repostagem automática a max 3x/dia', status: 'pending', priority: 'high' },
       { name: 'Separar criação de stories do perfil VilaTok', status: 'pending', priority: 'medium' },
       { name: 'Stories do cardápio exibir apenas da loja atual', status: 'pending', priority: 'high' },

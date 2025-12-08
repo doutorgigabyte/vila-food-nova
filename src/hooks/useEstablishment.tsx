@@ -47,7 +47,7 @@ export interface Product {
   additionals: Json;
 }
 
-export const useEstablishment = (slug: string) => {
+export const useEstablishment = (slug: string | undefined) => {
   const [establishment, setEstablishment] = useState<Establishment | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
