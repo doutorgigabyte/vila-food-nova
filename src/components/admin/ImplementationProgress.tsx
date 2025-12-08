@@ -438,7 +438,9 @@ const phases: ProgressPhase[] = [
       { name: 'Injeção dinâmica de system_prompt + menu_json', status: 'completed', priority: 'high' },
       { name: 'UI: Config whatsapp_instance_name no painel do lojista', status: 'pending', priority: 'medium' },
       { name: 'UI: Visualizador de cardápio JSON formatado', status: 'pending', priority: 'low' },
-      { name: 'Documentação: Guia de setup n8n para VilaFood', status: 'pending', priority: 'low' },
+      { name: 'Documentação: Guia de setup n8n para VilaFood', status: 'completed', priority: 'low' },
+      { name: 'Template n8n: Master Router', status: 'completed', priority: 'high' },
+      { name: 'Template n8n: AI Brain', status: 'completed', priority: 'high' },
     ]
   },
 
