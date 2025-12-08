@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { Plus, Video, Trash2, Eye, EyeOff, Link2 } from 'lucide-react';
+import { Plus, Video, Trash2, Eye, EyeOff, Link2, Lock } from 'lucide-react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -13,6 +13,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useEstablishment } from '@/hooks/useEstablishment';
+import { useEstablishmentPlan } from '@/hooks/useEstablishmentPlan';
+import { PlanLimitAlert } from '@/components/dashboard/PlanLimitAlert';
 import { uploadToS3, validateFile, UploadType } from '@/lib/s3';
 import { toast } from 'sonner';
 import { getImageUrl } from '@/lib/s3';
@@ -44,12 +46,16 @@ interface Product {
 export default function VideosManagement() {
   const { slug } = useParams();
   const { establishment } = useEstablishment(slug);
+  const { planFeatures, canAddMoreVideos } = useEstablishmentPlan(establishment?.id);
   const [products, setProducts] = useState<Product[]>([]);
   const [videos, setVideos] = useState<EstablishmentVideo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  
+  const canAddVideo = canAddMoreVideos(videos.length);
+  const videosLimit = planFeatures.maxVideos;
 
   const [formData, setFormData] = useState({
     title: '',
@@ -188,11 +194,26 @@ export default function VideosManagement() {
   return (
     <DashboardLayout title="VilaTok - Vídeos" establishment={establishment}>
       <div className="space-y-6">
+        {/* Plan Limit Alert */}
+        <PlanLimitAlert
+          type="videos"
+          current={videos.length}
+          limit={videosLimit}
+          planName={planFeatures.maxVideos === 10 ? 'Básico' : 'Atual'}
+          establishmentSlug={slug}
+        />
+
         <div className="flex items-center justify-between">
           <p className="text-muted-foreground">Gerencie seus vídeos promocionais</p>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button><Plus className="w-4 h-4 mr-2" />Novo Vídeo</Button>
+              <Button disabled={!canAddVideo}>
+                {canAddVideo ? (
+                  <><Plus className="w-4 h-4 mr-2" />Novo Vídeo</>
+                ) : (
+                  <><Lock className="w-4 h-4 mr-2" />Limite Atingido</>
+                )}
+              </Button>
             </DialogTrigger>
             <DialogContent className="max-w-md">
               <DialogHeader><DialogTitle>Adicionar Vídeo</DialogTitle></DialogHeader>
@@ -235,7 +256,25 @@ export default function VideosManagement() {
           </Dialog>
         </div>
 
-        <Card><CardContent className="py-4"><div className="flex items-center justify-between"><div className="flex items-center gap-3"><Video className="w-8 h-8 text-primary" /><div><p className="font-medium">Vídeos Utilizados</p><p className="text-sm text-muted-foreground">{videos.length} vídeos</p></div></div><Badge variant="outline" className="text-lg px-4 py-2">{videos.length} / 10</Badge></div></CardContent></Card>
+        <Card>
+          <CardContent className="py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Video className="w-8 h-8 text-primary" />
+                <div>
+                  <p className="font-medium">Vídeos Utilizados</p>
+                  <p className="text-sm text-muted-foreground">{videos.length} de {videosLimit} vídeos</p>
+                </div>
+              </div>
+              <Badge 
+                variant={videos.length >= videosLimit ? "destructive" : "outline"} 
+                className="text-lg px-4 py-2"
+              >
+                {videos.length} / {videosLimit}
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {videos.map((video) => (
