@@ -139,15 +139,39 @@ const phases: ProgressPhase[] = [
   },
   {
     id: 'admin-responsive',
-    name: '📱 P4.2: Responsividade Admin',
+    name: '📱 P4.2: Responsividade Admin (SuperAdmin)',
     description: 'Todas as telas admin para mobile',
     category: 'admin',
     items: [
-      { name: 'Dashboard do SuperAdmin responsivo', status: 'pending', priority: 'high' },
-      { name: 'Gestão de estabelecimentos responsiva', status: 'pending', priority: 'high' },
-      { name: 'Gestão de planos responsiva', status: 'pending', priority: 'medium' },
+      { name: 'Dashboard do SuperAdmin responsivo', status: 'completed', priority: 'high' },
+      { name: 'Gestão de estabelecimentos responsiva', status: 'completed', priority: 'high' },
+      { name: 'Gestão de usuários responsiva', status: 'completed', priority: 'high' },
+      { name: 'Gestão de planos responsiva', status: 'completed', priority: 'medium' },
+      { name: 'Gestão de assinaturas responsiva', status: 'completed', priority: 'medium' },
       { name: 'Gestão de vilas responsiva', status: 'pending', priority: 'medium' },
+      { name: 'Gestão de categorias responsiva', status: 'pending', priority: 'medium' },
+      { name: 'Configurações admin responsivas', status: 'pending', priority: 'medium' },
+      { name: '✅ Verificação final: todas as telas admin responsivas', status: 'pending', priority: 'critical' },
+    ]
+  },
+  {
+    id: 'painel-responsive',
+    name: '📱 P4.2.1: Responsividade Painel (Estabelecimento)',
+    description: 'Todas as telas do painel do lojista para mobile',
+    category: 'admin',
+    items: [
+      { name: 'Dashboard do estabelecimento responsivo', status: 'pending', priority: 'high' },
+      { name: 'Gestão de produtos responsiva', status: 'pending', priority: 'high' },
+      { name: 'Gestão de pedidos responsiva', status: 'pending', priority: 'high' },
+      { name: 'PDV responsivo', status: 'pending', priority: 'high' },
+      { name: 'Comanda digital responsiva', status: 'pending', priority: 'high' },
+      { name: 'Display cozinha responsivo', status: 'pending', priority: 'high' },
+      { name: 'Gestão de categorias responsiva', status: 'pending', priority: 'medium' },
+      { name: 'Configurações da loja responsivas', status: 'pending', priority: 'medium' },
       { name: 'Relatórios responsivos', status: 'pending', priority: 'medium' },
+      { name: 'WhatsApp responsivo', status: 'pending', priority: 'medium' },
+      { name: 'Vídeos/Stories responsivo', status: 'pending', priority: 'medium' },
+      { name: '✅ Verificação final: todas as telas do painel responsivas', status: 'pending', priority: 'critical' },
     ]
   },
   {
