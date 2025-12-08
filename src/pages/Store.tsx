@@ -18,6 +18,7 @@ import { StoreFloatingCart } from "@/components/store/StoreFloatingCart";
 import { StoreAccountTab } from "@/components/store/StoreAccountTab";
 import StoreBottomNav from "@/components/store/StoreBottomNav";
 import StoreStories from "@/components/store/StoreStories";
+import { ServiceRequestModal } from "@/components/products/ServiceRequestModal";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { setOrderSourceDirect, getOrderSourceDirect } from "@/hooks/useOrderSource";
@@ -68,6 +69,7 @@ const Store = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<StoreProduct | null>(null);
+  const [serviceProduct, setServiceProduct] = useState<StoreProduct | null>(null);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isStoriesOpen, setIsStoriesOpen] = useState(false);
 
@@ -383,6 +385,28 @@ const Store = () => {
           handleAddToCart(product, quantity, observation);
           setSelectedProduct(null);
         }}
+        onRequestService={(product) => {
+          setSelectedProduct(null);
+          setServiceProduct(product);
+        }}
+      />
+
+      {/* Service Request Modal */}
+      <ServiceRequestModal
+        product={serviceProduct ? {
+          id: serviceProduct.id,
+          name: serviceProduct.name,
+          description: serviceProduct.description,
+          price: serviceProduct.price,
+          promotional_price: serviceProduct.promotional_price,
+          image_url: serviceProduct.image_url,
+          service_duration: (serviceProduct as any).service_duration,
+          service_location: (serviceProduct as any).service_location,
+          requires_booking: (serviceProduct as any).requires_booking,
+          booking_advance_days: (serviceProduct as any).booking_advance_days,
+        } : null}
+        establishmentWhatsapp={establishment?.whatsapp || undefined}
+        onClose={() => setServiceProduct(null)}
       />
 
       {/* Cart Sheet */}

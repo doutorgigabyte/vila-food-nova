@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Wand2, Plus, Trash2, Loader2, Sparkles, Upload } from "lucide-react";
+import { Wand2, Plus, Trash2, Loader2, Sparkles, Upload, Clock, MapPin, Link, ThermometerSnowflake, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ProductTypeSelector, ProductType } from "./ProductTypeSelector";
+import { ProductTypeSelector, ProductType, getProductCategory } from "./ProductTypeSelector";
 import { TemperatureOption } from "./TemperatureSelector";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -102,6 +102,21 @@ export const ProductFormIntelligent = ({
   const [requiresAgeVerification, setRequiresAgeVerification] = useState(
     initialData?.requires_age_verification || false
   );
+
+  // Service specific
+  const [serviceDuration, setServiceDuration] = useState<number>(initialData?.service_duration || 60);
+  const [serviceLocation, setServiceLocation] = useState<string>(initialData?.service_location || 'store');
+  const [requiresBooking, setRequiresBooking] = useState(initialData?.requires_booking || false);
+  const [bookingAdvanceDays, setBookingAdvanceDays] = useState<number>(initialData?.booking_advance_days || 1);
+
+  // Digital specific
+  const [digitalDeliveryUrl, setDigitalDeliveryUrl] = useState<string>(initialData?.digital_delivery_url || '');
+  const [digitalInstructions, setDigitalInstructions] = useState<string>(initialData?.digital_instructions || '');
+
+  // Perishable specific
+  const [expirationDays, setExpirationDays] = useState<number>(initialData?.expiration_days || 7);
+  const [requiresRefrigeration, setRequiresRefrigeration] = useState(initialData?.requires_refrigeration || false);
+  const [storageTemperature, setStorageTemperature] = useState<string>(initialData?.storage_temperature || '');
 
   const form = useForm<ProductFormData>({
     resolver: zodResolver(productSchema),
@@ -214,11 +229,14 @@ export const ProductFormIntelligent = ({
   const onSubmit = async (data: ProductFormData) => {
     setIsSaving(true);
     try {
+      const productCategory = getProductCategory(productType);
+      
       const productData: any = {
         ...data,
         establishment_id: establishmentId,
         image_url: imageUrl || null,
         product_type: productType,
+        product_category: productCategory,
         requires_age_verification: requiresAgeVerification,
         storage_type: storageType,
         temperature_options: temperatureOptions.length > 0 ? temperatureOptions : null,
@@ -226,6 +244,18 @@ export const ProductFormIntelligent = ({
         allows_multiple_flavors: productType === 'pizza',
         max_flavors: productType === 'pizza' ? Math.max(...pizzaSizes.map(s => s.max_flavors)) : 1,
         variations: productType === 'pizza' ? { sizes: pizzaSizes, flavors: pizzaFlavors } : null,
+        // Service fields
+        service_duration: productType === 'service' ? serviceDuration : null,
+        service_location: productType === 'service' ? serviceLocation : null,
+        requires_booking: productType === 'service' ? requiresBooking : false,
+        booking_advance_days: productType === 'service' && requiresBooking ? bookingAdvanceDays : null,
+        // Digital fields
+        digital_delivery_url: productType === 'digital' ? digitalDeliveryUrl || null : null,
+        digital_instructions: productType === 'digital' ? digitalInstructions || null : null,
+        // Perishable fields
+        expiration_days: productType === 'perishable' ? expirationDays : null,
+        requires_refrigeration: productType === 'perishable' ? requiresRefrigeration : false,
+        storage_temperature: productType === 'perishable' ? storageTemperature || null : null,
       };
 
       if (initialData?.id) {
@@ -603,6 +633,147 @@ export const ProductFormIntelligent = ({
                         </Button>
                       </div>
                     ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Service Configuration */}
+            {productType === 'service' && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Clock className="w-5 h-5" />
+                    Configuração de Serviço
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Duração (minutos)</Label>
+                      <Input
+                        type="number"
+                        value={serviceDuration}
+                        onChange={(e) => setServiceDuration(parseInt(e.target.value) || 60)}
+                        placeholder="60"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Local de Atendimento</Label>
+                      <Select value={serviceLocation} onValueChange={setServiceLocation}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="store">No estabelecimento</SelectItem>
+                          <SelectItem value="customer_location">No cliente</SelectItem>
+                          <SelectItem value="remote">Remoto/Online</SelectItem>
+                          <SelectItem value="hybrid">Híbrido</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={requiresBooking}
+                        onCheckedChange={setRequiresBooking}
+                      />
+                      <Label>Requer agendamento</Label>
+                    </div>
+                  </div>
+
+                  {requiresBooking && (
+                    <div className="space-y-2">
+                      <Label className="flex items-center gap-2">
+                        <Calendar className="w-4 h-4" />
+                        Antecedência mínima (dias)
+                      </Label>
+                      <Input
+                        type="number"
+                        value={bookingAdvanceDays}
+                        onChange={(e) => setBookingAdvanceDays(parseInt(e.target.value) || 1)}
+                        min={1}
+                        placeholder="1"
+                      />
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Digital Product Configuration */}
+            {productType === 'digital' && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Link className="w-5 h-5" />
+                    Configuração de Produto Digital
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>URL de Entrega / Download</Label>
+                    <Input
+                      value={digitalDeliveryUrl}
+                      onChange={(e) => setDigitalDeliveryUrl(e.target.value)}
+                      placeholder="https://exemplo.com/download/produto"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Link enviado ao cliente após a compra
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Instruções de Acesso</Label>
+                    <Textarea
+                      value={digitalInstructions}
+                      onChange={(e) => setDigitalInstructions(e.target.value)}
+                      placeholder="Instruções que serão exibidas ao cliente..."
+                      rows={3}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Perishable Product Configuration */}
+            {productType === 'perishable' && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <ThermometerSnowflake className="w-5 h-5" />
+                    Configuração de Produto Perecível
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Validade (dias)</Label>
+                      <Input
+                        type="number"
+                        value={expirationDays}
+                        onChange={(e) => setExpirationDays(parseInt(e.target.value) || 7)}
+                        placeholder="7"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Temperatura de Armazenamento</Label>
+                      <Input
+                        value={storageTemperature}
+                        onChange={(e) => setStorageTemperature(e.target.value)}
+                        placeholder="0°C a 5°C"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      checked={requiresRefrigeration}
+                      onCheckedChange={setRequiresRefrigeration}
+                    />
+                    <Label>Requer refrigeração</Label>
                   </div>
                 </CardContent>
               </Card>

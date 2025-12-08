@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Package } from "lucide-react";
+import { Package, Wrench, Download, Leaf, Clock } from "lucide-react";
 import { PriceWithDiscount } from "@/components/ui/price";
 import type { StoreProduct } from "@/hooks/useStoreData";
 
@@ -26,6 +26,41 @@ export const ProductCard = ({ product, onClick }: ProductCardProps) => {
 
   const showImage = product.image_url && !imageError;
 
+  // Get product category badge
+  const getCategoryBadge = () => {
+    const productCategory = (product as any).product_category;
+    const productType = (product as any).product_type;
+    
+    if (productCategory === 'service' || productType === 'service') {
+      return (
+        <Badge variant="secondary" className="text-[10px] px-1.5 py-0 shrink-0 gap-1 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+          <Wrench className="w-2.5 h-2.5" />
+          Serviço
+        </Badge>
+      );
+    }
+    if (productCategory === 'digital' || productType === 'digital') {
+      return (
+        <Badge variant="secondary" className="text-[10px] px-1.5 py-0 shrink-0 gap-1 bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">
+          <Download className="w-2.5 h-2.5" />
+          Digital
+        </Badge>
+      );
+    }
+    if (productCategory === 'perishable' || productType === 'perishable') {
+      return (
+        <Badge variant="secondary" className="text-[10px] px-1.5 py-0 shrink-0 gap-1 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+          <Leaf className="w-2.5 h-2.5" />
+          Perecível
+        </Badge>
+      );
+    }
+    return null;
+  };
+
+  const categoryBadge = getCategoryBadge();
+  const serviceDuration = (product as any).service_duration;
+
   return (
     <Card 
       className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:-translate-y-1 overflow-hidden group"
@@ -47,11 +82,18 @@ export const ProductCard = ({ product, onClick }: ProductCardProps) => {
                     Destaque
                   </Badge>
                 )}
+                {categoryBadge}
               </div>
               {product.description && (
                 <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
                   {product.description}
                 </p>
+              )}
+              {serviceDuration && (
+                <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
+                  <Clock className="w-3 h-3" />
+                  <span>{serviceDuration} min</span>
+                </div>
               )}
             </div>
             <div className="mt-2">
