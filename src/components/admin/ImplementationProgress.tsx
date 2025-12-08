@@ -310,10 +310,10 @@ const phases: ProgressPhase[] = [
     description: 'Lógica de filtros por categoria',
     category: 'ux',
     items: [
-      { name: 'Categoria exibe apenas estabelecimentos relacionados', status: 'pending', priority: 'high' },
-      { name: 'VilaTok da categoria mostra só stories daquela categoria', status: 'pending', priority: 'high' },
-      { name: 'Slide/banners específicos por categoria', status: 'pending', priority: 'medium' },
-      { name: 'Subcategoria filtra corretamente estabelecimentos', status: 'pending', priority: 'high' },
+      { name: 'Categoria filtra estabelecimentos por segment_id', status: 'completed', priority: 'high' },
+      { name: 'VilaTok filtra stories por categoria (parent_category_id)', status: 'completed', priority: 'high' },
+      { name: 'VideoHighlights específicos por categoria', status: 'completed', priority: 'medium' },
+      { name: 'Subcategoria filtra corretamente por segment_id', status: 'completed', priority: 'high' },
     ]
   },
   {
