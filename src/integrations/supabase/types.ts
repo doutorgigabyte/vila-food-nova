@@ -74,6 +74,51 @@ export type Database = {
           },
         ]
       }
+      address_cache: {
+        Row: {
+          address: string | null
+          cep: string
+          city: string | null
+          created_at: string
+          formatted_address: string | null
+          id: string
+          lat: number | null
+          lng: number | null
+          neighborhood: string | null
+          source: string | null
+          state: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          cep: string
+          city?: string | null
+          created_at?: string
+          formatted_address?: string | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          neighborhood?: string | null
+          source?: string | null
+          state?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          cep?: string
+          city?: string | null
+          created_at?: string
+          formatted_address?: string | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          neighborhood?: string | null
+          source?: string | null
+          state?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       admin_access_logs: {
         Row: {
           action: string
@@ -888,9 +933,12 @@ export type Database = {
         Row: {
           addresses: Json | null
           created_at: string | null
+          default_address: Json | null
           email: string | null
           establishment_id: string | null
           id: string
+          last_location_lat: number | null
+          last_location_lng: number | null
           name: string
           phone: string | null
           updated_at: string | null
@@ -899,9 +947,12 @@ export type Database = {
         Insert: {
           addresses?: Json | null
           created_at?: string | null
+          default_address?: Json | null
           email?: string | null
           establishment_id?: string | null
           id?: string
+          last_location_lat?: number | null
+          last_location_lng?: number | null
           name: string
           phone?: string | null
           updated_at?: string | null
@@ -910,9 +961,12 @@ export type Database = {
         Update: {
           addresses?: Json | null
           created_at?: string | null
+          default_address?: Json | null
           email?: string | null
           establishment_id?: string | null
           id?: string
+          last_location_lat?: number | null
+          last_location_lng?: number | null
           name?: string
           phone?: string | null
           updated_at?: string | null
@@ -1328,6 +1382,8 @@ export type Database = {
           logo_url: string | null
           longitude: number | null
           max_delivery_radius_km: number | null
+          menu_json: Json | null
+          menu_json_updated_at: string | null
           mercado_pago_token: string | null
           min_order_value: number | null
           mp_public_key: string | null
@@ -1350,6 +1406,7 @@ export type Database = {
           service_area: Json | null
           slug: string
           status: Database["public"]["Enums"]["establishment_status"] | null
+          system_prompt: string | null
           updated_at: string | null
           vila_id: string | null
           whatsapp: string | null
@@ -1375,6 +1432,8 @@ export type Database = {
           logo_url?: string | null
           longitude?: number | null
           max_delivery_radius_km?: number | null
+          menu_json?: Json | null
+          menu_json_updated_at?: string | null
           mercado_pago_token?: string | null
           min_order_value?: number | null
           mp_public_key?: string | null
@@ -1397,6 +1456,7 @@ export type Database = {
           service_area?: Json | null
           slug: string
           status?: Database["public"]["Enums"]["establishment_status"] | null
+          system_prompt?: string | null
           updated_at?: string | null
           vila_id?: string | null
           whatsapp?: string | null
@@ -1422,6 +1482,8 @@ export type Database = {
           logo_url?: string | null
           longitude?: number | null
           max_delivery_radius_km?: number | null
+          menu_json?: Json | null
+          menu_json_updated_at?: string | null
           mercado_pago_token?: string | null
           min_order_value?: number | null
           mp_public_key?: string | null
@@ -1444,6 +1506,7 @@ export type Database = {
           service_area?: Json | null
           slug?: string
           status?: Database["public"]["Enums"]["establishment_status"] | null
+          system_prompt?: string | null
           updated_at?: string | null
           vila_id?: string | null
           whatsapp?: string | null
@@ -3227,10 +3290,14 @@ export type Database = {
           instance_name: string | null
           instance_type: string | null
           keywords_enabled: boolean | null
+          menu_sync_enabled: boolean | null
+          n8n_enabled: boolean | null
+          n8n_webhook_url: string | null
           outside_hours_message: string | null
           phone_number: string | null
           pix_enabled: boolean | null
           qr_code: string | null
+          send_media_enabled: boolean | null
           status: string | null
           updated_at: string | null
           webhook_url: string | null
@@ -3255,10 +3322,14 @@ export type Database = {
           instance_name?: string | null
           instance_type?: string | null
           keywords_enabled?: boolean | null
+          menu_sync_enabled?: boolean | null
+          n8n_enabled?: boolean | null
+          n8n_webhook_url?: string | null
           outside_hours_message?: string | null
           phone_number?: string | null
           pix_enabled?: boolean | null
           qr_code?: string | null
+          send_media_enabled?: boolean | null
           status?: string | null
           updated_at?: string | null
           webhook_url?: string | null
@@ -3283,10 +3354,14 @@ export type Database = {
           instance_name?: string | null
           instance_type?: string | null
           keywords_enabled?: boolean | null
+          menu_sync_enabled?: boolean | null
+          n8n_enabled?: boolean | null
+          n8n_webhook_url?: string | null
           outside_hours_message?: string | null
           phone_number?: string | null
           pix_enabled?: boolean | null
           qr_code?: string | null
+          send_media_enabled?: boolean | null
           status?: string | null
           updated_at?: string | null
           webhook_url?: string | null
@@ -3359,7 +3434,10 @@ export type Database = {
           created_at: string | null
           id: string
           is_from_bot: boolean | null
+          media_type: string | null
+          media_url: string | null
           message_type: string | null
+          product_id: string | null
           sender: string
           session_id: string
         }
@@ -3368,7 +3446,10 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_from_bot?: boolean | null
+          media_type?: string | null
+          media_url?: string | null
           message_type?: string | null
+          product_id?: string | null
           sender: string
           session_id: string
         }
@@ -3377,11 +3458,21 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_from_bot?: boolean | null
+          media_type?: string | null
+          media_url?: string | null
           message_type?: string | null
+          product_id?: string | null
           sender?: string
           session_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "whatsapp_messages_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "whatsapp_messages_session_id_fkey"
             columns: ["session_id"]
@@ -3481,6 +3572,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_menu_json: { Args: { est_id: string }; Returns: Json }
       get_public_establishment_by_slug: {
         Args: { p_slug: string }
         Returns: {
