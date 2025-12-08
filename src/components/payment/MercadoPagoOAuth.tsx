@@ -79,8 +79,11 @@ export function MercadoPagoOAuth({ establishmentId, context = 'establishment', o
     }
   };
 
+  const [authUrl, setAuthUrl] = useState<string | null>(null);
+
   const handleConnect = async () => {
     setConnecting(true);
+    setAuthUrl(null);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
@@ -98,8 +101,16 @@ export function MercadoPagoOAuth({ establishmentId, context = 'establishment', o
       if (error) throw error;
 
       if (data.auth_url) {
-        // Redirect to Mercado Pago authorization page
-        window.location.href = data.auth_url;
+        // Try to open in new tab first
+        const newWindow = window.open(data.auth_url, '_blank');
+        
+        if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+          // Popup was blocked - show URL for manual copy
+          setAuthUrl(data.auth_url);
+          toast.info('Popup bloqueado. Copie a URL abaixo e abra manualmente.');
+        } else {
+          toast.success('Janela do Mercado Pago aberta. Complete a autorização lá.');
+        }
       } else {
         throw new Error('URL de autorização não retornada');
       }
@@ -108,6 +119,13 @@ export function MercadoPagoOAuth({ establishmentId, context = 'establishment', o
       toast.error(error.message || 'Erro ao iniciar conexão');
     } finally {
       setConnecting(false);
+    }
+  };
+
+  const handleCopyAuthUrl = () => {
+    if (authUrl) {
+      navigator.clipboard.writeText(authUrl);
+      toast.success('URL copiada! Cole em uma nova aba.');
     }
   };
 
@@ -477,6 +495,36 @@ export function MercadoPagoOAuth({ establishmentId, context = 'establishment', o
                 )}
                 {connecting ? 'Conectando...' : 'Conectar Mercado Pago'}
               </Button>
+
+              {/* Show URL if popup was blocked */}
+              {authUrl && (
+                <Alert className="bg-yellow-500/10 border-yellow-500/50">
+                  <AlertCircle className="h-4 w-4 text-yellow-600" />
+                  <AlertDescription className="space-y-2">
+                    <p className="text-sm text-yellow-700">
+                      Popup bloqueado. Copie a URL abaixo e abra em uma nova aba:
+                    </p>
+                    <div className="flex gap-2">
+                      <Input 
+                        value={authUrl} 
+                        readOnly 
+                        className="text-xs font-mono"
+                      />
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={handleCopyAuthUrl}
+                        className="shrink-0"
+                      >
+                        Copiar
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Ou tente desativar o bloqueador de popups e clique em Conectar novamente.
+                    </p>
+                  </AlertDescription>
+                </Alert>
+              )}
 
               <p className="text-xs text-center text-muted-foreground">
                 Não tem conta?{' '}
