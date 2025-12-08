@@ -1,13 +1,16 @@
 import { useState, useEffect } from "react";
+import { useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { LineChart, Save, ExternalLink, Facebook, BarChart3 } from "lucide-react";
+import { LineChart, Save, ExternalLink, Facebook, BarChart3, Lock, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useEstablishment } from "@/hooks/useEstablishment";
+import { useEstablishmentPlan } from "@/hooks/useEstablishmentPlan";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 
 interface PixelConfig {
@@ -20,6 +23,11 @@ interface PixelConfig {
 }
 
 const AnalyticsPixelsManagement = () => {
+  const { slug } = useParams();
+  const { establishment } = useEstablishment(slug);
+  const { hasFeature } = useEstablishmentPlan(establishment?.id);
+  const hasAnalyticsAccess = hasFeature('analytics_pixels');
+  
   const [config, setConfig] = useState<PixelConfig>({
     facebook_pixel_id: null,
     google_analytics_id: null,
@@ -106,8 +114,34 @@ const AnalyticsPixelsManagement = () => {
     config.tiktok_pixel_id
   ].filter(Boolean).length;
 
+  // Plan restriction - show upgrade prompt if no access
+  if (!hasAnalyticsAccess) {
+    return (
+      <DashboardLayout title="Pixels Analytics" establishment={establishment}>
+        <div className="min-h-[60vh] flex items-center justify-center">
+          <Card className="max-w-lg text-center border-amber-500/30 bg-amber-500/5">
+            <CardContent className="py-12">
+              <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-amber-500/20 flex items-center justify-center">
+                <Lock className="w-8 h-8 text-amber-500" />
+              </div>
+              <h2 className="text-xl font-bold mb-2">Pixels de Analytics - Recurso Premium</h2>
+              <p className="text-muted-foreground mb-6">
+                Rastreie conversões com Facebook Pixel, Google Analytics, Google Ads e TikTok Pixel.
+                Este recurso está disponível apenas em planos avançados.
+              </p>
+              <Button className="gap-2">
+                <Sparkles className="w-4 h-4" />
+                Fazer Upgrade do Plano
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
-    <DashboardLayout title="Pixels Analytics">
+    <DashboardLayout title="Pixels Analytics" establishment={establishment}>
       <div className="max-w-2xl mx-auto space-y-6">
         {/* Status Card */}
         <Card>
