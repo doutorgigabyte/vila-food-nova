@@ -148,10 +148,10 @@ const phases: ProgressPhase[] = [
       { name: 'Gestão de usuários responsiva', status: 'completed', priority: 'high' },
       { name: 'Gestão de planos responsiva', status: 'completed', priority: 'medium' },
       { name: 'Gestão de assinaturas responsiva', status: 'completed', priority: 'medium' },
-      { name: 'Gestão de vilas responsiva', status: 'pending', priority: 'medium' },
-      { name: 'Gestão de categorias responsiva', status: 'pending', priority: 'medium' },
-      { name: 'Configurações admin responsivas', status: 'pending', priority: 'medium' },
-      { name: '✅ Verificação final: todas as telas admin responsivas', status: 'pending', priority: 'critical' },
+      { name: 'Gestão de vilas responsiva', status: 'completed', priority: 'medium' },
+      { name: 'Gestão de categorias responsiva', status: 'completed', priority: 'medium' },
+      { name: 'Configurações admin responsivas', status: 'completed', priority: 'medium' },
+      { name: '✅ Verificação final: todas as telas admin responsivas', status: 'completed', priority: 'critical' },
     ]
   },
   {

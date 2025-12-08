@@ -98,7 +98,7 @@ const AdminSettings = () => {
       <main className="flex-1 lg:ml-64">
         {/* Header */}
         <header className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b border-border px-4 py-3">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <Button
                 variant="ghost"
@@ -109,44 +109,45 @@ const AdminSettings = () => {
                 <Menu className="w-5 h-5" />
               </Button>
               <div>
-                <h1 className="text-xl font-bold flex items-center gap-2">
+                <h1 className="text-lg sm:text-xl font-bold flex items-center gap-2">
                   <Settings className="w-5 h-5" />
-                  Configurações da Plataforma
+                  <span className="hidden sm:inline">Configurações da Plataforma</span>
+                  <span className="sm:hidden">Configurações</span>
                 </h1>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">
                   Gerencie as configurações globais do VilaFood
                 </p>
               </div>
             </div>
-            <Button onClick={handleSave} disabled={saving}>
+            <Button onClick={handleSave} disabled={saving} className="w-full sm:w-auto">
               <Save className="w-4 h-4 mr-2" />
-              {saving ? "Salvando..." : "Salvar Alterações"}
+              {saving ? "Salvando..." : "Salvar"}
             </Button>
           </div>
         </header>
 
         <div className="p-6">
           <Tabs defaultValue="platform" className="space-y-6">
-            <TabsList className="flex-wrap h-auto p-1">
-              <TabsTrigger value="platform" className="gap-2">
+            <TabsList className="flex flex-wrap h-auto p-1 w-full justify-start gap-1">
+              <TabsTrigger value="platform" className="gap-2 text-xs sm:text-sm">
                 <Globe className="w-4 h-4" />
-                Plataforma
+                <span className="hidden sm:inline">Plataforma</span>
               </TabsTrigger>
-              <TabsTrigger value="financial" className="gap-2">
+              <TabsTrigger value="financial" className="gap-2 text-xs sm:text-sm">
                 <Wallet className="w-4 h-4" />
-                Financeiro
+                <span className="hidden sm:inline">Financeiro</span>
               </TabsTrigger>
-              <TabsTrigger value="payments" className="gap-2">
+              <TabsTrigger value="payments" className="gap-2 text-xs sm:text-sm">
                 <CreditCard className="w-4 h-4" />
-                Pagamentos
+                <span className="hidden sm:inline">Pagamentos</span>
               </TabsTrigger>
-              <TabsTrigger value="integrations" className="gap-2">
+              <TabsTrigger value="integrations" className="gap-2 text-xs sm:text-sm">
                 <Link2 className="w-4 h-4" />
-                Integrações
+                <span className="hidden sm:inline">Integrações</span>
               </TabsTrigger>
-              <TabsTrigger value="security" className="gap-2">
+              <TabsTrigger value="security" className="gap-2 text-xs sm:text-sm">
                 <Shield className="w-4 h-4" />
-                Segurança
+                <span className="hidden sm:inline">Segurança</span>
               </TabsTrigger>
             </TabsList>
 
