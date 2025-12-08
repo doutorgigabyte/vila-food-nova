@@ -322,10 +322,10 @@ const phases: ProgressPhase[] = [
     description: 'Páginas do usuário cliente',
     category: 'ux',
     items: [
-      { name: 'Implementar página "Meus endereços"', status: 'pending', priority: 'high' },
-      { name: 'Implementar página "Minha conta" com edição', status: 'pending', priority: 'high' },
-      { name: 'Implementar Modo escuro ou remover', status: 'pending', priority: 'low' },
-      { name: 'Implementar Configurações do cliente', status: 'pending', priority: 'low' },
+      { name: 'Página "Meus endereços" com CRUD completo', status: 'completed', priority: 'high' },
+      { name: 'Página "Minha conta" com edição de perfil', status: 'completed', priority: 'high' },
+      { name: 'Modo escuro via next-themes (toggle em Menu e UserMenu)', status: 'completed', priority: 'low' },
+      { name: 'Configurações do cliente na página Menu', status: 'completed', priority: 'low' },
     ]
   },
 
@@ -336,12 +336,12 @@ const phases: ProgressPhase[] = [
     description: 'Ajustes nas configurações do estabelecimento',
     category: 'operation',
     items: [
-      { name: 'Horário de funcionamento por dia da semana', status: 'pending', priority: 'high' },
+      { name: 'Horário de funcionamento por dia da semana (EstablishmentSettings)', status: 'completed', priority: 'high' },
       { name: 'Status automático baseado no horário', status: 'pending', priority: 'high' },
-      { name: 'Redesenhar módulo de taxas (delivery/retirada/mesa separados)', status: 'pending', priority: 'high' },
+      { name: 'Taxa de entrega por km (delivery_base_fee + fee_per_km)', status: 'completed', priority: 'high' },
       { name: 'Split em tempo real para entregador (não agendado)', status: 'pending', priority: 'medium' },
-      { name: 'Implementar QR Code da loja', status: 'pending', priority: 'low' },
-      { name: 'Implementar Banners da loja', status: 'pending', priority: 'low' },
+      { name: 'QR Code da loja (QRCodeManagement)', status: 'completed', priority: 'low' },
+      { name: 'Banners da loja (BannersManagement)', status: 'completed', priority: 'low' },
     ]
   },
 
