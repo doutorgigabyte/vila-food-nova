@@ -92,10 +92,10 @@ const ProductOfferCard = ({ product, variant = "default", className }: ProductOf
     return (
       <Link 
         to={`/produto/${product.id}`}
-        className={cn("block group snap-center", className)}
+        className={cn("block group snap-center flex-shrink-0", className)}
       >
-        <Card className="overflow-hidden hover:shadow-elevated transition-all relative border-0 shadow-soft w-56 md:w-64 rounded-2xl group-hover:scale-[1.02]">
-          <div className="relative overflow-hidden bg-muted aspect-[3/4]">
+        <Card className="overflow-hidden hover:shadow-elevated transition-all relative border-0 shadow-soft w-52 md:w-56 h-72 md:h-80 rounded-2xl group-hover:scale-[1.02]">
+          <div className="relative overflow-hidden bg-muted h-full">
             {/* Skeleton while loading */}
             {!imageLoaded && !imageError && product.image_url && (
               <div className="absolute inset-0 skeleton-shimmer" />
@@ -154,7 +154,7 @@ const ProductOfferCard = ({ product, variant = "default", className }: ProductOf
             </button>
             
             {/* Gradient overlay for text */}
-            <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+            <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
             
             {/* Content overlay */}
             <div className="absolute inset-x-0 bottom-0 p-3 text-white">
@@ -179,20 +179,21 @@ const ProductOfferCard = ({ product, variant = "default", className }: ProductOf
     );
   }
 
-  // Default/compact variants
+  // Default/compact variants - fixed dimensions
+  const cardWidth = variant === "compact" ? "w-36" : "w-44";
+  const cardHeight = variant === "compact" ? "h-52" : "h-60";
+  const imageHeight = variant === "compact" ? "h-28" : "h-32";
+
   return (
     <Link 
       to={`/produto/${product.id}`}
-      className={cn("block", className)}
+      className={cn("block flex-shrink-0", className)}
     >
       <Card className={cn(
         "overflow-hidden hover:shadow-lg transition-all relative rounded-2xl border-0 shadow-soft card-hover",
-        variant === "compact" ? "w-36 md:w-44" : "w-40 md:w-52"
+        cardWidth, cardHeight
       )}>
-        <div className={cn(
-          "relative overflow-hidden bg-muted",
-          variant === "compact" ? "h-28" : "h-32 md:h-36"
-        )}>
+        <div className={cn("relative overflow-hidden bg-muted", imageHeight)}>
           {/* Skeleton while loading */}
           {!imageLoaded && !imageError && product.image_url && (
             <div className="absolute inset-0 skeleton-shimmer" />

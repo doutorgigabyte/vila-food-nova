@@ -283,7 +283,7 @@ const phases: ProgressPhase[] = [
       { name: 'Remover ícone de fogo (VilaTok) das categorias (redundante)', status: 'completed', priority: 'low' },
       { name: 'Espaçamento entre botão som e fechar nas notificações', status: 'completed', priority: 'medium' },
       { name: 'Slide 3D com tamanho fixo (não muda no scroll)', status: 'completed', priority: 'high' },
-      { name: 'Cards de produtos com tamanho padronizado', status: 'pending', priority: 'high' },
+      { name: 'Cards de produtos com tamanho padronizado', status: 'completed', priority: 'high' },
       { name: 'Clique em produto abre page view', status: 'pending', priority: 'high' },
       { name: 'Clique em estabelecimento abre cardápio (não funciona)', status: 'pending', priority: 'critical' },
       { name: 'Filtros "Todos, Recém-chegados, Popular" não funcionam', status: 'pending', priority: 'high' },
