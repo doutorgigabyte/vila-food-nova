@@ -98,9 +98,10 @@ const phases: ProgressPhase[] = [
     description: 'Gestão de pedidos da loja',
     category: 'operation',
     items: [
-      { name: 'Integração com PDV', status: 'pending', priority: 'high' },
+      { name: 'Tela de pedidos funcional', status: 'completed', priority: 'critical' },
+      { name: 'Integração com PDV', status: 'completed', priority: 'high' },
+      { name: 'Fluxo de status: Pendente → Confirmado → Preparando → Pronto → Entrega', status: 'completed', priority: 'high' },
       { name: 'Integração com marketplace', status: 'pending', priority: 'high' },
-      { name: 'Fluxo de status: Pendente → Confirmado → Preparando → Pronto → Entrega', status: 'pending', priority: 'high' },
       { name: 'Pedidos agendados para horário específico', status: 'pending', priority: 'medium' },
     ]
   },
