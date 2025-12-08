@@ -75,7 +75,7 @@ const phases: ProgressPhase[] = [
     category: 'operation',
     items: [
       { name: 'Botão "Abrir comanda" não funciona', status: 'completed', priority: 'critical' },
-      { name: 'Nome do garçom vir do usuário logado (não digitado)', status: 'pending', priority: 'high' },
+      { name: 'Nome do garçom vir do usuário logado (não digitado)', status: 'completed', priority: 'high' },
       { name: 'Mudar estado visual da mesa ao abrir comanda', status: 'pending', priority: 'high' },
       { name: 'Interface adaptada para tablet (touch)', status: 'pending', priority: 'medium' },
       { name: 'Integração com display de cozinha', status: 'pending', priority: 'medium' },
