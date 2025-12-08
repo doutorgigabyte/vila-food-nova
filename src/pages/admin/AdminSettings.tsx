@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import AdminSidebar from "@/components/admin/AdminSidebar";
-import { PaymentGatewaySetup } from "@/components/payment/PaymentGatewaySetup";
+import { MercadoPagoOAuth } from "@/components/payment/MercadoPagoOAuth";
 import { 
   Menu, 
   Globe, 
@@ -283,33 +283,8 @@ const AdminSettings = () => {
             {/* Payments Tab */}
             <TabsContent value="payments">
               <div className="space-y-6">
-                {/* Admin Gateway Setup */}
-                <PaymentGatewaySetup 
-                  context="admin" 
-                  entityId="platform" 
-                />
-
-                {/* Additional Platform Payment Settings */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>PIX da Plataforma</CardTitle>
-                    <CardDescription>Chave PIX para recebimento de taxas da plataforma</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="platform_pix">Chave PIX Master</Label>
-                      <Input
-                        id="platform_pix"
-                        value={paymentSettings.platform_pix_key}
-                        onChange={(e) => setPaymentSettings({ ...paymentSettings, platform_pix_key: e.target.value })}
-                        placeholder="CPF, CNPJ, E-mail ou Telefone"
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Todas as taxas do marketplace serão creditadas nesta chave
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
+                {/* Mercado Pago OAuth - Platform Level */}
+                <MercadoPagoOAuth context="admin" />
               </div>
             </TabsContent>
 
