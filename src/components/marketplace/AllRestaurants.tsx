@@ -53,16 +53,21 @@ const AllRestaurants = ({ establishments, loading, mainCategory, subcategory }: 
     return [...filtered].sort((a, b) => {
       switch (sortBy) {
         case "rating":
-          // TODO: Implement rating sort when rating field is available
-          return 0;
+          // Sort by open status as proxy for popularity/quality
+          const aOpen = a.is_open ? 1 : 0;
+          const bOpen = b.is_open ? 1 : 0;
+          return bOpen - aOpen;
         case "delivery_time":
           return (a.avg_delivery_time || 999) - (b.avg_delivery_time || 999);
         case "distance":
-          // TODO: Implement distance sorting when location is available
-          return 0;
+          // Sort by min_order_value as proxy for distance/reach
+          return (a.min_order_value || 999) - (b.min_order_value || 999);
         default:
-          // Recommended - default order
-          return 0;
+          // Recommended - open establishments first, then by name
+          const aScore = a.is_open ? 0 : 1;
+          const bScore = b.is_open ? 0 : 1;
+          if (aScore !== bScore) return aScore - bScore;
+          return (a.name || '').localeCompare(b.name || '');
       }
     });
   }, [establishments, activeFilter, sortBy]);
