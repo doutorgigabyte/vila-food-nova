@@ -408,6 +408,7 @@ const phases: ProgressPhase[] = [
     items: [
       { name: 'Campos menu_json e system_prompt em establishments', status: 'completed', priority: 'high' },
       { name: 'Campos n8n_webhook_url e ai_model em whatsapp_instances', status: 'completed', priority: 'high' },
+      { name: 'Campos whatsapp_instance_name, evolution_api_token, gemini_api_key', status: 'completed', priority: 'high' },
       { name: 'Trigger automático para gerar menu_json ao mudar produtos', status: 'completed', priority: 'high' },
       { name: 'Edge Function: whatsapp-send-media (envio de imagens)', status: 'completed', priority: 'critical' },
       { name: 'Edge Function: generate-menu-json (cache de cardápio)', status: 'completed', priority: 'high' },
@@ -417,6 +418,27 @@ const phases: ProgressPhase[] = [
       { name: 'UI: Botão gerar/atualizar menu_json', status: 'pending', priority: 'medium' },
       { name: 'UI: Painel de teste de conversa IA', status: 'pending', priority: 'low' },
       { name: 'Suporte a webhook N8N externo', status: 'pending', priority: 'medium' },
+    ]
+  },
+
+  // ===== ARQUITETURA N8N MULTI-LOJISTA =====
+  {
+    id: 'n8n-multi-tenant',
+    name: '🔄 Arquitetura n8n Multi-Lojista',
+    description: 'Fluxos Router → Brain → Tools para WhatsApp IA',
+    category: 'integration',
+    items: [
+      { name: 'Camada 1: Master Router (identifica loja, busca config no DB)', status: 'pending', priority: 'critical' },
+      { name: 'Camada 2: VilaFood AI Brain (Gemini com prompt dinâmico)', status: 'pending', priority: 'critical' },
+      { name: 'Camada 3: Tools (save_customer, create_order_pix, send_photo)', status: 'pending', priority: 'critical' },
+      { name: 'Tool send_product_photo (URL S3/CloudFront → Evolution API)', status: 'pending', priority: 'high' },
+      { name: 'Tool save_customer com establishment_id dinâmico', status: 'pending', priority: 'high' },
+      { name: 'Tool create_order_pix com access_token da loja', status: 'pending', priority: 'high' },
+      { name: 'Memory por instance_name + remoteJid (isolamento de conversas)', status: 'pending', priority: 'high' },
+      { name: 'Injeção dinâmica de system_prompt + menu_json', status: 'pending', priority: 'high' },
+      { name: 'UI: Config whatsapp_instance_name no painel do lojista', status: 'pending', priority: 'medium' },
+      { name: 'UI: Visualizador de cardápio JSON formatado', status: 'pending', priority: 'low' },
+      { name: 'Documentação: Guia de setup n8n para VilaFood', status: 'pending', priority: 'low' },
     ]
   },
 
