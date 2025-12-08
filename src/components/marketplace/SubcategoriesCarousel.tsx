@@ -31,7 +31,7 @@ const SubcategoriesCarousel = ({
   selectedSubcategory, 
   onSubcategoryClick 
 }: SubcategoriesCarouselProps) => {
-  const { scrollRef, isDragging, handlers, scroll, wasClick } = useDragScroll();
+  const { scrollRef, isDragging, handlers, scroll, wasClick, scrollStyles } = useDragScroll();
   const navigate = useNavigate();
 
   // Get subcategories for the selected main category
@@ -93,11 +93,10 @@ const SubcategoriesCarousel = ({
             {...handlers}
             className={cn(
               "flex gap-2 md:gap-3 overflow-x-auto scrollbar-hide pb-2 select-none",
-              "touch-pan-y will-change-scroll overscroll-x-contain",
               isDragging ? "cursor-grabbing" : "cursor-grab"
             )}
             style={{
-              WebkitOverflowScrolling: 'touch',
+              ...scrollStyles,
               scrollSnapType: isDragging ? 'none' : 'x proximity',
             }}
           >

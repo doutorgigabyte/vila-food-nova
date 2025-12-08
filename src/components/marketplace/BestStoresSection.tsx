@@ -15,7 +15,7 @@ interface BestStoresSectionProps {
 }
 
 const BestStoresSection = ({ mainCategory, subcategory }: BestStoresSectionProps) => {
-  const { scrollRef, isDragging, handlers, scroll } = useDragScroll();
+  const { scrollRef, isDragging, handlers, scroll, scrollStyles } = useDragScroll();
   
   // Usar o novo hook que filtra corretamente usando parent_category_id
   const { establishments, loading } = useEstablishmentsByMainCategory(
@@ -93,11 +93,10 @@ const BestStoresSection = ({ mainCategory, subcategory }: BestStoresSectionProps
             {...handlers}
             className={cn(
               "flex gap-4 overflow-x-auto scrollbar-hide pb-2 select-none",
-              "touch-pan-y will-change-scroll overscroll-x-contain",
               isDragging ? "cursor-grabbing" : "cursor-grab"
             )}
             style={{
-              WebkitOverflowScrolling: 'touch',
+              ...scrollStyles,
               scrollSnapType: isDragging ? 'none' : 'x proximity',
             }}
           >
