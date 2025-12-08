@@ -289,7 +289,7 @@ const phases: ProgressPhase[] = [
       { name: 'Filtros "Todos, Recém-chegados, Popular" funcionando', status: 'completed', priority: 'high' },
       { name: 'Ordenação funcionando (recomendados, avaliação, tempo, distância)', status: 'completed', priority: 'high' },
       { name: 'Vilas abrem ao clique (corrigido drag vs click)', status: 'completed', priority: 'high' },
-      { name: 'Scroll horizontal tremendo/travando', status: 'pending', priority: 'medium' },
+      { name: 'Scroll horizontal otimizado com GPU acceleration', status: 'completed', priority: 'medium' },
     ]
   },
   {
