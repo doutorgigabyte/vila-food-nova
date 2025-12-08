@@ -7,8 +7,10 @@ const corsHeaders = {
 };
 
 interface SendMediaRequest {
-  instance_name: string;
+  instance_name?: string;
+  establishment_id?: string;
   phone: string;
+  remote_jid?: string; // n8n compatibility
   media_url: string;
   media_type: 'image' | 'video' | 'audio' | 'document';
   caption?: string;
@@ -29,24 +31,77 @@ serve(async (req) => {
     );
 
     const body: SendMediaRequest = await req.json();
-    const { instance_name, phone, media_url, media_type, caption, file_name, session_id, product_id } = body;
+    const { 
+      instance_name, 
+      establishment_id,
+      phone, 
+      remote_jid,
+      media_url, 
+      media_type = 'image', 
+      caption, 
+      file_name, 
+      session_id, 
+      product_id 
+    } = body;
 
-    console.log('Send Media Request:', { instance_name, phone, media_type, media_url });
+    // Support both phone and remote_jid (n8n compatibility)
+    const targetPhone = phone || remote_jid?.replace('@s.whatsapp.net', '');
 
-    // Find WhatsApp instance
-    const { data: instance, error: instanceError } = await supabase
-      .from('whatsapp_instances')
-      .select('*')
-      .eq('instance_name', instance_name)
-      .single();
+    console.log('Send Media Request:', { instance_name, establishment_id, phone: targetPhone, media_type, media_url });
 
-    if (instanceError || !instance) {
-      throw new Error('Instance not found');
+    let evolutionUrl: string | null = null;
+    let evolutionKey: string | null = null;
+    let instanceToUse = instance_name;
+    let establishmentId = establishment_id;
+
+    // Strategy 1: Try to get from whatsapp_instances table (legacy)
+    if (instance_name) {
+      const { data: instance, error: instanceError } = await supabase
+        .from('whatsapp_instances')
+        .select('*')
+        .eq('instance_name', instance_name)
+        .single();
+
+      if (!instanceError && instance) {
+        evolutionUrl = instance.evolution_api_url;
+        evolutionKey = instance.evolution_api_key;
+        establishmentId = instance.establishment_id;
+      }
     }
 
-    if (!instance.evolution_api_url || !instance.evolution_api_key) {
+    // Strategy 2: Get from establishments table (n8n multi-tenant)
+    if (establishment_id && !evolutionUrl) {
+      const { data: establishment, error: estError } = await supabase
+        .from('establishments')
+        .select('whatsapp_instance_name, evolution_api_token')
+        .eq('id', establishment_id)
+        .single();
+
+      if (!estError && establishment) {
+        instanceToUse = establishment.whatsapp_instance_name || instance_name;
+        evolutionKey = establishment.evolution_api_token;
+        evolutionUrl = Deno.env.get('EVOLUTION_API_URL') || null;
+      }
+    }
+
+    // Fallback to global Evolution API config
+    if (!evolutionUrl) {
+      evolutionUrl = Deno.env.get('EVOLUTION_API_URL') || null;
+    }
+    if (!evolutionKey) {
+      evolutionKey = Deno.env.get('EVOLUTION_API_KEY') || null;
+    }
+
+    if (!evolutionUrl || !evolutionKey) {
       throw new Error('Evolution API not configured');
     }
+
+    if (!instanceToUse) {
+      throw new Error('No WhatsApp instance specified');
+    }
+
+    // Clean URL
+    evolutionUrl = evolutionUrl.replace(/\/$/, '');
 
     // Determine the Evolution API endpoint based on media type
     let endpoint: string;
@@ -54,9 +109,9 @@ serve(async (req) => {
 
     switch (media_type) {
       case 'image':
-        endpoint = `${instance.evolution_api_url}/message/sendMedia/${instance_name}`;
+        endpoint = `${evolutionUrl}/message/sendMedia/${instanceToUse}`;
         payload = {
-          number: phone,
+          number: targetPhone,
           mediatype: 'image',
           media: media_url,
           caption: caption || '',
@@ -64,9 +119,9 @@ serve(async (req) => {
         break;
 
       case 'video':
-        endpoint = `${instance.evolution_api_url}/message/sendMedia/${instance_name}`;
+        endpoint = `${evolutionUrl}/message/sendMedia/${instanceToUse}`;
         payload = {
-          number: phone,
+          number: targetPhone,
           mediatype: 'video',
           media: media_url,
           caption: caption || '',
@@ -74,17 +129,17 @@ serve(async (req) => {
         break;
 
       case 'audio':
-        endpoint = `${instance.evolution_api_url}/message/sendWhatsAppAudio/${instance_name}`;
+        endpoint = `${evolutionUrl}/message/sendWhatsAppAudio/${instanceToUse}`;
         payload = {
-          number: phone,
+          number: targetPhone,
           audio: media_url,
         };
         break;
 
       case 'document':
-        endpoint = `${instance.evolution_api_url}/message/sendMedia/${instance_name}`;
+        endpoint = `${evolutionUrl}/message/sendMedia/${instanceToUse}`;
         payload = {
-          number: phone,
+          number: targetPhone,
           mediatype: 'document',
           media: media_url,
           caption: caption || '',
@@ -103,7 +158,7 @@ serve(async (req) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'apikey': instance.evolution_api_key,
+        'apikey': evolutionKey,
       },
       body: JSON.stringify(payload),
     });
@@ -132,7 +187,7 @@ serve(async (req) => {
 
       // Log analytics
       await supabase.from('whatsapp_analytics').insert({
-        establishment_id: instance.establishment_id,
+        establishment_id: establishmentId,
         session_id,
         event_type: 'media_sent',
         event_data: {
