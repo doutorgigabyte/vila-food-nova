@@ -18,7 +18,7 @@ import AddressAutocomplete from "@/components/checkout/AddressAutocomplete";
 const Addresses = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
-  const { addresses, addAddress, updateAddress, deleteAddress, setDefaultAddress, loading: addressesLoading } = useSavedAddresses();
+  const { addresses, saveAddress, updateAddress, deleteAddress, setDefaultAddress, loading: addressesLoading } = useSavedAddresses();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingAddress, setEditingAddress] = useState<SavedAddress | null>(null);
   const [saving, setSaving] = useState(false);
@@ -96,7 +96,7 @@ const Addresses = () => {
         });
         toast.success("Endereço atualizado!");
       } else {
-        await addAddress({
+        await saveAddress({
           ...formData,
           is_default: formData.is_default || addresses.length === 0,
         });
