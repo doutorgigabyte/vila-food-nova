@@ -21,6 +21,15 @@ verify_jwt = false
 [functions.whatsapp-order-notifications]
 verify_jwt = false
 
+[functions.whatsapp-send-media]
+verify_jwt = false
+
+[functions.whatsapp-notification]
+verify_jwt = false
+
+[functions.generate-menu-json]
+verify_jwt = false
+
 [functions.mercadopago-pix]
 verify_jwt = false
 
@@ -42,7 +51,7 @@ verify_jwt = false
 [functions.mercadopago-multi-split]
 verify_jwt = false
 
-[functions.whatsapp-notification]
+[functions.mercadopago-point]
 verify_jwt = false
 
 [functions.s3-upload]
@@ -78,7 +87,7 @@ verify_jwt = false
 [functions.ai-health-check]
 verify_jwt = false
 
-[functions.mercadopago-point]
+[functions.ai-product-assistant]
 verify_jwt = false
 
 [functions.driver-payment-split]
@@ -88,9 +97,6 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.evolution-api]
-verify_jwt = false
-
-[functions.ai-product-assistant]
 verify_jwt = false
 
 [functions.security-anomaly-alert]

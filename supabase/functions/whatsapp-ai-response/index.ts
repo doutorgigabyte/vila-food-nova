@@ -103,7 +103,7 @@ serve(async (req) => {
       cartText += `Total: R$ ${cartTotal.toFixed(2)}\n`;
     }
 
-    // System prompt
+    // System prompt with enhanced product photo instructions
     const systemPrompt = `${ai_prompt || 'Você é um assistente virtual de atendimento.'}
 
 INFORMAÇÕES DO ESTABELECIMENTO:
@@ -127,6 +127,12 @@ INSTRUÇÕES IMPORTANTES:
 6. Sempre confirme os itens antes de finalizar
 7. Use emojis para deixar a conversa mais amigável
 8. Se não souber responder, peça para aguardar atendimento humano
+
+INSTRUÇÕES PARA ENVIO DE FOTOS:
+- Quando o cliente perguntar "como é" ou "tem foto" de um produto, USE a função send_product_photo
+- Quando estiver oferecendo um produto e quiser mostrar a aparência, USE send_product_photo
+- Sempre envie a foto ANTES de pedir confirmação do cliente
+- Use legendas atrativas como "Olha que delícia! 😋"
 
 CONTEXTO DA CONVERSA:
 ${JSON.stringify(context || {})}`;
@@ -174,6 +180,36 @@ ${JSON.stringify(context || {})}`;
       {
         type: "function",
         function: {
+          name: "send_product_photo",
+          description: "Envia a foto de um produto específico para o cliente. Use quando o cliente perguntar sobre a aparência de um produto ou quando estiver oferecendo um item",
+          parameters: {
+            type: "object",
+            properties: {
+              product_id: { type: "string", description: "ID do produto" },
+              product_name: { type: "string", description: "Nome do produto" },
+              caption: { type: "string", description: "Legenda para enviar junto com a foto" }
+            },
+            required: ["product_name"]
+          }
+        }
+      },
+      {
+        type: "function",
+        function: {
+          name: "search_menu",
+          description: "Busca produtos no cardápio por nome ou descrição",
+          parameters: {
+            type: "object",
+            properties: {
+              query: { type: "string", description: "Termo de busca" }
+            },
+            required: ["query"]
+          }
+        }
+      },
+      {
+        type: "function",
+        function: {
           name: "checkout",
           description: "Inicia o processo de finalização do pedido",
           parameters: {
@@ -196,7 +232,8 @@ ${JSON.stringify(context || {})}`;
             properties: {
               latitude: { type: "number", description: "Latitude do cliente" },
               longitude: { type: "number", description: "Longitude do cliente" },
-              cep: { type: "string", description: "CEP do cliente" }
+              cep: { type: "string", description: "CEP do cliente" },
+              address: { type: "string", description: "Endereço completo" }
             }
           }
         }
@@ -205,7 +242,7 @@ ${JSON.stringify(context || {})}`;
         type: "function",
         function: {
           name: "request_human",
-          description: "Solicita atendimento humano",
+          description: "Solicita atendimento humano quando a IA não consegue resolver",
           parameters: {
             type: "object",
             properties: {

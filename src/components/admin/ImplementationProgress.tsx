@@ -398,6 +398,45 @@ const phases: ProgressPhase[] = [
       { name: 'E-mail apenas para validação (não notificações)', status: 'completed', priority: 'medium' },
     ]
   },
+
+  // ===== NOVAS IMPLEMENTAÇÕES: WHATSAPP AI AVANÇADO =====
+  {
+    id: 'whatsapp-ai-advanced',
+    name: '🤖 WhatsApp AI Multi-Lojista Avançado',
+    description: 'Agente IA com envio de mídia e integração N8N',
+    category: 'integration',
+    items: [
+      { name: 'Campos menu_json e system_prompt em establishments', status: 'completed', priority: 'high' },
+      { name: 'Campos n8n_webhook_url e ai_model em whatsapp_instances', status: 'completed', priority: 'high' },
+      { name: 'Trigger automático para gerar menu_json ao mudar produtos', status: 'completed', priority: 'high' },
+      { name: 'Edge Function: whatsapp-send-media (envio de imagens)', status: 'completed', priority: 'critical' },
+      { name: 'Edge Function: generate-menu-json (cache de cardápio)', status: 'completed', priority: 'high' },
+      { name: 'Tool send_product_photo no AI Response', status: 'completed', priority: 'critical' },
+      { name: 'Tool search_menu no AI Response', status: 'completed', priority: 'high' },
+      { name: 'UI: Editor de system_prompt personalizado', status: 'pending', priority: 'high' },
+      { name: 'UI: Botão gerar/atualizar menu_json', status: 'pending', priority: 'medium' },
+      { name: 'UI: Painel de teste de conversa IA', status: 'pending', priority: 'low' },
+      { name: 'Suporte a webhook N8N externo', status: 'pending', priority: 'medium' },
+    ]
+  },
+
+  // ===== NOVAS IMPLEMENTAÇÕES: ENDEREÇOS INTELIGENTES =====
+  {
+    id: 'addresses-google',
+    name: '📍 Endereços Inteligentes (Google)',
+    description: 'CEP + Places + Maps em todos os cadastros',
+    category: 'ux',
+    items: [
+      { name: 'Componente CepAutocomplete (ViaCEP)', status: 'completed', priority: 'high' },
+      { name: 'Componente SmartAddressInput unificado', status: 'completed', priority: 'high' },
+      { name: 'Tabela address_cache para otimização', status: 'completed', priority: 'medium' },
+      { name: 'Integrar no Checkout do cliente', status: 'pending', priority: 'critical' },
+      { name: 'Integrar no Onboarding (BasicDataStep)', status: 'pending', priority: 'high' },
+      { name: 'Integrar em EstablishmentSettings', status: 'pending', priority: 'high' },
+      { name: 'Integrar na página Meus Endereços', status: 'pending', priority: 'high' },
+      { name: 'Autocomplete de bairros em DeliveryFees', status: 'pending', priority: 'medium' },
+    ]
+  },
 ];
 
 export function ImplementationProgress() {
