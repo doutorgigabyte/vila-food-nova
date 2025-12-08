@@ -64,7 +64,7 @@ const phases: ProgressPhase[] = [
       { name: 'Dinheiro: Confirmação de pagamento não funciona', status: 'completed', priority: 'critical' },
       { name: 'Cartão: Integração com Mercado Pago (Point + Manual)', status: 'completed', priority: 'critical' },
       { name: 'Criar pedido após pagamento confirmado', status: 'completed', priority: 'high' },
-      { name: 'Atualização de status do pedido', status: 'pending', priority: 'high' },
+      { name: 'Atualização de status do pedido', status: 'completed', priority: 'high' },
       { name: 'Geração de comprovante', status: 'pending', priority: 'medium' },
     ]
   },
