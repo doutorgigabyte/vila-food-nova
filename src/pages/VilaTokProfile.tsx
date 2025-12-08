@@ -136,12 +136,20 @@ export default function VilaTokProfile() {
 
       {/* Profile Section */}
       <div className="flex flex-col items-center gap-4 py-8 px-4">
-        <Avatar className="h-24 w-24 ring-2 ring-primary ring-offset-2 ring-offset-black">
-          <AvatarImage src={establishment.logo_url || ''} alt={establishment.name} />
-          <AvatarFallback className="bg-primary text-primary-foreground text-2xl">
-            {establishment.name.charAt(0)}
-          </AvatarFallback>
-        </Avatar>
+        {/* Avatar with animated gradient ring if has videos */}
+        <div className="relative">
+          <div 
+            className="w-24 h-24 rounded-full p-0.5 bg-gradient-to-br from-pink-500 via-red-500 to-yellow-500 animate-[spin_3s_linear_infinite]"
+            style={{ animationDuration: '4s' }}
+          >
+            <Avatar className="h-full w-full ring-2 ring-black">
+              <AvatarImage src={establishment.logo_url || ''} alt={establishment.name} />
+              <AvatarFallback className="bg-primary text-primary-foreground text-2xl">
+                {establishment.name.charAt(0)}
+              </AvatarFallback>
+            </Avatar>
+          </div>
+        </div>
 
         <div className="text-center">
           <h1 className="text-xl font-bold">{establishment.name}</h1>

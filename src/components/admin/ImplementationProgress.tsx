@@ -118,7 +118,7 @@ const phases: ProgressPhase[] = [
       { name: 'Limitar repostagem automática a max 3x/dia', status: 'completed', priority: 'high' },
       { name: 'Separar criação de stories do perfil VilaTok', status: 'completed', priority: 'medium' },
       { name: 'Stories do cardápio exibir apenas da loja atual', status: 'completed', priority: 'high' },
-      { name: 'Foto de perfil circular com anel de stories', status: 'pending', priority: 'medium' },
+      { name: 'Foto de perfil circular com anel de stories', status: 'completed', priority: 'medium' },
       { name: 'Remover IA isolada de produto (centralizar no Diagnóstico)', status: 'pending', priority: 'low' },
     ]
   },
