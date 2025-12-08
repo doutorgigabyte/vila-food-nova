@@ -299,9 +299,9 @@ const phases: ProgressPhase[] = [
     category: 'ux',
     items: [
       { name: 'Página carrega no topo (ScrollToTop global)', status: 'completed', priority: 'high' },
-      { name: 'Foto de perfil circular com anel de stories', status: 'pending', priority: 'medium' },
-      { name: 'Stories mostram outras lojas (deve ser só da loja)', status: 'pending', priority: 'high' },
-      { name: 'Notificações 100% internas (não browser push)', status: 'pending', priority: 'medium' },
+      { name: 'Foto de perfil circular com anel de stories', status: 'completed', priority: 'medium' },
+      { name: 'Stories filtrados por establishment_id', status: 'completed', priority: 'high' },
+      { name: 'Notificações 100% internas (toasts + modals)', status: 'completed', priority: 'medium' },
     ]
   },
   {
