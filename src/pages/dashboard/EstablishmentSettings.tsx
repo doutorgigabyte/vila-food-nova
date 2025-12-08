@@ -674,24 +674,16 @@ const EstablishmentSettings = () => {
                   </div>
                   <div className="flex items-center justify-between p-4 border rounded-lg">
                     <div>
-                      <p className="font-medium">Notificação no Navegador</p>
-                      <p className="text-sm text-muted-foreground">Receber notificações push no navegador</p>
-                    </div>
-                    <Switch defaultChecked />
-                  </div>
-                  <div className="flex items-center justify-between p-4 border rounded-lg">
-                    <div>
                       <p className="font-medium">Notificação por WhatsApp</p>
                       <p className="text-sm text-muted-foreground">Receber alertas no WhatsApp</p>
                     </div>
                     <Switch />
                   </div>
-                  <div className="flex items-center justify-between p-4 border rounded-lg">
-                    <div>
-                      <p className="font-medium">E-mail Resumo Diário</p>
-                      <p className="text-sm text-muted-foreground">Receber resumo das vendas por e-mail</p>
-                    </div>
-                    <Switch />
+                  <div className="p-4 border rounded-lg bg-muted/30">
+                    <p className="text-sm text-muted-foreground">
+                      <strong>Nota:</strong> Todas as notificações são internas (dentro da plataforma) ou via WhatsApp. 
+                      E-mail é usado apenas para validação de conta.
+                    </p>
                   </div>
                 </CardContent>
               </Card>

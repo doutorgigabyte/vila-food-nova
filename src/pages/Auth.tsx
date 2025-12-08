@@ -5,16 +5,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Utensils, Mail, Lock, User, Phone, ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { Utensils, Mail, Lock, User, Phone, ArrowLeft, Eye, EyeOff, CheckCircle, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 
 const Auth = () => {
   const navigate = useNavigate();
-  const { user, signIn, signUp, loading } = useAuth();
+  const { user, signIn, signUp, resendConfirmationEmail, loading } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [activeTab, setActiveTab] = useState("login");
+  const [emailVerificationSent, setEmailVerificationSent] = useState(false);
+  const [pendingEmail, setPendingEmail] = useState<string>("");
+  const [resendingEmail, setResendingEmail] = useState(false);
   
   // Login form state
   const [loginEmail, setLoginEmail] = useState("");
@@ -74,7 +77,7 @@ const Auth = () => {
     }
     
     setIsLoading(true);
-    const { error } = await signUp(registerEmail, registerPassword, registerName);
+    const { error, data } = await signUp(registerEmail, registerPassword, registerName);
     setIsLoading(false);
     
     if (error) {
@@ -86,8 +89,34 @@ const Auth = () => {
       return;
     }
     
-    toast.success("Conta criada com sucesso!");
-    navigate('/marketplace');
+    // Check if email confirmation is required
+    if (data?.user && !data?.session) {
+      // Email confirmation required
+      setEmailVerificationSent(true);
+      setPendingEmail(registerEmail);
+      toast.success("Verifique seu e-mail para confirmar a conta!");
+      return;
+    }
+    
+    // If session exists, user is already confirmed (shouldn't happen with email confirmation enabled)
+    if (data?.session) {
+      toast.success("Conta criada com sucesso!");
+      navigate('/marketplace');
+    }
+  };
+
+  const handleResendConfirmation = async () => {
+    if (!pendingEmail) return;
+    
+    setResendingEmail(true);
+    const { error } = await resendConfirmationEmail(pendingEmail);
+    setResendingEmail(false);
+    
+    if (error) {
+      toast.error(error.message || "Erro ao reenviar e-mail");
+    } else {
+      toast.success("E-mail de confirmação reenviado!");
+    }
   };
 
   if (loading) {
@@ -328,15 +357,71 @@ const Auth = () => {
           </CardContent>
         </Card>
 
+        {/* Email Verification Screen */}
+        {emailVerificationSent && (
+          <Card className="mt-4 glass border-border/50">
+            <CardContent className="pt-6">
+              <div className="text-center space-y-4">
+                <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
+                  <Mail className="w-8 h-8 text-primary" />
+                </div>
+                <div>
+                  <CardTitle className="text-xl mb-2">Verifique seu e-mail</CardTitle>
+                  <CardDescription>
+                    Enviamos um link de confirmação para <strong>{pendingEmail}</strong>
+                  </CardDescription>
+                </div>
+                <div className="space-y-2 text-sm text-muted-foreground">
+                  <p>Clique no link no e-mail para ativar sua conta.</p>
+                  <p>Não recebeu o e-mail? Verifique sua caixa de spam.</p>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={handleResendConfirmation}
+                    disabled={resendingEmail}
+                    className="w-full"
+                  >
+                    {resendingEmail ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                        Reenviando...
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="w-4 h-4 mr-2" />
+                        Reenviar e-mail
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      setEmailVerificationSent(false);
+                      setPendingEmail("");
+                      setActiveTab("login");
+                    }}
+                    className="w-full"
+                  >
+                    Voltar ao login
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Register as establishment */}
-        <div className="mt-6 text-center">
-          <p className="text-muted-foreground text-sm">
-            Tem um estabelecimento?{" "}
-            <Link to="/cadastro-estabelecimento" className="text-primary font-medium hover:underline">
-              Cadastre-se aqui
-            </Link>
-          </p>
-        </div>
+        {!emailVerificationSent && (
+          <div className="mt-6 text-center">
+            <p className="text-muted-foreground text-sm">
+              Tem um estabelecimento?{" "}
+              <Link to="/cadastro-estabelecimento" className="text-primary font-medium hover:underline">
+                Cadastre-se aqui
+              </Link>
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

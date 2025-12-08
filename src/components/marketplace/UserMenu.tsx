@@ -29,7 +29,8 @@ import {
   ChefHat,
   Receipt,
   Truck,
-  Building
+  Building,
+  Bookmark
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole, EstablishmentRole, AppRole } from "@/hooks/useUserRole";
@@ -61,6 +62,12 @@ export const UserMenu = () => {
         >
           <User className="w-4 h-4" />
           <span className="hidden sm:inline">Entrar</span>
+        </Link>
+        <Link 
+          to="/auth" 
+          className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-primary hover:bg-primary/90 text-primary-foreground rounded-full transition-colors"
+        >
+          Criar conta
         </Link>
       </div>
     );
@@ -268,7 +275,7 @@ export const UserMenu = () => {
           </>
         )}
 
-        {/* Customer Menu - Always shown */}
+        {/* Customer Menu - Only shown when logged in */}
         <DropdownMenuGroup>
           <DropdownMenuItem asChild>
             <Link to="/pedidos" className="cursor-pointer">
@@ -276,14 +283,18 @@ export const UserMenu = () => {
               Meus pedidos
             </Link>
           </DropdownMenuItem>
-
           <DropdownMenuItem asChild>
-            <Link to="/checkout" className="cursor-pointer">
+            <Link to="/favoritos" className="cursor-pointer">
+              <Bookmark className="w-4 h-4 mr-2" />
+              Favoritos
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <Link to="/enderecos" className="cursor-pointer">
               <MapPin className="w-4 h-4 mr-2" />
               Meus endereços
             </Link>
           </DropdownMenuItem>
-
           <DropdownMenuItem asChild>
             <Link to="/conta" className="cursor-pointer">
               <User className="w-4 h-4 mr-2" />

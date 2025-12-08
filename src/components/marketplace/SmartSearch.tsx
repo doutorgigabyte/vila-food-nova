@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { getCategoryConfig } from "@/lib/categoryConfig";
+import { safeLocalStorage } from "@/lib/utils";
 
 interface SearchResult {
   id: string;
@@ -31,7 +32,7 @@ const SmartSearch = ({ isOpen, onClose }: SmartSearchProps) => {
 
   // Load recent searches from localStorage
   useEffect(() => {
-    const saved = localStorage.getItem("vilafood_recent_searches");
+    const saved = safeLocalStorage.getItem("vilafood_recent_searches");
     if (saved) {
       setRecentSearches(JSON.parse(saved));
     }
@@ -161,7 +162,7 @@ const SmartSearch = ({ isOpen, onClose }: SmartSearchProps) => {
     // Save to recent searches
     const updated = [searchTerm, ...recentSearches.filter(s => s !== searchTerm)].slice(0, 10);
     setRecentSearches(updated);
-    localStorage.setItem("vilafood_recent_searches", JSON.stringify(updated));
+    safeLocalStorage.setItem("vilafood_recent_searches", JSON.stringify(updated));
 
     // Navigate based on result type
     if (result.type === "product" && result.establishment_slug) {
@@ -198,7 +199,7 @@ const SmartSearch = ({ isOpen, onClose }: SmartSearchProps) => {
 
   const clearRecentSearches = () => {
     setRecentSearches([]);
-    localStorage.removeItem("vilafood_recent_searches");
+    safeLocalStorage.removeItem("vilafood_recent_searches");
   };
 
   const getIcon = (type: string) => {

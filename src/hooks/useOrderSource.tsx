@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { safeSessionStorage } from "@/lib/utils";
 
 export type OrderSource = 'marketplace' | 'direct' | 'pdv' | 'whatsapp';
 
@@ -20,7 +21,7 @@ export const OrderSourceProvider = ({ children }: { children: ReactNode }) => {
   // Load source from sessionStorage on mount
   useEffect(() => {
     try {
-      const storedSource = sessionStorage.getItem(ORDER_SOURCE_KEY) as OrderSource;
+      const storedSource = safeSessionStorage.getItem(ORDER_SOURCE_KEY) as OrderSource;
       if (storedSource && ['marketplace', 'direct', 'pdv', 'whatsapp'].includes(storedSource)) {
         setSourceState(storedSource);
       }
@@ -32,7 +33,7 @@ export const OrderSourceProvider = ({ children }: { children: ReactNode }) => {
   const setSource = (newSource: OrderSource) => {
     setSourceState(newSource);
     try {
-      sessionStorage.setItem(ORDER_SOURCE_KEY, newSource);
+      safeSessionStorage.setItem(ORDER_SOURCE_KEY, newSource);
     } catch (error) {
       console.error("Error saving order source:", error);
     }
@@ -74,7 +75,7 @@ export const setOrderSourceDirect = (source: OrderSource) => {
 
 export const getOrderSourceDirect = (): OrderSource => {
   try {
-    const source = sessionStorage.getItem(ORDER_SOURCE_KEY) as OrderSource;
+    const source = safeSessionStorage.getItem(ORDER_SOURCE_KEY) as OrderSource;
     if (source && ['marketplace', 'direct', 'pdv', 'whatsapp'].includes(source)) {
       return source;
     }

@@ -1,6 +1,6 @@
 import { Subcategory } from "@/lib/categoryConfig";
 import { cn } from "@/lib/utils";
-import { motion } from "framer-motion";
+// import { motion } from "framer-motion"; // Temporarily disabled - needs npm install
 
 interface SubcategoryGridProps {
   subcategories: Subcategory[];
@@ -46,21 +46,18 @@ const SubcategoryGrid = ({
           const colorSet = subcategoryColors[index % subcategoryColors.length];
           
           return (
-            <motion.button
+            <button
               key={subcategory.id}
               onClick={() => onSubcategoryClick(subcategory.id)}
               className={cn(
-                "flex flex-col items-center justify-center p-3 rounded-2xl transition-all duration-200 border touch-target",
+                "flex flex-col items-center justify-center p-3 rounded-2xl transition-all duration-200 border touch-target active:scale-95 animate-in fade-in slide-in-from-bottom-2",
                 isSelected 
                   ? "ring-2 ring-primary shadow-lg scale-105" 
                   : "hover:shadow-lg hover:-translate-y-1",
                 colorSet.bg,
                 colorSet.border
               )}
-              whileTap={{ scale: 0.95 }}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.03 }}
+              style={{ animationDelay: `${index * 30}ms` }}
             >
               <div className={cn(
                 "w-12 h-12 rounded-xl flex items-center justify-center mb-2",
@@ -72,12 +69,11 @@ const SubcategoryGrid = ({
                 {subcategory.name}
               </span>
               {isSelected && (
-                <motion.div 
-                  className="w-1.5 h-1.5 rounded-full bg-primary mt-1"
-                  layoutId="subcategoryIndicator"
+                <div 
+                  className="w-1.5 h-1.5 rounded-full bg-primary mt-1 animate-in zoom-in duration-300"
                 />
               )}
-            </motion.button>
+            </button>
           );
         })}
       </div>

@@ -2,7 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import { Home, Heart, ShoppingBag, ClipboardList, User, Flame } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCart } from "@/hooks/useCart";
-import { motion } from "framer-motion";
+// import { motion } from "framer-motion"; // Temporarily disabled - needs npm install
 
 const MobileBottomNav = () => {
   const location = useLocation();
@@ -33,7 +33,11 @@ const MobileBottomNav = () => {
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-md border-t border-border safe-area-inset-bottom md:hidden">
+    <nav 
+      className="fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-md border-t border-border safe-area-inset-bottom md:hidden"
+      aria-label="Navegação principal"
+      role="navigation"
+    >
       <div className="flex items-center justify-around h-16 px-2">
         {navItems.map((item) => {
           const isActive = isPathActive(item.path);
@@ -46,24 +50,25 @@ const MobileBottomNav = () => {
                 to={item.path}
                 onClick={triggerHaptic}
                 className="relative -mt-6"
+                aria-label={`${item.label}${item.count && item.count > 0 ? ` com ${item.count} ${item.count === 1 ? 'item' : 'itens'}` : ''}`}
+                aria-current={isActive ? 'page' : undefined}
               >
-                <motion.div 
-                  className="relative flex items-center justify-center w-14 h-14 rounded-full bg-primary shadow-lg shadow-primary/30 text-primary-foreground touch-target"
-                  whileTap={{ scale: 0.9 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                <div 
+                  className="relative flex items-center justify-center w-14 h-14 rounded-full bg-primary shadow-lg shadow-primary/30 text-primary-foreground touch-target active:scale-90 transition-transform duration-200"
+                  role="button"
+                  tabIndex={-1}
                 >
-                  <Icon className="w-6 h-6" />
+                  <Icon className="w-6 h-6" aria-hidden="true" />
                   {item.count && item.count > 0 && (
-                    <motion.span 
-                      className="absolute -top-1 -right-1 w-5 h-5 bg-accent text-accent-foreground text-xs font-bold rounded-full flex items-center justify-center"
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
+                    <span 
+                      className="absolute -top-1 -right-1 w-5 h-5 bg-accent text-accent-foreground text-xs font-bold rounded-full flex items-center justify-center animate-in zoom-in duration-300"
                       key={item.count}
+                      aria-label={`${item.count} ${item.count === 1 ? 'item no carrinho' : 'itens no carrinho'}`}
                     >
                       {item.count > 9 ? "9+" : item.count}
-                    </motion.span>
+                    </span>
                   )}
-                </motion.div>
+                </div>
               </Link>
             );
           }
@@ -77,18 +82,17 @@ const MobileBottomNav = () => {
                 "flex flex-col items-center justify-center gap-1 flex-1 py-2 transition-colors touch-feedback touch-target relative",
                 isActive ? "text-primary" : "text-muted-foreground"
               )}
+              aria-label={item.label}
+              aria-current={isActive ? 'page' : undefined}
             >
-              <motion.div
-                whileTap={{ scale: 0.85 }}
-                transition={{ type: "spring", stiffness: 400, damping: 17 }}
-              >
-                <Icon className={cn("w-5 h-5", isActive && "text-primary")} />
-              </motion.div>
+              <div className="active:scale-85 transition-transform duration-200">
+                <Icon className={cn("w-5 h-5", isActive && "text-primary")} aria-hidden="true" />
+              </div>
               <span className="text-[10px] font-medium">{item.label}</span>
               {isActive && (
-                <motion.div 
-                  className="absolute bottom-1 w-1 h-1 rounded-full bg-primary"
-                  layoutId="activeNavIndicator"
+                <div 
+                  className="absolute bottom-1 w-1 h-1 rounded-full bg-primary animate-in fade-in duration-300"
+                  aria-hidden="true"
                 />
               )}
             </Link>

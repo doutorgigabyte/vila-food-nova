@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Download, X, Smartphone } from "lucide-react";
+import { safeLocalStorage } from "@/lib/utils";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -23,7 +24,7 @@ const PWAInstallPrompt = () => {
     if (isStandalone) return;
 
     // Check if dismissed recently
-    const dismissed = localStorage.getItem("pwa-install-dismissed");
+    const dismissed = safeLocalStorage.getItem("pwa-install-dismissed");
     if (dismissed) {
       const dismissedTime = parseInt(dismissed);
       // Show again after 7 days
@@ -59,7 +60,7 @@ const PWAInstallPrompt = () => {
 
   const handleDismiss = () => {
     setShowPrompt(false);
-    localStorage.setItem("pwa-install-dismissed", Date.now().toString());
+    safeLocalStorage.setItem("pwa-install-dismissed", Date.now().toString());
   };
 
   if (!showPrompt) return null;

@@ -1,24 +1,25 @@
 import { useCallback, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { safeSessionStorage } from "@/lib/utils";
 import type { Json } from "@/integrations/supabase/types";
 
 // Generate or get session ID
 const getSessionId = (): string => {
-  let sessionId = sessionStorage.getItem('behavior_session_id');
+  let sessionId = safeSessionStorage.getItem('behavior_session_id');
   if (!sessionId) {
     sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
-    sessionStorage.setItem('behavior_session_id', sessionId);
+    safeSessionStorage.setItem('behavior_session_id', sessionId);
   }
   return sessionId;
 };
 
 // Get randomization seed for fair product distribution
 export const getRandomizationSeed = (): number => {
-  let seed = sessionStorage.getItem('product_shuffle_seed');
+  let seed = safeSessionStorage.getItem('product_shuffle_seed');
   if (!seed) {
     seed = Math.random().toString();
-    sessionStorage.setItem('product_shuffle_seed', seed);
+    safeSessionStorage.setItem('product_shuffle_seed', seed);
   }
   return parseFloat(seed);
 };

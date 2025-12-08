@@ -125,7 +125,7 @@ export const useFavorites = () => {
     };
   }, [fetchFavorites, user]);
 
-  const toggleFavoriteEstablishment = async (establishmentId: string) => {
+  const toggleFavoriteEstablishment = useCallback(async (establishmentId: string) => {
     if (!user) {
       toast.error('Faça login para favoritar');
       return;
@@ -151,9 +151,9 @@ export const useFavorites = () => {
       console.error('Error toggling favorite:', error);
       toast.error('Erro ao atualizar favoritos');
     }
-  };
+  }, [user, favoriteIds.establishments]);
 
-  const toggleFavoriteProduct = async (productId: string) => {
+  const toggleFavoriteProduct = useCallback(async (productId: string) => {
     if (!user) {
       toast.error('Faça login para favoritar');
       return;
@@ -179,7 +179,7 @@ export const useFavorites = () => {
       console.error('Error toggling favorite:', error);
       toast.error('Erro ao atualizar favoritos');
     }
-  };
+  }, [user, favoriteIds.products]);
 
   const isEstablishmentFavorite = (establishmentId: string) => {
     return favoriteIds.establishments.includes(establishmentId);

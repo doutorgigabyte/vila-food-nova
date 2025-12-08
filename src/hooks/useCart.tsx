@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { safeLocalStorage } from "@/lib/utils";
 
 export interface CartProduct {
   id: string;
@@ -62,8 +63,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   // Load cart from localStorage on mount
   useEffect(() => {
     try {
-      const storedItems = localStorage.getItem(CART_STORAGE_KEY);
-      const storedEstablishments = localStorage.getItem(ESTABLISHMENTS_STORAGE_KEY);
+      const storedItems = safeLocalStorage.getItem(CART_STORAGE_KEY);
+      const storedEstablishments = safeLocalStorage.getItem(ESTABLISHMENTS_STORAGE_KEY);
       
       if (storedItems) {
         setItems(JSON.parse(storedItems));
@@ -88,8 +89,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   // Save cart to localStorage whenever it changes
   useEffect(() => {
     try {
-      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
-      localStorage.setItem(ESTABLISHMENTS_STORAGE_KEY, JSON.stringify(Array.from(establishments.entries())));
+      safeLocalStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
+      safeLocalStorage.setItem(ESTABLISHMENTS_STORAGE_KEY, JSON.stringify(Array.from(establishments.entries())));
     } catch (error) {
       console.error("Error saving cart to localStorage:", error);
     }
@@ -210,8 +211,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     setItems([]);
     setEstablishments(new Map());
     setCurrentVilaId(null);
-    localStorage.removeItem(CART_STORAGE_KEY);
-    localStorage.removeItem(ESTABLISHMENTS_STORAGE_KEY);
+    safeLocalStorage.removeItem(CART_STORAGE_KEY);
+    safeLocalStorage.removeItem(ESTABLISHMENTS_STORAGE_KEY);
   };
 
   const clearEstablishmentCart = (establishmentId: string) => {

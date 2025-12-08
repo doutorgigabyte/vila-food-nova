@@ -7,7 +7,7 @@ import { Establishment } from "@/hooks/useEstablishment";
 import { useFavorites } from "@/hooks/useFavorites";
 import { Price } from "@/components/ui/price";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useState, memo, useCallback } from "react";
 
 interface EstablishmentCardProps {
   establishment: Establishment;
@@ -17,23 +17,24 @@ interface EstablishmentCardProps {
   className?: string;
 }
 
-const EstablishmentCard = ({
+const EstablishmentCard = memo(({
   establishment,
   variant = "default",
   showVisitButton = false,
   isNew = false,
   className,
 }: EstablishmentCardProps) => {
+  // All hooks must be called before any early returns or conditionals
   const est = establishment;
   const { isEstablishmentFavorite, toggleFavoriteEstablishment } = useFavorites();
   const isFavorite = isEstablishmentFavorite(est.id);
   const [imageLoaded, setImageLoaded] = useState(false);
 
-  const handleFavoriteClick = (e: React.MouseEvent) => {
+  const handleFavoriteClick = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     toggleFavoriteEstablishment(est.id);
-  };
+  }, [est.id, toggleFavoriteEstablishment]);
 
   const FavoriteButton = () => (
     <Button 
@@ -44,8 +45,9 @@ const EstablishmentCard = ({
         isFavorite ? "text-red-500 hover:text-red-600" : "text-muted-foreground hover:text-destructive"
       )}
       onClick={handleFavoriteClick}
+      aria-label={isFavorite ? `Remover ${est.name} dos favoritos` : `Adicionar ${est.name} aos favoritos`}
     >
-      <Heart className={cn("w-4 h-4", isFavorite && "fill-current")} />
+      <Heart className={cn("w-4 h-4", isFavorite && "fill-current")} aria-hidden="true" />
     </Button>
   );
 
@@ -278,6 +280,8 @@ const EstablishmentCard = ({
       </Card>
     </Link>
   );
-};
+});
+
+EstablishmentCard.displayName = "EstablishmentCard";
 
 export default EstablishmentCard;

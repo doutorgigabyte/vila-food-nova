@@ -1,10 +1,11 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { ThemeProvider } from "next-themes";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "./hooks/useAuth";
+import { BrowserRouter, Routes, Route, useLocation, useNavigate } from "react-router-dom";
+import { AuthProvider, useAuth } from "./hooks/useAuth";
 import { AdminAccessProvider } from "./contexts/AdminAccessContext";
 import { CartProvider } from "./hooks/useCart";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
@@ -12,6 +13,8 @@ import PWAInstallPrompt from "./components/PWAInstallPrompt";
 import { OrderSourceProvider } from "./hooks/useOrderSource";
 import { NotificationProvider } from "./components/notifications/NotificationProvider";
 import PageSkeleton from "./components/ui/PageSkeleton";
+import ErrorBoundary from "./components/ErrorBoundary";
+import { supabase } from "@/integrations/supabase/client";
 
 // Critical pages - load immediately
 import Index from "./pages/Index";
@@ -34,6 +37,8 @@ const ProductDetail = lazy(() => import("./pages/ProductDetail"));
 const VilaTokPage = lazy(() => import("./pages/VilaTok"));
 const VilaTokProfile = lazy(() => import("./pages/VilaTokProfile"));
 const CategoryPage = lazy(() => import("./pages/CategoryPage"));
+const Account = lazy(() => import("./pages/Account"));
+const Addresses = lazy(() => import("./pages/Addresses"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Dashboard pages - lazy loaded
@@ -108,20 +113,50 @@ const DriverApp = lazy(() => import("./pages/driver/DriverApp"));
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <AdminAccessProvider>
-        <OrderSourceProvider>
-          <CartProvider>
-            <NotificationProvider>
-              <TooltipProvider>
-                <Toaster />
-                <Sonner />
-                <PWAInstallPrompt />
-              <BrowserRouter>
-              <Suspense fallback={<PageSkeleton />}>
-              <Routes>
+// Component to handle browser back button after logout
+// Must be inside AuthProvider
+const AppRoutes = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { user, loading } = useAuth();
+
+  useEffect(() => {
+    // Check if user is authenticated when page loads (including from cache)
+    const checkAuth = async () => {
+      if (loading) return;
+      
+      // Skip check for public routes
+      const publicRoutes = ['/auth', '/', '/marketplace', '/conheca', '/recuperar-senha'];
+      const isPublicRoute = publicRoutes.includes(location.pathname) || 
+        location.pathname.startsWith('/loja/') || 
+        location.pathname.startsWith('/vila/') || 
+        location.pathname.startsWith('/vilas') || 
+        location.pathname.startsWith('/vilatok') || 
+        location.pathname.startsWith('/categoria/');
+      
+      if (isPublicRoute) {
+        return;
+      }
+
+      try {
+        // Check if there's a valid session
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        // If no session and trying to access protected route, redirect to auth
+        if (!session && !user) {
+          navigate('/auth', { replace: true });
+        }
+      } catch (error: any) {
+        console.error("Auth check error:", error);
+      }
+    };
+
+    checkAuth();
+  }, [location.pathname, user, loading, navigate]);
+
+  return (
+    <Suspense fallback={<PageSkeleton />}>
+      <Routes>
                 <Route path="/" element={<Index />} />
               <Route path="/conheca" element={<Conheca />} />
               <Route path="/marketplace" element={<Index />} />
@@ -138,6 +173,8 @@ const App = () => (
               <Route path="/pedidos" element={<Orders />} />
               <Route path="/menu" element={<Menu />} />
               <Route path="/favoritos" element={<Favorites />} />
+              <Route path="/conta" element={<Account />} />
+              <Route path="/enderecos" element={<Addresses />} />
               <Route path="/produtos/:section" element={<ProductsListing />} />
               <Route path="/produto/:id" element={<ProductDetail />} />
               {/* Dashboard routes with slug parameter for admin access */}
@@ -237,17 +274,39 @@ const App = () => (
               {/* Driver app */}
               <Route path="/entregador" element={<DriverApp />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-            </Suspense>
-            </BrowserRouter>
-              </TooltipProvider>
-            </NotificationProvider>
-          </CartProvider>
-        </OrderSourceProvider>
-      </AdminAccessProvider>
-    </AuthProvider>
-  </QueryClientProvider>
-);
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </Suspense>
+  );
+};
+
+const App = () => {
+  return (
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <AuthProvider>
+            <AdminAccessProvider>
+              <OrderSourceProvider>
+                <CartProvider>
+                  <NotificationProvider>
+                    <TooltipProvider>
+                      <Toaster />
+                      <Sonner />
+                      <PWAInstallPrompt />
+                      <BrowserRouter>
+                        <AppRoutes />
+                      </BrowserRouter>
+                    </TooltipProvider>
+                  </NotificationProvider>
+                </CartProvider>
+              </OrderSourceProvider>
+            </AdminAccessProvider>
+          </AuthProvider>
+        </ThemeProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
+  );
+};
 
 export default App;

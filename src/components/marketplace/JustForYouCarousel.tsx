@@ -5,7 +5,7 @@ import { useProductsByMainCategory } from "@/hooks/useProducts";
 import { cn } from "@/lib/utils";
 import { Link, useNavigate } from "react-router-dom";
 import { getCategoryTheme } from "@/lib/categoryThemes";
-import { motion, AnimatePresence } from "framer-motion";
+// import { motion, AnimatePresence } from "framer-motion"; // Temporarily disabled - needs npm install
 
 interface JustForYouCarouselProps {
   mainCategory?: string | null;
@@ -131,7 +131,14 @@ const JustForYouCarousel = ({ mainCategory }: JustForYouCarouselProps) => {
         </div>
 
         {/* 3D Carousel */}
-        <div className="relative flex items-center justify-center h-64 md:h-[450px]" style={{ perspective: "1500px" }}>
+        <div 
+          className="relative flex items-center justify-center h-64 md:h-[450px]" 
+          style={{ 
+            perspective: "1500px",
+            willChange: "transform",
+            transform: "translateZ(0)", // Force GPU acceleration
+          }}
+        >
           {/* Navigation Buttons */}
           <Button
             variant="outline"
@@ -144,7 +151,7 @@ const JustForYouCarousel = ({ mainCategory }: JustForYouCarouselProps) => {
 
           {/* Carousel Stage */}
           <div className="relative w-full h-full flex items-center justify-center overflow-visible">
-          <AnimatePresence mode="popLayout" initial={false}>
+          {/* <AnimatePresence mode="popLayout" initial={false}> */}
               {visibleItems.map((item) => {
                 const isCenter = item.offset === 0;
                 const isLeft = item.offset === -1;
@@ -191,33 +198,9 @@ const JustForYouCarousel = ({ mainCategory }: JustForYouCarouselProps) => {
                 };
 
                 return (
-                  <motion.div
+                  <div
                     key={`${item.id}-${item.index}`}
-                    className="absolute rounded-2xl overflow-hidden shadow-2xl cursor-pointer"
-                    initial={{
-                      x: direction > 0 ? "100%" : "-100%",
-                      scale: 0.5,
-                      opacity: 0,
-                      rotateY: direction > 0 ? -45 : 45,
-                    }}
-                    animate={{
-                      x: getPosition(),
-                      scale: getScale(),
-                      opacity: getOpacity(),
-                      rotateY: getRotation(),
-                      z: isCenter ? 100 : -100,
-                    }}
-                    exit={{
-                      x: direction > 0 ? "-100%" : "100%",
-                      scale: 0.5,
-                      opacity: 0,
-                      rotateY: direction > 0 ? 45 : -45,
-                    }}
-                    transition={{
-                      type: "spring",
-                      stiffness: 300,
-                      damping: 30,
-                    }}
+                    className="absolute rounded-2xl overflow-hidden shadow-2xl cursor-pointer transition-all duration-500 ease-out"
                     style={{
                       width: isMobile 
                         ? (isCenter ? "200px" : "140px") 
@@ -225,19 +208,23 @@ const JustForYouCarousel = ({ mainCategory }: JustForYouCarouselProps) => {
                       height: isMobile 
                         ? (isCenter ? "250px" : "200px")
                         : (isCenter ? "380px" : isLeft || isRight ? "320px" : "260px"),
+                      transform: `translateX(${getPosition()}) scale(${getScale()}) rotateY(${getRotation()}deg)`,
                       transformStyle: "preserve-3d",
                       zIndex: getZIndex(),
+                      willChange: "transform",
+                      backfaceVisibility: "hidden",
+                      opacity: getOpacity(),
                     }}
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.stopPropagation();
                       if (isCenter) {
-                        navigate(`/loja/${item.establishment?.slug || ''}`);
+                        navigate(`/produto/${item.id}`);
                       } else if (isLeft || isFarLeft) {
                         handlePrev();
                       } else {
                         handleNext();
                       }
                     }}
-                    whileHover={isCenter ? { scale: 1.02 } : {}}
                   >
                     {/* Product Image */}
                     <div className="relative w-full h-full gpu-accelerated">
@@ -247,18 +234,34 @@ const JustForYouCarousel = ({ mainCategory }: JustForYouCarouselProps) => {
                         className="w-full h-full object-cover"
                         loading="lazy"
                         draggable={false}
+                        style={{ 
+                          objectFit: "cover",
+                          height: "100%",
+                          width: "100%"
+                        }}
                       />
                       
                       {/* Gradient Overlays */}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/10" />
                       
+                      {/* Add to cart button - Only on center item */}
+                      {isCenter && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            // TODO: Add to cart functionality
+                            navigate(`/produto/${item.id}`);
+                          }}
+                          className="absolute top-2 right-2 w-10 h-10 bg-primary text-primary-foreground rounded-full flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-transform z-10"
+                        >
+                          <span className="text-xl font-bold">+</span>
+                        </button>
+                      )}
+                      
                       {/* Product Info - Only on center item */}
                       {isCenter && (
-                        <motion.div 
-                          className="absolute bottom-0 left-0 right-0 p-3 md:p-4"
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: 0.2 }}
+                        <div 
+                          className="absolute bottom-0 left-0 right-0 p-3 md:p-4 animate-in fade-in slide-in-from-bottom-4 duration-500"
                         >
                           <p className="text-xs text-white/80 mb-1 truncate drop-shadow">
                             {item.establishment?.name}
@@ -269,13 +272,13 @@ const JustForYouCarousel = ({ mainCategory }: JustForYouCarouselProps) => {
                           <p className={cn("font-bold text-sm md:text-base drop-shadow whitespace-nowrap", theme.accentColor || "text-primary")}>
                             R$&nbsp;{(item.promotional_price || item.price).toFixed(2).replace('.', ',')}
                           </p>
-                        </motion.div>
+                        </div>
                       )}
                     </div>
-                  </motion.div>
+                  </div>
                 );
               })}
-            </AnimatePresence>
+            {/* </AnimatePresence> */}
           </div>
 
           <Button

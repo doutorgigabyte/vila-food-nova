@@ -1,6 +1,6 @@
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { motion } from "framer-motion";
+// import { motion } from "framer-motion"; // Temporarily disabled - needs npm install
 import { cn } from "@/lib/utils";
 
 interface SubcategoryBannerProps {
@@ -21,12 +21,9 @@ const SubcategoryBanner = ({
   colorClass = "from-primary/15 to-primary/5 border-primary/20",
 }: SubcategoryBannerProps) => {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: -10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -10 }}
+    <div
       className={cn(
-        "relative overflow-hidden rounded-2xl border-2",
+        "relative overflow-hidden rounded-2xl border-2 animate-in fade-in slide-in-from-top-2 duration-300",
         "bg-gradient-to-r",
         colorClass
       )}
@@ -78,7 +75,7 @@ const SubcategoryBanner = ({
           <X className="w-4 h-4" />
         </Button>
       </div>
-    </motion.div>
+    </div>
   );
 };
 

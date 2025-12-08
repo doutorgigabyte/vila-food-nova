@@ -14,6 +14,8 @@ interface RestaurantFiltersProps {
   activeFilter: string;
   onFilterChange: (filter: string) => void;
   totalCount?: number;
+  sortBy?: string;
+  onSortChange?: (sort: string) => void;
 }
 
 const filters = [
@@ -33,9 +35,20 @@ const sortOptions = [
 const RestaurantFilters = ({ 
   activeFilter, 
   onFilterChange, 
-  totalCount 
+  totalCount,
+  sortBy: externalSortBy,
+  onSortChange
 }: RestaurantFiltersProps) => {
-  const [sortBy, setSortBy] = useState("recommended");
+  const [internalSortBy, setInternalSortBy] = useState("recommended");
+  const sortBy = externalSortBy || internalSortBy;
+  
+  const handleSortChange = (newSort: string) => {
+    if (onSortChange) {
+      onSortChange(newSort);
+    } else {
+      setInternalSortBy(newSort);
+    }
+  };
 
   return (
     <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-6">
@@ -51,6 +64,8 @@ const RestaurantFilters = ({
               "flex-shrink-0 transition-all",
               activeFilter === filter.id && "shadow-md"
             )}
+            aria-label={`Filtrar por ${filter.label}`}
+            aria-pressed={activeFilter === filter.id}
           >
             {filter.label}
           </Button>
@@ -67,21 +82,23 @@ const RestaurantFilters = ({
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="gap-2">
-              <SlidersHorizontal className="w-4 h-4" />
+            <Button variant="outline" size="sm" className="gap-2" aria-label="Ordenar estabelecimentos" aria-haspopup="true">
+              <SlidersHorizontal className="w-4 h-4" aria-hidden="true" />
               Ordenar
-              <ChevronDown className="w-4 h-4" />
+              <ChevronDown className="w-4 h-4" aria-hidden="true" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
+          <DropdownMenuContent align="end" role="menu">
             {sortOptions.map((option) => (
               <DropdownMenuItem
                 key={option.id}
-                onClick={() => setSortBy(option.id)}
+                onClick={() => handleSortChange(option.id)}
                 className={cn(
                   "cursor-pointer",
                   sortBy === option.id && "bg-accent"
                 )}
+                role="menuitem"
+                aria-checked={sortBy === option.id}
               >
                 {option.label}
               </DropdownMenuItem>

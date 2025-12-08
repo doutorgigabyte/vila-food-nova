@@ -70,7 +70,8 @@ const DeliveryCalculator = ({
     if (customerLocation && establishmentId) {
       handleCalculate();
     }
-  }, [customerLocation]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customerLocation, establishmentId]);
 
   // Notify parent of result
   useEffect(() => {

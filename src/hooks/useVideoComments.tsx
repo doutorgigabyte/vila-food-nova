@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
+import { generateUUID, safeLocalStorage } from '@/lib/utils';
 
 export interface VideoComment {
   id: string;
@@ -24,10 +25,10 @@ export function useVideoComments(videoId: string | undefined) {
   const [comments, setComments] = useState<VideoComment[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [sessionId] = useState(() => {
-    let id = localStorage.getItem('vilatok_session_id');
+    let id = safeLocalStorage.getItem('vilatok_session_id');
     if (!id) {
-      id = crypto.randomUUID();
-      localStorage.setItem('vilatok_session_id', id);
+      id = generateUUID();
+      safeLocalStorage.setItem('vilatok_session_id', id);
     }
     return id;
   });

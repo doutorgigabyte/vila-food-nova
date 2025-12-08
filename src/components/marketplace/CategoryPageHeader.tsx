@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Bell, Flame, Search, X } from "lucide-react";
+import { ArrowLeft, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { motion, AnimatePresence } from "framer-motion";
+// import { motion, AnimatePresence } from "framer-motion"; // Temporarily disabled - needs npm install
 import { UserMenu } from "./UserMenu";
 import { LocationSelector } from "./LocationSelector";
 import CategoryBreadcrumb from "./CategoryBreadcrumb";
@@ -96,16 +96,6 @@ const CategoryPageHeader = ({
 
           {/* Right: Actions */}
           <div className="flex items-center gap-0.5">
-            <Link to="/vilatok">
-              <Button variant="ghost" size="icon" className="h-9 w-9 relative">
-                <Flame className="w-5 h-5 text-orange-500" />
-              </Button>
-            </Link>
-            
-            <Button variant="ghost" size="icon" className="h-9 w-9 relative">
-              <Bell className="w-5 h-5" />
-            </Button>
-            
             <UserMenu />
           </div>
         </div>
@@ -133,19 +123,14 @@ const CategoryPageHeader = ({
                 "placeholder:text-muted-foreground/60 text-sm"
               )}
             />
-            <AnimatePresence>
-              {searchTerm && (
-                <motion.button
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.8 }}
-                  onClick={clearSearch}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-muted transition-colors"
-                >
-                  <X className="w-4 h-4 text-muted-foreground" />
-                </motion.button>
-              )}
-            </AnimatePresence>
+            {searchTerm && (
+              <button
+                onClick={clearSearch}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-muted transition-all animate-in fade-in zoom-in duration-200"
+              >
+                <X className="w-4 h-4 text-muted-foreground" />
+              </button>
+            )}
           </div>
         </div>
       </div>

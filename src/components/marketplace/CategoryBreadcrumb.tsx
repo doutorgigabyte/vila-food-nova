@@ -1,6 +1,6 @@
 import { ChevronRight, Home } from "lucide-react";
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
+// import { motion } from "framer-motion"; // Temporarily disabled - needs npm install
 import { cn } from "@/lib/utils";
 
 // Mapeamento de emojis para categorias
@@ -48,12 +48,10 @@ const CategoryBreadcrumb = ({ items, className }: CategoryBreadcrumbProps) => {
           : (index > 0 ? getEmojiFromLabel(item.label) : null);
 
         return (
-          <motion.div
+          <div
             key={index}
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: index * 0.1 }}
-            className="flex items-center gap-1 flex-shrink-0"
+            className="flex items-center gap-1 flex-shrink-0 animate-in fade-in slide-in-from-left-2 duration-300"
+            style={{ animationDelay: `${index * 100}ms` }}
           >
             {index > 0 && (
               <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/50" />
@@ -88,7 +86,7 @@ const CategoryBreadcrumb = ({ items, className }: CategoryBreadcrumbProps) => {
                 <span className="whitespace-nowrap">{item.label}</span>
               </span>
             )}
-          </motion.div>
+          </div>
         );
       })}
     </nav>

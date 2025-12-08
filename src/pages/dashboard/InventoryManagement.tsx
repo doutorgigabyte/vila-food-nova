@@ -214,16 +214,26 @@ const InventoryManagement = () => {
                 <div className="space-y-4">
                   <div>
                     <Label>Produto *</Label>
-                    <Select value={form.product_id} onValueChange={(v) => setForm({ ...form, product_id: v })}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione o produto" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {products.map((p) => (
-                          <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    {products.length === 0 ? (
+                      <div className="p-4 border rounded-lg bg-muted/50 text-center">
+                        <p className="text-sm text-muted-foreground">
+                          Nenhum produto cadastrado. Cadastre produtos primeiro.
+                        </p>
+                      </div>
+                    ) : (
+                      <Select value={form.product_id} onValueChange={(v) => setForm({ ...form, product_id: v })}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o produto" />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-[300px]">
+                          {products.map((p) => (
+                            <SelectItem key={p.id} value={p.id}>
+                              {p.name} {p.stock_quantity !== null && `(Estoque: ${p.stock_quantity})`}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
                   </div>
                   <div>
                     <Label>Tipo *</Label>

@@ -87,8 +87,13 @@ const RestaurantsSection = ({
             {...handlers}
             className={cn(
               "flex items-center gap-4 overflow-x-auto pb-2 scrollbar-hide select-none drag-scroll-container",
+              "scroll-smooth snap-x snap-mandatory",
               isDragging && "cursor-grabbing"
             )}
+            style={{
+              scrollBehavior: "smooth",
+              WebkitOverflowScrolling: "touch",
+            }}
           >
             {restaurants.map((restaurant) => (
               <Link 
@@ -96,7 +101,7 @@ const RestaurantsSection = ({
                 to={`/loja/${restaurant.slug}`}
                 onClick={(e) => isDragging && e.preventDefault()}
                 className={cn(
-                  "flex-shrink-0 flex items-center gap-3 p-3 bg-muted/50 rounded-xl hover:bg-muted transition-all min-w-[280px]",
+                  "flex-shrink-0 flex items-center gap-3 p-3 bg-muted/50 rounded-xl hover:bg-muted transition-all min-w-[280px] snap-start",
                   "hover:shadow-md hover:scale-[1.02] active:scale-[0.98]"
                 )}
               >

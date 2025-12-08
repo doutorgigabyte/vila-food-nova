@@ -2,7 +2,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useDragScroll } from "@/hooks/useDragScroll";
 import { cn } from "@/lib/utils";
-import { motion } from "framer-motion";
+// import { motion } from "framer-motion"; // Temporarily disabled - needs npm install
 
 interface Subcategory {
   id: string;
@@ -220,13 +220,11 @@ const SubcategoryCarousel = ({
         }}
       >
         {/* Card "Todos" */}
-        <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
+        <button
           onClick={() => wasClick() && onSelect(null)}
           style={{ pointerEvents: isDragging ? 'none' : 'auto' }}
           className={cn(
-            "flex-shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all",
+            "flex-shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all hover:scale-105 active:scale-95",
             "border-2 min-w-[90px] justify-center",
             !selectedId
               ? "bg-gradient-to-br from-primary/20 to-primary/5 border-primary text-primary shadow-md"
@@ -235,7 +233,7 @@ const SubcategoryCarousel = ({
         >
           <span className="text-lg">{categoryIcon || "🏠"}</span>
           <span className="font-medium text-sm whitespace-nowrap">Todos</span>
-        </motion.button>
+        </button>
 
         {/* Subcategory Cards */}
         {subcategories.map((subcategory, index) => {
@@ -245,14 +243,12 @@ const SubcategoryCarousel = ({
           const emoji = getEmoji(subcategory.name);
 
           return (
-            <motion.button
+            <button
               key={subcategory.id}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
               onClick={() => wasClick() && onSelect(isSelected ? null : subcategory.id)}
               style={{ pointerEvents: isDragging ? 'none' : 'auto' }}
               className={cn(
-                "flex-shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all",
+                "flex-shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all hover:scale-105 active:scale-95",
                 "border-2 min-w-[100px] justify-center",
                 isSelected
                   ? "bg-gradient-to-br from-primary/20 to-primary/5 border-primary text-primary shadow-md"
@@ -266,7 +262,7 @@ const SubcategoryCarousel = ({
               )}>
                 {subcategory.name}
               </span>
-            </motion.button>
+            </button>
           );
         })}
       </div>
