@@ -162,65 +162,65 @@ const AdminDashboard = () => {
   return (
     <AdminLayout title="Dashboard Administrativo" breadcrumb="Dashboard Administrativo">
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-6 md:mb-8">
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Estabelecimentos</p>
-                <p className="text-3xl font-bold">{stats.totalEstablishments}</p>
+          <CardContent className="p-4 md:p-6">
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-xs md:text-sm text-muted-foreground truncate">Estabelecimentos</p>
+                <p className="text-xl md:text-3xl font-bold">{stats.totalEstablishments}</p>
                 <p className="text-xs text-green-600">{stats.activeEstablishments} ativos</p>
               </div>
-              <div className="bg-orange-100 p-3 rounded-full">
-                <Store className="h-6 w-6 text-orange-600" />
+              <div className="bg-orange-100 p-2 md:p-3 rounded-full shrink-0">
+                <Store className="h-4 w-4 md:h-6 md:w-6 text-orange-600" />
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Usuários</p>
-                <p className="text-3xl font-bold">{stats.totalUsers}</p>
+          <CardContent className="p-4 md:p-6">
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-xs md:text-sm text-muted-foreground truncate">Usuários</p>
+                <p className="text-xl md:text-3xl font-bold">{stats.totalUsers}</p>
                 <p className="text-xs text-muted-foreground">cadastrados</p>
               </div>
-              <div className="bg-blue-100 p-3 rounded-full">
-                <Users className="h-6 w-6 text-blue-600" />
+              <div className="bg-blue-100 p-2 md:p-3 rounded-full shrink-0">
+                <Users className="h-4 w-4 md:h-6 md:w-6 text-blue-600" />
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Planos</p>
-                <p className="text-3xl font-bold">{stats.totalPlans}</p>
+          <CardContent className="p-4 md:p-6">
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-xs md:text-sm text-muted-foreground truncate">Planos</p>
+                <p className="text-xl md:text-3xl font-bold">{stats.totalPlans}</p>
                 <p className="text-xs text-muted-foreground">disponíveis</p>
               </div>
-              <div className="bg-purple-100 p-3 rounded-full">
-                <CreditCard className="h-6 w-6 text-purple-600" />
+              <div className="bg-purple-100 p-2 md:p-3 rounded-full shrink-0">
+                <CreditCard className="h-4 w-4 md:h-6 md:w-6 text-purple-600" />
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Receita Mensal</p>
-                <p className="text-3xl font-bold">R$ {stats.monthlyRevenue.toFixed(2)}</p>
+          <CardContent className="p-4 md:p-6">
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-xs md:text-sm text-muted-foreground truncate">Receita Mensal</p>
+                <p className="text-xl md:text-3xl font-bold">R$ {stats.monthlyRevenue.toFixed(0)}</p>
                 <div className="flex items-center text-xs text-green-600">
                   <TrendingUp className="h-3 w-3 mr-1" />
-                  +12% este mês
+                  +12%
                 </div>
               </div>
-              <div className="bg-green-100 p-3 rounded-full">
-                <DollarSign className="h-6 w-6 text-green-600" />
+              <div className="bg-green-100 p-2 md:p-3 rounded-full shrink-0">
+                <DollarSign className="h-4 w-4 md:h-6 md:w-6 text-green-600" />
               </div>
             </div>
           </CardContent>
@@ -228,29 +228,29 @@ const AdminDashboard = () => {
       </div>
 
       {/* Quick Actions */}
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold">Acesso Rápido</h2>
-        <Button variant="destructive" size="sm">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
+        <h2 className="text-base md:text-lg font-semibold">Acesso Rápido</h2>
+        <Button variant="destructive" size="sm" className="w-full sm:w-auto">
           <MessageSquare className="h-4 w-4 mr-2" />
           Chamar Suporte
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
         {dashboardCards.map((card) => (
           <Link key={card.href} to={card.href}>
             <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
-              <CardContent className="p-6 flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className={`p-3 rounded-xl ${card.color}`}>
-                    <card.icon className="h-6 w-6" />
+              <CardContent className="p-4 md:p-6 flex items-center justify-between">
+                <div className="flex items-center gap-3 md:gap-4 min-w-0">
+                  <div className={`p-2 md:p-3 rounded-xl shrink-0 ${card.color}`}>
+                    <card.icon className="h-5 w-5 md:h-6 md:w-6" />
                   </div>
-                  <div>
-                    <h3 className="font-semibold">{card.title}</h3>
-                    <p className="text-sm text-muted-foreground">{card.description}</p>
+                  <div className="min-w-0">
+                    <h3 className="font-semibold text-sm md:text-base truncate">{card.title}</h3>
+                    <p className="text-xs md:text-sm text-muted-foreground truncate">{card.description}</p>
                   </div>
                 </div>
-                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                <ChevronRight className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground shrink-0" />
               </CardContent>
             </Card>
           </Link>

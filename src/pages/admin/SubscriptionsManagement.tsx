@@ -375,7 +375,7 @@ const SubscriptionsManagement = () => {
           </Button>
         </div>
 
-        {/* Table */}
+        {/* Subscriptions List */}
         <Card>
           <CardContent className="p-0">
             {loading ? (
@@ -389,83 +389,150 @@ const SubscriptionsManagement = () => {
                 <p className="text-muted-foreground mt-1">Não há assinaturas com os filtros selecionados</p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Estabelecimento</TableHead>
-                      <TableHead>Plano</TableHead>
-                      <TableHead>Valor</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Início</TableHead>
-                      <TableHead>Expira</TableHead>
-                      <TableHead className="w-[50px]"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredSubscriptions.map((sub) => (
-                      <TableRow key={sub.id}>
-                        <TableCell>
-                          <div className="font-medium">{sub.establishment?.name || '-'}</div>
-                          <div className="text-xs text-muted-foreground">{sub.establishment?.slug}</div>
-                        </TableCell>
-                        <TableCell>{sub.plan?.name || '-'}</TableCell>
-                        <TableCell>
+              <>
+                {/* Mobile Cards View */}
+                <div className="block md:hidden divide-y">
+                  {filteredSubscriptions.map((sub) => (
+                    <div key={sub.id} className="p-4 space-y-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="font-medium truncate">{sub.establishment?.name || '-'}</p>
+                          <p className="text-xs text-muted-foreground">{sub.establishment?.slug}</p>
+                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreVertical className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            {sub.status !== "active" && (
+                              <DropdownMenuItem onClick={() => handleActivateSubscription(sub)}>
+                                <CheckCircle className="w-4 h-4 mr-2 text-green-500" />
+                                Ativar
+                              </DropdownMenuItem>
+                            )}
+                            {sub.status === "active" && (
+                              <>
+                                <DropdownMenuItem onClick={() => handleRenewSubscription(sub)}>
+                                  <RefreshCw className="w-4 h-4 mr-2 text-blue-500" />
+                                  Renovar
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  onClick={() => {
+                                    setSelectedSub(sub);
+                                    setCancelDialogOpen(true);
+                                  }}
+                                  className="text-destructive"
+                                >
+                                  <Ban className="w-4 h-4 mr-2" />
+                                  Cancelar
+                                </DropdownMenuItem>
+                              </>
+                            )}
+                            {(sub.status === "expired" || sub.status === "cancelled") && (
+                              <DropdownMenuItem onClick={() => handleActivateSubscription(sub)}>
+                                <Clock className="w-4 h-4 mr-2 text-orange-500" />
+                                Reativar
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                      <div className="flex flex-wrap gap-2 items-center">
+                        {getStatusBadge(sub.status)}
+                        <Badge variant="outline">{sub.plan?.name || '-'}</Badge>
+                        <span className="text-sm font-medium">
                           {sub.plan?.price ? `R$ ${sub.plan.price.toFixed(2)}` : '-'}
-                        </TableCell>
-                        <TableCell>{getStatusBadge(sub.status)}</TableCell>
-                        <TableCell>
-                          {sub.starts_at ? format(new Date(sub.starts_at), 'dd/MM/yyyy', { locale: ptBR }) : '-'}
-                        </TableCell>
-                        <TableCell>
-                          {sub.expires_at ? format(new Date(sub.expires_at), 'dd/MM/yyyy', { locale: ptBR }) : '-'}
-                        </TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon">
-                                <MoreVertical className="w-4 h-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              {sub.status !== "active" && (
-                                <DropdownMenuItem onClick={() => handleActivateSubscription(sub)}>
-                                  <CheckCircle className="w-4 h-4 mr-2 text-green-500" />
-                                  Ativar
-                                </DropdownMenuItem>
-                              )}
-                              {sub.status === "active" && (
-                                <>
-                                  <DropdownMenuItem onClick={() => handleRenewSubscription(sub)}>
-                                    <RefreshCw className="w-4 h-4 mr-2 text-blue-500" />
-                                    Renovar
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem 
-                                    onClick={() => {
-                                      setSelectedSub(sub);
-                                      setCancelDialogOpen(true);
-                                    }}
-                                    className="text-destructive"
-                                  >
-                                    <Ban className="w-4 h-4 mr-2" />
-                                    Cancelar
-                                  </DropdownMenuItem>
-                                </>
-                              )}
-                              {(sub.status === "expired" || sub.status === "cancelled") && (
-                                <DropdownMenuItem onClick={() => handleActivateSubscription(sub)}>
-                                  <Clock className="w-4 h-4 mr-2 text-orange-500" />
-                                  Reativar
-                                </DropdownMenuItem>
-                              )}
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>Início: {sub.starts_at ? format(new Date(sub.starts_at), 'dd/MM/yy', { locale: ptBR }) : '-'}</span>
+                        <span>Expira: {sub.expires_at ? format(new Date(sub.expires_at), 'dd/MM/yy', { locale: ptBR }) : '-'}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Desktop Table View */}
+                <div className="hidden md:block overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Estabelecimento</TableHead>
+                        <TableHead>Plano</TableHead>
+                        <TableHead>Valor</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Início</TableHead>
+                        <TableHead>Expira</TableHead>
+                        <TableHead className="w-[50px]"></TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredSubscriptions.map((sub) => (
+                        <TableRow key={sub.id}>
+                          <TableCell>
+                            <div className="font-medium">{sub.establishment?.name || '-'}</div>
+                            <div className="text-xs text-muted-foreground">{sub.establishment?.slug}</div>
+                          </TableCell>
+                          <TableCell>{sub.plan?.name || '-'}</TableCell>
+                          <TableCell>
+                            {sub.plan?.price ? `R$ ${sub.plan.price.toFixed(2)}` : '-'}
+                          </TableCell>
+                          <TableCell>{getStatusBadge(sub.status)}</TableCell>
+                          <TableCell>
+                            {sub.starts_at ? format(new Date(sub.starts_at), 'dd/MM/yyyy', { locale: ptBR }) : '-'}
+                          </TableCell>
+                          <TableCell>
+                            {sub.expires_at ? format(new Date(sub.expires_at), 'dd/MM/yyyy', { locale: ptBR }) : '-'}
+                          </TableCell>
+                          <TableCell>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon">
+                                  <MoreVertical className="w-4 h-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                {sub.status !== "active" && (
+                                  <DropdownMenuItem onClick={() => handleActivateSubscription(sub)}>
+                                    <CheckCircle className="w-4 h-4 mr-2 text-green-500" />
+                                    Ativar
+                                  </DropdownMenuItem>
+                                )}
+                                {sub.status === "active" && (
+                                  <>
+                                    <DropdownMenuItem onClick={() => handleRenewSubscription(sub)}>
+                                      <RefreshCw className="w-4 h-4 mr-2 text-blue-500" />
+                                      Renovar
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem 
+                                      onClick={() => {
+                                        setSelectedSub(sub);
+                                        setCancelDialogOpen(true);
+                                      }}
+                                      className="text-destructive"
+                                    >
+                                      <Ban className="w-4 h-4 mr-2" />
+                                      Cancelar
+                                    </DropdownMenuItem>
+                                  </>
+                                )}
+                                {(sub.status === "expired" || sub.status === "cancelled") && (
+                                  <DropdownMenuItem onClick={() => handleActivateSubscription(sub)}>
+                                    <Clock className="w-4 h-4 mr-2 text-orange-500" />
+                                    Reativar
+                                  </DropdownMenuItem>
+                                )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </>
             )}
           </CardContent>
         </Card>

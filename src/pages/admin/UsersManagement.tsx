@@ -490,7 +490,7 @@ const UsersManagement = () => {
         </Button>
       </div>
 
-      {/* Users Table */}
+      {/* Users List */}
       <Card>
         <CardContent className="p-0">
           {loading ? (
@@ -498,105 +498,178 @@ const UsersManagement = () => {
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-muted/50">
-                    <TableHead></TableHead>
-                    <TableHead>NOME</TableHead>
-                    <TableHead>ESTABELECIMENTO</TableHead>
-                    <TableHead>STATUS</TableHead>
-                    <TableHead>LEVEL</TableHead>
-                    <TableHead className="text-right">AÇÕES</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredUsers.map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell className="w-16">
-                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+            <>
+              {/* Mobile Cards View */}
+              <div className="block md:hidden divide-y">
+                {filteredUsers.map((user) => (
+                  <div key={user.id} className="p-4 space-y-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                           {user.avatar_url ? (
                             <img src={user.avatar_url} alt="" className="w-10 h-10 rounded-full object-cover" />
                           ) : (
                             <Users className="w-5 h-5 text-primary" />
                           )}
                         </div>
-                      </TableCell>
-                      <TableCell>
-                        <span className="font-medium">{user.full_name || "Sem nome"}</span>
-                        {user.phone && (
-                          <p className="text-xs text-muted-foreground">{user.phone}</p>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {user.establishments.length > 0 ? (
-                          <div className="flex flex-col gap-1">
-                            {user.establishments.map((est) => (
-                              <div key={est.id} className="flex items-center gap-2">
-                                <Store className="w-3 h-3 text-muted-foreground" />
-                                <span className="text-sm">{est.name}</span>
-                                {getEstablishmentRoleBadge(est.role)}
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Badge className="bg-green-500">Ativo</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Select
-                          value={user.role}
-                          onValueChange={(value) => updateUserRole(user.id, value)}
-                        >
-                          <SelectTrigger className="w-28 h-8">
-                            <Badge variant={getRoleBadgeVariant(user.role || "customer")}>
-                              {getRoleLabel(user.role || "customer")}
-                            </Badge>
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="customer">Cliente</SelectItem>
-                            <SelectItem value="establishment">Loja</SelectItem>
-                            <SelectItem value="affiliate">Afiliado</SelectItem>
-                            <SelectItem value="manager">Gestor</SelectItem>
-                            <SelectItem value="cashier">Caixa</SelectItem>
-                            <SelectItem value="attendant">Atendente</SelectItem>
-                            <SelectItem value="admin">Admin</SelectItem>
-                            <SelectItem value="super_admin">Super Admin</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center justify-end gap-1">
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            title="Editar"
-                            onClick={() => openEditDialog(user)}
-                          >
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            title="Excluir" 
-                            className="text-destructive hover:text-destructive"
-                            onClick={() => {
-                              setDeletingId(user.id);
-                              setDeleteDialogOpen(true);
-                            }}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
+                        <div className="min-w-0">
+                          <p className="font-medium truncate">{user.full_name || "Sem nome"}</p>
+                          {user.phone && (
+                            <p className="text-xs text-muted-foreground">{user.phone}</p>
+                          )}
                         </div>
-                      </TableCell>
+                      </div>
+                      <div className="flex gap-1 shrink-0">
+                        <Button variant="ghost" size="icon" onClick={() => openEditDialog(user)}>
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="text-destructive"
+                          onClick={() => {
+                            setDeletingId(user.id);
+                            setDeleteDialogOpen(true);
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Select
+                        value={user.role}
+                        onValueChange={(value) => updateUserRole(user.id, value)}
+                      >
+                        <SelectTrigger className="w-28 h-7 text-xs">
+                          <Badge variant={getRoleBadgeVariant(user.role || "customer")} className="text-xs">
+                            {getRoleLabel(user.role || "customer")}
+                          </Badge>
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="customer">Cliente</SelectItem>
+                          <SelectItem value="establishment">Loja</SelectItem>
+                          <SelectItem value="affiliate">Afiliado</SelectItem>
+                          <SelectItem value="manager">Gestor</SelectItem>
+                          <SelectItem value="cashier">Caixa</SelectItem>
+                          <SelectItem value="attendant">Atendente</SelectItem>
+                          <SelectItem value="admin">Admin</SelectItem>
+                          <SelectItem value="super_admin">Super Admin</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Badge className="bg-green-500 text-xs">Ativo</Badge>
+                    </div>
+                    {user.establishments.length > 0 && (
+                      <div className="text-xs text-muted-foreground">
+                        <span className="font-medium">Estabelecimentos: </span>
+                        {user.establishments.map(est => est.name).join(", ")}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop Table View */}
+              <div className="hidden md:block overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/50">
+                      <TableHead></TableHead>
+                      <TableHead>NOME</TableHead>
+                      <TableHead>ESTABELECIMENTO</TableHead>
+                      <TableHead>STATUS</TableHead>
+                      <TableHead>LEVEL</TableHead>
+                      <TableHead className="text-right">AÇÕES</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredUsers.map((user) => (
+                      <TableRow key={user.id}>
+                        <TableCell className="w-16">
+                          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                            {user.avatar_url ? (
+                              <img src={user.avatar_url} alt="" className="w-10 h-10 rounded-full object-cover" />
+                            ) : (
+                              <Users className="w-5 h-5 text-primary" />
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <span className="font-medium">{user.full_name || "Sem nome"}</span>
+                          {user.phone && (
+                            <p className="text-xs text-muted-foreground">{user.phone}</p>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {user.establishments.length > 0 ? (
+                            <div className="flex flex-col gap-1">
+                              {user.establishments.map((est) => (
+                                <div key={est.id} className="flex items-center gap-2">
+                                  <Store className="w-3 h-3 text-muted-foreground" />
+                                  <span className="text-sm">{est.name}</span>
+                                  {getEstablishmentRoleBadge(est.role)}
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Badge className="bg-green-500">Ativo</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Select
+                            value={user.role}
+                            onValueChange={(value) => updateUserRole(user.id, value)}
+                          >
+                            <SelectTrigger className="w-28 h-8">
+                              <Badge variant={getRoleBadgeVariant(user.role || "customer")}>
+                                {getRoleLabel(user.role || "customer")}
+                              </Badge>
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="customer">Cliente</SelectItem>
+                              <SelectItem value="establishment">Loja</SelectItem>
+                              <SelectItem value="affiliate">Afiliado</SelectItem>
+                              <SelectItem value="manager">Gestor</SelectItem>
+                              <SelectItem value="cashier">Caixa</SelectItem>
+                              <SelectItem value="attendant">Atendente</SelectItem>
+                              <SelectItem value="admin">Admin</SelectItem>
+                              <SelectItem value="super_admin">Super Admin</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center justify-end gap-1">
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              title="Editar"
+                              onClick={() => openEditDialog(user)}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              title="Excluir" 
+                              className="text-destructive hover:text-destructive"
+                              onClick={() => {
+                                setDeletingId(user.id);
+                                setDeleteDialogOpen(true);
+                              }}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
