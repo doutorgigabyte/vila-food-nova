@@ -215,6 +215,58 @@ const phases: ProgressPhase[] = [
     ]
   },
 
+  // ===== PRIORIDADE 6: SEGURANÇA FINANCEIRA =====
+  {
+    id: 'security-center',
+    name: '🔐 P6.1: Central de Segurança',
+    description: 'Dashboard de monitoramento de segurança financeira',
+    category: 'security',
+    items: [
+      { name: 'Página Central de Segurança (/admin/central-seguranca)', status: 'completed', priority: 'critical' },
+      { name: 'Dashboard de score de segurança', status: 'completed', priority: 'high' },
+      { name: 'Verificação de RLS em tabelas financeiras', status: 'completed', priority: 'critical' },
+      { name: 'Monitor de autenticação em Edge Functions', status: 'completed', priority: 'critical' },
+      { name: 'Verificação de tokens e chaves PIX', status: 'completed', priority: 'high' },
+      { name: 'Visualização de Audit Trail', status: 'completed', priority: 'high' },
+      { name: 'Camadas financeiras por tipo de usuário', status: 'completed', priority: 'high' },
+    ]
+  },
+  {
+    id: 'edge-auth',
+    name: '🔒 P6.2: Autenticação em Edge Functions',
+    description: 'JWT + Ownership Check em funções de pagamento',
+    category: 'security',
+    items: [
+      { name: 'JWT em mercadopago-multi-split', status: 'completed', priority: 'critical' },
+      { name: 'JWT em driver-payment-split', status: 'completed', priority: 'critical' },
+      { name: 'Validação de ownership em operações', status: 'completed', priority: 'high' },
+    ]
+  },
+  {
+    id: 'data-protection',
+    name: '🛡️ P6.3: Proteção de Dados Sensíveis',
+    description: 'Mascaramento e encriptação de tokens',
+    category: 'security',
+    items: [
+      { name: 'Tokens MP não expostos via RLS', status: 'completed', priority: 'critical' },
+      { name: 'Chaves PIX protegidas por políticas', status: 'completed', priority: 'high' },
+      { name: 'Audit logging de acesso a dados financeiros', status: 'completed', priority: 'high' },
+    ]
+  },
+  {
+    id: 'anomaly-detection',
+    name: '⚠️ P6.4: Detecção de Anomalias',
+    description: 'Monitoramento de atividades suspeitas',
+    category: 'security',
+    items: [
+      { name: 'Estatísticas de transações em tempo real', status: 'completed', priority: 'medium' },
+      { name: 'Contador de transações pendentes/falhas', status: 'completed', priority: 'medium' },
+      { name: 'Threshold de valores (alertas)', status: 'pending', priority: 'high' },
+      { name: 'Alertas via WhatsApp para anomalias', status: 'pending', priority: 'medium' },
+    ]
+  },
+
+
   // ===== MELHORIAS DE UX =====
   {
     id: 'ux-marketplace',
