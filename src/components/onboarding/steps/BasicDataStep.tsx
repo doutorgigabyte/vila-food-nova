@@ -13,14 +13,15 @@ import {
   Phone, 
   MessageCircle,
   Building2,
-  ImagePlus,
   Check,
-  X
+  X,
+  MapPin
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useVilas } from "@/hooks/useVilas";
 import { OnboardingData } from "../OnboardingWizard";
 import { ImageUpload } from "@/components/ImageUpload";
+import { CepAutocomplete, CepData } from "@/components/address/CepAutocomplete";
 
 interface BasicDataStepProps {
   data: OnboardingData;
@@ -33,8 +34,14 @@ export const BasicDataStep = ({ data, updateData, onNext, onBack }: BasicDataSte
   const { vilas } = useVilas();
   const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null);
   const [checkingSlug, setCheckingSlug] = useState(false);
+  const [cep, setCep] = useState("");
+  const [addressData, setAddressData] = useState({
+    address: "",
+    neighborhood: "",
+    city: "",
+    state: "",
+  });
 
-  // Debounced slug check
   useEffect(() => {
     if (!data.subdomain || data.subdomain.length < 3) {
       setSlugAvailable(null);
@@ -57,9 +64,17 @@ export const BasicDataStep = ({ data, updateData, onNext, onBack }: BasicDataSte
   }, [data.subdomain]);
 
   const handleSubdomainChange = (value: string) => {
-    // Only allow lowercase letters, numbers, and hyphens
     const sanitized = value.toLowerCase().replace(/[^a-z0-9-]/g, "");
     updateData({ subdomain: sanitized });
+  };
+
+  const handleCepFound = (cepData: CepData) => {
+    setAddressData({
+      address: cepData.address,
+      neighborhood: cepData.neighborhood,
+      city: cepData.city,
+      state: cepData.state,
+    });
   };
 
   const isValid = 
@@ -71,172 +86,95 @@ export const BasicDataStep = ({ data, updateData, onNext, onBack }: BasicDataSte
   return (
     <div className="space-y-6">
       <Card className="p-6 space-y-5">
-        {/* Logo Upload */}
         <div className="flex flex-col items-center">
           <Label className="mb-3 text-center">Logo do estabelecimento (opcional)</Label>
-          <ImageUpload
-            currentImage={data.logoUrl}
-            onUpload={(url) => updateData({ logoUrl: url })}
-            bucket="establishments"
-            aspectRatio="square"
-            className="w-24 h-24"
-          />
+          <ImageUpload currentImage={data.logoUrl} onUpload={(url) => updateData({ logoUrl: url })} bucket="establishments" aspectRatio="square" className="w-24 h-24" />
         </div>
 
-        {/* Establishment Name */}
         <div className="space-y-2">
           <Label htmlFor="name">Nome do estabelecimento *</Label>
           <div className="relative">
             <Store className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              id="name"
-              placeholder="Ex: Pizzaria do João"
-              className="pl-10"
-              value={data.establishmentName}
-              onChange={(e) => updateData({ establishmentName: e.target.value })}
-            />
+            <Input id="name" placeholder="Ex: Pizzaria do João" className="pl-10" value={data.establishmentName} onChange={(e) => updateData({ establishmentName: e.target.value })} />
           </div>
         </div>
 
-        {/* Phone */}
         <div className="space-y-2">
           <Label htmlFor="phone">Telefone *</Label>
           <div className="relative">
             <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              id="phone"
-              placeholder="(00) 00000-0000"
-              className="pl-10"
-              value={data.phone}
-              onChange={(e) => updateData({ phone: e.target.value })}
-            />
+            <Input id="phone" placeholder="(00) 00000-0000" className="pl-10" value={data.phone} onChange={(e) => updateData({ phone: e.target.value })} />
           </div>
         </div>
 
-        {/* WhatsApp */}
         <div className="space-y-2">
           <Label htmlFor="whatsapp">WhatsApp (opcional)</Label>
           <div className="relative">
             <MessageCircle className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              id="whatsapp"
-              placeholder="(00) 00000-0000"
-              className="pl-10"
-              value={data.whatsapp}
-              onChange={(e) => updateData({ whatsapp: e.target.value })}
-            />
+            <Input id="whatsapp" placeholder="(00) 00000-0000" className="pl-10" value={data.whatsapp} onChange={(e) => updateData({ whatsapp: e.target.value })} />
           </div>
         </div>
 
-        {/* Subdomain */}
-        <div className="space-y-2">
-          <Label htmlFor="subdomain">Link da sua loja *</Label>
-          <div className="relative">
-            <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              id="subdomain"
-              placeholder="minhaloja"
-              className="pl-10 pr-32"
-              value={data.subdomain}
-              onChange={(e) => handleSubdomainChange(e.target.value)}
-            />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-              .vilafood.com
-            </span>
+        <div className="space-y-4 p-4 rounded-lg bg-muted/30 border">
+          <div className="flex items-center gap-2 text-sm font-medium">
+            <MapPin className="w-4 h-4 text-primary" />
+            Endereço do Estabelecimento
           </div>
-          
-          {/* Slug availability indicator */}
-          {data.subdomain.length >= 3 && (
-            <motion.div
-              initial={{ opacity: 0, y: -5 }}
-              animate={{ opacity: 1, y: 0 }}
-              className={`flex items-center gap-2 text-sm ${
-                checkingSlug 
-                  ? "text-muted-foreground"
-                  : slugAvailable 
-                    ? "text-green-600" 
-                    : "text-destructive"
-              }`}
-            >
-              {checkingSlug ? (
-                <span>Verificando disponibilidade...</span>
-              ) : slugAvailable ? (
-                <>
-                  <Check className="w-4 h-4" />
-                  <span>Link disponível!</span>
-                </>
-              ) : (
-                <>
-                  <X className="w-4 h-4" />
-                  <span>Este link já está em uso</span>
-                </>
-              )}
+          <CepAutocomplete value={cep} onChange={setCep} onAddressFound={handleCepFound} />
+          {addressData.address && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid grid-cols-2 gap-3">
+              <div className="col-span-2">
+                <Label className="text-xs">Endereço</Label>
+                <Input value={addressData.address} readOnly className="bg-muted/50 h-9 text-sm" />
+              </div>
+              <div>
+                <Label className="text-xs">Bairro</Label>
+                <Input value={addressData.neighborhood} readOnly className="bg-muted/50 h-9 text-sm" />
+              </div>
+              <div>
+                <Label className="text-xs">Cidade/Estado</Label>
+                <Input value={`${addressData.city}/${addressData.state}`} readOnly className="bg-muted/50 h-9 text-sm" />
+              </div>
             </motion.div>
           )}
         </div>
 
-        {/* Vila Selection */}
+        <div className="space-y-2">
+          <Label htmlFor="subdomain">Link da sua loja *</Label>
+          <div className="relative">
+            <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input id="subdomain" placeholder="minhaloja" className="pl-10 pr-32" value={data.subdomain} onChange={(e) => handleSubdomainChange(e.target.value)} />
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">.vilafood.com</span>
+          </div>
+          {data.subdomain.length >= 3 && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className={`flex items-center gap-2 text-sm ${checkingSlug ? "text-muted-foreground" : slugAvailable ? "text-green-600" : "text-destructive"}`}>
+              {checkingSlug ? <span>Verificando...</span> : slugAvailable ? <><Check className="w-4 h-4" /><span>Disponível!</span></> : <><X className="w-4 h-4" /><span>Já em uso</span></>}
+            </motion.div>
+          )}
+        </div>
+
         {vilas.length > 0 && (
           <div className="space-y-4 p-4 rounded-lg bg-primary/5 border border-primary/20">
             <div className="flex items-center space-x-3">
-              <Checkbox
-                id="belongs-to-vila"
-                checked={data.belongsToVila}
-                onCheckedChange={(checked) => {
-                  updateData({ 
-                    belongsToVila: checked as boolean,
-                    vilaId: checked ? data.vilaId : ""
-                  });
-                }}
-              />
+              <Checkbox id="belongs-to-vila" checked={data.belongsToVila} onCheckedChange={(checked) => updateData({ belongsToVila: checked as boolean, vilaId: checked ? data.vilaId : "" })} />
               <div className="space-y-1">
-                <Label htmlFor="belongs-to-vila" className="cursor-pointer font-medium">
-                  Faz parte de uma Vila Gastronômica?
-                </Label>
-                <p className="text-xs text-muted-foreground">
-                  Vilas são locais com múltiplos estabelecimentos
-                </p>
+                <Label htmlFor="belongs-to-vila" className="cursor-pointer font-medium">Faz parte de uma Vila?</Label>
+                <p className="text-xs text-muted-foreground">Vilas são locais com múltiplos estabelecimentos</p>
               </div>
             </div>
-
             {data.belongsToVila && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                className="space-y-2"
-              >
-                <Label htmlFor="vila">Selecione a Vila *</Label>
-                <Select value={data.vilaId} onValueChange={(val) => updateData({ vilaId: val })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Escolha a vila" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {vilas.map((vila) => (
-                      <SelectItem key={vila.id} value={vila.id}>
-                        {vila.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </motion.div>
+              <Select value={data.vilaId} onValueChange={(val) => updateData({ vilaId: val })}>
+                <SelectTrigger><SelectValue placeholder="Escolha a vila" /></SelectTrigger>
+                <SelectContent>{vilas.map((vila) => <SelectItem key={vila.id} value={vila.id}>{vila.name}</SelectItem>)}</SelectContent>
+              </Select>
             )}
           </div>
         )}
       </Card>
 
       <div className="flex gap-3">
-        <Button variant="outline" onClick={onBack} className="flex-1">
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Voltar
-        </Button>
-        <Button 
-          onClick={onNext} 
-          disabled={!isValid}
-          className="flex-1"
-        >
-          Continuar
-          <ArrowRight className="w-4 h-4 ml-2" />
-        </Button>
+        <Button variant="outline" onClick={onBack} className="flex-1"><ArrowLeft className="w-4 h-4 mr-2" />Voltar</Button>
+        <Button onClick={onNext} disabled={!isValid} className="flex-1">Continuar<ArrowRight className="w-4 h-4 ml-2" /></Button>
       </div>
     </div>
   );
