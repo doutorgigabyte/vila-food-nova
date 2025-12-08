@@ -20,24 +20,24 @@ export default function MercadoPagoCallback() {
       if (error) {
         setStatus('error');
         setMessage('Autorização negada pelo usuário');
-        setTimeout(() => navigate('/dashboard/mercadopago'), 3000);
+        setTimeout(() => navigate('/painel/configuracoes'), 3000);
         return;
       }
 
       if (!code || !state) {
         setStatus('error');
         setMessage('Parâmetros de callback inválidos');
-        setTimeout(() => navigate('/dashboard/mercadopago'), 3000);
+        setTimeout(() => navigate('/painel/configuracoes'), 3000);
         return;
       }
 
       try {
+        // Exchange code for tokens
         const { data, error: fnError } = await supabase.functions.invoke('mercadopago-oauth', {
           body: {
             action: 'exchange_code',
             code,
-            establishment_id: state,
-            redirect_uri: `${window.location.origin}/dashboard/mercadopago/callback`
+            state, // establishment_id is in state
           }
         });
 
@@ -47,6 +47,19 @@ export default function MercadoPagoCallback() {
           setStatus('success');
           setMessage('Conta conectada com sucesso!');
           toast.success('Mercado Pago conectado com sucesso!');
+          
+          // Get establishment slug to redirect correctly
+          const { data: establishment } = await supabase
+            .from('establishments')
+            .select('slug')
+            .eq('id', state)
+            .single();
+          
+          const redirectPath = establishment?.slug 
+            ? `/painel/${establishment.slug}/configuracoes`
+            : '/painel/configuracoes';
+          
+          setTimeout(() => navigate(redirectPath), 2000);
         } else {
           throw new Error(data?.error || 'Erro ao processar autorização');
         }
@@ -55,9 +68,8 @@ export default function MercadoPagoCallback() {
         setStatus('error');
         setMessage('Erro ao conectar conta. Tente novamente.');
         toast.error('Erro ao conectar Mercado Pago');
+        setTimeout(() => navigate('/painel/configuracoes'), 3000);
       }
-
-      setTimeout(() => navigate('/dashboard/mercadopago'), 2000);
     };
 
     processCallback();
