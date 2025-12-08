@@ -134,7 +134,7 @@ const phases: ProgressPhase[] = [
       { name: 'WhatsApp básico vs. avançado por plano', status: 'completed', priority: 'high' },
       { name: 'Limite de stories no VilaTok por plano', status: 'completed', priority: 'high' },
       { name: 'Recursos de IA e analytics por plano', status: 'completed', priority: 'medium' },
-      { name: 'Modelo de pagamento e ativação de planos', status: 'pending', priority: 'high' },
+      { name: 'Modelo de pagamento e ativação de planos', status: 'completed', priority: 'high' },
     ]
   },
   {
