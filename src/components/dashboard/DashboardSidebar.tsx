@@ -17,7 +17,7 @@ import {
   Eye,
   LogOut,
   ClipboardList,
-  Gift,
+  
   ShoppingCart,
   Calendar,
   Bike,
@@ -69,7 +69,7 @@ const getMenuItems = (baseUrl: string) => [
   { icon: Truck, label: "Área de Atendimento", href: `${baseUrl}/area-atendimento` },
   { icon: Bike, label: "Entregadores", href: `${baseUrl}/entregadores` },
   { icon: DollarSign, label: "Cupons", href: `${baseUrl}/cupons` },
-  { icon: Gift, label: "Cashback", href: `${baseUrl}/cashback` },
+  
   { icon: ShoppingCart, label: "Recuperador de Vendas", href: `${baseUrl}/carrinhos-abandonados` },
   { icon: CreditCard, label: "Pagamentos", href: `${baseUrl}/pagamentos` },
   { icon: TrendingUp, label: "Fluxo de Caixa", href: `${baseUrl}/fluxo` },

@@ -60,7 +60,7 @@ const MercadoPagoManagement = lazy(() => import("./pages/dashboard/MercadoPagoMa
 const MercadoPagoCallback = lazy(() => import("./pages/dashboard/MercadoPagoCallback"));
 const WaiterApp = lazy(() => import("./pages/dashboard/WaiterApp"));
 const KitchenDisplay = lazy(() => import("./pages/dashboard/KitchenDisplay"));
-const CashbackManagement = lazy(() => import("./pages/dashboard/CashbackManagement"));
+
 const AbandonedCartsManagement = lazy(() => import("./pages/dashboard/AbandonedCartsManagement"));
 const ScheduledOrdersManagement = lazy(() => import("./pages/dashboard/ScheduledOrdersManagement"));
 const DeliveryDriversManagement = lazy(() => import("./pages/dashboard/DeliveryDriversManagement"));
@@ -212,7 +212,7 @@ const AppRoutes = () => {
               <Route path="/painel/:slug/mercadopago" element={<MercadoPagoManagement />} />
               <Route path="/painel/:slug/comanda" element={<WaiterApp />} />
               <Route path="/painel/:slug/cozinha" element={<KitchenDisplay />} />
-              <Route path="/painel/:slug/cashback" element={<CashbackManagement />} />
+              
               <Route path="/painel/:slug/carrinhos-abandonados" element={<AbandonedCartsManagement />} />
               <Route path="/painel/:slug/agendados" element={<ScheduledOrdersManagement />} />
               <Route path="/painel/:slug/entregadores" element={<DeliveryDriversManagement />} />
@@ -242,7 +242,7 @@ const AppRoutes = () => {
               <Route path="/painel/mercadopago" element={<MercadoPagoManagement />} />
               <Route path="/painel/comanda" element={<WaiterApp />} />
               <Route path="/painel/cozinha" element={<KitchenDisplay />} />
-              <Route path="/painel/cashback" element={<CashbackManagement />} />
+              
               <Route path="/painel/carrinhos-abandonados" element={<AbandonedCartsManagement />} />
               <Route path="/painel/agendados" element={<ScheduledOrdersManagement />} />
               <Route path="/painel/entregadores" element={<DeliveryDriversManagement />} />
