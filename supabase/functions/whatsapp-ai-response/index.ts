@@ -8,7 +8,9 @@ const corsHeaders = {
 
 interface AIRequest {
   session_id: string;
-  establishment_id: string;
+  establishment_id?: string;
+  instance_name?: string; // n8n sends instance_name instead of establishment_id
+  remote_jid?: string; // n8n sends remote_jid for WhatsApp number
   message: string;
   message_type?: string;
   ai_prompt?: string;
@@ -21,6 +23,9 @@ interface AIRequest {
     price: number;
     observations?: string;
   }>;
+  // n8n specific fields
+  use_dynamic_prompt?: boolean; // When true, uses establishment.system_prompt
+  use_menu_json?: boolean; // When true, uses establishment.menu_json instead of products table
 }
 
 serve(async (req) => {
@@ -40,47 +45,117 @@ serve(async (req) => {
     }
 
     const body: AIRequest = await req.json();
-    const { session_id, establishment_id, message, message_type, ai_prompt, ai_model, context, cart } = body;
+    const { 
+      session_id, 
+      establishment_id: rawEstablishmentId, 
+      instance_name,
+      remote_jid,
+      message, 
+      message_type, 
+      ai_prompt, 
+      ai_model, 
+      context, 
+      cart,
+      use_dynamic_prompt,
+      use_menu_json 
+    } = body;
     const modelToUse = ai_model || 'google/gemini-2.5-flash';
 
     console.log('AI Request:', JSON.stringify(body, null, 2));
 
-    // Fetch establishment info
-    const { data: establishment } = await supabase
-      .from('establishments')
-      .select('*')
-      .eq('id', establishment_id)
-      .single();
+    // Resolve establishment - by ID or by instance_name (n8n multi-tenant)
+    let establishment: Record<string, unknown> | null = null;
+    let establishment_id = rawEstablishmentId;
 
-    // Fetch products/menu
-    const { data: products } = await supabase
-      .from('products')
-      .select('id, name, description, price, promotional_price, is_active, category_id, image_url')
-      .eq('establishment_id', establishment_id)
-      .eq('is_active', true)
-      .order('name');
+    if (instance_name && !establishment_id) {
+      // n8n multi-tenant: lookup by whatsapp_instance_name
+      const { data: estByInstance } = await supabase
+        .from('establishments')
+        .select('*')
+        .eq('whatsapp_instance_name', instance_name)
+        .single();
+      
+      if (estByInstance) {
+        establishment = estByInstance;
+        establishment_id = estByInstance.id;
+        console.log(`Resolved establishment by instance_name: ${instance_name} -> ${establishment_id}`);
+      }
+    } else if (establishment_id) {
+      const { data: estById } = await supabase
+        .from('establishments')
+        .select('*')
+        .eq('id', establishment_id)
+        .single();
+      establishment = estById;
+    }
 
-    // Fetch categories
-    const { data: categories } = await supabase
-      .from('categories')
-      .select('id, name')
-      .eq('establishment_id', establishment_id)
-      .eq('is_active', true)
-      .order('sort_order');
+    if (!establishment) {
+      console.error('Establishment not found:', { establishment_id, instance_name });
+      return new Response(JSON.stringify({ 
+        error: 'Establishment not found',
+        response: 'Desculpe, não encontrei o estabelecimento. 🙏'
+      }), {
+        status: 404,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Check if using menu_json from establishment (n8n dynamic injection)
+    let products: Array<Record<string, unknown>> = [];
+    let menuFromJson = false;
+
+    if (use_menu_json && establishment.menu_json) {
+      // Use pre-generated menu_json from establishment
+      menuFromJson = true;
+      const menuJson = establishment.menu_json as Array<Record<string, unknown>>;
+      products = menuJson.map(item => ({
+        id: item.id,
+        name: item.name || item.nome,
+        description: item.description || item.descricao || '',
+        price: item.price || item.preco,
+        promotional_price: item.promotional_price || item.preco_promocional,
+        image_url: item.image_url || item.img_url,
+        category_id: null,
+        is_active: true,
+      }));
+      console.log(`Using menu_json with ${products.length} products`);
+    } else {
+      // Fetch products from database
+      const { data: dbProducts } = await supabase
+        .from('products')
+        .select('id, name, description, price, promotional_price, is_active, category_id, image_url')
+        .eq('establishment_id', establishment_id)
+        .eq('is_active', true)
+        .order('name');
+      products = dbProducts || [];
+    }
+
+    // Fetch categories (only if not using menu_json)
+    let categories: Array<Record<string, unknown>> = [];
+    if (!menuFromJson) {
+      const { data: dbCategories } = await supabase
+        .from('categories')
+        .select('id, name')
+        .eq('establishment_id', establishment_id)
+        .eq('is_active', true)
+        .order('sort_order');
+      categories = dbCategories || [];
+    }
 
     // Build menu text for AI
-    const menuByCategory: Record<string, Array<{ name: string; price: number; description: string; id: string }>> = {};
+    const menuByCategory: Record<string, Array<{ name: string; price: number; description: string; id: string; image_url?: string }>> = {};
     products?.forEach(product => {
-      const category = categories?.find(c => c.id === product.category_id);
-      const categoryName = category?.name || 'Outros';
+      const category = categories?.find(c => c.id === (product as Record<string, unknown>).category_id);
+      const categoryName = (category?.name as string) || 'Outros';
       if (!menuByCategory[categoryName]) {
         menuByCategory[categoryName] = [];
       }
       menuByCategory[categoryName].push({
-        id: product.id,
-        name: product.name,
-        price: product.promotional_price || product.price,
-        description: product.description || '',
+        id: String((product as Record<string, unknown>).id || ''),
+        name: String((product as Record<string, unknown>).name || ''),
+        price: Number((product as Record<string, unknown>).promotional_price || (product as Record<string, unknown>).price || 0),
+        description: String((product as Record<string, unknown>).description || ''),
+        image_url: String((product as Record<string, unknown>).image_url || ''),
       });
     });
 
@@ -103,17 +178,22 @@ serve(async (req) => {
       cartText += `Total: R$ ${cartTotal.toFixed(2)}\n`;
     }
 
-    // System prompt with enhanced product photo instructions
-    const systemPrompt = `${ai_prompt || 'Você é um assistente virtual de atendimento.'}
+    // Build dynamic system prompt - prioritize establishment.system_prompt if use_dynamic_prompt is true
+    const est = establishment as Record<string, unknown>;
+    const basePrompt = (use_dynamic_prompt && est.system_prompt) 
+      ? String(est.system_prompt) 
+      : (ai_prompt || 'Você é um assistente virtual de atendimento.');
+
+    const systemPrompt = `${basePrompt}
 
 INFORMAÇÕES DO ESTABELECIMENTO:
-- Nome: ${establishment?.name || 'Estabelecimento'}
-- Endereço: ${establishment?.address || 'Não informado'}
-- Telefone: ${establishment?.phone || establishment?.whatsapp || 'Não informado'}
-- Aceita delivery: ${establishment?.accepts_delivery ? 'Sim' : 'Não'}
-- Aceita retirada: ${establishment?.accepts_pickup ? 'Sim' : 'Não'}
-- Valor mínimo: R$ ${establishment?.min_order_value?.toFixed(2) || '0.00'}
-- Tempo médio de entrega: ${establishment?.avg_delivery_time || 45} minutos
+- Nome: ${est.name || 'Estabelecimento'}
+- Endereço: ${est.address || 'Não informado'}
+- Telefone: ${est.phone || est.whatsapp || 'Não informado'}
+- Aceita delivery: ${est.accepts_delivery ? 'Sim' : 'Não'}
+- Aceita retirada: ${est.accepts_pickup ? 'Sim' : 'Não'}
+- Valor mínimo: R$ ${Number(est.min_order_value || 0).toFixed(2)}
+- Tempo médio de entrega: ${est.avg_delivery_time || 45} minutos
 
 ${menuText}
 ${cartText}
@@ -352,12 +432,15 @@ ${JSON.stringify(context || {})}`;
       success: true,
       response: responseText,
       actions,
-      products_data: products?.map(p => ({
-        id: p.id,
-        name: p.name,
-        price: p.promotional_price || p.price,
-        image_url: p.image_url,
-      })),
+      products_data: products?.map(p => {
+        const prod = p as Record<string, unknown>;
+        return {
+          id: prod.id,
+          name: prod.name,
+          price: prod.promotional_price || prod.price,
+          image_url: prod.image_url,
+        };
+      }),
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
