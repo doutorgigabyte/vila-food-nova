@@ -2237,11 +2237,15 @@ export type Database = {
         Row: {
           additionals: Json | null
           allows_multiple_flavors: boolean | null
+          booking_advance_days: number | null
           category_id: string | null
           cost_price: number | null
           created_at: string | null
           description: string | null
+          digital_delivery_url: string | null
+          digital_instructions: string | null
           establishment_id: string
+          expiration_days: number | null
           id: string
           image_url: string | null
           is_active: boolean | null
@@ -2252,11 +2256,17 @@ export type Database = {
           name: string
           preparation_time: number | null
           price: number
+          product_category: string | null
           product_type: string | null
           progressive_pricing: Json | null
           promotional_price: number | null
           requires_age_verification: boolean | null
+          requires_booking: boolean | null
+          requires_refrigeration: boolean | null
+          service_duration: number | null
+          service_location: string | null
           stock_quantity: number | null
+          storage_temperature: string | null
           storage_type: string | null
           temperature_options: Json | null
           updated_at: string | null
@@ -2265,11 +2275,15 @@ export type Database = {
         Insert: {
           additionals?: Json | null
           allows_multiple_flavors?: boolean | null
+          booking_advance_days?: number | null
           category_id?: string | null
           cost_price?: number | null
           created_at?: string | null
           description?: string | null
+          digital_delivery_url?: string | null
+          digital_instructions?: string | null
           establishment_id: string
+          expiration_days?: number | null
           id?: string
           image_url?: string | null
           is_active?: boolean | null
@@ -2280,11 +2294,17 @@ export type Database = {
           name: string
           preparation_time?: number | null
           price: number
+          product_category?: string | null
           product_type?: string | null
           progressive_pricing?: Json | null
           promotional_price?: number | null
           requires_age_verification?: boolean | null
+          requires_booking?: boolean | null
+          requires_refrigeration?: boolean | null
+          service_duration?: number | null
+          service_location?: string | null
           stock_quantity?: number | null
+          storage_temperature?: string | null
           storage_type?: string | null
           temperature_options?: Json | null
           updated_at?: string | null
@@ -2293,11 +2313,15 @@ export type Database = {
         Update: {
           additionals?: Json | null
           allows_multiple_flavors?: boolean | null
+          booking_advance_days?: number | null
           category_id?: string | null
           cost_price?: number | null
           created_at?: string | null
           description?: string | null
+          digital_delivery_url?: string | null
+          digital_instructions?: string | null
           establishment_id?: string
+          expiration_days?: number | null
           id?: string
           image_url?: string | null
           is_active?: boolean | null
@@ -2308,11 +2332,17 @@ export type Database = {
           name?: string
           preparation_time?: number | null
           price?: number
+          product_category?: string | null
           product_type?: string | null
           progressive_pricing?: Json | null
           promotional_price?: number | null
           requires_age_verification?: boolean | null
+          requires_booking?: boolean | null
+          requires_refrigeration?: boolean | null
+          service_duration?: number | null
+          service_location?: string | null
           stock_quantity?: number | null
+          storage_temperature?: string | null
           storage_type?: string | null
           temperature_options?: Json | null
           updated_at?: string | null
