@@ -87,7 +87,7 @@ const phases: ProgressPhase[] = [
     description: 'Gestão de inventário',
     category: 'operation',
     items: [
-      { name: 'Selecionar produto não carrega lista', status: 'pending', priority: 'critical' },
+      { name: 'Selecionar produto não carrega lista', status: 'completed', priority: 'critical' },
       { name: 'Vincular movimentações aos produtos da loja', status: 'pending', priority: 'high' },
       { name: 'Fluxo completo entrada/saída/ajuste/perda', status: 'pending', priority: 'high' },
     ]
