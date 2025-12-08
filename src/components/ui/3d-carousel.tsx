@@ -216,7 +216,7 @@ function ThreeDPhotoCarousel({
   }
 
   return (
-    <motion.div layout className="relative">
+    <div className="relative">
       <AnimatePresence mode="sync">
         {activeCard && !onCardClick && (
           <motion.div
@@ -262,7 +262,15 @@ function ThreeDPhotoCarousel({
           </motion.div>
         )}
       </AnimatePresence>
-      <div className="relative w-full overflow-hidden" style={{ height }}>
+      <div 
+        className="relative w-full overflow-hidden" 
+        style={{ 
+          height, 
+          minHeight: height,
+          maxHeight: height,
+          contain: "strict"
+        }}
+      >
         <Carousel
           handleClick={handleClick}
           controls={controls}
@@ -271,7 +279,7 @@ function ThreeDPhotoCarousel({
           renderCard={renderCard}
         />
       </div>
-    </motion.div>
+    </div>
   )
 }
 
