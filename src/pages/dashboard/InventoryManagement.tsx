@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -8,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
-import { Boxes, Plus, Minus, AlertTriangle, Package, TrendingDown, ArrowUpDown } from "lucide-react";
+import { Boxes, Plus, AlertTriangle, Package, TrendingDown, ArrowUpDown } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
@@ -41,6 +42,7 @@ const movementTypes = [
 ];
 
 const InventoryManagement = () => {
+  const { slug } = useParams<{ slug: string }>();
   const [products, setProducts] = useState<Product[]>([]);
   const [movements, setMovements] = useState<Movement[]>([]);
   const [loading, setLoading] = useState(true);
@@ -55,21 +57,32 @@ const InventoryManagement = () => {
   });
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    if (slug) {
+      fetchData();
+    }
+  }, [slug]);
 
   const fetchData = async () => {
+    if (!slug) return;
+    
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: establishment } = await supabase
+      // Fetch establishment by slug (works for both owners and super admins)
+      const { data: establishment, error: estError } = await supabase
         .from("establishments")
         .select("id")
-        .eq("owner_id", user.id)
-        .single();
+        .eq("slug", slug)
+        .maybeSingle();
 
-      if (!establishment) return;
+      if (estError) {
+        console.error("Error fetching establishment:", estError);
+        return;
+      }
+      
+      if (!establishment) {
+        toast.error("Estabelecimento não encontrado");
+        return;
+      }
+      
       setEstablishmentId(establishment.id);
 
       const [productsRes, movementsRes] = await Promise.all([
