@@ -54,11 +54,16 @@ export default function StoryScheduler({ onSchedule, onBack, onSkip }: StorySche
   }, []);
 
   const toggleTime = useCallback((time: string) => {
-    setSelectedTimes(prev => 
-      prev.includes(time) 
-        ? prev.filter(t => t !== time)
-        : [...prev, time].sort()
-    );
+    setSelectedTimes(prev => {
+      if (prev.includes(time)) {
+        return prev.filter(t => t !== time);
+      }
+      // Limit to max 3 times per day
+      if (prev.length >= 3) {
+        return prev;
+      }
+      return [...prev, time].sort();
+    });
   }, []);
 
   const handleConfirm = () => {
@@ -176,7 +181,9 @@ export default function StoryScheduler({ onSchedule, onBack, onSkip }: StorySche
 
             {/* Times Selector */}
             <div>
-              <Label className="text-xs text-muted-foreground mb-2 block">Horários de Repostagem</Label>
+              <Label className="text-xs text-muted-foreground mb-2 block">
+                Horários de Repostagem (máx. 3 por dia)
+              </Label>
               <div className="flex flex-wrap gap-1.5">
                 {PRESET_TIMES.map(time => (
                   <button
