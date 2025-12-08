@@ -194,10 +194,10 @@ const phases: ProgressPhase[] = [
     description: 'Consolidar módulos financeiros',
     category: 'financial',
     items: [
-      { name: 'Validar integração Mercado Pago completa', status: 'pending', priority: 'critical' },
-      { name: 'Split em tempo real no pagamento', status: 'pending', priority: 'high' },
-      { name: 'Consolidar pagamentos e fluxo de caixa em módulo único', status: 'pending', priority: 'high' },
-      { name: 'Integrar com pedidos e PDV', status: 'pending', priority: 'high' },
+      { name: 'Validar integração Mercado Pago completa', status: 'completed', priority: 'critical' },
+      { name: 'Split em tempo real no pagamento', status: 'completed', priority: 'high' },
+      { name: 'Consolidar pagamentos e fluxo de caixa em módulo único', status: 'completed', priority: 'high' },
+      { name: 'Integrar com pedidos e PDV', status: 'completed', priority: 'high' },
       { name: 'Remover módulo de Cashback (complexo demais)', status: 'pending', priority: 'low' },
       { name: 'Unificar Vouchers e Cupons', status: 'pending', priority: 'medium' },
     ]
