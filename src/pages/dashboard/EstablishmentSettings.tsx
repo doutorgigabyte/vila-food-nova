@@ -14,7 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import { DeliveryConfigTab } from "@/components/dashboard/DeliveryConfigTab";
-import { PaymentGatewaySetup } from "@/components/payment/PaymentGatewaySetup";
+import { MercadoPagoOAuth } from "@/components/payment/MercadoPagoOAuth";
 import { 
   Menu, 
   Store, 
@@ -485,10 +485,9 @@ const EstablishmentSettings = () => {
 
             {/* Payments Tab */}
             <TabsContent value="payments">
-              <PaymentGatewaySetup 
-                context="establishment" 
-                entityId={establishment?.id || ''} 
-                onConfigured={fetchEstablishment}
+              <MercadoPagoOAuth 
+                establishmentId={establishment?.id || ''} 
+                onConnected={fetchEstablishment}
               />
             </TabsContent>
 
