@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -14,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdminAccess } from "@/contexts/AdminAccessContext";
 import { useEstablishmentPlan } from "@/hooks/useEstablishmentPlan";
+import { useEvolutionAPI } from "@/hooks/useEvolutionAPI";
 import { toast } from "sonner";
 import { 
   ArrowLeft, Loader2, MessageSquare, Bot, Smartphone, Wifi, WifiOff, 
@@ -327,6 +328,62 @@ Seja sempre educado e prestativo. Se não souber responder algo, peça para o cl
     }
   };
 
+  // Evolution API hook
+  const evolutionAPI = useEvolutionAPI({
+    evolutionApiUrl: form.evolution_api_url,
+    evolutionApiKey: form.evolution_api_key,
+    establishmentId: establishmentId || undefined,
+  });
+
+  // Real-time status polling
+  const pollStatus = useCallback(async () => {
+    if (!instance?.instance_name || !form.evolution_api_url) return;
+    
+    const result = await evolutionAPI.checkStatus(instance.instance_name);
+    if (result.success && result.data) {
+      const state = result.data.state || result.data.instance?.state;
+      let newStatus = 'disconnected';
+      
+      if (state === 'open') {
+        newStatus = 'connected';
+      } else if (state === 'connecting') {
+        newStatus = 'connecting';
+      }
+      
+      if (newStatus !== instance.status) {
+        await supabase
+          .from("whatsapp_instances")
+          .update({ status: newStatus })
+          .eq("id", instance.id);
+        fetchInstance();
+      }
+    }
+  }, [instance, form.evolution_api_url, evolutionAPI]);
+
+  // Poll for QR code updates when connecting
+  useEffect(() => {
+    if (instance?.status === 'connecting' && instance?.instance_name) {
+      const interval = setInterval(async () => {
+        // Check status
+        await pollStatus();
+        
+        // Fetch new QR if still connecting
+        if (instance.status === 'connecting') {
+          const qrResult = await evolutionAPI.fetchQRCode(instance.instance_name!);
+          if (qrResult.success && qrResult.data?.qrcode?.base64) {
+            await supabase
+              .from("whatsapp_instances")
+              .update({ qr_code: qrResult.data.qrcode.base64 })
+              .eq("id", instance.id);
+            fetchInstance();
+          }
+        }
+      }, 5000); // Poll every 5 seconds
+
+      return () => clearInterval(interval);
+    }
+  }, [instance?.status, instance?.instance_name]);
+
   const handleConnect = async () => {
     if (!form.evolution_api_url || !form.evolution_api_key) {
       toast.error("Preencha a URL e API Key da Evolution API");
@@ -335,27 +392,16 @@ Seja sempre educado e prestativo. Se não souber responder algo, peça para o cl
 
     setConnecting(true);
     try {
-      const instanceName = form.instance_name || establishment?.name.toLowerCase().replace(/\s/g, "_");
+      const instanceName = form.instance_name || establishment?.name?.toLowerCase().replace(/\s/g, "_") || 'default_instance';
       
-      const response = await fetch(`${form.evolution_api_url}/instance/create`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "apikey": form.evolution_api_key,
-        },
-        body: JSON.stringify({
-          instanceName,
-          qrcode: true,
-          integration: "WHATSAPP-BAILEYS",
-        }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Erro ao criar instância");
+      // Use Evolution API Edge Function
+      const result = await evolutionAPI.createInstance(instanceName);
+      
+      if (!result.success) {
+        throw new Error(result.error || "Erro ao criar instância");
       }
 
-      const data = await response.json();
+      const data = result.data;
       setForm(prev => ({ ...prev, instance_name: instanceName }));
       
       const instanceData = {
@@ -379,12 +425,45 @@ Seja sempre educado e prestativo. Se não souber responder algo, peça para o cl
         await supabase.from("whatsapp_instances").insert(instanceData);
       }
 
-      toast.success("Instância criada! Escaneie o QR Code para conectar.");
       fetchInstance();
     } catch (error: unknown) {
       toast.error(error instanceof Error ? error.message : "Erro ao conectar");
     } finally {
       setConnecting(false);
+    }
+  };
+
+  const handleRefreshQR = async () => {
+    if (!instance?.instance_name) return;
+    
+    setConnecting(true);
+    try {
+      const result = await evolutionAPI.fetchQRCode(instance.instance_name);
+      if (result.success && result.data?.qrcode?.base64) {
+        await supabase
+          .from("whatsapp_instances")
+          .update({ qr_code: result.data.qrcode.base64 })
+          .eq("id", instance.id);
+        fetchInstance();
+        toast.success("QR Code atualizado!");
+      }
+    } catch (error) {
+      toast.error("Erro ao atualizar QR Code");
+    } finally {
+      setConnecting(false);
+    }
+  };
+
+  const handleDisconnect = async () => {
+    if (!instance?.instance_name) return;
+    
+    const result = await evolutionAPI.disconnect(instance.instance_name);
+    if (result.success) {
+      await supabase
+        .from("whatsapp_instances")
+        .update({ status: 'disconnected', qr_code: null })
+        .eq("id", instance.id);
+      fetchInstance();
     }
   };
 
@@ -528,46 +607,85 @@ Seja sempre educado e prestativo. Se não souber responder algo, peça para o cl
                     Status da Conexão
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       {instance?.status === "connected" ? (
                         <Wifi className="w-8 h-8 text-green-500" />
+                      ) : instance?.status === "connecting" ? (
+                        <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
                       ) : (
                         <WifiOff className="w-8 h-8 text-muted-foreground" />
                       )}
                       <div>
                         <p className="font-medium">WhatsApp Business</p>
                         {getStatusBadge(instance?.status)}
+                        {instance?.instance_name && (
+                          <p className="text-xs text-muted-foreground">
+                            Instância: {instance.instance_name}
+                          </p>
+                        )}
                       </div>
                     </div>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={handleConnect}
-                      disabled={connecting || !form.evolution_api_url}
-                    >
-                      {connecting ? (
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      ) : (
-                        <RefreshCw className="w-4 h-4 mr-2" />
+                    <div className="flex gap-2">
+                      {instance?.status === "connected" && (
+                        <Button 
+                          variant="destructive" 
+                          size="sm" 
+                          onClick={handleDisconnect}
+                        >
+                          <WifiOff className="w-4 h-4 mr-2" />
+                          Desconectar
+                        </Button>
                       )}
-                      {instance?.status === "connected" ? "Reconectar" : "Conectar"}
-                    </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={instance?.status === "connecting" ? handleRefreshQR : handleConnect}
+                        disabled={connecting || evolutionAPI.loading || !form.evolution_api_url}
+                      >
+                        {connecting || evolutionAPI.loading ? (
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        ) : (
+                          <RefreshCw className="w-4 h-4 mr-2" />
+                        )}
+                        {instance?.status === "connected" 
+                          ? "Reconectar" 
+                          : instance?.status === "connecting" 
+                            ? "Atualizar QR" 
+                            : "Conectar"}
+                      </Button>
+                    </div>
                   </div>
 
                   {instance?.qr_code && instance.status !== "connected" && (
-                    <div className="mt-6 flex flex-col items-center">
-                      <p className="text-sm text-muted-foreground mb-4">
-                        Escaneie o QR Code com o WhatsApp do seu celular
-                      </p>
-                      <div className="p-4 bg-white rounded-lg">
+                    <div className="mt-6 flex flex-col items-center border-t pt-6">
+                      <div className="flex items-center gap-2 mb-4">
+                        <QrCode className="w-5 h-5 text-primary" />
+                        <p className="text-sm font-medium">
+                          Escaneie o QR Code com o WhatsApp do seu celular
+                        </p>
+                      </div>
+                      <div className="p-4 bg-white rounded-lg shadow-lg">
                         <img
                           src={instance.qr_code.startsWith("data:") ? instance.qr_code : `data:image/png;base64,${instance.qr_code}`}
                           alt="QR Code WhatsApp"
-                          className="w-48 h-48"
+                          className="w-56 h-56"
                         />
                       </div>
+                      <p className="text-xs text-muted-foreground mt-4 flex items-center gap-2">
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                        Aguardando conexão... O status será atualizado automaticamente.
+                      </p>
+                    </div>
+                  )}
+
+                  {instance?.status === "connected" && (
+                    <div className="mt-4 p-4 rounded-lg bg-green-500/10 border border-green-500/20">
+                      <p className="text-sm text-green-700 flex items-center gap-2">
+                        <Check className="w-4 h-4" />
+                        <strong>WhatsApp conectado!</strong> O webhook está configurado para receber mensagens automaticamente.
+                      </p>
                     </div>
                   )}
                 </CardContent>
