@@ -279,7 +279,7 @@ const phases: ProgressPhase[] = [
     category: 'ux',
     items: [
       { name: 'Busca inteligente global (highlight, agrupamento, keyboard nav)', status: 'completed', priority: 'high' },
-      { name: 'Sininho de notificações não funciona na tela de categoria', status: 'pending', priority: 'high' },
+      { name: 'Sininho de notificações funcional na tela de categoria', status: 'completed', priority: 'high' },
       { name: 'Remover ícone de fogo (VilaTok) das categorias (redundante)', status: 'pending', priority: 'low' },
       { name: 'Espaçamento entre botão som e fechar nas notificações', status: 'pending', priority: 'medium' },
       { name: 'Slide 3D muda de tamanho no scroll', status: 'pending', priority: 'high' },

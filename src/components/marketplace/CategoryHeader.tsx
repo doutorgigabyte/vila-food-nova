@@ -1,10 +1,11 @@
-import { ArrowLeft, Search, Bell, Flame } from "lucide-react";
+import { ArrowLeft, Search, Flame } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
 import { CategoryConfig } from "@/lib/categoryConfig";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { UserMenu } from "./UserMenu";
 import { LocationSelector } from "./LocationSelector";
+import { NotificationCenter } from "@/components/notifications";
 
 interface CategoryHeaderProps {
   category: CategoryConfig;
@@ -43,13 +44,7 @@ const CategoryHeader = ({ category, searchTerm, onSearchChange }: CategoryHeader
           >
             <Flame className="h-5 w-5" />
           </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-primary-foreground hover:bg-primary-foreground/10"
-          >
-            <Bell className="h-5 w-5" />
-          </Button>
+          <NotificationCenter />
           <UserMenu />
         </div>
       </div>
