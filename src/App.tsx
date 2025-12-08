@@ -67,7 +67,7 @@ const DeliveryDriversManagement = lazy(() => import("./pages/dashboard/DeliveryD
 const AnalyticsPixelsManagement = lazy(() => import("./pages/dashboard/AnalyticsPixelsManagement"));
 const InventoryManagement = lazy(() => import("./pages/dashboard/InventoryManagement"));
 const AdvancedFinanceManagement = lazy(() => import("./pages/dashboard/AdvancedFinanceManagement"));
-const SuppliersManagement = lazy(() => import("./pages/dashboard/SuppliersManagement"));
+
 const PaymentsManagement = lazy(() => import("./pages/dashboard/PaymentsManagement"));
 const VideosManagement = lazy(() => import("./pages/dashboard/VideosManagement"));
 const StoriesManagement = lazy(() => import("./pages/dashboard/StoriesManagement"));
@@ -219,7 +219,7 @@ const AppRoutes = () => {
               <Route path="/painel/:slug/pixels" element={<AnalyticsPixelsManagement />} />
               <Route path="/painel/:slug/estoque" element={<InventoryManagement />} />
               <Route path="/painel/:slug/financeiro" element={<AdvancedFinanceManagement />} />
-              <Route path="/painel/:slug/fornecedores" element={<SuppliersManagement />} />
+              
               <Route path="/painel/:slug/pagamentos" element={<PaymentsManagement />} />
               <Route path="/painel/:slug/videos" element={<VideosManagement />} />
               <Route path="/painel/:slug/stories" element={<StoriesManagement />} />
@@ -249,7 +249,7 @@ const AppRoutes = () => {
               <Route path="/painel/pixels" element={<AnalyticsPixelsManagement />} />
               <Route path="/painel/estoque" element={<InventoryManagement />} />
               <Route path="/painel/financeiro" element={<AdvancedFinanceManagement />} />
-              <Route path="/painel/fornecedores" element={<SuppliersManagement />} />
+              
               <Route path="/painel/pagamentos" element={<PaymentsManagement />} />
               <Route path="/painel/stories" element={<StoriesManagement />} />
               <Route path="/painel/analise-ia" element={<AIAnalysisDashboard />} />

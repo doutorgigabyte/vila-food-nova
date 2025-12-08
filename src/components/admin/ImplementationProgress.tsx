@@ -366,10 +366,10 @@ const phases: ProgressPhase[] = [
     description: 'Sistema de entregadores',
     category: 'operation',
     items: [
-      { name: 'App entregador: lista de lojas vinculadas', status: 'pending', priority: 'high' },
-      { name: 'Entregador solicita vínculo com novas lojas', status: 'pending', priority: 'medium' },
-      { name: 'Lojista aceita/recusa vínculo de entregador', status: 'pending', priority: 'medium' },
-      { name: 'Pedido marketplace → loja → entregador', status: 'pending', priority: 'high' },
+      { name: 'App entregador: lista de lojas vinculadas', status: 'completed', priority: 'high' },
+      { name: 'Entregador solicita vínculo com novas lojas', status: 'completed', priority: 'medium' },
+      { name: 'Lojista aceita/recusa vínculo de entregador', status: 'completed', priority: 'medium' },
+      { name: 'Pedido marketplace → loja → entregador', status: 'completed', priority: 'high' },
     ]
   },
 
@@ -380,9 +380,9 @@ const phases: ProgressPhase[] = [
     description: 'Carrinho abandonado + IA + WhatsApp',
     category: 'integration',
     items: [
-      { name: 'Detectar carrinho abandonado', status: 'pending', priority: 'high' },
-      { name: 'Programar mensagens WhatsApp automáticas', status: 'pending', priority: 'high' },
-      { name: 'Intervalo configurável (1min, 5min, etc)', status: 'pending', priority: 'medium' },
+      { name: 'Detectar carrinho abandonado', status: 'completed', priority: 'high' },
+      { name: 'Programar mensagens WhatsApp automáticas', status: 'completed', priority: 'high' },
+      { name: 'Intervalo configurável (1min, 5min, etc)', status: 'completed', priority: 'medium' },
     ]
   },
 
@@ -393,9 +393,9 @@ const phases: ProgressPhase[] = [
     description: 'Remover módulos desnecessários',
     category: 'admin',
     items: [
-      { name: 'Remover módulo de Fornecedores', status: 'pending', priority: 'low' },
-      { name: 'Remover "Chamar suporte" do SuperAdmin', status: 'pending', priority: 'low' },
-      { name: 'E-mail apenas para validação (não notificações)', status: 'pending', priority: 'medium' },
+      { name: 'Remover módulo de Fornecedores', status: 'completed', priority: 'low' },
+      { name: 'Remover "Chamar suporte" do SuperAdmin', status: 'completed', priority: 'low' },
+      { name: 'E-mail apenas para validação (não notificações)', status: 'completed', priority: 'medium' },
     ]
   },
 ];

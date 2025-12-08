@@ -230,10 +230,6 @@ const AdminDashboard = () => {
       {/* Quick Actions */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
         <h2 className="text-base md:text-lg font-semibold">Acesso Rápido</h2>
-        <Button variant="destructive" size="sm" className="w-full sm:w-auto">
-          <MessageSquare className="h-4 w-4 mr-2" />
-          Chamar Suporte
-        </Button>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
