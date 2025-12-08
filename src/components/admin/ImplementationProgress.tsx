@@ -265,8 +265,8 @@ const phases: ProgressPhase[] = [
     items: [
       { name: 'Estatísticas de transações em tempo real', status: 'completed', priority: 'medium' },
       { name: 'Contador de transações pendentes/falhas', status: 'completed', priority: 'medium' },
-      { name: 'Threshold de valores (alertas)', status: 'pending', priority: 'high' },
-      { name: 'Alertas via WhatsApp para anomalias', status: 'pending', priority: 'medium' },
+      { name: 'Threshold de valores (alertas)', status: 'completed', priority: 'high' },
+      { name: 'Alertas via WhatsApp para anomalias', status: 'completed', priority: 'medium' },
     ]
   },
 

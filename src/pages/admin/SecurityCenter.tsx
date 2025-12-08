@@ -6,11 +6,15 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { 
   Shield, ShieldCheck, ShieldAlert, ShieldX, Lock, Unlock, Key,
   Database, Server, AlertTriangle, CheckCircle, XCircle, Clock,
   CreditCard, Users, Store, Truck, UserCheck, Eye, RefreshCw,
-  Activity, TrendingUp, TrendingDown, AlertCircle, Info
+  Activity, TrendingUp, TrendingDown, AlertCircle, Info, Bell,
+  MessageSquare, Settings, Zap, Save
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -33,6 +37,27 @@ interface AuditLog {
   metadata: Record<string, unknown>;
 }
 
+interface AnomalyAlert {
+  id: string;
+  alert_type: string;
+  severity: string;
+  title: string;
+  description: string | null;
+  amount: number | null;
+  created_at: string;
+  resolved_at: string | null;
+}
+
+interface AnomalyConfig {
+  id: string;
+  transaction_threshold: number;
+  failed_attempts_threshold: number;
+  suspicious_time_start: string;
+  suspicious_time_end: string;
+  alert_whatsapp: boolean;
+  is_active: boolean;
+}
+
 interface FinancialLayer {
   name: string;
   icon: React.ReactNode;
@@ -43,17 +68,137 @@ interface FinancialLayer {
 const SecurityCenter = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [savingConfig, setSavingConfig] = useState(false);
   const [rlsChecks, setRlsChecks] = useState<SecurityCheck[]>([]);
   const [edgeFunctionChecks, setEdgeFunctionChecks] = useState<SecurityCheck[]>([]);
   const [tokenChecks, setTokenChecks] = useState<SecurityCheck[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
+  const [anomalyAlerts, setAnomalyAlerts] = useState<AnomalyAlert[]>([]);
+  const [anomalyConfig, setAnomalyConfig] = useState<AnomalyConfig>({
+    id: '',
+    transaction_threshold: 5000,
+    failed_attempts_threshold: 5,
+    suspicious_time_start: '00:00',
+    suspicious_time_end: '06:00',
+    alert_whatsapp: true,
+    is_active: true,
+  });
   const [financialStats, setFinancialStats] = useState({
     totalTransactions: 0,
     pendingTransactions: 0,
     failedTransactions: 0,
     establishmentsWithMP: 0,
     totalEstablishments: 0,
+    highValueTransactions: 0,
+    suspiciousTimeTransactions: 0,
   });
+
+  const loadAnomalyData = async () => {
+    try {
+      // Load global anomaly config
+      const { data: configData } = await supabase
+        .from('anomaly_config')
+        .select('*')
+        .eq('config_type', 'global')
+        .single();
+
+      if (configData) {
+        setAnomalyConfig({
+          id: configData.id,
+          transaction_threshold: configData.transaction_threshold || 5000,
+          failed_attempts_threshold: configData.failed_attempts_threshold || 5,
+          suspicious_time_start: configData.suspicious_time_start?.slice(0, 5) || '00:00',
+          suspicious_time_end: configData.suspicious_time_end?.slice(0, 5) || '06:00',
+          alert_whatsapp: configData.alert_whatsapp ?? true,
+          is_active: configData.is_active ?? true,
+        });
+      }
+
+      // Load recent alerts
+      const { data: alertsData } = await supabase
+        .from('anomaly_alerts')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      if (alertsData) {
+        setAnomalyAlerts(alertsData as AnomalyAlert[]);
+      }
+
+      // Calculate anomaly stats from transactions
+      const { data: transactions } = await supabase
+        .from('mp_transactions')
+        .select('amount, created_at, status')
+        .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());
+
+      if (transactions) {
+        const threshold = anomalyConfig.transaction_threshold || 5000;
+        const highValue = transactions.filter(t => t.amount > threshold).length;
+        
+        // Check suspicious time transactions (00:00 - 06:00)
+        const suspiciousTime = transactions.filter(t => {
+          const hour = new Date(t.created_at).getHours();
+          return hour >= 0 && hour < 6;
+        }).length;
+
+        setFinancialStats(prev => ({
+          ...prev,
+          highValueTransactions: highValue,
+          suspiciousTimeTransactions: suspiciousTime,
+        }));
+      }
+    } catch (error) {
+      console.error('Error loading anomaly data:', error);
+    }
+  };
+
+  const saveAnomalyConfig = async () => {
+    setSavingConfig(true);
+    try {
+      const { error } = await supabase
+        .from('anomaly_config')
+        .upsert({
+          id: anomalyConfig.id || undefined,
+          config_type: 'global',
+          transaction_threshold: anomalyConfig.transaction_threshold,
+          failed_attempts_threshold: anomalyConfig.failed_attempts_threshold,
+          suspicious_time_start: anomalyConfig.suspicious_time_start + ':00',
+          suspicious_time_end: anomalyConfig.suspicious_time_end + ':00',
+          alert_whatsapp: anomalyConfig.alert_whatsapp,
+          is_active: anomalyConfig.is_active,
+          updated_at: new Date().toISOString(),
+        });
+
+      if (error) throw error;
+      toast.success('Configurações de anomalia salvas!');
+    } catch (error) {
+      console.error('Error saving config:', error);
+      toast.error('Erro ao salvar configurações');
+    } finally {
+      setSavingConfig(false);
+    }
+  };
+
+  const resolveAlert = async (alertId: string) => {
+    try {
+      const { error } = await supabase
+        .from('anomaly_alerts')
+        .update({ 
+          resolved_at: new Date().toISOString(),
+        })
+        .eq('id', alertId);
+
+      if (error) throw error;
+      
+      setAnomalyAlerts(prev => prev.map(a => 
+        a.id === alertId ? { ...a, resolved_at: new Date().toISOString() } : a
+      ));
+      toast.success('Alerta resolvido');
+    } catch (error) {
+      console.error('Error resolving alert:', error);
+      toast.error('Erro ao resolver alerta');
+    }
+  };
 
   const runSecurityChecks = async () => {
     setRefreshing(true);
@@ -63,7 +208,7 @@ const SecurityCenter = () => {
       const financialTables = [
         'mp_transactions', 'payment_splits', 'payment_split_items',
         'affiliate_payouts', 'cash_flow', 'financial_transactions',
-        'orders', 'delivery_tracking', 'driver_payouts'
+        'orders', 'delivery_tracking', 'anomaly_config', 'anomaly_alerts'
       ];
       
       const rlsResults: SecurityCheck[] = financialTables.map(table => ({
@@ -85,6 +230,7 @@ const SecurityCenter = () => {
         { name: 'mercadopago-subscription', hasAuth: true, critical: true },
         { name: 'mercadopago-affiliate-payout', hasAuth: true, critical: true },
         { name: 'driver-payment-split', hasAuth: true, critical: true },
+        { name: 'security-anomaly-alert', hasAuth: true, critical: true },
         { name: 'whatsapp-notification', hasAuth: true, critical: false },
         { name: 'whatsapp-webhook', hasAuth: true, critical: false },
       ];
@@ -170,7 +316,7 @@ const SecurityCenter = () => {
       // 5. Financial transaction stats
       const { data: transactions } = await supabase
         .from('mp_transactions')
-        .select('status')
+        .select('status, amount, created_at')
         .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());
 
       if (transactions) {
@@ -181,6 +327,9 @@ const SecurityCenter = () => {
           failedTransactions: transactions.filter(t => ['rejected', 'cancelled', 'refunded'].includes(t.status)).length,
         }));
       }
+
+      // 6. Load anomaly data
+      await loadAnomalyData();
 
       toast.success('Verificação de segurança concluída');
     } catch (error) {
@@ -222,12 +371,43 @@ const SecurityCenter = () => {
     }
   };
 
-  const getSeverityColor = (severity: SecurityCheck['severity']) => {
+  const getSeverityColor = (severity: SecurityCheck['severity'] | string) => {
     switch (severity) {
       case 'critical': return 'border-l-red-500';
       case 'high': return 'border-l-orange-500';
       case 'medium': return 'border-l-yellow-500';
       case 'low': return 'border-l-blue-500';
+      default: return 'border-l-gray-500';
+    }
+  };
+
+  const getSeverityBadge = (severity: string) => {
+    switch (severity) {
+      case 'critical':
+        return <Badge className="bg-red-500/10 text-red-600 border-red-500/20">Crítico</Badge>;
+      case 'high':
+        return <Badge className="bg-orange-500/10 text-orange-600 border-orange-500/20">Alto</Badge>;
+      case 'medium':
+        return <Badge className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20">Médio</Badge>;
+      case 'low':
+        return <Badge className="bg-blue-500/10 text-blue-600 border-blue-500/20">Baixo</Badge>;
+      default:
+        return <Badge variant="outline">{severity}</Badge>;
+    }
+  };
+
+  const getAlertTypeIcon = (type: string) => {
+    switch (type) {
+      case 'high_value':
+        return <TrendingUp className="h-4 w-4 text-orange-500" />;
+      case 'failed_attempts':
+        return <XCircle className="h-4 w-4 text-red-500" />;
+      case 'suspicious_time':
+        return <Clock className="h-4 w-4 text-purple-500" />;
+      case 'unusual_pattern':
+        return <Zap className="h-4 w-4 text-yellow-500" />;
+      default:
+        return <AlertTriangle className="h-4 w-4 text-muted-foreground" />;
     }
   };
 
@@ -238,6 +418,8 @@ const SecurityCenter = () => {
   const securityScore = allChecks.length > 0 
     ? Math.round((passCount / allChecks.length) * 100) 
     : 0;
+
+  const unresolvedAlerts = anomalyAlerts.filter(a => !a.resolved_at).length;
 
   const financialLayers: FinancialLayer[] = [
     {
@@ -348,8 +530,16 @@ const SecurityCenter = () => {
 
         {/* Tabs de Verificações */}
         <Tabs defaultValue="overview" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-5">
+          <TabsList className="grid w-full grid-cols-3 md:grid-cols-6">
             <TabsTrigger value="overview">Visão Geral</TabsTrigger>
+            <TabsTrigger value="anomalies" className="relative">
+              Anomalias
+              {unresolvedAlerts > 0 && (
+                <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">
+                  {unresolvedAlerts}
+                </span>
+              )}
+            </TabsTrigger>
             <TabsTrigger value="rls">RLS Policies</TabsTrigger>
             <TabsTrigger value="edge">Edge Functions</TabsTrigger>
             <TabsTrigger value="tokens">Tokens</TabsTrigger>
@@ -441,6 +631,218 @@ const SecurityCenter = () => {
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+
+          {/* Nova Tab de Anomalias */}
+          <TabsContent value="anomalies" className="space-y-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {/* Configuração de Thresholds */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Settings className="h-5 w-5" />
+                    Configuração de Thresholds
+                  </CardTitle>
+                  <CardDescription>
+                    Defina limites para detecção automática de anomalias
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>Detecção Ativa</Label>
+                      <p className="text-xs text-muted-foreground">Monitorar transações em tempo real</p>
+                    </div>
+                    <Switch
+                      checked={anomalyConfig.is_active}
+                      onCheckedChange={(checked) => setAnomalyConfig(prev => ({ ...prev, is_active: checked }))}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Threshold de Valor (R$)</Label>
+                    <Input
+                      type="number"
+                      value={anomalyConfig.transaction_threshold}
+                      onChange={(e) => setAnomalyConfig(prev => ({ 
+                        ...prev, 
+                        transaction_threshold: parseFloat(e.target.value) || 0 
+                      }))}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Transações acima deste valor geram alerta
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Tentativas de Pagamento Falhas</Label>
+                    <Input
+                      type="number"
+                      value={anomalyConfig.failed_attempts_threshold}
+                      onChange={(e) => setAnomalyConfig(prev => ({ 
+                        ...prev, 
+                        failed_attempts_threshold: parseInt(e.target.value) || 0 
+                      }))}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Alertar após N tentativas falhas consecutivas
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Horário Suspeito (Início)</Label>
+                      <Input
+                        type="time"
+                        value={anomalyConfig.suspicious_time_start}
+                        onChange={(e) => setAnomalyConfig(prev => ({ 
+                          ...prev, 
+                          suspicious_time_start: e.target.value 
+                        }))}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Horário Suspeito (Fim)</Label>
+                      <Input
+                        type="time"
+                        value={anomalyConfig.suspicious_time_end}
+                        onChange={(e) => setAnomalyConfig(prev => ({ 
+                          ...prev, 
+                          suspicious_time_end: e.target.value 
+                        }))}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-2 border-t">
+                    <div className="flex items-center gap-2">
+                      <MessageSquare className="h-4 w-4 text-green-500" />
+                      <div className="space-y-0.5">
+                        <Label className="text-sm">Alertas via WhatsApp</Label>
+                        <p className="text-xs text-muted-foreground">Notificar admin por WhatsApp</p>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={anomalyConfig.alert_whatsapp}
+                      onCheckedChange={(checked) => setAnomalyConfig(prev => ({ ...prev, alert_whatsapp: checked }))}
+                    />
+                  </div>
+
+                  <Button 
+                    className="w-full" 
+                    onClick={saveAnomalyConfig}
+                    disabled={savingConfig}
+                  >
+                    <Save className="h-4 w-4 mr-2" />
+                    {savingConfig ? 'Salvando...' : 'Salvar Configurações'}
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Stats de Anomalias */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Zap className="h-5 w-5" />
+                    Estatísticas de Anomalias (7d)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="p-4 rounded-lg bg-orange-500/10 border border-orange-500/20">
+                      <div className="flex items-center gap-2">
+                        <TrendingUp className="h-5 w-5 text-orange-500" />
+                        <span className="text-sm text-muted-foreground">Alto Valor</span>
+                      </div>
+                      <p className="text-2xl font-bold mt-1">{financialStats.highValueTransactions}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Acima de R$ {anomalyConfig.transaction_threshold.toLocaleString('pt-BR')}
+                      </p>
+                    </div>
+                    <div className="p-4 rounded-lg bg-purple-500/10 border border-purple-500/20">
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-5 w-5 text-purple-500" />
+                        <span className="text-sm text-muted-foreground">Horário Suspeito</span>
+                      </div>
+                      <p className="text-2xl font-bold mt-1">{financialStats.suspiciousTimeTransactions}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Entre 00:00 e 06:00
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Bell className="h-5 w-5 text-red-500" />
+                        <span className="font-medium">Alertas Não Resolvidos</span>
+                      </div>
+                      <span className="text-2xl font-bold">{unresolvedAlerts}</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Lista de Alertas */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Bell className="h-5 w-5" />
+                  Alertas Recentes
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ScrollArea className="h-[300px]">
+                  <div className="space-y-2">
+                    {anomalyAlerts.length > 0 ? anomalyAlerts.map((alert) => (
+                      <div 
+                        key={alert.id} 
+                        className={`flex items-start justify-between p-3 rounded-lg border-l-4 ${getSeverityColor(alert.severity)} bg-muted/30 ${alert.resolved_at ? 'opacity-60' : ''}`}
+                      >
+                        <div className="flex items-start gap-3">
+                          {getAlertTypeIcon(alert.alert_type)}
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">{alert.title}</span>
+                              {getSeverityBadge(alert.severity)}
+                            </div>
+                            <p className="text-sm text-muted-foreground">{alert.description}</p>
+                            {alert.amount && (
+                              <p className="text-sm font-medium mt-1">
+                                Valor: R$ {alert.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                              </p>
+                            )}
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {new Date(alert.created_at).toLocaleString('pt-BR')}
+                            </p>
+                          </div>
+                        </div>
+                        {!alert.resolved_at && (
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => resolveAlert(alert.id)}
+                          >
+                            Resolver
+                          </Button>
+                        )}
+                        {alert.resolved_at && (
+                          <Badge variant="outline" className="text-green-600">
+                            Resolvido
+                          </Badge>
+                        )}
+                      </div>
+                    )) : (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <CheckCircle className="h-8 w-8 mx-auto mb-2 text-green-500 opacity-50" />
+                        <p>Nenhuma anomalia detectada</p>
+                      </div>
+                    )}
+                  </div>
+                </ScrollArea>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="rls" className="space-y-4">
