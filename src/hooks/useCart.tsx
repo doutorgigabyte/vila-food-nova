@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from "react
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { safeLocalStorage } from "@/lib/utils";
+import { trackAddToCart as trackAddToCartAnalytics } from "@/lib/analytics";
 
 export interface CartProduct {
   id: string;
@@ -151,6 +152,18 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         return [...prevItems, { product, quantity, observation }];
       }
     });
+
+    // Track analytics event
+    try {
+      trackAddToCartAnalytics({
+        id: product.id,
+        name: product.name,
+        price: product.promotional_price || product.price,
+        quantity
+      });
+    } catch (err) {
+      console.error('[Analytics] Error tracking add to cart:', err);
+    }
 
     return true;
   };

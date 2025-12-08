@@ -208,10 +208,14 @@ const phases: ProgressPhase[] = [
     description: 'Validar integrações de marketing',
     category: 'integration',
     items: [
-      { name: 'Validar disparo de eventos Google Analytics', status: 'pending', priority: 'medium' },
-      { name: 'Validar disparo de eventos Facebook Pixel', status: 'pending', priority: 'medium' },
-      { name: 'Validar disparo de eventos TikTok Pixel', status: 'pending', priority: 'low' },
-      { name: 'Validar feed XML para Meta e Google Merchant', status: 'pending', priority: 'medium' },
+      { name: 'Validar disparo de eventos Google Analytics', status: 'completed', priority: 'medium' },
+      { name: 'Validar disparo de eventos Facebook Pixel', status: 'completed', priority: 'medium' },
+      { name: 'Validar disparo de eventos TikTok Pixel', status: 'completed', priority: 'low' },
+      { name: 'Validar feed XML para Meta e Google Merchant', status: 'completed', priority: 'medium' },
+      { name: 'Página de diagnóstico de Pixels (/admin/diagnostico-pixels)', status: 'completed', priority: 'medium' },
+      { name: 'Integração de eventos no carrinho (AddToCart)', status: 'completed', priority: 'high' },
+      { name: 'Integração de eventos no checkout (InitiateCheckout)', status: 'completed', priority: 'high' },
+      { name: 'Integração de eventos na compra (Purchase)', status: 'completed', priority: 'high' },
     ]
   },
 

@@ -103,8 +103,8 @@ const DatabaseManagement = lazy(() => import("./pages/admin/DatabaseManagement")
 const AdminReports = lazy(() => import("./pages/admin/AdminReports"));
 const AdminFinancial = lazy(() => import("./pages/admin/AdminFinancial"));
 const SecurityCenter = lazy(() => import("./pages/admin/SecurityCenter"));
+const PixelsDiagnostic = lazy(() => import("./pages/admin/PixelsDiagnostic"));
 
-// Affiliate pages - lazy loaded
 const AffiliateReferrals = lazy(() => import("./pages/affiliate/AffiliateReferrals"));
 const AffiliateCommissions = lazy(() => import("./pages/affiliate/AffiliateCommissions"));
 const AffiliateVouchers = lazy(() => import("./pages/affiliate/AffiliateVouchers"));
@@ -270,6 +270,7 @@ const AppRoutes = () => {
               <Route path="/admin/relatorios" element={<ProtectedAdminRoute><AdminReports /></ProtectedAdminRoute>} />
               <Route path="/admin/financeiro" element={<ProtectedAdminRoute><AdminFinancial /></ProtectedAdminRoute>} />
               <Route path="/admin/central-seguranca" element={<ProtectedAdminRoute><SecurityCenter /></ProtectedAdminRoute>} />
+              <Route path="/admin/diagnostico-pixels" element={<ProtectedAdminRoute><PixelsDiagnostic /></ProtectedAdminRoute>} />
               {/* Affiliate routes */}
               <Route path="/afiliado" element={<AffiliateDashboard />} />
               <Route path="/afiliado/indicacoes" element={<AffiliateReferrals />} />
