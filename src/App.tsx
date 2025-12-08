@@ -116,6 +116,17 @@ const DriverApp = lazy(() => import("./pages/driver/DriverApp"));
 
 const queryClient = new QueryClient();
 
+// Scroll to top on route change
+const ScrollToTop = () => {
+  const { pathname } = useLocation();
+  
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  }, [pathname]);
+  
+  return null;
+};
+
 // Component to handle browser back button after logout
 // Must be inside AuthProvider
 const AppRoutes = () => {
@@ -158,8 +169,10 @@ const AppRoutes = () => {
   }, [location.pathname, user, loading, navigate]);
 
   return (
-    <Suspense fallback={<PageSkeleton />}>
-      <Routes>
+    <>
+      <ScrollToTop />
+      <Suspense fallback={<PageSkeleton />}>
+        <Routes>
                 <Route path="/" element={<Index />} />
               <Route path="/conheca" element={<Conheca />} />
               <Route path="/marketplace" element={<Index />} />
@@ -281,9 +294,10 @@ const AppRoutes = () => {
               {/* Driver app */}
               <Route path="/entregador" element={<DriverApp />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </Suspense>
+              <Route path="*" element={<NotFound />} />
+        </Routes>
+      </Suspense>
+    </>
   );
 };
 
