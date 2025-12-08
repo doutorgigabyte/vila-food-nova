@@ -27,6 +27,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
+import { useAutoStoreStatus } from "@/hooks/useAutoStoreStatus";
 
 const EstablishmentDashboard = () => {
   const navigate = useNavigate();
@@ -38,6 +39,9 @@ const EstablishmentDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const baseUrl = isSuperAdmin && establishment?.slug ? `/painel/${establishment.slug}` : '/painel';
+
+  // Auto-update store status based on operating hours
+  useAutoStoreStatus(establishmentId, establishment?.operating_hours, establishment?.is_open);
 
   useEffect(() => {
     if (establishment) {

@@ -273,7 +273,7 @@ const Store = () => {
           {/* Hero Section - Logo with story ring opens stories viewer */}
           <StoreHero 
             establishment={establishment} 
-            cashbackPercentage={5}
+            
             hasStories={stories && stories.length > 0}
             storiesCount={stories?.length || 0}
             onStoriesClick={() => setIsStoriesOpen(true)}

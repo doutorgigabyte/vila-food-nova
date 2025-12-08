@@ -198,8 +198,8 @@ const phases: ProgressPhase[] = [
       { name: 'Split em tempo real no pagamento', status: 'completed', priority: 'high' },
       { name: 'Consolidar pagamentos e fluxo de caixa em módulo único', status: 'completed', priority: 'high' },
       { name: 'Integrar com pedidos e PDV', status: 'completed', priority: 'high' },
-      { name: 'Remover módulo de Cashback (complexo demais)', status: 'pending', priority: 'low' },
-      { name: 'Unificar Vouchers e Cupons', status: 'pending', priority: 'medium' },
+      { name: 'Remover módulo de Cashback (complexo demais)', status: 'completed', priority: 'low' },
+      { name: 'Unificar Vouchers e Cupons', status: 'completed', priority: 'medium' },
     ]
   },
   {
@@ -337,9 +337,9 @@ const phases: ProgressPhase[] = [
     category: 'operation',
     items: [
       { name: 'Horário de funcionamento por dia da semana (EstablishmentSettings)', status: 'completed', priority: 'high' },
-      { name: 'Status automático baseado no horário', status: 'pending', priority: 'high' },
+      { name: 'Status automático baseado no horário', status: 'completed', priority: 'high' },
       { name: 'Taxa de entrega por km (delivery_base_fee + fee_per_km)', status: 'completed', priority: 'high' },
-      { name: 'Split em tempo real para entregador (não agendado)', status: 'pending', priority: 'medium' },
+      { name: 'Split em tempo real para entregador (não agendado)', status: 'completed', priority: 'medium' },
       { name: 'QR Code da loja (QRCodeManagement)', status: 'completed', priority: 'low' },
       { name: 'Banners da loja (BannersManagement)', status: 'completed', priority: 'low' },
     ]
