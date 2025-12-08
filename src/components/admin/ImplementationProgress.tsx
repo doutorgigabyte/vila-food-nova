@@ -62,7 +62,7 @@ const phases: ProgressPhase[] = [
     items: [
       { name: 'PIX: Corrigir geração de QR Code (erro atual)', status: 'completed', priority: 'critical' },
       { name: 'Dinheiro: Confirmação de pagamento não funciona', status: 'completed', priority: 'critical' },
-      { name: 'Cartão: Integração com Mercado Pago', status: 'pending', priority: 'critical' },
+      { name: 'Cartão: Integração com Mercado Pago (Point + Manual)', status: 'completed', priority: 'critical' },
       { name: 'Criar pedido após pagamento confirmado', status: 'pending', priority: 'high' },
       { name: 'Atualização de status do pedido', status: 'pending', priority: 'high' },
       { name: 'Geração de comprovante', status: 'pending', priority: 'medium' },
