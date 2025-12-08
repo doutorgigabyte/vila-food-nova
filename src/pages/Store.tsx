@@ -69,6 +69,7 @@ const Store = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<StoreProduct | null>(null);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isStoriesOpen, setIsStoriesOpen] = useState(false);
 
   // Abrir produto via query param
   useEffect(() => {
@@ -267,25 +268,26 @@ const Store = () => {
         <StoreAccountTab establishmentSlug={establishment.slug} />
       ) : (
         <>
-          {/* Stories */}
-          {stories && stories.length > 0 && (
-            <div className="px-4 pt-2">
-              <StoreStories
-                stories={stories}
-                establishmentName={establishment.name}
-                establishmentLogo={establishment.logo_url || undefined}
-                primaryColor={establishment.primary_color || undefined}
-              />
-            </div>
-          )}
-
-          {/* Hero Section */}
+          {/* Hero Section - Logo with story ring opens stories viewer */}
           <StoreHero 
             establishment={establishment} 
             cashbackPercentage={5}
             hasStories={stories && stories.length > 0}
             storiesCount={stories?.length || 0}
+            onStoriesClick={() => setIsStoriesOpen(true)}
           />
+
+          {/* Stories Viewer (fullscreen) - triggered from StoreHero */}
+          {stories && stories.length > 0 && (
+            <StoreStories
+              stories={stories}
+              establishmentName={establishment.name}
+              establishmentLogo={establishment.logo_url || undefined}
+              primaryColor={establishment.primary_color || undefined}
+              isOpen={isStoriesOpen}
+              onClose={() => setIsStoriesOpen(false)}
+            />
+          )}
 
           {/* Promotional Banners */}
           <StoreBanners banners={[]} primaryColor={establishment.primary_color || undefined} />

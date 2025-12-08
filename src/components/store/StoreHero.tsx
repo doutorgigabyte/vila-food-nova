@@ -8,9 +8,10 @@ interface StoreHeroProps {
   cashbackPercentage?: number;
   hasStories?: boolean;
   storiesCount?: number;
+  onStoriesClick?: () => void;
 }
 
-export const StoreHero = ({ establishment, cashbackPercentage, hasStories = false, storiesCount = 0 }: StoreHeroProps) => {
+export const StoreHero = ({ establishment, cashbackPercentage, hasStories = false, storiesCount = 0, onStoriesClick }: StoreHeroProps) => {
   const whatsappLink = establishment.whatsapp 
     ? `https://wa.me/${establishment.whatsapp.replace(/\D/g, '')}` 
     : null;
@@ -51,21 +52,51 @@ export const StoreHero = ({ establishment, cashbackPercentage, hasStories = fals
       <div className="mx-4 -mt-12 relative z-10">
         <div className="bg-card rounded-xl shadow-xl p-4 border">
           <div className="flex gap-4">
-            {/* Logo - Simple circular, no ring here since StoreStories shows the ring */}
+            {/* Logo - With story ring if has stories */}
             <div className="relative shrink-0">
-              <div className="w-20 h-20 rounded-full overflow-hidden border-4 border-background shadow-lg bg-background">
-                {establishment.logo_url ? (
-                  <img
-                    src={establishment.logo_url}
-                    alt={establishment.name}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full bg-muted flex items-center justify-center text-2xl font-bold text-muted-foreground">
-                    {establishment.name.charAt(0)}
+              {hasStories ? (
+                <button
+                  onClick={onStoriesClick}
+                  className="w-20 h-20 rounded-full p-0.5 bg-gradient-to-br from-pink-500 via-red-500 to-yellow-500 cursor-pointer active:scale-95 transition-transform"
+                  style={establishment.primary_color ? {
+                    background: `linear-gradient(135deg, ${establishment.primary_color}, hsl(45 100% 50%), ${establishment.primary_color})`
+                  } : undefined}
+                >
+                  <div className="w-full h-full rounded-full bg-background p-0.5">
+                    {establishment.logo_url ? (
+                      <img
+                        src={establishment.logo_url}
+                        alt={establishment.name}
+                        className="w-full h-full rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full rounded-full bg-muted flex items-center justify-center text-2xl font-bold text-muted-foreground">
+                        {establishment.name.charAt(0)}
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
+                  {/* Story count badge */}
+                  {storiesCount > 1 && (
+                    <div className="absolute -top-1 -left-1 bg-primary text-primary-foreground text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center shadow">
+                      {storiesCount}
+                    </div>
+                  )}
+                </button>
+              ) : (
+                <div className="w-20 h-20 rounded-full overflow-hidden border-4 border-background shadow-lg bg-background">
+                  {establishment.logo_url ? (
+                    <img
+                      src={establishment.logo_url}
+                      alt={establishment.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-muted flex items-center justify-center text-2xl font-bold text-muted-foreground">
+                      {establishment.name.charAt(0)}
+                    </div>
+                  )}
+                </div>
+              )}
               {/* WhatsApp Button */}
               {whatsappLink && (
                 <a

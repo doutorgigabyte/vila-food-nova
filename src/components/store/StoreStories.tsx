@@ -15,15 +15,18 @@ interface StoreStoriesProps {
   establishmentName: string;
   establishmentLogo?: string;
   primaryColor?: string;
+  isOpen: boolean;
+  onClose: () => void;
 }
 
 const StoreStories = ({ 
   stories, 
   establishmentName, 
   establishmentLogo,
-  primaryColor 
+  primaryColor,
+  isOpen,
+  onClose,
 }: StoreStoriesProps) => {
-  const [isOpen, setIsOpen] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [progress, setProgress] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
@@ -62,11 +65,11 @@ const StoreStories = ({
       setCurrentIndex(currentIndex + 1);
       setProgress(0);
     } else {
-      setIsOpen(false);
+      onClose();
       setCurrentIndex(0);
       setProgress(0);
     }
-  }, [currentIndex, stories.length]);
+  }, [currentIndex, stories.length, onClose]);
 
   const goToPrevious = useCallback(() => {
     if (progress > 10) {
@@ -77,15 +80,16 @@ const StoreStories = ({
     }
   }, [currentIndex, progress]);
 
-  const handleOpen = () => {
-    if (!hasStories) return;
-    setIsOpen(true);
-    setCurrentIndex(0);
-    setProgress(0);
-  };
+  // Reset when opened
+  useEffect(() => {
+    if (isOpen) {
+      setCurrentIndex(0);
+      setProgress(0);
+    }
+  }, [isOpen]);
 
   const handleClose = () => {
-    setIsOpen(false);
+    onClose();
     setCurrentIndex(0);
     setProgress(0);
     setIsPaused(false);
@@ -115,167 +119,125 @@ const StoreStories = ({
     setIsMuted(!isMuted);
   };
 
-  if (!hasStories) {
+  if (!hasStories || !isOpen || !currentStory) {
     return null;
   }
 
+  // Only render the fullscreen viewer
   return (
-    <>
-      {/* Story Bubble */}
-      <button
-        onClick={handleOpen}
-        className="relative shrink-0 touch-feedback active:scale-95"
-      >
-        <div 
-          className={cn(
-            "w-16 h-16 rounded-full p-0.5 bg-gradient-to-br",
-            "from-primary via-accent to-primary"
-          )}
-          style={primaryColor ? {
-            background: `linear-gradient(135deg, ${primaryColor}, hsl(45 100% 50%), ${primaryColor})`
-          } : undefined}
-        >
-          <div className="w-full h-full rounded-full bg-background p-0.5">
-            {establishmentLogo ? (
-              <img 
-                src={establishmentLogo}
-                alt={establishmentName}
-                className="w-full h-full rounded-full object-cover"
-                draggable={false}
+    <div 
+      className="fixed inset-0 z-50 bg-black"
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
+      {/* Progress bars */}
+      <div className="absolute top-0 left-0 right-0 z-20 p-2 safe-area-inset-top">
+        <div className="flex gap-1">
+          {stories.map((_, index) => (
+            <div 
+              key={index}
+              className="flex-1 h-0.5 bg-white/30 rounded-full overflow-hidden"
+            >
+              <div 
+                className="h-full bg-white transition-all duration-100"
+                style={{ 
+                  width: index < currentIndex 
+                    ? "100%" 
+                    : index === currentIndex 
+                      ? `${progress}%` 
+                      : "0%" 
+                }}
               />
-            ) : (
-              <div className="w-full h-full rounded-full bg-muted flex items-center justify-center">
-                <Play className="w-5 h-5 text-muted-foreground" />
-              </div>
-            )}
-          </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Header */}
+      <div className="absolute top-8 left-0 right-0 z-20 flex items-center justify-between px-4 safe-area-inset-top">
+        <div className="flex items-center gap-3">
+          {establishmentLogo && (
+            <img 
+              src={establishmentLogo}
+              alt={establishmentName}
+              className="w-10 h-10 rounded-full object-cover border-2 border-white"
+            />
+          )}
+          <span className="text-white font-medium text-sm">{establishmentName}</span>
         </div>
         
-        {/* Story count badge */}
-        {stories.length > 1 && (
-          <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-            {stories.length}
-          </div>
-        )}
-      </button>
-
-      {/* Fullscreen Story Viewer */}
-      {isOpen && currentStory && (
-        <div 
-          className="fixed inset-0 z-50 bg-black"
-          onTouchStart={handleTouchStart}
-          onTouchEnd={handleTouchEnd}
-        >
-          {/* Progress bars */}
-          <div className="absolute top-0 left-0 right-0 z-20 p-2 safe-area-inset-top">
-            <div className="flex gap-1">
-              {stories.map((_, index) => (
-                <div 
-                  key={index}
-                  className="flex-1 h-0.5 bg-white/30 rounded-full overflow-hidden"
-                >
-                  <div 
-                    className="h-full bg-white transition-all duration-100"
-                    style={{ 
-                      width: index < currentIndex 
-                        ? "100%" 
-                        : index === currentIndex 
-                          ? `${progress}%` 
-                          : "0%" 
-                    }}
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Header */}
-          <div className="absolute top-8 left-0 right-0 z-20 flex items-center justify-between px-4 safe-area-inset-top">
-            <div className="flex items-center gap-3">
-              {establishmentLogo && (
-                <img 
-                  src={establishmentLogo}
-                  alt={establishmentName}
-                  className="w-10 h-10 rounded-full object-cover border-2 border-white"
-                />
-              )}
-              <span className="text-white font-medium text-sm">{establishmentName}</span>
-            </div>
-            
-            <div className="flex items-center gap-2">
-              <button
-                onClick={toggleMute}
-                className="w-10 h-10 rounded-full bg-black/30 flex items-center justify-center"
-              >
-                {isMuted ? (
-                  <VolumeX className="w-5 h-5 text-white" />
-                ) : (
-                  <Volume2 className="w-5 h-5 text-white" />
-                )}
-              </button>
-              <button
-                onClick={handleClose}
-                className="w-10 h-10 rounded-full bg-black/30 flex items-center justify-center"
-              >
-                <X className="w-5 h-5 text-white" />
-              </button>
-            </div>
-          </div>
-
-          {/* Story Content */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            {currentStory.videoUrl.match(/\.(jpg|jpeg|png|webp|gif)$/i) ? (
-              <img
-                src={currentStory.videoUrl}
-                alt=""
-                className="w-full h-full object-contain"
-                draggable={false}
-              />
+        <div className="flex items-center gap-2">
+          <button
+            onClick={toggleMute}
+            className="w-10 h-10 rounded-full bg-black/30 flex items-center justify-center"
+          >
+            {isMuted ? (
+              <VolumeX className="w-5 h-5 text-white" />
             ) : (
-              <video
-                ref={videoRef}
-                src={currentStory.videoUrl}
-                className="w-full h-full object-contain"
-                autoPlay
-                playsInline
-                muted={isMuted}
-                loop
-              />
+              <Volume2 className="w-5 h-5 text-white" />
             )}
-          </div>
+          </button>
+          <button
+            onClick={handleClose}
+            className="w-10 h-10 rounded-full bg-black/30 flex items-center justify-center"
+          >
+            <X className="w-5 h-5 text-white" />
+          </button>
+        </div>
+      </div>
 
-          {/* Navigation arrows (desktop) */}
-          <div className="absolute inset-y-0 left-0 w-1/3 z-10 hidden md:flex items-center justify-start pl-4">
-            {currentIndex > 0 && (
-              <button
-                onClick={goToPrevious}
-                className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30 transition-colors"
-              >
-                <ChevronLeft className="w-6 h-6 text-white" />
-              </button>
-            )}
-          </div>
-          
-          <div className="absolute inset-y-0 right-0 w-1/3 z-10 hidden md:flex items-center justify-end pr-4">
-            {currentIndex < stories.length - 1 && (
-              <button
-                onClick={goToNext}
-                className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30 transition-colors"
-              >
-                <ChevronRight className="w-6 h-6 text-white" />
-              </button>
-            )}
-          </div>
+      {/* Story Content */}
+      <div className="absolute inset-0 flex items-center justify-center">
+        {currentStory.videoUrl.match(/\.(jpg|jpeg|png|webp|gif)$/i) ? (
+          <img
+            src={currentStory.videoUrl}
+            alt=""
+            className="w-full h-full object-contain"
+            draggable={false}
+          />
+        ) : (
+          <video
+            ref={videoRef}
+            src={currentStory.videoUrl}
+            className="w-full h-full object-contain"
+            autoPlay
+            playsInline
+            muted={isMuted}
+            loop
+          />
+        )}
+      </div>
 
-          {/* Description */}
-          {currentStory.description && (
-            <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent safe-area-inset-bottom">
-              <p className="text-white text-sm">{currentStory.description}</p>
-            </div>
-          )}
+      {/* Navigation arrows (desktop) */}
+      <div className="absolute inset-y-0 left-0 w-1/3 z-10 hidden md:flex items-center justify-start pl-4">
+        {currentIndex > 0 && (
+          <button
+            onClick={goToPrevious}
+            className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30 transition-colors"
+          >
+            <ChevronLeft className="w-6 h-6 text-white" />
+          </button>
+        )}
+      </div>
+      
+      <div className="absolute inset-y-0 right-0 w-1/3 z-10 hidden md:flex items-center justify-end pr-4">
+        {currentIndex < stories.length - 1 && (
+          <button
+            onClick={goToNext}
+            className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30 transition-colors"
+          >
+            <ChevronRight className="w-6 h-6 text-white" />
+          </button>
+        )}
+      </div>
+
+      {/* Description */}
+      {currentStory.description && (
+        <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent safe-area-inset-bottom">
+          <p className="text-white text-sm">{currentStory.description}</p>
         </div>
       )}
-    </>
+    </div>
   );
 };
 
