@@ -45,7 +45,7 @@ const phases: ProgressPhase[] = [
     items: [
       { name: 'Bug crítico: logout não invalida sessão (botão voltar loga novamente)', status: 'completed', priority: 'critical' },
       { name: 'Limpar storage/cookies no logout', status: 'completed', priority: 'critical' },
-      { name: 'Validação de e-mail com código na criação de conta', status: 'pending', priority: 'high' },
+      { name: 'Validação de e-mail com código na criação de conta', status: 'completed', priority: 'high' },
       { name: 'Contexto de estabelecimento quebrado em WhatsApp & IA', status: 'completed', priority: 'high' },
       { name: 'Contexto de estabelecimento quebrado em Área de Atendimento', status: 'completed', priority: 'high' },
       { name: 'Erro RLS ao criar cupom no Admin', status: 'completed', priority: 'high' },
