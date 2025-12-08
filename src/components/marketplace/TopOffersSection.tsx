@@ -22,11 +22,10 @@ const TopOffersSection = ({ mainCategory, subcategory }: TopOffersSectionProps) 
   const theme = getCategoryTheme(mainCategory || null);
 
   // Use drag scroll hook for mouse + touch drag support
-  const { scrollRef, isDragging, handlers, scroll } = useDragScroll({
+  const { scrollRef, isDragging, handlers, scroll, scrollStyles } = useDragScroll({
     direction: "horizontal",
     momentum: true,
     friction: 0.92,
-    sensitivity: 1,
   });
 
   // Filter products with promotional price
@@ -118,14 +117,15 @@ const TopOffersSection = ({ mainCategory, subcategory }: TopOffersSectionProps) 
           ref={scrollRef}
           {...handlers}
           className={cn(
-            "flex gap-3 overflow-x-auto snap-x snap-mandatory pb-2 overscroll-x-contain select-none pl-4",
+            "flex gap-3 overflow-x-auto pb-2 select-none pl-4",
             isDragging ? "cursor-grabbing" : "cursor-grab"
           )}
           style={{
+            ...scrollStyles,
             scrollbarWidth: 'none',
             msOverflowStyle: 'none',
-            WebkitOverflowScrolling: 'touch',
             paddingRight: '1rem',
+            scrollSnapType: isDragging ? 'none' : 'x proximity',
           }}
         >
           {offersProducts.map((product) => (

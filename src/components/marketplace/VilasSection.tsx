@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { MapPin, Store, ChevronRight, ChevronLeft } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +8,8 @@ import { useVilas, Vila } from "@/hooks/useVilas";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useDragScroll } from "@/hooks/useDragScroll";
+import { cn } from "@/lib/utils";
+import { Link } from "react-router-dom";
 
 interface VilaWithCount extends Vila {
   establishmentCount: number;
@@ -16,7 +18,7 @@ interface VilaWithCount extends Vila {
 const VilasSection = () => {
   const { vilas, loading } = useVilas();
   const [vilasWithCount, setVilasWithCount] = useState<VilaWithCount[]>([]);
-  const { scrollRef, isDragging, wasClick, handlers, scroll } = useDragScroll();
+  const { scrollRef, isDragging, wasClick, handlers, scroll, scrollStyles } = useDragScroll();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -105,10 +107,16 @@ const VilasSection = () => {
           <div
             ref={scrollRef}
             {...handlers}
-            className={`flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth pb-2 select-none ${
+            className={cn(
+              "flex gap-4 overflow-x-auto scrollbar-hide pb-2 select-none",
               isDragging ? "cursor-grabbing" : "cursor-grab"
-            }`}
-            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            )}
+            style={{
+              ...scrollStyles,
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none',
+              scrollSnapType: isDragging ? 'none' : 'x proximity',
+            }}
           >
             {vilasWithCount.map((vila) => (
               <div 
