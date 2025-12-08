@@ -44,6 +44,13 @@ export function MercadoPagoOAuth({ establishmentId, context = 'establishment', o
   const [disconnecting, setDisconnecting] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [savingPix, setSavingPix] = useState(false);
+  const [testingConnection, setTestingConnection] = useState(false);
+  const [platformStatus, setPlatformStatus] = useState<{
+    connected: boolean;
+    userId?: string;
+    email?: string;
+    balance?: number;
+  } | null>(null);
   const [establishment, setEstablishment] = useState<EstablishmentMpData | null>(null);
   const [pixKey, setPixKey] = useState('');
 
@@ -200,36 +207,132 @@ export function MercadoPagoOAuth({ establishmentId, context = 'establishment', o
     );
   }
 
+  // Test platform connection
+  const handleTestPlatformConnection = async () => {
+    setTestingConnection(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('mercadopago-affiliate-payout', {
+        body: { action: 'check_balance' }
+      });
+
+      if (error) throw error;
+
+      if (data.success) {
+        setPlatformStatus({
+          connected: true,
+          userId: data.user?.id,
+          email: data.user?.email,
+          balance: data.balance?.available_balance
+        });
+        toast.success('Conexão com Mercado Pago verificada!');
+      } else {
+        setPlatformStatus({ connected: false });
+        toast.error(data.error || 'Erro ao verificar conexão');
+      }
+    } catch (error: any) {
+      console.error('Error testing connection:', error);
+      setPlatformStatus({ connected: false });
+      toast.error('Erro ao testar conexão. Verifique os secrets.');
+    } finally {
+      setTestingConnection(false);
+    }
+  };
+
   // Admin context - show platform-level information
   if (context === 'admin') {
     return (
       <div className="space-y-6">
-        <Card>
+        <Card className={cn(
+          "border-2 transition-colors",
+          platformStatus?.connected && "border-green-500/50 bg-green-500/5",
+          platformStatus && !platformStatus.connected && "border-red-500/50 bg-red-500/5"
+        )}>
           <CardHeader className="pb-3">
-            <div className="flex items-center gap-3">
-              <div className="w-14 h-14 rounded-xl flex items-center justify-center bg-blue-500/20">
-                <img 
-                  src="https://http2.mlstatic.com/frontend-assets/mp-web-navigation/ui-navigation/6.6.92/mercadopago/logo__large@2x.png" 
-                  alt="Mercado Pago" 
-                  className="w-10 h-10 object-contain"
-                />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className={cn(
+                  "w-14 h-14 rounded-xl flex items-center justify-center",
+                  platformStatus?.connected ? "bg-green-500/20" : "bg-blue-500/20"
+                )}>
+                  <img 
+                    src="https://http2.mlstatic.com/frontend-assets/mp-web-navigation/ui-navigation/6.6.92/mercadopago/logo__large@2x.png" 
+                    alt="Mercado Pago" 
+                    className="w-10 h-10 object-contain"
+                  />
+                </div>
+                <div>
+                  <CardTitle className="text-lg">Mercado Pago - Plataforma</CardTitle>
+                  <CardDescription>Conta principal para assinaturas e pagamentos de afiliados</CardDescription>
+                </div>
               </div>
-              <div>
-                <CardTitle className="text-lg">Mercado Pago - Plataforma</CardTitle>
-                <CardDescription>Configuração de pagamentos a nível de plataforma</CardDescription>
-              </div>
+              {platformStatus && (
+                <Badge variant={platformStatus.connected ? 'default' : 'destructive'} className={cn(
+                  platformStatus.connected && "bg-green-600"
+                )}>
+                  {platformStatus.connected ? (
+                    <><CheckCircle2 className="w-3 h-3 mr-1" /> Conectado</>
+                  ) : (
+                    <><XCircle className="w-3 h-3 mr-1" /> Erro</>
+                  )}
+                </Badge>
+              )}
             </div>
           </CardHeader>
           
           <CardContent className="space-y-4">
+            {/* Platform Account Status */}
+            {platformStatus?.connected && (
+              <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4 space-y-2">
+                <h4 className="font-medium text-sm text-green-700 flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4" />
+                  Conta Conectada
+                </h4>
+                <div className="grid gap-1 text-sm">
+                  {platformStatus.email && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">E-mail</span>
+                      <span className="font-mono">{platformStatus.email}</span>
+                    </div>
+                  )}
+                  {platformStatus.userId && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">ID do Vendedor</span>
+                      <span className="font-mono">{platformStatus.userId}</span>
+                    </div>
+                  )}
+                  {platformStatus.balance !== undefined && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Saldo Disponível</span>
+                      <span className="font-medium text-green-700">
+                        R$ {platformStatus.balance.toFixed(2)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             <Alert>
               <ShieldCheck className="h-4 w-4" />
               <AlertDescription>
-                A integração do Mercado Pago no VilaFood funciona via OAuth. Cada estabelecimento conecta 
-                sua própria conta Mercado Pago no painel deles. A plataforma não precisa de configuração 
-                centralizada de pagamentos.
+                A conta da plataforma é usada para cobrar assinaturas dos estabelecimentos e pagar 
+                comissões aos afiliados. Os secrets são gerenciados via Lovable Cloud.
               </AlertDescription>
             </Alert>
+
+            <Button 
+              onClick={handleTestPlatformConnection}
+              disabled={testingConnection}
+              variant={platformStatus?.connected ? "outline" : "default"}
+              className="w-full gap-2"
+            >
+              {testingConnection ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <RefreshCw className="w-4 h-4" />
+              )}
+              {testingConnection ? 'Verificando...' : 'Testar Conexão'}
+            </Button>
 
             <div className="bg-muted/50 rounded-lg p-4 space-y-3">
               <h4 className="font-medium text-sm">Como funciona o fluxo de pagamentos:</h4>
@@ -248,7 +351,7 @@ export function MercadoPagoOAuth({ establishmentId, context = 'establishment', o
                 </li>
                 <li className="flex items-start gap-2">
                   <Badge variant="outline" className="w-5 h-5 p-0 justify-center shrink-0 mt-0.5">4</Badge>
-                  <span>Comissões de afiliados são pagas via PIX usando a conta da plataforma</span>
+                  <span>Comissões de afiliados são pagas via PIX usando esta conta</span>
                 </li>
               </ol>
             </div>
@@ -261,23 +364,19 @@ export function MercadoPagoOAuth({ establishmentId, context = 'establishment', o
               <div className="grid gap-2 text-sm">
                 <div className="flex items-center justify-between p-2 bg-muted/50 rounded">
                   <span className="text-muted-foreground">MERCADOPAGO_ACCESS_TOKEN</span>
-                  <Badge variant="secondary">Para cobranças de assinatura</Badge>
+                  <Badge variant="secondary">Cobranças e Pagamentos</Badge>
                 </div>
                 <div className="flex items-center justify-between p-2 bg-muted/50 rounded">
                   <span className="text-muted-foreground">MERCADOPAGO_CLIENT_ID</span>
-                  <Badge variant="secondary">Para OAuth</Badge>
+                  <Badge variant="secondary">OAuth</Badge>
                 </div>
                 <div className="flex items-center justify-between p-2 bg-muted/50 rounded">
                   <span className="text-muted-foreground">MERCADOPAGO_CLIENT_SECRET</span>
-                  <Badge variant="secondary">Para OAuth</Badge>
-                </div>
-                <div className="flex items-center justify-between p-2 bg-muted/50 rounded">
-                  <span className="text-muted-foreground">MERCADOPAGO_REDIRECT_URI</span>
-                  <Badge variant="secondary">Callback URL</Badge>
+                  <Badge variant="secondary">OAuth</Badge>
                 </div>
               </div>
               <p className="text-xs text-muted-foreground">
-                Esses secrets são gerenciados via Lovable Cloud e usados pelas Edge Functions.
+                Para trocar a conta, atualize o <strong>MERCADOPAGO_ACCESS_TOKEN</strong> nos secrets do projeto.
               </p>
             </div>
           </CardContent>
