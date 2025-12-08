@@ -100,6 +100,7 @@ const SystemHealthCheck = lazy(() => import("./pages/admin/SystemHealthCheck"));
 const ImageFillManager = lazy(() => import("./pages/admin/ImageFillManager"));
 const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
 const DatabaseManagement = lazy(() => import("./pages/admin/DatabaseManagement"));
+const AdminReports = lazy(() => import("./pages/admin/AdminReports"));
 
 // Affiliate pages - lazy loaded
 const AffiliateReferrals = lazy(() => import("./pages/affiliate/AffiliateReferrals"));
@@ -264,6 +265,7 @@ const AppRoutes = () => {
               <Route path="/admin/preencher-imagens" element={<ProtectedAdminRoute><ImageFillManager /></ProtectedAdminRoute>} />
               <Route path="/admin/configuracoes" element={<ProtectedAdminRoute><AdminSettings /></ProtectedAdminRoute>} />
               <Route path="/admin/banco-dados" element={<ProtectedAdminRoute><DatabaseManagement /></ProtectedAdminRoute>} />
+              <Route path="/admin/relatorios" element={<ProtectedAdminRoute><AdminReports /></ProtectedAdminRoute>} />
               {/* Affiliate routes */}
               <Route path="/afiliado" element={<AffiliateDashboard />} />
               <Route path="/afiliado/indicacoes" element={<AffiliateReferrals />} />
