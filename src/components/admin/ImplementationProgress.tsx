@@ -102,7 +102,7 @@ const phases: ProgressPhase[] = [
       { name: 'Integração com PDV', status: 'completed', priority: 'high' },
       { name: 'Fluxo de status: Pendente → Confirmado → Preparando → Pronto → Entrega', status: 'completed', priority: 'high' },
       { name: 'Integração com marketplace', status: 'completed', priority: 'high' },
-      { name: 'Pedidos agendados para horário específico', status: 'pending', priority: 'medium' },
+      { name: 'Pedidos agendados para horário específico', status: 'completed', priority: 'medium' },
     ]
   },
 

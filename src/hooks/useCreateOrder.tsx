@@ -36,6 +36,7 @@ export interface CreateOrderData {
   observations?: string;
   table_number?: string;
   order_source?: OrderSource;
+  scheduled_for?: string; // ISO date string for scheduled orders
 }
 
 export const useCreateOrder = () => {
@@ -70,6 +71,7 @@ export const useCreateOrder = () => {
           change_for: orderData.change_for || null,
           observations: orderData.observations || null,
           table_number: orderData.table_number || null,
+          scheduled_for: orderData.scheduled_for || null,
           status: 'pending' as const,
         }])
         .select()

@@ -21,6 +21,7 @@ export interface Order {
   observations: string | null;
   change_for: number | null;
   estimated_time: number | null;
+  scheduled_for: string | null;
   created_at: string;
 }
 
