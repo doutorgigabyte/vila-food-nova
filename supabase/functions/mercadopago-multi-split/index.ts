@@ -9,6 +9,7 @@ const corsHeaders = {
 const MP_ACCESS_TOKEN = Deno.env.get('MERCADOPAGO_ACCESS_TOKEN');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY');
 const PLATFORM_FEE_PERCENT = 5;
 
 interface SplitItem {
@@ -28,12 +29,44 @@ interface MultiSplitRequest {
   description?: string;
 }
 
+// Authenticate request and return user
+async function authenticateRequest(req: Request): Promise<{ userId: string; error?: string }> {
+  const authHeader = req.headers.get('Authorization');
+  
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return { userId: '', error: 'Missing or invalid Authorization header' };
+  }
+
+  const token = authHeader.replace('Bearer ', '');
+  const supabase = createClient(SUPABASE_URL!, SUPABASE_ANON_KEY!);
+  
+  const { data: { user }, error } = await supabase.auth.getUser(token);
+  
+  if (error || !user) {
+    return { userId: '', error: 'Invalid or expired token' };
+  }
+
+  return { userId: user.id };
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    // Authenticate the request
+    const { userId, error: authError } = await authenticateRequest(req);
+    if (authError) {
+      console.error('[multi-split] Auth error:', authError);
+      return new Response(JSON.stringify({ success: false, error: authError }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    console.log(`[multi-split] Authenticated user: ${userId}`);
+
     const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
     const body: MultiSplitRequest = await req.json();
     const { action, checkout_id, total_amount, items, payer_email, payer_name, description } = body;
