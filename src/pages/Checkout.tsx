@@ -35,6 +35,7 @@ import { SavedAddressSelector } from "@/components/checkout/SavedAddressSelector
 import { SaveAddressDialog } from "@/components/checkout/SaveAddressDialog";
 import { PaymentProcessor } from "@/components/checkout/PaymentProcessor";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { trackInitiateCheckout, trackPurchase } from "@/lib/analytics";
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -214,6 +215,20 @@ const Checkout = () => {
         return;
       }
     }
+    
+    // Track InitiateCheckout event
+    try {
+      const allItems = items.map(item => ({
+        id: item.product.id,
+        name: item.product.name,
+        price: item.product.promotional_price || item.product.price,
+        quantity: item.quantity
+      }));
+      trackInitiateCheckout(allItems, subtotal);
+    } catch (err) {
+      console.error('[Analytics] Error tracking checkout:', err);
+    }
+    
     setStep("payment");
   };
 
@@ -279,6 +294,26 @@ const Checkout = () => {
           }
         }
         
+        // Track Purchase events for each order
+        try {
+          for (const estId of uniqueEstablishments) {
+            const estItems = getEstablishmentItems(estId);
+            const estSubtotal = getEstablishmentSubtotal(estId);
+            trackPurchase({
+              orderId: estId,
+              total: estSubtotal,
+              items: estItems.map(item => ({
+                id: item.product.id,
+                name: item.product.name,
+                price: item.product.promotional_price || item.product.price,
+                quantity: item.quantity
+              }))
+            });
+          }
+        } catch (err) {
+          console.error('[Analytics] Error tracking purchase:', err);
+        }
+        
         setCompletedOrders(orderNumbers);
         clearCart();
         setStep("success");
@@ -328,6 +363,25 @@ const Checkout = () => {
   };
 
   const handlePaymentComplete = () => {
+    // Track Purchase event
+    try {
+      if (currentEstablishmentId && createdOrderId) {
+        const estItems = getEstablishmentItems(currentEstablishmentId);
+        trackPurchase({
+          orderId: createdOrderId,
+          total: total,
+          items: estItems.map(item => ({
+            id: item.product.id,
+            name: item.product.name,
+            price: item.product.promotional_price || item.product.price,
+            quantity: item.quantity
+          }))
+        });
+      }
+    } catch (err) {
+      console.error('[Analytics] Error tracking purchase:', err);
+    }
+    
     clearCart();
     const estInfo = currentEstablishmentId ? establishments.get(currentEstablishmentId) : null;
     setCompletedOrders([`${estInfo?.name || 'Loja'}: Pedido confirmado`]);
