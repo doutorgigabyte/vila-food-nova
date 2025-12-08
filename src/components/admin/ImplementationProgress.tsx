@@ -115,7 +115,7 @@ const phases: ProgressPhase[] = [
     items: [
       { name: 'Botão "Novo vídeo" abre tela branca (bug crítico)', status: 'completed', priority: 'critical' },
       { name: 'Fluxo completo: Upload → Cortar → Música → Detalhes → Agendar → Preview', status: 'completed', priority: 'high' },
-      { name: 'Limitar repostagem automática a max 3x/dia', status: 'pending', priority: 'high' },
+      { name: 'Limitar repostagem automática a max 3x/dia', status: 'completed', priority: 'high' },
       { name: 'Separar criação de stories do perfil VilaTok', status: 'pending', priority: 'medium' },
       { name: 'Stories do cardápio exibir apenas da loja atual', status: 'pending', priority: 'high' },
       { name: 'Foto de perfil circular com anel de stories', status: 'pending', priority: 'medium' },
