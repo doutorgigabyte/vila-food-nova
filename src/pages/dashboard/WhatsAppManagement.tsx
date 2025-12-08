@@ -13,6 +13,7 @@ import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdminAccess } from "@/contexts/AdminAccessContext";
+import { useEstablishmentPlan } from "@/hooks/useEstablishmentPlan";
 import { toast } from "sonner";
 import { 
   ArrowLeft, Loader2, MessageSquare, Bot, Smartphone, Wifi, WifiOff, 
@@ -134,7 +135,11 @@ const WhatsAppManagement = () => {
   const [establishment, setEstablishment] = useState<any>(null);
   const [analytics, setAnalytics] = useState<Analytics>({ messages_today: 0, orders_today: 0, active_sessions: 0 });
   const [copied, setCopied] = useState(false);
-  const [hasAIAccess, setHasAIAccess] = useState(false);
+  
+  // Plan-based feature access using centralized hook
+  const { canUseWhatsappChatbot, canUseWhatsappAI } = useEstablishmentPlan(establishmentId);
+  const hasChatbotAccess = canUseWhatsappChatbot();
+  const hasAIAccess = canUseWhatsappAI();
 
   const [form, setForm] = useState({
     instance_name: "",
@@ -168,7 +173,6 @@ Seja sempre educado e prestativo. Se não souber responder algo, peça para o cl
       fetchInstance();
       fetchKeywords();
       fetchAnalytics();
-      checkPlanAccess();
     }
   }, [establishmentId]);
 
@@ -191,17 +195,6 @@ Seja sempre educado e prestativo. Se não souber responder algo, peça para o cl
     }
   };
 
-  const checkPlanAccess = async () => {
-    if (!establishment?.plan_id) return;
-    
-    const { data: plan } = await supabase
-      .from("plans")
-      .select("whatsapp_ai_agent")
-      .eq("id", establishment.plan_id)
-      .single();
-    
-    setHasAIAccess(plan?.whatsapp_ai_agent ?? false);
-  };
 
   const fetchInstance = async () => {
     setLoading(true);
@@ -625,86 +618,103 @@ Seja sempre educado e prestativo. Se não souber responder algo, peça para o cl
 
             {/* Chatbot Tab (Nível 1) */}
             <TabsContent value="chatbot" className="space-y-4 mt-4">
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className="flex items-center gap-2">
-                        <MessageSquare className="w-5 h-5 text-green-600" />
-                        Chatbot com Palavras-Chave
-                      </CardTitle>
-                      <CardDescription>
-                        Respostas automáticas baseadas em palavras-chave (Nível 1)
-                      </CardDescription>
-                    </div>
-                    <Switch
-                      checked={form.keywords_enabled}
-                      onCheckedChange={(checked) => setForm({ ...form, keywords_enabled: checked })}
-                    />
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/20">
-                    <p className="text-sm text-green-700">
-                      <strong>Como funciona:</strong> Quando o cliente envia uma mensagem contendo uma das palavras-chave configuradas, o sistema responde automaticamente com a mensagem correspondente.
+              {!hasChatbotAccess ? (
+                <Card className="border-amber-500/30 bg-amber-500/5">
+                  <CardContent className="p-8 text-center space-y-4">
+                    <Lock className="w-12 h-12 mx-auto text-amber-500" />
+                    <h3 className="text-xl font-semibold">Chatbot WhatsApp - Não Disponível</h3>
+                    <p className="text-muted-foreground max-w-md mx-auto">
+                      Seu plano atual não inclui o recurso de chatbot com palavras-chave. 
+                      Faça upgrade para automatizar o atendimento via WhatsApp.
                     </p>
-                  </div>
+                    <Button className="gap-2">
+                      <Sparkles className="w-4 h-4" />
+                      Fazer Upgrade do Plano
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : (
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle className="flex items-center gap-2">
+                          <MessageSquare className="w-5 h-5 text-green-600" />
+                          Chatbot com Palavras-Chave
+                        </CardTitle>
+                        <CardDescription>
+                          Respostas automáticas baseadas em palavras-chave (Nível 1)
+                        </CardDescription>
+                      </div>
+                      <Switch
+                        checked={form.keywords_enabled}
+                        onCheckedChange={(checked) => setForm({ ...form, keywords_enabled: checked })}
+                      />
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/20">
+                      <p className="text-sm text-green-700">
+                        <strong>Como funciona:</strong> Quando o cliente envia uma mensagem contendo uma das palavras-chave configuradas, o sistema responde automaticamente com a mensagem correspondente.
+                      </p>
+                    </div>
 
-                  <div className="space-y-3">
-                    {keywords.map((keyword, index) => {
-                      const config = CATEGORY_LABELS[keyword.category] || { label: keyword.category, icon: <MessageSquare className="w-4 h-4" />, color: 'text-gray-600' };
-                      
-                      return (
-                        <Card key={keyword.id} className={`${!keyword.is_active ? 'opacity-50' : ''}`}>
-                          <CardContent className="p-4">
-                            <div className="flex items-start justify-between gap-4">
-                              <div className="flex-1 space-y-3">
-                                <div className="flex items-center gap-2">
-                                  <div className={config.color}>{config.icon}</div>
-                                  <span className="font-medium">{config.label}</span>
-                                  <Switch
-                                    checked={keyword.is_active}
-                                    onCheckedChange={(checked) => updateKeyword(index, 'is_active', checked)}
-                                  />
-                                </div>
-                                
-                                <div className="space-y-2">
-                                  <Label className="text-xs text-muted-foreground">Palavras-chave (separadas por vírgula)</Label>
-                                  <Input
-                                    value={keyword.keywords.join(', ')}
-                                    onChange={(e) => updateKeyword(index, 'keywords', e.target.value.split(',').map(k => k.trim()))}
-                                    placeholder="palavra1, palavra2, palavra3"
-                                    className="text-sm"
-                                  />
-                                </div>
+                    <div className="space-y-3">
+                      {keywords.map((keyword, index) => {
+                        const config = CATEGORY_LABELS[keyword.category] || { label: keyword.category, icon: <MessageSquare className="w-4 h-4" />, color: 'text-gray-600' };
+                        
+                        return (
+                          <Card key={keyword.id} className={`${!keyword.is_active ? 'opacity-50' : ''}`}>
+                            <CardContent className="p-4">
+                              <div className="flex items-start justify-between gap-4">
+                                <div className="flex-1 space-y-3">
+                                  <div className="flex items-center gap-2">
+                                    <div className={config.color}>{config.icon}</div>
+                                    <span className="font-medium">{config.label}</span>
+                                    <Switch
+                                      checked={keyword.is_active}
+                                      onCheckedChange={(checked) => updateKeyword(index, 'is_active', checked)}
+                                    />
+                                  </div>
+                                  
+                                  <div className="space-y-2">
+                                    <Label className="text-xs text-muted-foreground">Palavras-chave (separadas por vírgula)</Label>
+                                    <Input
+                                      value={keyword.keywords.join(', ')}
+                                      onChange={(e) => updateKeyword(index, 'keywords', e.target.value.split(',').map(k => k.trim()))}
+                                      placeholder="palavra1, palavra2, palavra3"
+                                      className="text-sm"
+                                    />
+                                  </div>
 
-                                <div className="space-y-2">
-                                  <Label className="text-xs text-muted-foreground">Resposta automática</Label>
-                                  <Textarea
-                                    value={keyword.response_text || ''}
-                                    onChange={(e) => updateKeyword(index, 'response_text', e.target.value)}
-                                    placeholder="Digite a resposta..."
-                                    rows={2}
-                                    className="text-sm"
-                                  />
-                                </div>
+                                  <div className="space-y-2">
+                                    <Label className="text-xs text-muted-foreground">Resposta automática</Label>
+                                    <Textarea
+                                      value={keyword.response_text || ''}
+                                      onChange={(e) => updateKeyword(index, 'response_text', e.target.value)}
+                                      placeholder="Digite a resposta..."
+                                      rows={2}
+                                      className="text-sm"
+                                    />
+                                  </div>
 
-                                <div className="flex items-center gap-2">
-                                  <Switch
-                                    checked={keyword.send_menu_link}
-                                    onCheckedChange={(checked) => updateKeyword(index, 'send_menu_link', checked)}
-                                  />
-                                  <Label className="text-xs">Enviar link do cardápio junto</Label>
+                                  <div className="flex items-center gap-2">
+                                    <Switch
+                                      checked={keyword.send_menu_link}
+                                      onCheckedChange={(checked) => updateKeyword(index, 'send_menu_link', checked)}
+                                    />
+                                    <Label className="text-xs">Enviar link do cardápio junto</Label>
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      );
-                    })}
-                  </div>
-                </CardContent>
-              </Card>
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </TabsContent>
 
             {/* AI Agent Tab (Nível 2) */}
