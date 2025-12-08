@@ -88,8 +88,8 @@ const phases: ProgressPhase[] = [
     category: 'operation',
     items: [
       { name: 'Selecionar produto não carrega lista', status: 'completed', priority: 'critical' },
-      { name: 'Vincular movimentações aos produtos da loja', status: 'pending', priority: 'high' },
-      { name: 'Fluxo completo entrada/saída/ajuste/perda', status: 'pending', priority: 'high' },
+      { name: 'Vincular movimentações aos produtos da loja', status: 'completed', priority: 'high' },
+      { name: 'Fluxo completo entrada/saída/ajuste/perda', status: 'completed', priority: 'high' },
     ]
   },
   {
