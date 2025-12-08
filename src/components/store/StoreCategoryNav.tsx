@@ -196,10 +196,8 @@ export const StoreCategoryNav = ({
   featuredCount = 0,
 }: StoreCategoryNavProps) => {
   const { scrollRef, isDragging, handlers, scroll, wasClick } = useDragScroll({
-    direction: "horizontal",
     momentum: true,
     friction: 0.92,
-    sensitivity: 1,
   });
 
   const allTabs = [

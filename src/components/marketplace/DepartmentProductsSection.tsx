@@ -28,10 +28,8 @@ const DepartmentRow = ({
   const [canScrollRight, setCanScrollRight] = useState(true);
 
   const { scrollRef, isDragging, handlers, scroll } = useDragScroll({
-    direction: "horizontal",
     momentum: true,
     friction: 0.92,
-    sensitivity: 1,
   });
 
   useEffect(() => {

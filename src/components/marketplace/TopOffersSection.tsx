@@ -23,7 +23,6 @@ const TopOffersSection = ({ mainCategory, subcategory }: TopOffersSectionProps) 
 
   // Use drag scroll hook for mouse + touch drag support
   const { scrollRef, isDragging, handlers, scroll, scrollStyles } = useDragScroll({
-    direction: "horizontal",
     momentum: true,
     friction: 0.92,
   });

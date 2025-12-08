@@ -3,41 +3,28 @@ import { useRef, useState, useCallback, useEffect } from "react";
 interface UseDragScrollOptions {
   sensitivity?: number;
   momentum?: boolean;
-  direction?: "horizontal" | "vertical" | "both";
   friction?: number;
-  velocityMultiplier?: number;
-  snapThreshold?: number;
 }
 
 export const useDragScroll = (options: UseDragScrollOptions = {}) => {
   const { 
     sensitivity = 1, 
     momentum = true, 
-    direction = "horizontal",
     friction = 0.92,
-    velocityMultiplier = 1,
-    snapThreshold = 10,
   } = options;
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   
   const state = useRef({
-    isActive: false,
+    isMouseDown: false,
     startX: 0,
-    startY: 0,
     scrollLeft: 0,
-    scrollTop: 0,
     lastX: 0,
-    lastY: 0,
     lastTime: 0,
-    velocityX: 0,
-    velocityY: 0,
+    velocity: 0,
     hasMoved: false,
     animationId: 0,
-    touchId: null as number | null,
-    isHorizontalScroll: false,
-    directionDetermined: false,
   });
 
   const cancelMomentum = useCallback(() => {
@@ -50,148 +37,70 @@ export const useDragScroll = (options: UseDragScrollOptions = {}) => {
   const applyMomentum = useCallback(() => {
     if (!momentum || !scrollRef.current) return;
     
-    let vx = state.current.velocityX * velocityMultiplier;
-    let vy = state.current.velocityY * velocityMultiplier;
+    let velocity = state.current.velocity;
     
-    const minVelocity = 0.3;
-    if (Math.abs(vx) < minVelocity && Math.abs(vy) < minVelocity) return;
+    if (Math.abs(velocity) < 0.5) return;
     
     const animate = () => {
       if (!scrollRef.current) return;
       
-      vx *= friction;
-      vy *= friction;
+      velocity *= friction;
       
-      if (Math.abs(vx) < 0.1 && Math.abs(vy) < 0.1) {
+      if (Math.abs(velocity) < 0.1) {
         state.current.animationId = 0;
         return;
       }
       
-      if (direction === "horizontal" || direction === "both") {
-        scrollRef.current.scrollLeft -= vx;
-      }
-      if (direction === "vertical" || direction === "both") {
-        scrollRef.current.scrollTop -= vy;
-      }
-      
+      scrollRef.current.scrollLeft -= velocity;
       state.current.animationId = requestAnimationFrame(animate);
     };
     
     state.current.animationId = requestAnimationFrame(animate);
-  }, [momentum, friction, direction, velocityMultiplier]);
+  }, [momentum, friction]);
 
-  const startDrag = useCallback((clientX: number, clientY: number, touchId?: number) => {
-    if (!scrollRef.current) return;
-    
-    cancelMomentum();
-    
-    const s = state.current;
-    s.isActive = true;
-    s.startX = clientX;
-    s.startY = clientY;
-    s.scrollLeft = scrollRef.current.scrollLeft;
-    s.scrollTop = scrollRef.current.scrollTop;
-    s.lastX = clientX;
-    s.lastY = clientY;
-    s.lastTime = performance.now();
-    s.velocityX = 0;
-    s.velocityY = 0;
-    s.hasMoved = false;
-    s.touchId = touchId ?? null;
-    s.isHorizontalScroll = false;
-    s.directionDetermined = false;
-  }, [cancelMomentum]);
-
-  const moveDrag = useCallback((clientX: number, clientY: number, event?: TouchEvent) => {
-    const s = state.current;
-    if (!s.isActive || !scrollRef.current) return;
-    
-    const now = performance.now();
-    const dt = Math.max(now - s.lastTime, 1);
-    
-    const deltaX = clientX - s.startX;
-    const deltaY = clientY - s.startY;
-    
-    // Determine scroll direction on first significant movement
-    if (!s.directionDetermined && (Math.abs(deltaX) > snapThreshold || Math.abs(deltaY) > snapThreshold)) {
-      s.directionDetermined = true;
-      s.isHorizontalScroll = Math.abs(deltaX) > Math.abs(deltaY);
-      
-      if (s.isHorizontalScroll) {
-        setIsDragging(true);
-      }
-    }
-    
-    // If vertical scroll detected, let browser handle it
-    if (s.directionDetermined && !s.isHorizontalScroll) {
-      s.isActive = false;
-      return;
-    }
-    
-    // Prevent vertical scroll only when horizontal scrolling is confirmed
-    if (s.isHorizontalScroll && event) {
-      event.preventDefault();
-    }
-    
-    // Calculate velocity
-    const moveDeltaX = clientX - s.lastX;
-    const moveDeltaY = clientY - s.lastY;
-    
-    // Smooth velocity calculation
-    const alpha = 0.3;
-    s.velocityX = alpha * (moveDeltaX / dt * 16) + (1 - alpha) * s.velocityX;
-    s.velocityY = alpha * (moveDeltaY / dt * 16) + (1 - alpha) * s.velocityY;
-    
-    // Cap velocity
-    const maxVel = 30;
-    s.velocityX = Math.max(-maxVel, Math.min(maxVel, s.velocityX));
-    s.velocityY = Math.max(-maxVel, Math.min(maxVel, s.velocityY));
-    
-    if (Math.abs(deltaX) > 3 || Math.abs(deltaY) > 3) {
-      s.hasMoved = true;
-    }
-    
-    // Apply scroll
-    if (s.isHorizontalScroll && (direction === "horizontal" || direction === "both")) {
-      scrollRef.current.scrollLeft = s.scrollLeft - deltaX * sensitivity;
-    }
-    if (!s.isHorizontalScroll && (direction === "vertical" || direction === "both")) {
-      scrollRef.current.scrollTop = s.scrollTop - deltaY * sensitivity;
-    }
-    
-    s.lastX = clientX;
-    s.lastY = clientY;
-    s.lastTime = now;
-  }, [sensitivity, direction, snapThreshold]);
-
-  const endDrag = useCallback(() => {
-    const s = state.current;
-    if (!s.isActive && !isDragging) return;
-    
-    s.isActive = false;
-    s.touchId = null;
-    setIsDragging(false);
-    
-    if (s.hasMoved && s.isHorizontalScroll && momentum) {
-      applyMomentum();
-    }
-    
-    s.directionDetermined = false;
-    s.isHorizontalScroll = false;
-  }, [momentum, applyMomentum, isDragging]);
-
-  // Mouse events
+  // Mouse events only - let mobile use native scroll
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      if (!state.current.isActive) return;
-      moveDrag(e.clientX, e.clientY);
+      const s = state.current;
+      if (!s.isMouseDown || !scrollRef.current) return;
+      
+      e.preventDefault();
+      
+      const now = performance.now();
+      const dt = Math.max(now - s.lastTime, 1);
+      const dx = e.clientX - s.lastX;
+      
+      // Calculate velocity
+      s.velocity = (dx / dt) * 16 * sensitivity;
+      
+      // Apply scroll
+      const delta = (s.startX - e.clientX) * sensitivity;
+      scrollRef.current.scrollLeft = s.scrollLeft + delta;
+      
+      if (Math.abs(delta) > 3) {
+        s.hasMoved = true;
+        setIsDragging(true);
+      }
+      
+      s.lastX = e.clientX;
+      s.lastTime = now;
     };
 
     const handleMouseUp = () => {
-      endDrag();
+      const s = state.current;
+      if (!s.isMouseDown) return;
+      
+      s.isMouseDown = false;
+      setIsDragging(false);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      
+      if (s.hasMoved && momentum) {
+        applyMomentum();
+      }
     };
 
-    window.addEventListener('mousemove', handleMouseMove, { passive: true });
+    window.addEventListener('mousemove', handleMouseMove);
     window.addEventListener('mouseup', handleMouseUp);
     
     return () => {
@@ -199,50 +108,25 @@ export const useDragScroll = (options: UseDragScrollOptions = {}) => {
       window.removeEventListener('mouseup', handleMouseUp);
       cancelMomentum();
     };
-  }, [moveDrag, endDrag, cancelMomentum]);
+  }, [sensitivity, momentum, applyMomentum, cancelMomentum]);
 
   const onMouseDown = useCallback((e: React.MouseEvent) => {
-    if (e.button !== 0) return;
-    startDrag(e.clientX, e.clientY);
-  }, [startDrag]);
-
-  const onTouchStart = useCallback((e: React.TouchEvent) => {
-    if (e.touches.length !== 1) return;
-    const touch = e.touches[0];
-    startDrag(touch.clientX, touch.clientY, touch.identifier);
-  }, [startDrag]);
-
-  const onTouchMove = useCallback((e: React.TouchEvent) => {
+    if (e.button !== 0 || !scrollRef.current) return;
+    
+    cancelMomentum();
+    
     const s = state.current;
+    s.isMouseDown = true;
+    s.startX = e.clientX;
+    s.scrollLeft = scrollRef.current.scrollLeft;
+    s.lastX = e.clientX;
+    s.lastTime = performance.now();
+    s.velocity = 0;
+    s.hasMoved = false;
     
-    let touch: React.Touch | null = null;
-    for (let i = 0; i < e.touches.length; i++) {
-      if (e.touches[i].identifier === s.touchId) {
-        touch = e.touches[i];
-        break;
-      }
-    }
-    
-    if (!touch) return;
-    
-    moveDrag(touch.clientX, touch.clientY, e.nativeEvent);
-  }, [moveDrag]);
-
-  const onTouchEnd = useCallback((e: React.TouchEvent) => {
-    const s = state.current;
-    
-    let touchEnded = true;
-    for (let i = 0; i < e.touches.length; i++) {
-      if (e.touches[i].identifier === s.touchId) {
-        touchEnded = false;
-        break;
-      }
-    }
-    
-    if (touchEnded) {
-      endDrag();
-    }
-  }, [endDrag]);
+    document.body.style.cursor = 'grabbing';
+    document.body.style.userSelect = 'none';
+  }, [cancelMomentum]);
 
   const scroll = useCallback((dir: "left" | "right", amount = 300) => {
     if (!scrollRef.current) return;
@@ -257,11 +141,11 @@ export const useDragScroll = (options: UseDragScrollOptions = {}) => {
 
   const wasClick = useCallback(() => !state.current.hasMoved, []);
 
-  // Style object to apply to scrollable container
+  // CSS styles for native mobile scrolling
   const scrollStyles: React.CSSProperties = {
-    touchAction: 'pan-y pinch-zoom',
     WebkitOverflowScrolling: 'touch',
-    overscrollBehaviorX: 'contain',
+    scrollbarWidth: 'none',
+    msOverflowStyle: 'none',
   };
 
   return {
@@ -271,9 +155,6 @@ export const useDragScroll = (options: UseDragScrollOptions = {}) => {
     scrollStyles,
     handlers: {
       onMouseDown,
-      onTouchStart,
-      onTouchMove,
-      onTouchEnd,
     },
     scroll,
   };
