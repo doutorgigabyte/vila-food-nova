@@ -13,7 +13,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useSavedAddresses, SavedAddress } from "@/hooks/useSavedAddresses";
 import MarketplaceHeader from "@/components/marketplace/MarketplaceHeader";
 import Footer from "@/components/landing/Footer";
-import AddressAutocomplete from "@/components/checkout/AddressAutocomplete";
+import { SmartAddressInput } from "@/components/address";
 
 const Addresses = () => {
   const navigate = useNavigate();
@@ -188,9 +188,10 @@ const Addresses = () => {
                     />
                   </div>
 
-                  <AddressAutocomplete
+                  <SmartAddressInput
                     value={formData}
                     onChange={(data) => setFormData({ ...formData, ...data })}
+                    showMap={true}
                   />
 
                   <div className="grid grid-cols-2 gap-4">

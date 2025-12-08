@@ -30,7 +30,7 @@ import { useCreateOrder } from "@/hooks/useCreateOrder";
 import { useAuth } from "@/hooks/useAuth";
 import { useSavedAddresses, SavedAddress } from "@/hooks/useSavedAddresses";
 import { useOrderSource } from "@/hooks/useOrderSource";
-import AddressAutocomplete from "@/components/checkout/AddressAutocomplete";
+import { SmartAddressInput } from "@/components/address";
 import { SavedAddressSelector } from "@/components/checkout/SavedAddressSelector";
 import { SaveAddressDialog } from "@/components/checkout/SaveAddressDialog";
 import { PaymentProcessor } from "@/components/checkout/PaymentProcessor";
@@ -641,9 +641,10 @@ const Checkout = () => {
                   {/* Address Autocomplete - show if no saved addresses OR user clicked "add new" */}
                   {(!isAuthenticated || savedAddresses.length === 0 || showAddressForm) && (
                     <>
-                      <AddressAutocomplete
+                      <SmartAddressInput
                         value={addressData}
                         onChange={setAddressData}
+                        showMap={true}
                       />
                       
                       {/* Option to save address for authenticated users */}

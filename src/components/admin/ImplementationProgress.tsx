@@ -430,11 +430,53 @@ const phases: ProgressPhase[] = [
       { name: 'Componente CepAutocomplete (ViaCEP)', status: 'completed', priority: 'high' },
       { name: 'Componente SmartAddressInput unificado', status: 'completed', priority: 'high' },
       { name: 'Tabela address_cache para otimização', status: 'completed', priority: 'medium' },
-      { name: 'Integrar no Checkout do cliente', status: 'pending', priority: 'critical' },
-      { name: 'Integrar no Onboarding (BasicDataStep)', status: 'pending', priority: 'high' },
+      { name: 'Integrar no Checkout do cliente', status: 'completed', priority: 'critical' },
+      { name: 'Integrar no Onboarding (BasicDataStep)', status: 'completed', priority: 'high' },
       { name: 'Integrar em EstablishmentSettings', status: 'pending', priority: 'high' },
-      { name: 'Integrar na página Meus Endereços', status: 'pending', priority: 'high' },
+      { name: 'Integrar na página Meus Endereços', status: 'completed', priority: 'high' },
       { name: 'Autocomplete de bairros em DeliveryFees', status: 'pending', priority: 'medium' },
+    ]
+  },
+
+  // ===== INTEGRAÇÃO PAGSEGURO =====
+  {
+    id: 'pagseguro-integration',
+    name: '💳 Integração PagSeguro',
+    description: 'Suporte a pagamentos via PagSeguro como alternativa ao Mercado Pago',
+    category: 'financial',
+    items: [
+      { name: 'Gateway PagSeguro (estrutura base)', status: 'completed', priority: 'high' },
+      { name: 'PIX via PagSeguro API', status: 'pending', priority: 'critical' },
+      { name: 'Checkout transparente (cartão crédito/débito)', status: 'pending', priority: 'critical' },
+      { name: 'Webhook para confirmação de pagamentos', status: 'pending', priority: 'critical' },
+      { name: 'OAuth para conectar contas de lojistas', status: 'pending', priority: 'high' },
+      { name: 'Split de pagamentos (marketplace)', status: 'pending', priority: 'high' },
+      { name: 'UI: Seletor de gateway no checkout', status: 'pending', priority: 'medium' },
+      { name: 'UI: Configuração PagSeguro em EstablishmentSettings', status: 'pending', priority: 'medium' },
+    ]
+  },
+
+  // ===== OTIMIZAÇÃO DE PERFORMANCE =====
+  {
+    id: 'performance-optimization',
+    name: '⚡ Otimização de Performance',
+    description: 'Técnicas para melhorar desempenho em dispositivos antigos',
+    category: 'ux',
+    items: [
+      { name: 'Lazy loading de rotas com React.lazy e Suspense', status: 'completed', priority: 'critical' },
+      { name: 'Google Fonts: preconnect e otimização de carregamento', status: 'completed', priority: 'high' },
+      { name: 'Virtualization de listas longas (react-window)', status: 'pending', priority: 'critical' },
+      { name: 'Memoização de componentes pesados (React.memo)', status: 'pending', priority: 'critical' },
+      { name: 'Debounce em buscas e filtros', status: 'pending', priority: 'high' },
+      { name: 'Skeleton loading universal', status: 'completed', priority: 'high' },
+      { name: 'Image optimization: WebP, srcset, lazy loading', status: 'pending', priority: 'high' },
+      { name: 'Prefetch de dados críticos (React Query)', status: 'pending', priority: 'medium' },
+      { name: 'Code splitting por rota e feature', status: 'pending', priority: 'high' },
+      { name: 'Reduzir bundle size (tree shaking, imports seletivos)', status: 'pending', priority: 'high' },
+      { name: 'Otimização de animações (will-change, GPU acceleration)', status: 'completed', priority: 'medium' },
+      { name: 'Admin/Painel: carregamento progressivo de dados', status: 'pending', priority: 'high' },
+      { name: 'Marketplace: infinite scroll com virtualization', status: 'pending', priority: 'high' },
+      { name: 'Cache de imagens e assets via Service Worker', status: 'pending', priority: 'medium' },
     ]
   },
 ];
