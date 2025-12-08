@@ -74,7 +74,7 @@ const getMenuItems = (baseUrl: string) => [
   { icon: CreditCard, label: "Pagamentos", href: `${baseUrl}/pagamentos` },
   { icon: TrendingUp, label: "Fluxo de Caixa", href: `${baseUrl}/fluxo` },
   { icon: Wallet, label: "Gestão Financeira", href: `${baseUrl}/financeiro` },
-  { icon: Users, label: "Fornecedores", href: `${baseUrl}/fornecedores` },
+  
   { icon: MessageSquare, label: "WhatsApp IA", href: `${baseUrl}/whatsapp` },
   { icon: BarChart3, label: "Relatórios", href: `${baseUrl}/relatorios` },
   { icon: LineChart, label: "Pixels Analytics", href: `${baseUrl}/pixels` },
