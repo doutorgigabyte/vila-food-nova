@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { MapPin, Store, ChevronRight, ChevronLeft } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -16,7 +16,8 @@ interface VilaWithCount extends Vila {
 const VilasSection = () => {
   const { vilas, loading } = useVilas();
   const [vilasWithCount, setVilasWithCount] = useState<VilaWithCount[]>([]);
-  const { scrollRef, isDragging, handlers, scroll } = useDragScroll();
+  const { scrollRef, isDragging, wasClick, handlers, scroll } = useDragScroll();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchCounts = async () => {
@@ -112,10 +113,13 @@ const VilasSection = () => {
             {vilasWithCount.map((vila) => (
               <div 
                 key={vila.id} 
-                className="flex-shrink-0"
-                style={{ pointerEvents: isDragging ? 'none' : 'auto' }}
+                className="flex-shrink-0 cursor-pointer"
+                onClick={() => {
+                  if (wasClick()) {
+                    navigate(`/vila/${vila.slug}`);
+                  }
+                }}
               >
-                <Link to={`/vila/${vila.slug}`}>
                 <Card className="w-72 md:w-80 overflow-hidden hover:shadow-lg transition-all duration-300 border-border/50 hover:border-primary/30">
                   <div className="relative h-28 md:h-32 bg-gradient-to-br from-primary/20 to-accent/20 overflow-hidden">
                     {vila.image_url ? (
@@ -154,7 +158,6 @@ const VilasSection = () => {
                     )}
                   </CardContent>
                 </Card>
-                </Link>
               </div>
             ))}
           </div>
