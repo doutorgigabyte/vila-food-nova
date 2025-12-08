@@ -352,10 +352,10 @@ const phases: ProgressPhase[] = [
     description: 'Hub de inteligência artificial',
     category: 'integration',
     items: [
-      { name: '"Aplicar melhorias" deve gerar textos otimizados', status: 'pending', priority: 'high' },
-      { name: 'Sugestões de banners e organização', status: 'pending', priority: 'medium' },
-      { name: 'Pré-preencher campos para lojista confirmar', status: 'pending', priority: 'medium' },
-      { name: 'Relatório mais estratégico e poético', status: 'pending', priority: 'low' },
+      { name: '"Aplicar melhorias" deve gerar textos otimizados', status: 'completed', priority: 'high' },
+      { name: 'Sugestões de banners e organização', status: 'completed', priority: 'medium' },
+      { name: 'Pré-preencher campos para lojista confirmar', status: 'completed', priority: 'medium' },
+      { name: 'Relatório mais estratégico e poético', status: 'completed', priority: 'low' },
     ]
   },
 

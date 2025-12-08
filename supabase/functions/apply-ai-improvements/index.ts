@@ -115,12 +115,43 @@ serve(async (req) => {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const authHeader = req.headers.get('authorization');
 
-    const results: { action: string; success: boolean; error?: string }[] = [];
+    const results: { action: string; success: boolean; error?: string; data?: any }[] = [];
     let totalCreditsUsed = 0;
+
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
 
     for (const action of actions) {
       try {
         console.log(`Processing action: ${action.type}`);
+
+        // Handle description improvement
+        if (action.type === 'improve_description') {
+          // target_name contains the improved description text
+          const improvedDescription = action.target_name;
+          
+          if (improvedDescription) {
+            const { error: updateError } = await supabase
+              .from('establishments')
+              .update({ description: improvedDescription })
+              .eq('id', action.target_id);
+              
+            if (updateError) {
+              results.push({ action: action.type, success: false, error: updateError.message });
+            } else {
+              results.push({ 
+                action: action.type, 
+                success: true, 
+                data: { newDescription: improvedDescription } 
+              });
+              totalCreditsUsed += 1;
+            }
+          } else {
+            results.push({ action: action.type, success: false, error: 'No improved description provided' });
+          }
+        }
 
         if (action.type === 'generate_logo' || action.type === 'generate_banner') {
           const imageType = action.type === 'generate_logo' ? 'logo' : 'banner';
@@ -140,7 +171,8 @@ serve(async (req) => {
           });
 
           if (response.ok) {
-            results.push({ action: action.type, success: true });
+            const responseData = await response.json();
+            results.push({ action: action.type, success: true, data: responseData });
             totalCreditsUsed += 2;
           } else {
             const errorText = await response.text();
@@ -164,7 +196,8 @@ serve(async (req) => {
           });
 
           if (response.ok) {
-            results.push({ action: action.type, success: true });
+            const responseData = await response.json();
+            results.push({ action: action.type, success: true, data: responseData });
             totalCreditsUsed += 1;
           } else {
             const errorText = await response.text();
@@ -172,7 +205,7 @@ serve(async (req) => {
           }
         }
 
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise(resolve => setTimeout(resolve, 500));
 
       } catch (actionError: unknown) {
         const errorMessage = actionError instanceof Error ? actionError.message : 'Unknown error';
@@ -180,11 +213,6 @@ serve(async (req) => {
         results.push({ action: action.type, success: false, error: errorMessage });
       }
     }
-
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
 
     await supabase
       .from('ai_profile_analyses')
