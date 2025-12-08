@@ -279,9 +279,9 @@ const MainCategoriesManagement = () => {
   return (
     <AdminLayout title="Áreas de Negócio" icon={Layers} breadcrumb="Tipos de Negócio > Áreas">
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <CardTitle>Áreas de Negócio ({categories?.length || 0})</CardTitle>
-          <Button onClick={() => { resetForm(); setIsDialogOpen(true); }}>
+          <Button onClick={() => { resetForm(); setIsDialogOpen(true); }} className="w-full sm:w-auto">
             <Plus className="h-4 w-4 mr-2" />
             Nova Categoria
           </Button>
@@ -300,64 +300,117 @@ const MainCategoriesManagement = () => {
           {isLoading ? (
             <div className="text-center py-8">Carregando...</div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Ícone</TableHead>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>Slug</TableHead>
-                  <TableHead>Segmentos</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            <>
+              {/* Mobile Cards */}
+              <div className="grid grid-cols-1 gap-4 md:hidden">
                 {filteredCategories?.map((category) => {
                   const IconComponent = getIconComponent(category.icon);
                   return (
-                    <TableRow key={category.id}>
-                      <TableCell>
-                        <div className={`p-2 rounded-lg w-fit ${category.bg_color || 'bg-primary/10'}`}>
-                          <IconComponent className={`h-5 w-5 ${category.icon_color || 'text-primary'}`} />
+                    <Card key={category.id}>
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex items-center gap-3">
+                            <div className={`p-2 rounded-lg ${category.bg_color || 'bg-primary/10'}`}>
+                              <IconComponent className={`h-5 w-5 ${category.icon_color || 'text-primary'}`} />
+                            </div>
+                            <div>
+                              <p className="font-medium">{category.name}</p>
+                              <Badge variant="outline" className="text-xs">{category.slug}</Badge>
+                            </div>
+                          </div>
+                          <Switch
+                            checked={category.is_active ?? false}
+                            onCheckedChange={(checked) => 
+                              toggleActiveMutation.mutate({ id: category.id, is_active: checked })
+                            }
+                          />
                         </div>
-                      </TableCell>
-                      <TableCell className="font-medium">{category.name}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{category.slug}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary">
-                          {subcategoryCounts?.[category.id] || 0} segmentos
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Switch
-                          checked={category.is_active ?? false}
-                          onCheckedChange={(checked) => 
-                            toggleActiveMutation.mutate({ id: category.id, is_active: checked })
-                          }
-                        />
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button variant="ghost" size="icon" onClick={() => handleEdit(category)}>
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={() => handleDelete(category)}
-                            disabled={(subcategoryCounts?.[category.id] || 0) > 0}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
+                        <div className="flex items-center justify-between">
+                          <Badge variant="secondary">
+                            {subcategoryCounts?.[category.id] || 0} segmentos
+                          </Badge>
+                          <div className="flex gap-2">
+                            <Button variant="ghost" size="icon" onClick={() => handleEdit(category)}>
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              onClick={() => handleDelete(category)}
+                              disabled={(subcategoryCounts?.[category.id] || 0) > 0}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
                         </div>
-                      </TableCell>
-                    </TableRow>
+                      </CardContent>
+                    </Card>
                   );
                 })}
-              </TableBody>
-            </Table>
+              </div>
+
+              {/* Desktop Table */}
+              <div className="hidden md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Ícone</TableHead>
+                      <TableHead>Nome</TableHead>
+                      <TableHead>Slug</TableHead>
+                      <TableHead>Segmentos</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredCategories?.map((category) => {
+                      const IconComponent = getIconComponent(category.icon);
+                      return (
+                        <TableRow key={category.id}>
+                          <TableCell>
+                            <div className={`p-2 rounded-lg w-fit ${category.bg_color || 'bg-primary/10'}`}>
+                              <IconComponent className={`h-5 w-5 ${category.icon_color || 'text-primary'}`} />
+                            </div>
+                          </TableCell>
+                          <TableCell className="font-medium">{category.name}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline">{category.slug}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="secondary">
+                              {subcategoryCounts?.[category.id] || 0} segmentos
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Switch
+                              checked={category.is_active ?? false}
+                              onCheckedChange={(checked) => 
+                                toggleActiveMutation.mutate({ id: category.id, is_active: checked })
+                              }
+                            />
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
+                              <Button variant="ghost" size="icon" onClick={() => handleEdit(category)}>
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                onClick={() => handleDelete(category)}
+                                disabled={(subcategoryCounts?.[category.id] || 0) > 0}
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
