@@ -68,7 +68,7 @@ const MarketplaceHeader = ({ searchTerm, onSearchChange, onSearchClick }: Market
   const { categories } = useMainCategories();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
-  const { scrollRef, isDragging, handlers } = useDragScroll({ direction: 'horizontal' });
+  const { scrollRef, isDragging, handlers } = useDragScroll();
   const cartCount = items.reduce((acc, item) => acc + item.quantity, 0);
 
   return (
