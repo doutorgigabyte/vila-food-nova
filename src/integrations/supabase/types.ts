@@ -417,6 +417,115 @@ export type Database = {
           },
         ]
       }
+      anomaly_alerts: {
+        Row: {
+          alert_type: string
+          amount: number | null
+          created_at: string | null
+          description: string | null
+          establishment_id: string | null
+          id: string
+          metadata: Json | null
+          notified_at: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string
+          title: string
+          transaction_id: string | null
+        }
+        Insert: {
+          alert_type: string
+          amount?: number | null
+          created_at?: string | null
+          description?: string | null
+          establishment_id?: string | null
+          id?: string
+          metadata?: Json | null
+          notified_at?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity: string
+          title: string
+          transaction_id?: string | null
+        }
+        Update: {
+          alert_type?: string
+          amount?: number | null
+          created_at?: string | null
+          description?: string | null
+          establishment_id?: string | null
+          id?: string
+          metadata?: Json | null
+          notified_at?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          title?: string
+          transaction_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "anomaly_alerts_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      anomaly_config: {
+        Row: {
+          alert_email: boolean | null
+          alert_whatsapp: boolean | null
+          config_type: string
+          created_at: string | null
+          establishment_id: string | null
+          failed_attempts_threshold: number | null
+          id: string
+          is_active: boolean | null
+          suspicious_time_end: string | null
+          suspicious_time_start: string | null
+          transaction_threshold: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          alert_email?: boolean | null
+          alert_whatsapp?: boolean | null
+          config_type: string
+          created_at?: string | null
+          establishment_id?: string | null
+          failed_attempts_threshold?: number | null
+          id?: string
+          is_active?: boolean | null
+          suspicious_time_end?: string | null
+          suspicious_time_start?: string | null
+          transaction_threshold?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          alert_email?: boolean | null
+          alert_whatsapp?: boolean | null
+          config_type?: string
+          created_at?: string | null
+          establishment_id?: string | null
+          failed_attempts_threshold?: number | null
+          id?: string
+          is_active?: boolean | null
+          suspicious_time_end?: string | null
+          suspicious_time_start?: string | null
+          transaction_threshold?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "anomaly_config_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_logs: {
         Row: {
           action: string
