@@ -1844,6 +1844,7 @@ export type Database = {
           order_source: string | null
           payment_method: Database["public"]["Enums"]["payment_method"] | null
           platform_fee: number | null
+          scheduled_for: string | null
           status: Database["public"]["Enums"]["order_status"] | null
           subtotal: number
           table_number: string | null
@@ -1870,6 +1871,7 @@ export type Database = {
           order_source?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"] | null
           platform_fee?: number | null
+          scheduled_for?: string | null
           status?: Database["public"]["Enums"]["order_status"] | null
           subtotal?: number
           table_number?: string | null
@@ -1896,6 +1898,7 @@ export type Database = {
           order_source?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"] | null
           platform_fee?: number | null
+          scheduled_for?: string | null
           status?: Database["public"]["Enums"]["order_status"] | null
           subtotal?: number
           table_number?: string | null
