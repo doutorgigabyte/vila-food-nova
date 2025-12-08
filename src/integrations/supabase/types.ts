@@ -1376,6 +1376,8 @@ export type Database = {
           delivery_fee_per_km: number | null
           description: string | null
           email: string | null
+          evolution_api_token: string | null
+          gemini_api_key: string | null
           id: string
           is_open: boolean | null
           latitude: number | null
@@ -1410,6 +1412,7 @@ export type Database = {
           updated_at: string | null
           vila_id: string | null
           whatsapp: string | null
+          whatsapp_instance_name: string | null
           zip_code: string | null
         }
         Insert: {
@@ -1426,6 +1429,8 @@ export type Database = {
           delivery_fee_per_km?: number | null
           description?: string | null
           email?: string | null
+          evolution_api_token?: string | null
+          gemini_api_key?: string | null
           id?: string
           is_open?: boolean | null
           latitude?: number | null
@@ -1460,6 +1465,7 @@ export type Database = {
           updated_at?: string | null
           vila_id?: string | null
           whatsapp?: string | null
+          whatsapp_instance_name?: string | null
           zip_code?: string | null
         }
         Update: {
@@ -1476,6 +1482,8 @@ export type Database = {
           delivery_fee_per_km?: number | null
           description?: string | null
           email?: string | null
+          evolution_api_token?: string | null
+          gemini_api_key?: string | null
           id?: string
           is_open?: boolean | null
           latitude?: number | null
@@ -1510,6 +1518,7 @@ export type Database = {
           updated_at?: string | null
           vila_id?: string | null
           whatsapp?: string | null
+          whatsapp_instance_name?: string | null
           zip_code?: string | null
         }
         Relationships: [
