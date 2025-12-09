@@ -37,6 +37,8 @@ export interface CreateOrderData {
   table_number?: string;
   order_source?: OrderSource;
   scheduled_for?: string; // ISO date string for scheduled orders
+  whatsapp_tracking_enabled?: boolean;
+  customer_phone?: string;
 }
 
 export const useCreateOrder = () => {
@@ -72,6 +74,8 @@ export const useCreateOrder = () => {
           observations: orderData.observations || null,
           table_number: orderData.table_number || null,
           scheduled_for: orderData.scheduled_for || null,
+          whatsapp_tracking_enabled: orderData.whatsapp_tracking_enabled ?? false,
+          customer_phone: orderData.customer_phone || null,
           status: 'pending' as const,
         }])
         .select()

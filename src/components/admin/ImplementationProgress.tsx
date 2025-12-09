@@ -157,8 +157,8 @@ const phases: ProgressPhase[] = [
       { name: 'Mensagem "Saiu para Entrega" com nome do entregador', status: 'completed', priority: 'high' },
       { name: 'Mensagem "Entregue" com CTA para avaliar', status: 'completed', priority: 'critical' },
       { name: 'Mensagem "Cancelado" com motivo', status: 'completed', priority: 'medium' },
-      { name: 'Opt-in de tracking no checkout', status: 'pending', priority: 'high' },
-      { name: 'Checkbox "Acompanhar pelo WhatsApp" no Checkout', status: 'pending', priority: 'high' },
+      { name: 'Opt-in de tracking no checkout', status: 'completed', priority: 'high' },
+      { name: 'Checkbox "Acompanhar pelo WhatsApp" no Checkout', status: 'completed', priority: 'high' },
     ]
   },
 
@@ -189,10 +189,10 @@ const phases: ProgressPhase[] = [
       { name: 'Resposta do lojista à avaliação', status: 'completed', priority: 'medium' },
       { name: 'Filtros por estrela, data, respondidas/pendentes', status: 'completed', priority: 'medium' },
       // Integrações pendentes
-      { name: 'Exibir estrelas nos cards de estabelecimento', status: 'pending', priority: 'high' },
+      { name: 'Exibir estrelas nos cards de estabelecimento', status: 'completed', priority: 'high' },
       { name: 'Seção de avaliações na página da loja', status: 'pending', priority: 'medium' },
       { name: 'Ordenar por avaliação no marketplace', status: 'pending', priority: 'medium' },
-      { name: 'Link "Avaliações" no sidebar do painel', status: 'pending', priority: 'high' },
+      { name: 'Link "Avaliações" no sidebar do painel', status: 'completed', priority: 'high' },
     ]
   },
 

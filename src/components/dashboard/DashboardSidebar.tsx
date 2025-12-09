@@ -17,7 +17,6 @@ import {
   Eye,
   LogOut,
   ClipboardList,
-  
   ShoppingCart,
   Calendar,
   Bike,
@@ -34,6 +33,7 @@ import {
   Cog,
   Settings,
   Plug,
+  Star,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -64,17 +64,16 @@ const getMenuItems = (baseUrl: string) => [
   { icon: Package, label: "Produtos", href: `${baseUrl}/produtos` },
   { icon: Tag, label: "Categorias", href: `${baseUrl}/categorias` },
   { icon: Boxes, label: "Estoque", href: `${baseUrl}/estoque` },
-  { icon: Video, label: "VilaTok", href: `${baseUrl}/videos`, badge: "Novo" },
+  { icon: Star, label: "Avaliações", href: `${baseUrl}/avaliacoes`, badge: "Novo" },
+  { icon: Video, label: "VilaTok", href: `${baseUrl}/videos` },
   { icon: Camera, label: "Stories", href: `${baseUrl}/stories` },
   { icon: Truck, label: "Área de Atendimento", href: `${baseUrl}/area-atendimento` },
   { icon: Bike, label: "Entregadores", href: `${baseUrl}/entregadores` },
   { icon: DollarSign, label: "Cupons", href: `${baseUrl}/cupons` },
-  
   { icon: ShoppingCart, label: "Recuperador de Vendas", href: `${baseUrl}/carrinhos-abandonados` },
   { icon: CreditCard, label: "Pagamentos", href: `${baseUrl}/pagamentos` },
   { icon: TrendingUp, label: "Fluxo de Caixa", href: `${baseUrl}/fluxo` },
   { icon: Wallet, label: "Gestão Financeira", href: `${baseUrl}/financeiro` },
-  
   { icon: MessageSquare, label: "WhatsApp IA", href: `${baseUrl}/whatsapp` },
   { icon: BarChart3, label: "Relatórios", href: `${baseUrl}/relatorios` },
   { icon: LineChart, label: "Pixels Analytics", href: `${baseUrl}/pixels` },
