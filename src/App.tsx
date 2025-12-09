@@ -26,6 +26,7 @@ const Vila = lazy(() => import("./pages/Vila"));
 const Vilas = lazy(() => import("./pages/Vilas"));
 const Conheca = lazy(() => import("./pages/Conheca"));
 const RecoverPassword = lazy(() => import("./pages/RecoverPassword"));
+const RecoverPasswordWhatsApp = lazy(() => import("./pages/RecoverPasswordWhatsApp"));
 const RegisterEstablishment = lazy(() => import("./pages/RegisterEstablishment"));
 const Marketplace = lazy(() => import("./pages/Marketplace"));
 const Checkout = lazy(() => import("./pages/Checkout"));
@@ -190,6 +191,7 @@ const AppRoutes = () => {
               <Route path="/marketplace" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/recuperar-senha" element={<RecoverPassword />} />
+              <Route path="/recuperar-senha-whatsapp" element={<RecoverPasswordWhatsApp />} />
               <Route path="/loja/:slug" element={<Store />} />
               <Route path="/vilatok" element={<VilaTokPage />} />
               <Route path="/vilatok/perfil/:username" element={<VilaTokProfile />} />
