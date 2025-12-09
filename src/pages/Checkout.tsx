@@ -40,6 +40,7 @@ import { CartConfirmationStep } from "@/components/checkout/CartConfirmationStep
 import { DeliveryOptionsCards } from "@/components/checkout/DeliveryOptionsCards";
 import { CheckoutSummary } from "@/components/checkout/CheckoutSummary";
 import { CouponInput } from "@/components/checkout/CouponInput";
+import { GatewaySelector, GatewayProvider } from "@/components/checkout/GatewaySelector";
 import { trackInitiateCheckout, trackPurchase } from "@/lib/analytics";
 
 type CheckoutStep = "cart" | "delivery" | "payment" | "processing" | "success";
@@ -69,6 +70,7 @@ const Checkout = () => {
   const [step, setStep] = useState<CheckoutStep>("cart");
   const [deliveryType, setDeliveryType] = useState("pickup");
   const [paymentMethod, setPaymentMethod] = useState("pix");
+  const [selectedGateway, setSelectedGateway] = useState<GatewayProvider>("mercadopago");
   const [createdOrderId, setCreatedOrderId] = useState<string | null>(null);
   const [currentEstablishmentId, setCurrentEstablishmentId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -784,6 +786,15 @@ const Checkout = () => {
         {/* Payment Step */}
         {step === "payment" && (
           <div className="space-y-6 animate-fade-up">
+            {/* Gateway Selector - only shows if multiple gateways available */}
+            {firstEstablishment && (
+              <GatewaySelector
+                establishmentId={firstEstablishment.id}
+                selectedGateway={selectedGateway}
+                onGatewayChange={setSelectedGateway}
+              />
+            )}
+
             {/* Coupon Input */}
             {firstEstablishment && (
               <CouponInput
