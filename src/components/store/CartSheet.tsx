@@ -272,35 +272,35 @@ export const CartSheet = ({
           <div className="border-t p-4 space-y-3 bg-background">
             {/* Summary */}
             <div className="space-y-2 text-sm">
-              {isMultiStore ? (
-                <>
-                    {uniqueEstablishments.map((estId) => {
-                    const estInfo = establishments.get(estId);
-                    const estSubtotal = getEstablishmentSubtotal(estId);
-                    return (
-                      <div key={estId} className="flex justify-between">
-                        <span className="text-muted-foreground">{estInfo?.name}</span>
-                        <Price value={estSubtotal} size="sm" />
+              {uniqueEstablishments.map((estId) => {
+                const estInfo = establishments.get(estId);
+                const estSubtotal = getEstablishmentSubtotal(estId);
+                const estDeliveryFee = estInfo?.delivery_base_fee || 0;
+                return (
+                  <div key={estId} className="space-y-1">
+                    {uniqueEstablishments.length > 1 && (
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        {estInfo?.logo_url && (
+                          <img src={estInfo.logo_url} alt="" className="w-4 h-4 rounded-full" />
+                        )}
+                        {estInfo?.name}
                       </div>
-                    );
-                  })}
-                </>
-              ) : (
-                <>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Subtotal</span>
-                    <Price value={currentSubtotal} size="sm" />
+                    )}
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Subtotal</span>
+                      <Price value={estSubtotal} size="sm" />
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Taxa de entrega</span>
+                      <Price value={estDeliveryFee} size="sm" />
+                    </div>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Taxa de entrega</span>
-                    <Price value={deliveryFee} size="sm" />
-                  </div>
-                </>
-              )}
+                );
+              })}
               <Separator />
               <div className="flex justify-between text-base font-semibold">
                 <span>Total</span>
-                <Price value={isMultiStore ? totalPrice : currentSubtotal + deliveryFee} size="base" />
+                <Price value={totalPrice + Array.from(establishments.values()).reduce((sum, e) => sum + (e.delivery_base_fee || 0), 0)} size="base" />
               </div>
             </div>
 
