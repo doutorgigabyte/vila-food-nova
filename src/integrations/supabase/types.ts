@@ -1040,6 +1040,8 @@ export type Database = {
           license_plate: string | null
           name: string
           phone: string
+          pix_key: string | null
+          pix_key_type: string | null
           updated_at: string | null
           user_id: string | null
           vehicle_type: string | null
@@ -1054,6 +1056,8 @@ export type Database = {
           license_plate?: string | null
           name: string
           phone: string
+          pix_key?: string | null
+          pix_key_type?: string | null
           updated_at?: string | null
           user_id?: string | null
           vehicle_type?: string | null
@@ -1068,6 +1072,8 @@ export type Database = {
           license_plate?: string | null
           name?: string
           phone?: string
+          pix_key?: string | null
+          pix_key_type?: string | null
           updated_at?: string | null
           user_id?: string | null
           vehicle_type?: string | null
@@ -1122,6 +1128,88 @@ export type Database = {
             columns: ["establishment_id"]
             isOneToOne: false
             referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      delivery_requests: {
+        Row: {
+          accepted_at: string | null
+          accepted_by: string | null
+          calculated_fee: number
+          created_at: string | null
+          customer_name: string | null
+          delivery_address: string | null
+          delivery_type: string | null
+          driver_earnings: number
+          establishment_id: string
+          estimated_distance_km: number | null
+          estimated_duration_minutes: number | null
+          expires_at: string
+          id: string
+          order_id: string
+          pickup_address: string | null
+          status: string
+          stops_count: number | null
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          calculated_fee?: number
+          created_at?: string | null
+          customer_name?: string | null
+          delivery_address?: string | null
+          delivery_type?: string | null
+          driver_earnings?: number
+          establishment_id: string
+          estimated_distance_km?: number | null
+          estimated_duration_minutes?: number | null
+          expires_at: string
+          id?: string
+          order_id: string
+          pickup_address?: string | null
+          status?: string
+          stops_count?: number | null
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          calculated_fee?: number
+          created_at?: string | null
+          customer_name?: string | null
+          delivery_address?: string | null
+          delivery_type?: string | null
+          driver_earnings?: number
+          establishment_id?: string
+          estimated_distance_km?: number | null
+          estimated_duration_minutes?: number | null
+          expires_at?: string
+          id?: string
+          order_id?: string
+          pickup_address?: string | null
+          status?: string
+          stops_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_requests_accepted_by_fkey"
+            columns: ["accepted_by"]
+            isOneToOne: false
+            referencedRelation: "delivery_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_requests_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_requests_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
             referencedColumns: ["id"]
           },
         ]
@@ -1269,6 +1357,63 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "delivery_zones_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      driver_establishment_links: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          commission_type: string | null
+          created_at: string | null
+          driver_id: string
+          establishment_id: string
+          fixed_fee: number | null
+          id: string
+          linked_via: string | null
+          percentage_fee: number | null
+          status: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          commission_type?: string | null
+          created_at?: string | null
+          driver_id: string
+          establishment_id: string
+          fixed_fee?: number | null
+          id?: string
+          linked_via?: string | null
+          percentage_fee?: number | null
+          status?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          commission_type?: string | null
+          created_at?: string | null
+          driver_id?: string
+          establishment_id?: string
+          fixed_fee?: number | null
+          id?: string
+          linked_via?: string | null
+          percentage_fee?: number | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_establishment_links_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_establishment_links_establishment_id_fkey"
             columns: ["establishment_id"]
             isOneToOne: false
             referencedRelation: "establishments"
@@ -1491,6 +1636,9 @@ export type Database = {
           delivery_base_fee: number | null
           delivery_fee_per_km: number | null
           description: string | null
+          driver_default_commission_type: string | null
+          driver_default_fee: number | null
+          driver_payment_mode: string | null
           email: string | null
           evolution_api_token: string | null
           gemini_api_key: string | null
@@ -1553,6 +1701,9 @@ export type Database = {
           delivery_base_fee?: number | null
           delivery_fee_per_km?: number | null
           description?: string | null
+          driver_default_commission_type?: string | null
+          driver_default_fee?: number | null
+          driver_payment_mode?: string | null
           email?: string | null
           evolution_api_token?: string | null
           gemini_api_key?: string | null
@@ -1615,6 +1766,9 @@ export type Database = {
           delivery_base_fee?: number | null
           delivery_fee_per_km?: number | null
           description?: string | null
+          driver_default_commission_type?: string | null
+          driver_default_fee?: number | null
+          driver_payment_mode?: string | null
           email?: string | null
           evolution_api_token?: string | null
           gemini_api_key?: string | null
@@ -4058,6 +4212,10 @@ export type Database = {
       }
     }
     Functions: {
+      accept_delivery_request: {
+        Args: { p_driver_id: string; p_request_id: string }
+        Returns: Json
+      }
       generate_menu_json: { Args: { est_id: string }; Returns: Json }
       get_public_establishment_by_slug: {
         Args: { p_slug: string }

@@ -4,15 +4,18 @@ import { useAuth } from '@/hooks/useAuth';
 import { useDriverDeliveries, DeliveryTracking } from '@/hooks/useDriverDeliveries';
 import { useDriverGPS } from '@/hooks/useDriverGPS';
 import { useNotificationSound } from '@/hooks/useNotificationSound';
+import { useDeliveryRequests } from '@/hooks/useDeliveryRequests';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
 import GPSStatusIndicator from '@/components/driver/GPSStatusIndicator';
+import { DeliveryRequestCard } from '@/components/driver/DeliveryRequestCard';
+import { LinkedEstablishments } from '@/components/driver/LinkedEstablishments';
 import DriverHistory from './DriverHistory';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   Bike, 
   Package, 
@@ -24,15 +27,16 @@ import {
   CheckCircle2,
   XCircle,
   AlertTriangle,
-  History,
   User,
-  LogOut,
   Loader2,
   Volume2,
   VolumeX,
   Zap,
   Layers,
-  Route
+  Route,
+  Bell,
+  LogOut,
+  History
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -67,6 +71,13 @@ const DriverApp = () => {
   // Notification sounds
   const { playNotification, preferences: soundPrefs, updatePreferences } = useNotificationSound();
 
+  // Delivery requests (Uber-style offers)
+  const { 
+    requests: deliveryRequests, 
+    acceptRequest, 
+    rejectRequest 
+  } = useDeliveryRequests(driverProfile?.id);
+
   const [stats, setStats] = useState({ deliveries: 0, earnings: 0, distance: 0 });
   const [activeTab, setActiveTab] = useState<'deliveries' | 'history' | 'profile'>('deliveries');
   const [batchInfo, setBatchInfo] = useState<{ batch_id?: string; order_in_batch?: number; total_in_batch?: number } | null>(null);
@@ -79,12 +90,15 @@ const DriverApp = () => {
     loadStats();
   }, [getTodayStats]);
 
-  // Play sound on new delivery
+  // Play sound on new delivery or request
   useEffect(() => {
     if (deliveries.length > 0 && deliveries.some(d => d.status === 'assigned')) {
       playNotification('new_delivery');
     }
-  }, [deliveries, playNotification]);
+    if (deliveryRequests.length > 0) {
+      playNotification('new_delivery');
+    }
+  }, [deliveries, deliveryRequests, playNotification]);
 
   // Start/stop GPS based on online status
   useEffect(() => {
@@ -418,7 +432,30 @@ const DriverApp = () => {
               </Card>
             )}
 
-            {sortedDeliveries.length === 0 ? (
+            {/* Delivery Requests (Uber-style offers) */}
+            {deliveryRequests.length > 0 && (
+              <div className="mb-6">
+                <div className="flex items-center gap-2 mb-3">
+                  <Bell className="w-5 h-5 text-primary" />
+                  <h2 className="font-semibold">Solicitações de Entrega</h2>
+                  <Badge variant="destructive" className="animate-pulse">
+                    {deliveryRequests.length}
+                  </Badge>
+                </div>
+                <div className="space-y-3">
+                  {deliveryRequests.map(request => (
+                    <DeliveryRequestCard
+                      key={request.id}
+                      request={request}
+                      onAccept={acceptRequest}
+                      onReject={rejectRequest}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {sortedDeliveries.length === 0 && deliveryRequests.length === 0 ? (
               <div className="text-center py-12">
                 <Bike className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
                 <h2 className="text-lg font-semibold mb-2">Nenhuma entrega</h2>
@@ -429,7 +466,7 @@ const DriverApp = () => {
                   }
                 </p>
               </div>
-            ) : (
+            ) : sortedDeliveries.length > 0 && (
               <>
                 {/* Batch summary if multiple deliveries */}
                 {sortedDeliveries.length > 1 && (
