@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import { DeliveryConfigTab } from "@/components/dashboard/DeliveryConfigTab";
 import { MercadoPagoOAuth } from "@/components/payment/MercadoPagoOAuth";
+import { SmartAddressInput, AddressData } from "@/components/address";
 import { 
   Menu, 
   Store, 
@@ -40,9 +41,12 @@ interface Establishment {
   whatsapp: string | null;
   email: string | null;
   address: string | null;
+  address_number: string | null;
   neighborhood: string | null;
   city_id: string | null;
   zip_code: string | null;
+  latitude: number | null;
+  longitude: number | null;
   primary_color: string | null;
   secondary_color: string | null;
   min_order_value: number | null;
@@ -95,6 +99,18 @@ const EstablishmentSettings = () => {
   
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [bannerUrl, setBannerUrl] = useState<string | null>(null);
+  const [addressData, setAddressData] = useState<AddressData>({
+    cep: "",
+    address: "",
+    number: "",
+    complement: "",
+    neighborhood: "",
+    city: "",
+    state: "",
+    reference: "",
+    lat: undefined,
+    lng: undefined,
+  });
   const [operatingHours, setOperatingHours] = useState<Record<string, { open: string; close: string; enabled: boolean }>>({
     monday: { open: "08:00", close: "22:00", enabled: true },
     tuesday: { open: "08:00", close: "22:00", enabled: true },
@@ -147,6 +163,18 @@ const EstablishmentSettings = () => {
       });
       setLogoUrl(data.logo_url);
       setBannerUrl(data.banner_url);
+      setAddressData({
+        cep: data.zip_code || "",
+        address: data.address || "",
+        number: data.address_number || "",
+        complement: "",
+        neighborhood: data.neighborhood || "",
+        city: "",
+        state: "",
+        reference: "",
+        lat: data.latitude ?? undefined,
+        lng: data.longitude ?? undefined,
+      });
       if (data.operating_hours) {
         setOperatingHours(data.operating_hours as any);
       }
@@ -171,9 +199,12 @@ const EstablishmentSettings = () => {
           phone: formData.phone,
           whatsapp: formData.whatsapp,
           email: formData.email,
-          address: formData.address,
-          neighborhood: formData.neighborhood,
-          zip_code: formData.zip_code,
+          address: addressData.address,
+          address_number: addressData.number,
+          neighborhood: addressData.neighborhood,
+          zip_code: addressData.cep,
+          latitude: addressData.lat,
+          longitude: addressData.lng,
           primary_color: formData.primary_color,
           secondary_color: formData.secondary_color,
           min_order_value: formData.min_order_value,
@@ -363,35 +394,15 @@ const EstablishmentSettings = () => {
                 <Card>
                   <CardHeader>
                     <CardTitle>Endereço</CardTitle>
-                    <CardDescription>Localização do estabelecimento</CardDescription>
+                    <CardDescription>Localização do estabelecimento com mapa interativo</CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="address">Endereço</Label>
-                      <Input
-                        id="address"
-                        value={formData.address}
-                        onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="neighborhood">Bairro</Label>
-                        <Input
-                          id="neighborhood"
-                          value={formData.neighborhood}
-                          onChange={(e) => setFormData({ ...formData, neighborhood: e.target.value })}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="zip_code">CEP</Label>
-                        <Input
-                          id="zip_code"
-                          value={formData.zip_code}
-                          onChange={(e) => setFormData({ ...formData, zip_code: e.target.value })}
-                        />
-                      </div>
-                    </div>
+                  <CardContent>
+                    <SmartAddressInput
+                      value={addressData}
+                      onChange={setAddressData}
+                      showMap={true}
+                      showGpsButton={true}
+                    />
                   </CardContent>
                 </Card>
 
