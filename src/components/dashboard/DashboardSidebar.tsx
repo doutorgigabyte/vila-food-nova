@@ -36,6 +36,7 @@ import {
   Star,
   PackagePlus,
   Layers,
+  Receipt,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -76,6 +77,7 @@ const getMenuItems = (baseUrl: string) => [
   { icon: DollarSign, label: "Cupons", href: `${baseUrl}/cupons` },
   { icon: ShoppingCart, label: "Recuperador de Vendas", href: `${baseUrl}/carrinhos-abandonados` },
   { icon: CreditCard, label: "Pagamentos", href: `${baseUrl}/pagamentos` },
+  { icon: Receipt, label: "Extrato Comissões", href: `${baseUrl}/comissoes`, badge: "Novo" },
   { icon: TrendingUp, label: "Fluxo de Caixa", href: `${baseUrl}/fluxo` },
   { icon: Wallet, label: "Gestão Financeira", href: `${baseUrl}/financeiro` },
   { icon: MessageSquare, label: "WhatsApp IA", href: `${baseUrl}/whatsapp` },
