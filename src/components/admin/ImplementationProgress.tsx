@@ -386,9 +386,9 @@ const phases: ProgressPhase[] = [
       { name: 'Modal de agendamento quando loja fechada', status: 'completed', priority: 'critical' },
       { name: 'Seletor de data com dias disponíveis', status: 'completed', priority: 'high' },
       { name: 'Seletor de horário baseado em operating_hours', status: 'completed', priority: 'high' },
-      { name: 'Salvar pedido agendado em scheduled_orders', status: 'pending', priority: 'high' },
-      { name: 'Agendamento recorrente (semanal/mensal)', status: 'pending', priority: 'medium' },
-      { name: 'Notificação de pedido agendado via WhatsApp', status: 'pending', priority: 'medium' },
+      { name: 'Salvar pedido agendado em scheduled_orders', status: 'completed', priority: 'high' },
+      { name: 'Agendamento recorrente (semanal/mensal)', status: 'completed', priority: 'medium' },
+      { name: 'Notificação de pedido agendado via WhatsApp', status: 'completed', priority: 'medium' },
     ]
   },
 
@@ -486,7 +486,7 @@ const phases: ProgressPhase[] = [
       { name: 'Memoização de componentes pesados (EstablishmentCard, etc)', status: 'completed', priority: 'critical' },
       { name: 'Debounce em buscas e filtros (SmartSearch 300ms)', status: 'completed', priority: 'high' },
       { name: 'Image optimization: lazy loading nativo', status: 'completed', priority: 'high' },
-      { name: 'Prefetch de dados críticos', status: 'pending', priority: 'medium' },
+      { name: 'Prefetch de dados críticos', status: 'completed', priority: 'medium' },
       { name: 'Code splitting por feature (lazy loading App.tsx)', status: 'completed', priority: 'high' },
       { name: 'Marketplace: infinite scroll com IntersectionObserver', status: 'completed', priority: 'high' },
     ]
@@ -535,8 +535,8 @@ const phases: ProgressPhase[] = [
       { name: 'Validar establishment tem mercado_pago_token', status: 'completed', priority: 'critical' },
       { name: 'Debug Edge Function mercadopago-pix', status: 'completed', priority: 'critical' },
       { name: 'Fallback para PIX estático quando MP falha', status: 'completed', priority: 'high' },
-      { name: 'Testar checkout como usuário anônimo', status: 'pending', priority: 'critical' },
-      { name: 'Testar checkout como usuário logado', status: 'pending', priority: 'critical' },
+      { name: 'Testar checkout como usuário anônimo', status: 'completed', priority: 'critical' },
+      { name: 'Testar checkout como usuário logado', status: 'completed', priority: 'critical' },
     ]
   },
 
