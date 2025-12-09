@@ -1443,7 +1443,11 @@ export type Database = {
           neighborhood: string | null
           operating_hours: Json | null
           owner_id: string | null
+          pagseguro_account_id: string | null
+          pagseguro_refresh_token: string | null
+          pagseguro_scope: string | null
           pagseguro_token: string | null
+          pagseguro_token_expires_at: string | null
           phone: string | null
           pix_key: string | null
           plan_id: string | null
@@ -1498,7 +1502,11 @@ export type Database = {
           neighborhood?: string | null
           operating_hours?: Json | null
           owner_id?: string | null
+          pagseguro_account_id?: string | null
+          pagseguro_refresh_token?: string | null
+          pagseguro_scope?: string | null
           pagseguro_token?: string | null
+          pagseguro_token_expires_at?: string | null
           phone?: string | null
           pix_key?: string | null
           plan_id?: string | null
@@ -1553,7 +1561,11 @@ export type Database = {
           neighborhood?: string | null
           operating_hours?: Json | null
           owner_id?: string | null
+          pagseguro_account_id?: string | null
+          pagseguro_refresh_token?: string | null
+          pagseguro_scope?: string | null
           pagseguro_token?: string | null
+          pagseguro_token_expires_at?: string | null
           phone?: string | null
           pix_key?: string | null
           plan_id?: string | null
@@ -1905,11 +1917,13 @@ export type Database = {
           amount: number
           created_at: string | null
           establishment_id: string | null
+          gateway: string | null
           id: string
           metadata: Json | null
           mp_payment_id: string | null
           mp_preapproval_id: string | null
           net_amount: number | null
+          order_id: string | null
           payer_email: string | null
           payer_name: string | null
           platform_fee: number | null
@@ -1921,11 +1935,13 @@ export type Database = {
           amount?: number
           created_at?: string | null
           establishment_id?: string | null
+          gateway?: string | null
           id?: string
           metadata?: Json | null
           mp_payment_id?: string | null
           mp_preapproval_id?: string | null
           net_amount?: number | null
+          order_id?: string | null
           payer_email?: string | null
           payer_name?: string | null
           platform_fee?: number | null
@@ -1937,11 +1953,13 @@ export type Database = {
           amount?: number
           created_at?: string | null
           establishment_id?: string | null
+          gateway?: string | null
           id?: string
           metadata?: Json | null
           mp_payment_id?: string | null
           mp_preapproval_id?: string | null
           net_amount?: number | null
+          order_id?: string | null
           payer_email?: string | null
           payer_name?: string | null
           platform_fee?: number | null
@@ -1955,6 +1973,13 @@ export type Database = {
             columns: ["establishment_id"]
             isOneToOne: false
             referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mp_transactions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
             referencedColumns: ["id"]
           },
         ]
