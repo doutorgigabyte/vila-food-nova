@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Utensils, Mail, Lock, User, Phone, ArrowLeft, Eye, EyeOff, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
@@ -23,6 +24,7 @@ const Auth = () => {
   // Login form state
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
   
   // Register form state
   const [registerName, setRegisterName] = useState("");
@@ -31,6 +33,7 @@ const Auth = () => {
   const [registerPassword, setRegisterPassword] = useState("");
   const [registerConfirmPassword, setRegisterConfirmPassword] = useState("");
   const [profileType, setProfileType] = useState<ProfileType>("customer");
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   // Redirect if already logged in
   useEffect(() => {
@@ -47,7 +50,7 @@ const Auth = () => {
     }
     
     setIsLoading(true);
-    const { error } = await signIn(loginEmail, loginPassword);
+    const { error } = await signIn(loginEmail, loginPassword, rememberMe);
     setIsLoading(false);
     
     if (error) {
@@ -69,6 +72,10 @@ const Auth = () => {
       toast.error("Preencha todos os campos obrigatórios");
       return;
     }
+    if (!acceptedTerms) {
+      toast.error("Você precisa aceitar os Termos de Uso e Política de Privacidade");
+      return;
+    }
     if (registerPassword !== registerConfirmPassword) {
       toast.error("As senhas não coincidem");
       return;
@@ -79,7 +86,7 @@ const Auth = () => {
     }
     
     setIsLoading(true);
-    const { error, data } = await signUp(registerEmail, registerPassword, registerName);
+    const { error, data } = await signUp(registerEmail, registerPassword, registerName, acceptedTerms);
     setIsLoading(false);
     
     if (error) {
@@ -228,6 +235,20 @@ const Auth = () => {
                     </div>
                   </div>
 
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="remember-me" 
+                      checked={rememberMe}
+                      onCheckedChange={(checked) => setRememberMe(checked === true)}
+                    />
+                    <Label 
+                      htmlFor="remember-me" 
+                      className="text-sm font-normal cursor-pointer"
+                    >
+                      Permanecer conectado
+                    </Label>
+                  </div>
+
                   <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading ? "Entrando..." : "Entrar"}
                   </Button>
@@ -354,19 +375,30 @@ const Auth = () => {
                     </div>
                   </div>
 
-                  <p className="text-xs text-muted-foreground">
-                    Ao criar uma conta, você concorda com nossos{" "}
-                    <Link to="/termos" className="text-primary hover:underline">
-                      Termos de Uso
-                    </Link>{" "}
-                    e{" "}
-                    <Link to="/privacidade" className="text-primary hover:underline">
-                      Política de Privacidade
-                    </Link>
-                    .
-                  </p>
+                  <div className="flex items-start space-x-2">
+                    <Checkbox 
+                      id="accept-terms" 
+                      checked={acceptedTerms}
+                      onCheckedChange={(checked) => setAcceptedTerms(checked === true)}
+                      className="mt-1"
+                    />
+                    <Label 
+                      htmlFor="accept-terms" 
+                      className="text-sm font-normal cursor-pointer leading-relaxed"
+                    >
+                      Li e aceito os{" "}
+                      <Link to="/termos" className="text-primary hover:underline" target="_blank">
+                        Termos de Uso
+                      </Link>{" "}
+                      e{" "}
+                      <Link to="/privacidade" className="text-primary hover:underline" target="_blank">
+                        Política de Privacidade
+                      </Link>
+                      . *
+                    </Label>
+                  </div>
 
-                  <Button type="submit" className="w-full" disabled={isLoading}>
+                  <Button type="submit" className="w-full" disabled={isLoading || !acceptedTerms}>
                     {isLoading ? "Criando conta..." : "Criar conta"}
                   </Button>
                 </form>
