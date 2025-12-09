@@ -32,6 +32,7 @@ export interface DeliveryTracking {
     order_number: number;
     total: number;
     delivery_fee: number | null;
+    delivery_type: string | null;
     delivery_address: any;
     items: any[];
     payment_method: string;
@@ -105,6 +106,7 @@ export const useDriverDeliveries = () => {
             order_number,
             total,
             delivery_fee,
+            delivery_type,
             delivery_address,
             items,
             payment_method,

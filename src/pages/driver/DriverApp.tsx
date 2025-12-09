@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Progress } from '@/components/ui/progress';
 import GPSStatusIndicator from '@/components/driver/GPSStatusIndicator';
 import DriverHistory from './DriverHistory';
 import { 
@@ -28,7 +29,10 @@ import {
   LogOut,
   Loader2,
   Volume2,
-  VolumeX
+  VolumeX,
+  Zap,
+  Layers,
+  Route
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -65,6 +69,7 @@ const DriverApp = () => {
 
   const [stats, setStats] = useState({ deliveries: 0, earnings: 0, distance: 0 });
   const [activeTab, setActiveTab] = useState<'deliveries' | 'history' | 'profile'>('deliveries');
+  const [batchInfo, setBatchInfo] = useState<{ batch_id?: string; order_in_batch?: number; total_in_batch?: number } | null>(null);
 
   useEffect(() => {
     const loadStats = async () => {
@@ -138,22 +143,54 @@ const DriverApp = () => {
     problem: 'Problema'
   };
 
-  const renderDeliveryCard = (delivery: DeliveryTracking) => {
+  // Check if delivery is part of a batch
+  const isBatchDelivery = (delivery: DeliveryTracking) => {
+    return delivery.order?.delivery_type === 'turbo' || deliveries.length > 1;
+  };
+
+  // Group deliveries by route order
+  const sortedDeliveries = [...deliveries].sort((a, b) => {
+    // Priority: in_transit > picked_up > accepted > assigned
+    const priority: Record<string, number> = {
+      in_transit: 0,
+      picked_up: 1,
+      accepted: 2,
+      assigned: 3
+    };
+    return (priority[a.status] ?? 4) - (priority[b.status] ?? 4);
+  });
+
+  const renderDeliveryCard = (delivery: DeliveryTracking, index: number) => {
     const order = delivery.order;
     const establishment = delivery.establishment;
     const address = order?.delivery_address;
+    const isTurbo = order?.delivery_type === 'turbo';
+    const isMultiBatch = deliveries.length > 1;
 
     return (
-      <Card key={delivery.id} className="mb-4">
+      <Card key={delivery.id} className={`mb-4 ${isTurbo ? 'border-yellow-500 border-2' : ''}`}>
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
+              {isMultiBatch && (
+                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground text-sm font-bold">
+                  {index + 1}
+                </div>
+              )}
               <Avatar className="w-10 h-10">
                 <AvatarImage src={establishment?.logo_url || ''} />
                 <AvatarFallback>{establishment?.name?.charAt(0)}</AvatarFallback>
               </Avatar>
               <div>
-                <CardTitle className="text-base">{establishment?.name}</CardTitle>
+                <CardTitle className="text-base flex items-center gap-2">
+                  {establishment?.name}
+                  {isTurbo && (
+                    <Badge className="bg-yellow-500 text-black">
+                      <Zap className="w-3 h-3 mr-1" />
+                      TURBO
+                    </Badge>
+                  )}
+                </CardTitle>
                 <p className="text-sm text-muted-foreground">
                   Pedido #{order?.order_number}
                 </p>
@@ -381,7 +418,7 @@ const DriverApp = () => {
               </Card>
             )}
 
-            {deliveries.length === 0 ? (
+            {sortedDeliveries.length === 0 ? (
               <div className="text-center py-12">
                 <Bike className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
                 <h2 className="text-lg font-semibold mb-2">Nenhuma entrega</h2>
@@ -393,9 +430,62 @@ const DriverApp = () => {
                 </p>
               </div>
             ) : (
-              <ScrollArea className="h-[calc(100vh-320px)]">
-                {deliveries.map(renderDeliveryCard)}
-              </ScrollArea>
+              <>
+                {/* Batch summary if multiple deliveries */}
+                {sortedDeliveries.length > 1 && (
+                  <Card className="mb-4 bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20">
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-primary/20 rounded-lg">
+                          <Layers className="w-5 h-5 text-primary" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-semibold">Lote com {sortedDeliveries.length} entregas</p>
+                          <p className="text-sm text-muted-foreground">Siga a ordem numerada para otimizar sua rota</p>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            // Open Google Maps with all delivery addresses
+                            const addresses = sortedDeliveries
+                              .filter(d => d.order?.delivery_address)
+                              .map(d => {
+                                const addr = d.order?.delivery_address;
+                                return `${addr?.street}, ${addr?.number}, ${addr?.city}`;
+                              });
+                            if (addresses.length > 0) {
+                              const waypoints = addresses.slice(0, -1).join('|');
+                              const destination = addresses[addresses.length - 1];
+                              window.open(
+                                `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}&waypoints=${encodeURIComponent(waypoints)}`,
+                                '_blank'
+                              );
+                            }
+                          }}
+                        >
+                          <Route className="w-4 h-4 mr-1" />
+                          Rota
+                        </Button>
+                      </div>
+                      {/* Progress */}
+                      <div className="mt-3">
+                        <div className="flex justify-between text-sm mb-1">
+                          <span>Progresso</span>
+                          <span>{sortedDeliveries.filter(d => d.status === 'delivered').length}/{sortedDeliveries.length}</span>
+                        </div>
+                        <Progress 
+                          value={(sortedDeliveries.filter(d => d.status === 'delivered').length / sortedDeliveries.length) * 100} 
+                          className="h-2"
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+                <ScrollArea className="h-[calc(100vh-380px)]">
+                  {sortedDeliveries.map((delivery, index) => renderDeliveryCard(delivery, index))}
+                </ScrollArea>
+              </>
             )}
           </>
         )}
