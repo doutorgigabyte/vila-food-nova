@@ -22,14 +22,32 @@ export default function CheckoutResult() {
   } | null>(null);
 
   // Parse status - MP returns 'approved', 'rejected', 'pending', etc
+  // Also check for success/failure/pending from our back_urls
   const rawStatus = searchParams.get('status') || searchParams.get('collection_status');
-  const status: PaymentResult = rawStatus === 'approved' 
-    ? 'success' 
-    : rawStatus === 'rejected' || rawStatus === 'cancelled'
-      ? 'failure'
-      : rawStatus === 'pending' || rawStatus === 'in_process'
-        ? 'pending'
-        : 'unknown';
+  
+  const parseStatus = (raw: string | null): PaymentResult => {
+    if (!raw) return 'unknown';
+    const normalized = raw.toLowerCase();
+    
+    // Success statuses
+    if (['approved', 'success', 'accredited'].includes(normalized)) {
+      return 'success';
+    }
+    
+    // Failure statuses
+    if (['rejected', 'cancelled', 'failure', 'refunded', 'charged_back'].includes(normalized)) {
+      return 'failure';
+    }
+    
+    // Pending statuses
+    if (['pending', 'in_process', 'in_mediation', 'authorized'].includes(normalized)) {
+      return 'pending';
+    }
+    
+    return 'unknown';
+  };
+  
+  const status: PaymentResult = parseStatus(rawStatus);
 
   // Parse order ID - check multiple params
   const orderId = searchParams.get('order_id') 
