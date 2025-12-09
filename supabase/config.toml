@@ -54,6 +54,15 @@ verify_jwt = false
 [functions.mercadopago-point]
 verify_jwt = false
 
+[functions.pagseguro-oauth]
+verify_jwt = false
+
+[functions.pagseguro-pix]
+verify_jwt = false
+
+[functions.pagseguro-webhook]
+verify_jwt = false
+
 [functions.s3-upload]
 verify_jwt = false
 
