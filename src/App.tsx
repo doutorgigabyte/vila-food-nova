@@ -117,6 +117,9 @@ const SecurityCenter = lazy(() => import("./pages/admin/SecurityCenter"));
 const PixelsDiagnostic = lazy(() => import("./pages/admin/PixelsDiagnostic"));
 const AdminWhatsAppManagement = lazy(() => import("./pages/admin/AdminWhatsAppManagement"));
 const SystemBroadcastCRM = lazy(() => import("./pages/admin/SystemBroadcastCRM"));
+const SecurityDocumentation = lazy(() => import("./pages/admin/SecurityDocumentation"));
+const TermsOfUse = lazy(() => import("./pages/TermsOfUse"));
+const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 
 const AffiliateReferrals = lazy(() => import("./pages/affiliate/AffiliateReferrals"));
 const AffiliateCommissions = lazy(() => import("./pages/affiliate/AffiliateCommissions"));
@@ -153,7 +156,7 @@ const AppRoutes = () => {
       if (loading) return;
       
       // Skip check for public routes
-      const publicRoutes = ['/auth', '/', '/marketplace', '/conheca', '/recuperar-senha'];
+      const publicRoutes = ['/auth', '/', '/marketplace', '/conheca', '/recuperar-senha', '/termos', '/privacidade'];
       const isPublicRoute = publicRoutes.includes(location.pathname) || 
         location.pathname.startsWith('/loja/') || 
         location.pathname.startsWith('/vila/') || 
@@ -190,6 +193,8 @@ const AppRoutes = () => {
               <Route path="/conheca" element={<Conheca />} />
               <Route path="/marketplace" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/termos" element={<TermsOfUse />} />
+              <Route path="/privacidade" element={<PrivacyPolicy />} />
               <Route path="/recuperar-senha" element={<RecoverPassword />} />
               <Route path="/recuperar-senha-whatsapp" element={<RecoverPasswordWhatsApp />} />
               <Route path="/loja/:slug" element={<Store />} />
@@ -309,6 +314,7 @@ const AppRoutes = () => {
               <Route path="/admin/diagnostico-pixels" element={<ProtectedAdminRoute><PixelsDiagnostic /></ProtectedAdminRoute>} />
               <Route path="/admin/whatsapp" element={<ProtectedAdminRoute><AdminWhatsAppManagement /></ProtectedAdminRoute>} />
               <Route path="/admin/crm-disparos" element={<ProtectedAdminRoute><SystemBroadcastCRM /></ProtectedAdminRoute>} />
+              <Route path="/admin/documentacao-seguranca" element={<ProtectedAdminRoute><SecurityDocumentation /></ProtectedAdminRoute>} />
               {/* Affiliate routes */}
               <Route path="/afiliado" element={<AffiliateDashboard />} />
               <Route path="/afiliado/indicacoes" element={<AffiliateReferrals />} />

@@ -6,8 +6,8 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null; data?: any }>;
-  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, fullName: string, acceptedTerms?: boolean) => Promise<{ error: Error | null; data?: any }>;
+  signIn: (email: string, password: string, rememberMe?: boolean) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   resendConfirmationEmail: (email: string) => Promise<{ error: Error | null }>;
 }
@@ -130,7 +130,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
-  const signUp = async (email: string, password: string, fullName: string) => {
+  const signUp = async (email: string, password: string, fullName: string, acceptedTerms?: boolean) => {
     const redirectUrl = `${window.location.origin}/auth?verified=true`;
     
     const { data, error } = await supabase.auth.signUp({
@@ -139,7 +139,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       options: {
         emailRedirectTo: redirectUrl,
         data: {
-          full_name: fullName
+          full_name: fullName,
+          accepted_terms: acceptedTerms || false,
+          terms_accepted_at: acceptedTerms ? new Date().toISOString() : null
         }
       }
     });
@@ -150,11 +152,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return { error: error as Error | null, data };
   };
 
-  const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
+  const signIn = async (email: string, password: string, rememberMe?: boolean) => {
+    // If not remembering, we need to handle session differently
+    const { error, data } = await supabase.auth.signInWithPassword({
       email,
       password
     });
+    
+    if (!error && data.session) {
+      // Store remember me preference
+      if (rememberMe) {
+        try {
+          localStorage.setItem('vilafood_remember_me', 'true');
+        } catch (e) {
+          console.error('Error setting remember me:', e);
+        }
+      } else {
+        try {
+          localStorage.removeItem('vilafood_remember_me');
+          // For non-remember sessions, we'll rely on Supabase's default behavior
+          // but mark that user didn't want to be remembered
+          sessionStorage.setItem('vilafood_session_only', 'true');
+        } catch (e) {
+          console.error('Error clearing remember me:', e);
+        }
+      }
+    }
     
     return { error: error as Error | null };
   };
