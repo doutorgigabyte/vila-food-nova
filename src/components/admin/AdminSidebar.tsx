@@ -28,7 +28,8 @@ import {
   Tag,
   UserCheck,
   Image,
-  Wallet
+  Wallet,
+  MessageCircle
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import logo from "@/assets/logo.png";
@@ -81,6 +82,7 @@ const navItems: NavItem[] = [
   },
   { icon: BarChart3, label: "Relatórios", href: "/admin/relatorios" },
   { icon: Wallet, label: "Financeiro", href: "/admin/financeiro" },
+  { icon: MessageCircle, label: "WhatsApp", href: "/admin/whatsapp" },
   { 
     icon: Shield, 
     label: "Sistema",
