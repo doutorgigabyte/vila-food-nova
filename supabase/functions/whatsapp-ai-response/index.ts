@@ -330,6 +330,21 @@ ${JSON.stringify(context || {})}`;
             }
           }
         }
+      },
+      {
+        type: "function",
+        function: {
+          name: "human_takeover",
+          description: "Pausa a IA e transfere o atendimento para um humano. Use quando o cliente explicitamente pedir para falar com um atendente ou quando a situação requer intervenção humana",
+          parameters: {
+            type: "object",
+            properties: {
+              reason: { type: "string", description: "Motivo da transferência" },
+              notify_team: { type: "boolean", description: "Se deve notificar a equipe via WhatsApp" }
+            },
+            required: ["reason"]
+          }
+        }
       }
     ];
 
@@ -404,6 +419,34 @@ ${JSON.stringify(context || {})}`;
         action: functionName,
         params: functionArgs,
       });
+
+      // Handle human_takeover tool - pause AI in session
+      if (functionName === 'human_takeover') {
+        const reason = functionArgs.reason || 'Solicitação de atendimento humano';
+        
+        // Update whatsapp_sessions to pause AI
+        await supabase
+          .from('whatsapp_sessions')
+          .update({ 
+            ai_active: false,
+            pause_reason: reason,
+            paused_by: 'ai_agent',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', session_id);
+
+        // Log the action
+        await supabase.from('agent_action_logs').insert({
+          session_id,
+          establishment_id,
+          action_type: 'human_takeover',
+          action_data: { reason, notify_team: functionArgs.notify_team },
+          success: true,
+          execution_time_ms: 0
+        });
+
+        console.log(`Human takeover activated for session ${session_id}: ${reason}`);
+      }
     }
 
     // Save AI response as message
