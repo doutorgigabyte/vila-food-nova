@@ -46,12 +46,29 @@ export const HumanTakeoverPanel = ({ establishmentId, instanceId }: HumanTakeove
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'UPDATE',
           schema: 'public',
           table: 'whatsapp_sessions',
           filter: `establishment_id=eq.${establishmentId}`,
         },
-        () => {
+        (payload) => {
+          const newSession = payload.new as WhatsAppSession;
+          const oldSession = payload.old as WhatsAppSession;
+          
+          // Notify when AI status changes
+          if (oldSession.ai_active !== newSession.ai_active) {
+            if (!newSession.ai_active) {
+              toast.info(
+                `🔔 ${newSession.customer_name || newSession.customer_phone}: Atendimento humano ativado`,
+                { description: newSession.pause_reason || 'Operador assumiu a conversa' }
+              );
+            } else {
+              toast.success(
+                `🤖 ${newSession.customer_name || newSession.customer_phone}: IA reativada`
+              );
+            }
+          }
+          
           fetchActiveSessions();
         }
       )

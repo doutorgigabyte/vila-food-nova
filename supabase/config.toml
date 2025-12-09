@@ -101,3 +101,6 @@ verify_jwt = false
 
 [functions.security-anomaly-alert]
 verify_jwt = false
+
+[functions.whatsapp-human-takeover]
+verify_jwt = false
