@@ -102,9 +102,12 @@ serve(async (req) => {
       });
     }
 
-    // Priorizar token da plataforma, depois token do estabelecimento
+    // PRODUÇÃO: Priorizar token da plataforma, depois token do estabelecimento
+    // Em produção, MERCADOPAGO_ACCESS_TOKEN deve ser o token de produção
     const platformToken = Deno.env.get('MERCADOPAGO_ACCESS_TOKEN');
     const accessToken = platformToken || establishment.mercado_pago_token;
+    
+    console.log('Using token source:', platformToken ? 'PLATFORM' : 'ESTABLISHMENT');
     
     if (!accessToken) {
       return new Response(JSON.stringify({
