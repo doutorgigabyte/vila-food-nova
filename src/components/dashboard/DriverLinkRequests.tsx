@@ -27,6 +27,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 interface DriverLinkRequestsProps {
   establishmentId: string;
+  onUpdate?: () => void;
 }
 
 export const DriverLinkRequests = ({ establishmentId }: DriverLinkRequestsProps) => {
