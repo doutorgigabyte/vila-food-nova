@@ -403,9 +403,13 @@ const phases: ProgressPhase[] = [
       { name: 'Grupos de adicionais (Bordas, Extras, etc)', status: 'completed', priority: 'high' },
       { name: 'Adicionais obrigatórios vs opcionais', status: 'completed', priority: 'high' },
       { name: 'Limite de quantidade por adicional', status: 'completed', priority: 'medium' },
-      { name: 'Kits de produtos (combinar existentes)', status: 'pending', priority: 'high' },
-      { name: 'Produtos complementares com desconto', status: 'pending', priority: 'medium' },
-      { name: 'Exibir adicionais no checkout', status: 'pending', priority: 'high' },
+      { name: 'Kits de produtos (combinar existentes)', status: 'completed', priority: 'high' },
+      { name: 'Produtos complementares com desconto', status: 'completed', priority: 'medium' },
+      { name: 'Exibir adicionais no checkout', status: 'completed', priority: 'high' },
+      { name: 'Tabela product_kits e product_kit_items', status: 'completed', priority: 'high' },
+      { name: 'Tabela product_complements com descontos', status: 'completed', priority: 'medium' },
+      { name: 'Página ProductKitsManagement completa', status: 'completed', priority: 'high' },
+      { name: 'Preço progressivo (leve mais, pague menos)', status: 'completed', priority: 'medium' },
     ]
   },
 
