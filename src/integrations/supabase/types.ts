@@ -701,6 +701,111 @@ export type Database = {
           },
         ]
       }
+      broadcast_campaigns: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          created_by: string | null
+          failed_count: number | null
+          id: string
+          media_type: string | null
+          media_url: string | null
+          message: string
+          name: string
+          scheduled_for: string | null
+          sent_count: number | null
+          status: string | null
+          target_all: boolean | null
+          target_tags: string[] | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          failed_count?: number | null
+          id?: string
+          media_type?: string | null
+          media_url?: string | null
+          message: string
+          name: string
+          scheduled_for?: string | null
+          sent_count?: number | null
+          status?: string | null
+          target_all?: boolean | null
+          target_tags?: string[] | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          failed_count?: number | null
+          id?: string
+          media_type?: string | null
+          media_url?: string | null
+          message?: string
+          name?: string
+          scheduled_for?: string | null
+          sent_count?: number | null
+          status?: string | null
+          target_all?: boolean | null
+          target_tags?: string[] | null
+        }
+        Relationships: []
+      }
+      broadcast_messages: {
+        Row: {
+          campaign_id: string | null
+          contact_id: string | null
+          created_at: string | null
+          delivered_at: string | null
+          error_message: string | null
+          id: string
+          phone: string
+          read_at: string | null
+          sent_at: string | null
+          status: string | null
+        }
+        Insert: {
+          campaign_id?: string | null
+          contact_id?: string | null
+          created_at?: string | null
+          delivered_at?: string | null
+          error_message?: string | null
+          id?: string
+          phone: string
+          read_at?: string | null
+          sent_at?: string | null
+          status?: string | null
+        }
+        Update: {
+          campaign_id?: string | null
+          contact_id?: string | null
+          created_at?: string | null
+          delivered_at?: string | null
+          error_message?: string | null
+          id?: string
+          phone?: string
+          read_at?: string | null
+          sent_at?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "broadcast_messages_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "broadcast_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "broadcast_messages_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "system_contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cash_flow: {
         Row: {
           amount: number
@@ -3442,6 +3547,95 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      system_contacts: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          establishment_id: string | null
+          id: string
+          is_active: boolean | null
+          last_message_at: string | null
+          name: string
+          notes: string | null
+          opted_in_broadcasts: boolean | null
+          phone: string
+          role: string | null
+          tags: string[] | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          establishment_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_message_at?: string | null
+          name: string
+          notes?: string | null
+          opted_in_broadcasts?: boolean | null
+          phone: string
+          role?: string | null
+          tags?: string[] | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          establishment_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_message_at?: string | null
+          name?: string
+          notes?: string | null
+          opted_in_broadcasts?: boolean | null
+          phone?: string
+          role?: string | null
+          tags?: string[] | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "system_contacts_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      system_message_templates: {
+        Row: {
+          category: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          message: string
+          name: string
+          updated_at: string | null
+          variables: string[] | null
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          message: string
+          name: string
+          updated_at?: string | null
+          variables?: string[] | null
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          message?: string
+          name?: string
+          updated_at?: string | null
+          variables?: string[] | null
+        }
+        Relationships: []
       }
       user_behavior_logs: {
         Row: {
