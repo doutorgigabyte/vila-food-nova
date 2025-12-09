@@ -25,6 +25,13 @@ export class MercadoPagoGateway {
     payer?: { email?: string; name?: string }
   ): Promise<CreatePaymentResponse> {
     try {
+      console.log('[MercadoPagoGateway] Creating PIX payment:', {
+        establishment_id: this.establishmentId,
+        order_id: orderId,
+        amount,
+        description,
+      });
+
       const { data, error } = await supabase.functions.invoke('mercadopago-pix', {
         body: {
           establishment_id: this.establishmentId,
@@ -37,7 +44,18 @@ export class MercadoPagoGateway {
         },
       });
 
-      if (error) throw error;
+      console.log('[MercadoPagoGateway] Edge function response:', {
+        has_data: !!data,
+        has_error: !!error,
+        error_message: error?.message,
+        data_type: data?.type,
+        data_success: data?.success,
+      });
+
+      if (error) {
+        console.error('[MercadoPagoGateway] Edge function error:', error);
+        throw error;
+      }
 
       if (data.type === 'static_pix') {
         return {
@@ -62,7 +80,7 @@ export class MercadoPagoGateway {
         error: data.error,
       };
     } catch (error) {
-      console.error('MercadoPago PIX error:', error);
+      console.error('[MercadoPagoGateway] PIX error:', error);
       return {
         success: false,
         payment_id: '',
