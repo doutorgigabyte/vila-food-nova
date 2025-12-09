@@ -31,6 +31,7 @@ import { toast } from "sonner";
 import { Price } from "@/components/ui/price";
 import { useCart } from "@/hooks/useCart";
 import { useCreateOrder } from "@/hooks/useCreateOrder";
+import { useScheduledOrders } from "@/hooks/useScheduledOrders";
 import { useAuth } from "@/hooks/useAuth";
 import { useSavedAddresses, SavedAddress } from "@/hooks/useSavedAddresses";
 import { useOrderSource } from "@/hooks/useOrderSource";
@@ -69,6 +70,7 @@ const Checkout = () => {
   } = useCart();
 
   const { createOrder, loading: creatingOrder } = useCreateOrder();
+  const { createScheduledOrder, loading: creatingScheduledOrder } = useScheduledOrders();
   const { source, shouldApplyPlatformFee, platformFeePercent } = useOrderSource();
 
   const [step, setStep] = useState<CheckoutStep>("cart");
@@ -254,12 +256,61 @@ const Checkout = () => {
     );
   }
 
-  // Handle scheduled order
-  const handleScheduleOrder = async (date: Date) => {
-    setScheduledFor(date);
-    setShowScheduleModal(false);
-    toast.success(`Pedido agendado para ${date.toLocaleDateString('pt-BR')} às ${date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`);
-    // Continue with normal checkout flow - scheduledFor will be included in order creation
+  // Handle scheduled order - save to scheduled_orders table
+  const handleScheduleOrder = async (date: Date, recurrence?: { enabled: boolean; type: 'daily' | 'weekly' | 'custom'; days: number[]; endDate?: Date }) => {
+    try {
+      const estId = uniqueEstablishments[0];
+      const estInfo = establishments.get(estId);
+      const estItems = getEstablishmentItems(estId);
+      const estSubtotal = getEstablishmentSubtotal(estId);
+      const estDeliveryFee = deliveryType === 'delivery' ? (estInfo?.delivery_base_fee || 0) : 0;
+
+      const result = await createScheduledOrder({
+        establishment_id: estId,
+        customer_id: user?.id,
+        scheduled_for: date,
+        items: estItems.map(item => ({
+          product_id: item.product.id,
+          name: item.product.name,
+          price: item.product.promotional_price || item.product.price,
+          quantity: item.quantity,
+          observation: item.observation,
+        })),
+        subtotal: estSubtotal,
+        delivery_fee: estDeliveryFee,
+        total: estSubtotal + estDeliveryFee - (appliedCoupon?.discountValue || 0),
+        delivery_type: deliveryType as 'delivery' | 'pickup',
+        payment_method: paymentMethod as 'pix' | 'cash' | 'credit_card',
+        delivery_address: deliveryType === 'delivery' ? {
+          cep: addressData.cep,
+          address: addressData.address,
+          number: addressData.number,
+          complement: addressData.complement,
+          neighborhood: addressData.neighborhood,
+          reference: addressData.reference,
+        } : undefined,
+        notes: observations || undefined,
+        recurrence: recurrence ? {
+          enabled: recurrence.enabled,
+          type: recurrence.type,
+          days: recurrence.days,
+          endDate: recurrence.endDate?.toISOString(),
+        } : undefined,
+      });
+
+      if (result.success) {
+        setScheduledFor(date);
+        setShowScheduleModal(false);
+        clearCart();
+        toast.success(`Pedido agendado para ${date.toLocaleDateString('pt-BR')} às ${date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`);
+        setStep("success");
+        setCompletedOrders([`${estInfo?.name}: Pedido agendado`]);
+      } else {
+        throw new Error(result.error || 'Falha ao agendar pedido');
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao agendar pedido');
+    }
   };
 
   // Show store closed message with scheduling option
