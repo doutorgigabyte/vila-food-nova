@@ -82,7 +82,14 @@ const navItems: NavItem[] = [
   },
   { icon: BarChart3, label: "Relatórios", href: "/admin/relatorios" },
   { icon: Wallet, label: "Financeiro", href: "/admin/financeiro" },
-  { icon: MessageCircle, label: "WhatsApp", href: "/admin/whatsapp" },
+  { 
+    icon: MessageCircle, 
+    label: "WhatsApp",
+    children: [
+      { icon: MessageCircle, label: "Instâncias", href: "/admin/whatsapp" },
+      { icon: FileText, label: "CRM & Disparos", href: "/admin/crm-disparos" },
+    ]
+  },
   { 
     icon: Shield, 
     label: "Sistema",

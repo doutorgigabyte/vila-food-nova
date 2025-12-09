@@ -115,6 +115,7 @@ const AdminFinancial = lazy(() => import("./pages/admin/AdminFinancial"));
 const SecurityCenter = lazy(() => import("./pages/admin/SecurityCenter"));
 const PixelsDiagnostic = lazy(() => import("./pages/admin/PixelsDiagnostic"));
 const AdminWhatsAppManagement = lazy(() => import("./pages/admin/AdminWhatsAppManagement"));
+const SystemBroadcastCRM = lazy(() => import("./pages/admin/SystemBroadcastCRM"));
 
 const AffiliateReferrals = lazy(() => import("./pages/affiliate/AffiliateReferrals"));
 const AffiliateCommissions = lazy(() => import("./pages/affiliate/AffiliateCommissions"));
@@ -305,6 +306,7 @@ const AppRoutes = () => {
               <Route path="/admin/central-seguranca" element={<ProtectedAdminRoute><SecurityCenter /></ProtectedAdminRoute>} />
               <Route path="/admin/diagnostico-pixels" element={<ProtectedAdminRoute><PixelsDiagnostic /></ProtectedAdminRoute>} />
               <Route path="/admin/whatsapp" element={<ProtectedAdminRoute><AdminWhatsAppManagement /></ProtectedAdminRoute>} />
+              <Route path="/admin/crm-disparos" element={<ProtectedAdminRoute><SystemBroadcastCRM /></ProtectedAdminRoute>} />
               {/* Affiliate routes */}
               <Route path="/afiliado" element={<AffiliateDashboard />} />
               <Route path="/afiliado/indicacoes" element={<AffiliateReferrals />} />
