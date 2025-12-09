@@ -66,6 +66,9 @@ verify_jwt = false
 [functions.pagseguro-webhook]
 verify_jwt = false
 
+[functions.pagseguro-card]
+verify_jwt = false
+
 [functions.s3-upload]
 verify_jwt = false
 
@@ -115,4 +118,7 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.whatsapp-human-takeover]
+verify_jwt = false
+
+[functions.process-recurring-orders]
 verify_jwt = false
