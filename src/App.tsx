@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "next-themes";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation, useNavigate } from "react-router-dom";
+import { HelmetProvider } from "react-helmet-async";
 import { AuthProvider, useAuth } from "./hooks/useAuth";
 import { AdminAccessProvider } from "./contexts/AdminAccessContext";
 import { CartProvider } from "./hooks/useCart";
@@ -337,26 +338,28 @@ const App = () => {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <AuthProvider>
-            <AdminAccessProvider>
-              <OrderSourceProvider>
-                <CartProvider>
-                  <NotificationProvider>
-                    <TooltipProvider>
-                      <Toaster />
-                      <Sonner />
-                      <PWAInstallPrompt />
-                      <BrowserRouter>
-                        <AppRoutes />
-                      </BrowserRouter>
-                    </TooltipProvider>
-                  </NotificationProvider>
-                </CartProvider>
-              </OrderSourceProvider>
-            </AdminAccessProvider>
-          </AuthProvider>
-        </ThemeProvider>
+        <HelmetProvider>
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+            <AuthProvider>
+              <AdminAccessProvider>
+                <OrderSourceProvider>
+                  <CartProvider>
+                    <NotificationProvider>
+                      <TooltipProvider>
+                        <Toaster />
+                        <Sonner />
+                        <PWAInstallPrompt />
+                        <BrowserRouter>
+                          <AppRoutes />
+                        </BrowserRouter>
+                      </TooltipProvider>
+                    </NotificationProvider>
+                  </CartProvider>
+                </OrderSourceProvider>
+              </AdminAccessProvider>
+            </AuthProvider>
+          </ThemeProvider>
+        </HelmetProvider>
       </QueryClientProvider>
     </ErrorBoundary>
   );
