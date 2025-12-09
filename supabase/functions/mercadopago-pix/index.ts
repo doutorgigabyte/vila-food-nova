@@ -1,8 +1,11 @@
 /**
- * Mercado Pago PIX - Checkout Transparente
+ * Mercado Pago PIX - Checkout Transparente com Split
  * 
  * Gera QR codes PIX dinâmicos usando a API de Checkout Transparente do MP.
+ * Usa o modelo Marketplace: pagamento via token da plataforma com split para vendedor.
+ * 
  * https://www.mercadopago.com.br/developers/pt/docs/checkout-api/landing
+ * https://www.mercadopago.com.br/developers/pt/docs/split-payment/integration-configuration/payments
  * 
  * SECURITY: Requires valid order_id to generate PIX codes
  */
@@ -14,6 +17,10 @@ const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// Platform Access Token (from secrets)
+const PLATFORM_ACCESS_TOKEN = Deno.env.get('MERCADOPAGO_ACCESS_TOKEN');
+const PLATFORM_FEE_PERCENT = 5; // 5% platform fee
 
 interface PixRequest {
   establishment_id: string;
@@ -134,11 +141,11 @@ serve(async (req) => {
       });
     }
 
-    // Get establishment
+    // Get establishment with MP config
     console.log('[mercadopago-pix] Fetching establishment...');
     const { data: establishment, error: estError } = await supabase
       .from('establishments')
-      .select('mercado_pago_token, mp_public_key, name, pix_key')
+      .select('mercado_pago_token, mp_user_id, name, pix_key')
       .eq('id', establishment_id)
       .single();
 
@@ -157,30 +164,44 @@ serve(async (req) => {
     console.log('[mercadopago-pix] Establishment found:', {
       name: establishment.name,
       has_mp_token: !!establishment.mercado_pago_token,
-      mp_token_length: establishment.mercado_pago_token?.length || 0,
-      has_mp_public_key: !!establishment.mp_public_key,
+      has_mp_user_id: !!establishment.mp_user_id,
       has_pix_key: !!establishment.pix_key,
+      has_platform_token: !!PLATFORM_ACCESS_TOKEN,
     });
 
-    // Check if MP is configured
-    if (!establishment.mercado_pago_token) {
-      console.log('[mercadopago-pix] No MP token, checking for static PIX...');
-      
-      if (establishment.pix_key) {
-        console.log('[mercadopago-pix] Returning static PIX');
-        return new Response(JSON.stringify({
-          success: true,
-          type: 'static_pix',
-          pix_key: establishment.pix_key,
-          amount,
-          description,
-          order_id,
-          message: `💰 *Pagamento via PIX*\n\nValor: R$ ${amount.toFixed(2)}\n\nChave PIX: ${establishment.pix_key}\n\nApós o pagamento, envie o comprovante para confirmarmos seu pedido! 📸`,
-        }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
+    // Determine which token to use
+    // Priority: Platform token with split > Establishment token > Static PIX
+    let accessToken = PLATFORM_ACCESS_TOKEN;
+    let useSplit = false;
+    let sellerId = establishment.mp_user_id;
 
+    // If we have platform token and seller is connected, use split payment
+    if (PLATFORM_ACCESS_TOKEN && establishment.mp_user_id) {
+      accessToken = PLATFORM_ACCESS_TOKEN;
+      useSplit = true;
+      console.log('[mercadopago-pix] Using platform token with split to seller:', sellerId);
+    } 
+    // If only establishment token, use it directly (legacy mode)
+    else if (establishment.mercado_pago_token) {
+      accessToken = establishment.mercado_pago_token;
+      useSplit = false;
+      console.log('[mercadopago-pix] Using establishment token directly (legacy)');
+    }
+    // No MP configured, fallback to static PIX
+    else if (establishment.pix_key) {
+      console.log('[mercadopago-pix] No MP token, returning static PIX');
+      return new Response(JSON.stringify({
+        success: true,
+        type: 'static_pix',
+        pix_key: establishment.pix_key,
+        amount,
+        description,
+        order_id,
+        message: `💰 *Pagamento via PIX*\n\nValor: R$ ${amount.toFixed(2)}\n\nChave PIX: ${establishment.pix_key}\n\nApós o pagamento, envie o comprovante para confirmarmos seu pedido! 📸`,
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    } else {
       console.error('[mercadopago-pix] ERROR: No payment method configured');
       return new Response(JSON.stringify({
         success: false,
@@ -192,13 +213,15 @@ serve(async (req) => {
       });
     }
 
-    // Prepare payer info - Checkout Transparente requires complete payer data
+    // Prepare payer info
     const payerFirstName = payer_name?.split(' ')[0] || 'Cliente';
     const payerLastName = payer_name?.split(' ').slice(1).join(' ') || 'VilaFood';
     const payerEmail = payer_email || `cliente_${order_id.slice(-8)}@vilafood.com.br`;
     
-    // Build Mercado Pago payment payload for Checkout Transparente
-    // https://www.mercadopago.com.br/developers/pt/reference/payments/_payments/post
+    // Calculate platform fee for split
+    const platformFee = useSplit ? Math.round(amount * PLATFORM_FEE_PERCENT) / 100 : 0;
+
+    // Build Mercado Pago payment payload
     const mpPayload: Record<string, unknown> = {
       transaction_amount: Number(amount.toFixed(2)),
       description: description || `Pedido ${establishment.name} #${order_id.slice(-8)}`,
@@ -212,7 +235,7 @@ serve(async (req) => {
       notification_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/mercadopago-webhook`,
     };
 
-    // Add CPF if provided (some accounts require it)
+    // Add CPF if provided
     if (payer_cpf) {
       (mpPayload.payer as Record<string, unknown>).identification = {
         type: 'CPF',
@@ -220,21 +243,33 @@ serve(async (req) => {
       };
     }
 
+    // Add split payment configuration if using platform token
+    // Note: For PIX, split payments are handled differently via bank transfers after payment
+    // application_fee doesn't work with PIX, so we'll handle splits in the webhook
+    if (useSplit && sellerId) {
+      console.log('[mercadopago-pix] Split will be processed after payment via webhook:', {
+        platform_fee: platformFee,
+        seller_receives: amount - platformFee,
+        seller_id: sellerId,
+      });
+    }
+
     console.log('[mercadopago-pix] Creating MP payment with payload:', JSON.stringify({
       ...mpPayload,
       payer: { ...mpPayload.payer as object, email: '***@***' }
     }, null, 2));
 
-    // Generate idempotency key to prevent duplicate payments
+    // Generate idempotency key
     const idempotencyKey = `pix_${establishment_id}_${order_id}_${Date.now()}`;
     
     console.log('[mercadopago-pix] Calling Mercado Pago API...');
-    console.log('[mercadopago-pix] Token prefix:', establishment.mercado_pago_token.substring(0, 20) + '...');
+    console.log('[mercadopago-pix] Token type:', useSplit ? 'PLATFORM' : 'ESTABLISHMENT');
+    console.log('[mercadopago-pix] Token prefix:', accessToken?.substring(0, 20) + '...');
     
     const mpResponse = await fetch('https://api.mercadopago.com/v1/payments', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${establishment.mercado_pago_token}`,
+        'Authorization': `Bearer ${accessToken}`,
         'Content-Type': 'application/json',
         'X-Idempotency-Key': idempotencyKey,
       },
@@ -242,7 +277,6 @@ serve(async (req) => {
     });
 
     console.log('[mercadopago-pix] MP Response status:', mpResponse.status);
-    console.log('[mercadopago-pix] MP Response headers:', Object.fromEntries(mpResponse.headers.entries()));
 
     const responseText = await mpResponse.text();
     console.log('[mercadopago-pix] MP Response body:', responseText);
@@ -258,11 +292,19 @@ serve(async (req) => {
     if (!mpResponse.ok) {
       console.error('[mercadopago-pix] ERROR: MP API error:', paymentData);
       
-      // Extract error message
-      const errorMessage = paymentData.message || 
+      const errorCode = paymentData.code || '';
+      const isAuthError = errorCode.includes('UNAUTHORIZED') || 
+                          mpResponse.status === 401 || 
+                          mpResponse.status === 403;
+      
+      let errorMessage = paymentData.message || 
         paymentData.cause?.[0]?.description || 
         paymentData.error ||
         'Erro ao criar pagamento PIX';
+
+      if (isAuthError) {
+        errorMessage = 'Token do Mercado Pago sem permissão. Verifique as configurações.';
+      }
       
       // Fallback to static PIX if available
       if (establishment.pix_key) {
@@ -291,7 +333,7 @@ serve(async (req) => {
       date_of_expiration: paymentData.date_of_expiration,
     });
 
-    // Extract PIX data from point_of_interaction
+    // Extract PIX data
     const pixData = paymentData.point_of_interaction?.transaction_data;
     
     console.log('[mercadopago-pix] PIX data available:', {
@@ -300,14 +342,11 @@ serve(async (req) => {
       has_qr_code: !!pixData?.qr_code,
       has_qr_code_base64: !!pixData?.qr_code_base64,
       qr_code_length: pixData?.qr_code?.length || 0,
-      qr_code_base64_length: pixData?.qr_code_base64?.length || 0,
     });
 
     if (!pixData || !pixData.qr_code) {
       console.error('[mercadopago-pix] ERROR: PIX data not found in response');
-      console.error('[mercadopago-pix] Full payment response:', JSON.stringify(paymentData, null, 2));
       
-      // Fallback to static PIX
       if (establishment.pix_key) {
         console.log('[mercadopago-pix] Falling back to static PIX (no QR in response)');
         return new Response(JSON.stringify({
@@ -327,6 +366,25 @@ serve(async (req) => {
       throw new Error('QR Code PIX não encontrado na resposta do Mercado Pago');
     }
 
+    // Log transaction
+    try {
+      await supabase.from('mp_transactions').insert({
+        establishment_id,
+        type: 'pix',
+        status: paymentData.status,
+        mp_payment_id: paymentData.id?.toString(),
+        amount,
+        metadata: {
+          order_id,
+          expiration: paymentData.date_of_expiration,
+          platform_fee: platformFee,
+          use_split: useSplit,
+        },
+      });
+    } catch (txError) {
+      console.error('[mercadopago-pix] Transaction log error (non-blocking):', txError);
+    }
+
     // Log analytics
     try {
       await supabase.from('whatsapp_analytics').insert({
@@ -338,27 +396,11 @@ serve(async (req) => {
           amount,
           status: paymentData.status,
           type: 'dynamic_pix',
+          use_split: useSplit,
         },
       });
     } catch (analyticsError) {
       console.error('[mercadopago-pix] Analytics error (non-blocking):', analyticsError);
-    }
-
-    // Log payment info (order table doesn't have payment columns - use mp_transactions instead)
-    try {
-      await supabase.from('mp_transactions').insert({
-        establishment_id,
-        type: 'pix',
-        status: paymentData.status,
-        mp_payment_id: paymentData.id?.toString(),
-        amount,
-        metadata: {
-          order_id,
-          expiration: paymentData.date_of_expiration,
-        },
-      });
-    } catch (txError) {
-      console.error('[mercadopago-pix] Transaction log error (non-blocking):', txError);
     }
 
     console.log('[mercadopago-pix] ===== SUCCESS =====');
@@ -376,6 +418,7 @@ serve(async (req) => {
       ticket_url: pixData.ticket_url,
       amount,
       order_id,
+      platform_fee: platformFee,
       expiration: paymentData.date_of_expiration,
       message: `💰 *Pagamento via PIX*\n\nValor: R$ ${amount.toFixed(2)}\n\n📱 Escaneie o QR Code ou copie o código PIX\n\n⏰ Válido até: ${new Date(paymentData.date_of_expiration).toLocaleString('pt-BR')}\n\nO pedido será confirmado automaticamente após o pagamento!`,
     }), {
