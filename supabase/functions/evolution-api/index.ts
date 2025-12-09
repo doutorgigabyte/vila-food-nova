@@ -51,9 +51,16 @@ async function createInstance(config: EvolutionConfig, instanceName: string, tok
   });
 
   if (!response.ok) {
-    const error = await response.text();
-    console.error('Create instance error:', error);
-    throw new Error(`Failed to create instance: ${error}`);
+    const errorText = await response.text();
+    console.error('Create instance error:', errorText);
+    
+    // Check if instance already exists - this is not a fatal error
+    if (errorText.includes('already in use') || response.status === 403) {
+      console.log('Instance already exists, returning existing flag');
+      return { alreadyExists: true, instanceName };
+    }
+    
+    throw new Error(`Failed to create instance: ${errorText}`);
   }
 
   return await response.json();
