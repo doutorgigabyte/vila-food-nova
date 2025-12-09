@@ -79,6 +79,7 @@ export function useVilaTok(options: UseVilaTokOptions = {}) {
           product:products(id, name, price, promotional_price, image_url)
         `)
         .eq('is_active', true)
+        .eq('display_in_marketplace', true)
         .order('created_at', { ascending: false });
 
       const { data: videos, error } = await query;

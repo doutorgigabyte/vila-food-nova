@@ -25,11 +25,12 @@ const VilaTokStoriesRow = ({ mainCategorySlug }: VilaTokStoriesRowProps) => {
   useEffect(() => {
     const fetchEstablishmentsWithVideos = async () => {
       try {
-        // Get establishments that have active videos
+        // Get establishments that have active videos marked for marketplace display
         const { data: videosData } = await supabase
           .from("establishment_videos")
           .select("establishment_id")
-          .eq("is_active", true);
+          .eq("is_active", true)
+          .eq("display_in_marketplace", true);
 
         const establishmentIdsWithVideos = new Set(
           videosData?.map((v) => v.establishment_id) || []
