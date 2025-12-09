@@ -9,7 +9,11 @@ import {
   Workflow,
   FileJson,
   ExternalLink,
-  CheckCircle2
+  CheckCircle2,
+  Shield,
+  Settings,
+  Key,
+  Store
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -112,6 +116,22 @@ const templates: N8nTemplate[] = [
       "Salva pedido no Supabase"
     ],
     difficulty: "Intermediário"
+  },
+  {
+    id: "payment-gateway-selector",
+    name: "Seletor de Gateway de Pagamento",
+    description: "Verifica qual gateway está ativo (Mercado Pago ou PagSeguro) e roteia automaticamente",
+    icon: <CreditCard className="w-6 h-6" />,
+    filename: "VilaFood-Payment-Gateway-Selector.json",
+    features: [
+      "Detecção automática de gateway",
+      "Suporte Mercado Pago",
+      "Suporte PagSeguro (em breve)",
+      "Fallback para PIX estático",
+      "Verificação de tokens",
+      "Logs detalhados"
+    ],
+    difficulty: "Intermediário"
   }
 ];
 
@@ -180,6 +200,106 @@ export const N8nTemplatesDownload = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Credentials Section */}
+      <div className="grid gap-6 md:grid-cols-2">
+        {/* Admin Credentials */}
+        <Card className="border-primary/20">
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <Shield className="w-5 h-5 text-primary" />
+              <CardTitle className="text-base">Credenciais do Admin (Sistema)</CardTitle>
+            </div>
+            <CardDescription className="text-xs">
+              Você configura uma vez no n8n - usadas por todos os lojistas
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
+                <Key className="w-4 h-4 text-muted-foreground" />
+                <div>
+                  <p className="text-sm font-medium">Supabase API</p>
+                  <p className="text-xs text-muted-foreground">URL + Service Role Key</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
+                <Key className="w-4 h-4 text-muted-foreground" />
+                <div>
+                  <p className="text-sm font-medium">Google Gemini API</p>
+                  <p className="text-xs text-muted-foreground">API Key do Google AI Studio</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
+                <Key className="w-4 h-4 text-muted-foreground" />
+                <div>
+                  <p className="text-sm font-medium">Redis</p>
+                  <p className="text-xs text-muted-foreground">Integrado ao n8n ou servidor externo</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
+                <Key className="w-4 h-4 text-muted-foreground" />
+                <div>
+                  <p className="text-sm font-medium">Evolution API</p>
+                  <p className="text-xs text-muted-foreground">URL base + API Key global</p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Merchant Credentials */}
+        <Card className="border-emerald-500/20">
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <Store className="w-5 h-5 text-emerald-500" />
+              <CardTitle className="text-base">Credenciais do Lojista</CardTitle>
+            </div>
+            <CardDescription className="text-xs">
+              Cada lojista configura no painel VilaFood - por estabelecimento
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 p-2 rounded-lg bg-emerald-500/5">
+                <Settings className="w-4 h-4 text-emerald-500" />
+                <div>
+                  <p className="text-sm font-medium">Instância WhatsApp</p>
+                  <p className="text-xs text-muted-foreground">Criada automaticamente ao conectar</p>
+                </div>
+                <Badge variant="outline" className="ml-auto text-xs bg-emerald-500/10 text-emerald-500 border-emerald-500/20">
+                  Automático
+                </Badge>
+              </div>
+              <div className="flex items-center gap-2 p-2 rounded-lg bg-emerald-500/5">
+                <CreditCard className="w-4 h-4 text-emerald-500" />
+                <div>
+                  <p className="text-sm font-medium">Mercado Pago</p>
+                  <p className="text-xs text-muted-foreground">Conectado via OAuth (1 clique)</p>
+                </div>
+                <Badge variant="outline" className="ml-auto text-xs bg-emerald-500/10 text-emerald-500 border-emerald-500/20">
+                  OAuth
+                </Badge>
+              </div>
+              <div className="flex items-center gap-2 p-2 rounded-lg bg-amber-500/5 opacity-60">
+                <CreditCard className="w-4 h-4 text-amber-500" />
+                <div>
+                  <p className="text-sm font-medium">PagSeguro</p>
+                  <p className="text-xs text-muted-foreground">Conectado via OAuth (em homologação)</p>
+                </div>
+                <Badge variant="outline" className="ml-auto text-xs bg-amber-500/10 text-amber-500 border-amber-500/20">
+                  Em breve
+                </Badge>
+              </div>
+            </div>
+            <div className="pt-2 border-t">
+              <p className="text-xs text-muted-foreground">
+                <strong>O lojista NÃO precisa de:</strong> API Key do Gemini, Redis, Supabase, Evolution API URL
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Templates Grid */}
       <div className="grid gap-6 md:grid-cols-2">
@@ -267,7 +387,7 @@ export const N8nTemplatesDownload = () => {
             </li>
             <li className="flex gap-3">
               <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-bold shrink-0">4</span>
-              <span>Configure as credenciais: Supabase API, Google Gemini, Redis, Evolution API</span>
+              <span>Configure as credenciais do sistema: Supabase, Google Gemini, Redis, Evolution API</span>
             </li>
             <li className="flex gap-3">
               <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-bold shrink-0">5</span>
@@ -279,29 +399,23 @@ export const N8nTemplatesDownload = () => {
             </li>
           </ol>
           
-          <div className="mt-6 p-4 rounded-lg bg-muted/50 border">
-            <p className="text-sm font-medium mb-2">Credenciais necessárias:</p>
-            <div className="grid gap-2 sm:grid-cols-2">
-              <div className="flex items-center gap-2 text-sm">
-                <Badge variant="outline">Supabase API</Badge>
-                <span className="text-muted-foreground">URL + Service Role Key</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                <Badge variant="outline">Google Gemini</Badge>
-                <span className="text-muted-foreground">API Key</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                <Badge variant="outline">Redis</Badge>
-                <span className="text-muted-foreground">n8n Redis (integrado)</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                <Badge variant="outline">Evolution API</Badge>
-                <span className="text-muted-foreground">URL + API Key</span>
-              </div>
-            </div>
+          <div className="mt-6 p-4 rounded-lg bg-primary/5 border border-primary/20">
+            <p className="text-sm font-medium mb-2 flex items-center gap-2">
+              <Bot className="w-4 h-4" />
+              Fluxo de Funcionamento:
+            </p>
+            <ol className="text-xs text-muted-foreground space-y-1 ml-6 list-decimal">
+              <li>Cliente envia mensagem no WhatsApp do lojista</li>
+              <li>Evolution API dispara webhook para n8n</li>
+              <li>Master Router busca config do lojista no Supabase (por instance_name)</li>
+              <li>AI Brain processa mensagem com Google Gemini usando system_prompt do lojista</li>
+              <li>Tools executam ações (buscar menu, adicionar ao carrinho, criar pedido)</li>
+              <li>Para pagamento PIX: sistema detecta gateway ativo (MP ou PS) e gera QR code</li>
+              <li>Resposta enviada de volta via Evolution API</li>
+            </ol>
           </div>
 
-          <div className="mt-4 flex gap-2">
+          <div className="mt-4 flex gap-2 flex-wrap">
             <Button variant="outline" size="sm" className="gap-2" asChild>
               <a href="https://docs.n8n.io/" target="_blank" rel="noopener noreferrer">
                 <ExternalLink className="w-4 h-4" />
@@ -312,6 +426,12 @@ export const N8nTemplatesDownload = () => {
               <a href="https://doc.evolution-api.com/" target="_blank" rel="noopener noreferrer">
                 <ExternalLink className="w-4 h-4" />
                 Docs Evolution API
+              </a>
+            </Button>
+            <Button variant="outline" size="sm" className="gap-2" asChild>
+              <a href="https://ai.google.dev/docs" target="_blank" rel="noopener noreferrer">
+                <ExternalLink className="w-4 h-4" />
+                Docs Google Gemini
               </a>
             </Button>
           </div>
