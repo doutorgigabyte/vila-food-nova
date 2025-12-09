@@ -1276,6 +1276,75 @@ export type Database = {
           },
         ]
       }
+      establishment_commission_debt: {
+        Row: {
+          created_at: string
+          delivery_fee: number
+          establishment_id: string
+          id: string
+          notes: string | null
+          order_id: string
+          paid_at: string | null
+          payment_method: string | null
+          payment_reference: string | null
+          platform_product_fee: number
+          platform_service_fee: number
+          products_amount: number
+          status: string
+          total_commission_due: number
+          total_order: number
+        }
+        Insert: {
+          created_at?: string
+          delivery_fee?: number
+          establishment_id: string
+          id?: string
+          notes?: string | null
+          order_id: string
+          paid_at?: string | null
+          payment_method?: string | null
+          payment_reference?: string | null
+          platform_product_fee?: number
+          platform_service_fee?: number
+          products_amount?: number
+          status?: string
+          total_commission_due?: number
+          total_order?: number
+        }
+        Update: {
+          created_at?: string
+          delivery_fee?: number
+          establishment_id?: string
+          id?: string
+          notes?: string | null
+          order_id?: string
+          paid_at?: string | null
+          payment_method?: string | null
+          payment_reference?: string | null
+          platform_product_fee?: number
+          platform_service_fee?: number
+          products_amount?: number
+          status?: string
+          total_commission_due?: number
+          total_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "establishment_commission_debt_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "establishment_commission_debt_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: true
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       establishment_users: {
         Row: {
           created_at: string | null
@@ -2108,6 +2177,7 @@ export type Database = {
           cancellation_reason: string | null
           cancelled_at: string | null
           change_for: number | null
+          commission_debt_created: boolean | null
           created_at: string | null
           customer_id: string | null
           customer_phone: string | null
@@ -2139,6 +2209,7 @@ export type Database = {
           cancellation_reason?: string | null
           cancelled_at?: string | null
           change_for?: number | null
+          commission_debt_created?: boolean | null
           created_at?: string | null
           customer_id?: string | null
           customer_phone?: string | null
@@ -2170,6 +2241,7 @@ export type Database = {
           cancellation_reason?: string | null
           cancelled_at?: string | null
           change_for?: number | null
+          commission_debt_created?: boolean | null
           created_at?: string | null
           customer_id?: string | null
           customer_phone?: string | null
@@ -3956,7 +4028,25 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      establishment_debt_summary: {
+        Row: {
+          establishment_id: string | null
+          paid_amount: number | null
+          paid_count: number | null
+          pending_amount: number | null
+          pending_count: number | null
+          total_amount: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "establishment_commission_debt_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       generate_menu_json: { Args: { est_id: string }; Returns: Json }
