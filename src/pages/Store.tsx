@@ -191,6 +191,8 @@ const Store = () => {
       promotional_price: product.promotional_price,
       image_url: product.image_url,
       establishment_id: product.establishment_id,
+      product_type: product.product_type || undefined,
+      temperature_options: product.temperature_options || undefined,
     };
 
     const success = await addToCart(cartProduct, currentEstablishmentInfo, quantity, observation);

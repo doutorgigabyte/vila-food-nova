@@ -11,13 +11,36 @@ export interface CartProduct {
   promotional_price: number | null;
   image_url: string | null;
   establishment_id: string;
+  product_type?: string; // 'drink', 'frozen', 'fresh', etc.
+  temperature_options?: string[]; // Custom options like ['gelada', 'ambiente']
 }
 
 export interface CartItem {
   product: CartProduct;
   quantity: number;
   observation: string;
+  selectedTemperature?: 'gelada' | 'ambiente' | 'congelada' | 'in_natura';
 }
+
+// Helper to get temperature options based on product type
+export const getTemperatureOptions = (productType?: string, customOptions?: string[]): ('gelada' | 'ambiente' | 'congelada' | 'in_natura')[] => {
+  // If has custom options, use them
+  if (customOptions && customOptions.length > 0) {
+    return customOptions as ('gelada' | 'ambiente' | 'congelada' | 'in_natura')[];
+  }
+  
+  // Based on product type
+  switch (productType) {
+    case 'drink':
+      return ['gelada', 'ambiente'];
+    case 'frozen':
+      return ['congelada'];
+    case 'fresh':
+      return ['gelada', 'in_natura'];
+    default:
+      return []; // No temperature selector
+  }
+};
 
 export interface EstablishmentInfo {
   id: string;
@@ -39,6 +62,7 @@ interface CartContextType {
   isLoaded: boolean;
   addToCart: (product: CartProduct, establishmentInfo: EstablishmentInfo, quantity?: number, observation?: string) => Promise<boolean>;
   updateQuantity: (productId: string, delta: number) => void;
+  updateItemTemperature: (productId: string, temperature: CartItem['selectedTemperature']) => void;
   removeFromCart: (productId: string) => void;
   clearCart: () => void;
   clearEstablishmentCart: (establishmentId: string) => void;
@@ -187,6 +211,16 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     }, 0);
   };
 
+  const updateItemTemperature = (productId: string, temperature: CartItem['selectedTemperature']) => {
+    setItems((prevItems) =>
+      prevItems.map((item) =>
+        item.product.id === productId
+          ? { ...item, selectedTemperature: temperature }
+          : item
+      )
+    );
+  };
+
   const removeFromCart = (productId: string) => {
     setItems((prevItems) => prevItems.filter((item) => item.product.id !== productId));
     
@@ -279,6 +313,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         isLoaded,
         addToCart,
         updateQuantity,
+        updateItemTemperature,
         removeFromCart,
         clearCart,
         clearEstablishmentCart,
