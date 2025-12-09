@@ -128,10 +128,10 @@ serve(async (req) => {
       }
     }
 
-    // Fetch establishment data
+    // Fetch establishment data including MP token for payment queries
     const { data: establishment, error: estError } = await supabaseAdmin
       .from('establishments')
-      .select('mp_user_id, name')
+      .select('mp_user_id, name, mercado_pago_token')
       .eq('id', establishment_id)
       .single();
 
@@ -297,12 +297,22 @@ serve(async (req) => {
           throw new Error('payment_id é obrigatório');
         }
 
+        // Use establishment's MP token if available, otherwise use platform token
+        // PIX payments are created with establishment token, so must be queried with same token
+        const queryToken = establishment.mercado_pago_token || MP_ACCESS_TOKEN;
+        
+        console.log('get_payment:', { 
+          payment_id, 
+          establishment_id,
+          has_establishment_token: !!establishment.mercado_pago_token 
+        });
+
         // Query Mercado Pago API directly for payment status
         // This supports both payments created via mercadopago-sale and mercadopago-pix
         const statusResponse = await fetch(
           `https://api.mercadopago.com/v1/payments/${payment_id}`,
           {
-            headers: { 'Authorization': `Bearer ${MP_ACCESS_TOKEN}` },
+            headers: { 'Authorization': `Bearer ${queryToken}` },
           }
         );
 
