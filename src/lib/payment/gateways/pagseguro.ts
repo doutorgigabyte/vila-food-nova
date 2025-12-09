@@ -168,15 +168,14 @@ export class PagSeguroGateway {
    */
   async getPayment(paymentId: string): Promise<GetPaymentResponse> {
     try {
-      // Por enquanto, consulta a tabela de transações local
-      const { data: transaction, error } = await supabase
+      // Consulta direta via RPC para evitar problemas de tipo
+      const { data, error } = await supabase
         .from('mp_transactions')
-        .select('id, gateway_payment_id, status, amount, created_at, updated_at')
-        .eq('gateway_payment_id', paymentId)
-        .eq('gateway', 'pagseguro')
-        .single();
+        .select('id, mp_payment_id, status, amount, created_at, updated_at')
+        .eq('mp_payment_id', paymentId)
+        .maybeSingle();
 
-      if (error || !transaction) {
+      if (error || !data) {
         return {
           success: false,
           payment_id: paymentId,
@@ -189,8 +188,8 @@ export class PagSeguroGateway {
       return {
         success: true,
         payment_id: paymentId,
-        status: transaction.status as PaymentStatus,
-        amount: transaction.amount || 0,
+        status: (data.status || 'pending') as PaymentStatus,
+        amount: Number(data.amount) || 0,
       };
     } catch (error: any) {
       console.error('PagBank get payment error:', error);
