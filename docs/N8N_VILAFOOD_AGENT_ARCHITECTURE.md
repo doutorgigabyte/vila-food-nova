@@ -482,22 +482,127 @@ created_at TIMESTAMP DEFAULT now()
 
 ---
 
-## 🔄 Fluxos n8n a Criar
+## 🔄 Templates n8n Disponíveis
 
-### 1. VilaFood-Master-Router
+Os templates foram criados em `docs/n8n-templates/`:
 
-**Trigger:** Evolution API Webhook
-**Ações:**
-1. Extrai instance_name, remoteJid, message
-2. Busca config no Supabase
-3. Debounce de mensagens (Redis)
-4. Chama Brain com contexto
+### 1. VilaFood-Agent-Complete.json ⭐ PRINCIPAL
 
-### 2. VilaFood-AI-Brain
+Fluxo completo com todas as funcionalidades:
 
-**Trigger:** Chamado pelo Router
-**Ações:**
-1. Monta system_prompt dinâmico
+- **Evolution API Webhook** - Recebe mensagens
+- **Filter Self Messages** - Ignora mensagens próprias
+- **Extract Message Fields** - Extrai dados da mensagem
+- **Get Establishment Config** - Busca config via Edge Function
+- **Redis Debounce** - Agrupa mensagens (Push → Wait 2s → Get → Clear)
+- **Get Chat History** - Histórico da conversa
+- **VilaFood AI Agent** - Agente com Gemini + Tools
+- **Send Response** - Envia resposta via Evolution API
+- **Log AI Response** - Registra no Supabase
+
+**Tools incluídas:**
+- `search_menu` - Busca produtos no cardápio
+- `send_product_photo` - Envia foto do produto
+- `add_to_cart` - Adiciona ao carrinho
+- `save_customer` - Salva dados do cliente
+- `find_google_maps` - Geocodifica endereço
+- `create_order_pix` - Cria pedido + PIX
+- `send_order_to_owner` - Notifica lojista
+- `send_pix_qrcode` - Envia QR Code PIX
+
+### 2. VilaFood-MercadoPago-PIX.json
+
+Sub-workflow para geração de PIX:
+
+- Recebe dados do cliente e pedido
+- Chama API Mercado Pago
+- Retorna QR Code base64 + código copia-cola
+
+---
+
+## 🚀 Como Usar
+
+### 1. Importar no n8n
+
+1. Acesse seu n8n
+2. Vá em Workflows → Import
+3. Cole o JSON do template
+
+### 2. Configurar Credenciais
+
+Crie as seguintes credenciais no n8n:
+
+**Supabase API:**
+```json
+{
+  "url": "https://gyagfsjbdaacgmmofqip.supabase.co",
+  "serviceRoleKey": "sua-service-role-key"
+}
+```
+
+**Redis Account:**
+```json
+{
+  "host": "seu-redis-host",
+  "port": 6379,
+  "password": "sua-senha"
+}
+```
+
+**Google Gemini:**
+```json
+{
+  "apiKey": "sua-google-ai-api-key"
+}
+```
+
+### 3. Configurar Webhook no Evolution API
+
+Configure cada instância para enviar webhooks para:
+
+```
+https://seu-n8n.com/webhook/vilafood-webhook
+```
+
+Eventos habilitados:
+- `messages.upsert`
+- `connection.update`
+
+### 4. Configurar Estabelecimentos
+
+No Supabase, preencha para cada estabelecimento:
+
+```sql
+UPDATE establishments SET
+  whatsapp_instance_name = 'nome_instancia',
+  evolution_api_token = 'token_evolution',
+  system_prompt = 'Você é um assistente...',
+  menu_json = '[{"id":"uuid","nome":"Pizza","preco":45.90,"img_url":"https://..."}]'
+WHERE id = 'establishment-uuid';
+```
+
+---
+
+## 📊 Edge Functions Usadas
+
+| Tool | Edge Function | Endpoint |
+|------|---------------|----------|
+| get_session | whatsapp-cart | `POST /functions/v1/whatsapp-cart` |
+| add_to_cart | whatsapp-cart | `POST /functions/v1/whatsapp-cart` |
+| save_customer | whatsapp-cart | `POST /functions/v1/whatsapp-cart` |
+| create_order | whatsapp-checkout | `POST /functions/v1/whatsapp-checkout` |
+| find_location | calculate-delivery | `POST /functions/v1/calculate-delivery` |
+| send_media | evolution-api | `POST {server_url}/message/sendMedia/{instance}` |
+
+---
+
+## ⚠️ Requisitos
+
+- n8n v1.x+
+- Redis para debounce e memory
+- Evolution API v2.x
+- Supabase com Edge Functions deployadas
+- Google Gemini API Key (ou usar Lovable AI Gateway)
 2. Busca histórico de chat
 3. Busca dados do cliente
 4. Executa LLM com tools

@@ -1,0 +1,390 @@
+{
+  "name": "VilaFood-MercadoPago-PIX",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            { "name": "phone" },
+            { "name": "customer_name" },
+            { "name": "customer_email" },
+            { "name": "customer_cpf" },
+            { "name": "description" },
+            { "name": "value" },
+            { "name": "establishment_id" },
+            { "name": "order_id" },
+            { "name": "mercado_pago_token" }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [-200, 0],
+      "id": "start-trigger",
+      "name": "Start"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "phone",
+              "name": "phone",
+              "value": "={{ $json.phone }}",
+              "type": "string"
+            },
+            {
+              "id": "access_token",
+              "name": "access_token",
+              "value": "={{ $json.mercado_pago_token }}",
+              "type": "string"
+            },
+            {
+              "id": "description",
+              "name": "description",
+              "value": "={{ $json.description }}",
+              "type": "string"
+            },
+            {
+              "id": "value",
+              "name": "value",
+              "value": "={{ $json.value }}",
+              "type": "number"
+            },
+            {
+              "id": "first_name",
+              "name": "first_name",
+              "value": "={{ $json.customer_name.split(' ')[0] }}",
+              "type": "string"
+            },
+            {
+              "id": "last_name",
+              "name": "last_name",
+              "value": "={{ $json.customer_name.split(' ').slice(1).join(' ') || $json.customer_name.split(' ')[0] }}",
+              "type": "string"
+            },
+            {
+              "id": "email",
+              "name": "email",
+              "value": "={{ $json.customer_email || 'cliente@vilafood.com.br' }}",
+              "type": "string"
+            },
+            {
+              "id": "cpf",
+              "name": "cpf",
+              "value": "={{ $json.customer_cpf.replace(/\\D/g, '') }}",
+              "type": "string"
+            },
+            {
+              "id": "order_id",
+              "name": "order_id",
+              "value": "={{ $json.order_id }}",
+              "type": "string"
+            },
+            {
+              "id": "establishment_id",
+              "name": "establishment_id",
+              "value": "={{ $json.establishment_id }}",
+              "type": "string"
+            },
+            {
+              "id": "expiration",
+              "name": "expiration",
+              "value": "={{ $now.plus(30, 'minutes').toISO() }}",
+              "type": "string"
+            },
+            {
+              "id": "idempotency_key",
+              "name": "idempotency_key",
+              "value": "={{ $now.format('x') + '-' + $json.order_id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [40, 0],
+      "id": "config-node",
+      "name": "Config"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.mercadopago.com/v1/payments",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Config').item.json.access_token }}"
+            },
+            {
+              "name": "X-Idempotency-Key",
+              "value": "={{ $('Config').item.json.idempotency_key }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"transaction_amount\": {{ $('Config').item.json.value }},\n  \"payment_method_id\": \"pix\",\n  \"date_of_expiration\": \"{{ $('Config').item.json.expiration }}\",\n  \"external_reference\": \"{{ $('Config').item.json.order_id }}\",\n  \"description\": \"{{ $('Config').item.json.description.replace(/\"/g, '').replace(/\\n/g, ' ').substring(0, 200) }}\",\n  \"payer\": {\n    \"first_name\": \"{{ $('Config').item.json.first_name }}\",\n    \"last_name\": \"{{ $('Config').item.json.last_name }}\",\n    \"email\": \"{{ $('Config').item.json.email }}\",\n    \"identification\": {\n      \"type\": \"CPF\",\n      \"number\": \"{{ $('Config').item.json.cpf }}\"\n    }\n  },\n  \"additional_info\": {\n    \"items\": [\n      {\n        \"id\": \"{{ $('Config').item.json.order_id }}\",\n        \"title\": \"Pedido VilaFood\",\n        \"description\": \"{{ $('Config').item.json.description.substring(0, 100) }}\",\n        \"quantity\": 1,\n        \"unit_price\": {{ $('Config').item.json.value }}\n      }\n    ]\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [280, 0],
+      "id": "create-pix-payment",
+      "name": "Create PIX Payment",
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "number",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [520, 0],
+      "id": "check-success",
+      "name": "Payment Created?"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "success",
+              "name": "success",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "payment_id",
+              "name": "payment_id",
+              "value": "={{ $('Create PIX Payment').item.json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "status",
+              "name": "status",
+              "value": "={{ $('Create PIX Payment').item.json.status }}",
+              "type": "string"
+            },
+            {
+              "id": "qrcode_base64",
+              "name": "qrcode_base64",
+              "value": "={{ $('Create PIX Payment').item.json.point_of_interaction?.transaction_data?.qr_code_base64 }}",
+              "type": "string"
+            },
+            {
+              "id": "qrcode_url",
+              "name": "qrcode_url",
+              "value": "=data:image/png;base64,{{ $('Create PIX Payment').item.json.point_of_interaction?.transaction_data?.qr_code_base64 }}",
+              "type": "string"
+            },
+            {
+              "id": "pix_code",
+              "name": "pix_code",
+              "value": "={{ $('Create PIX Payment').item.json.point_of_interaction?.transaction_data?.qr_code }}",
+              "type": "string"
+            },
+            {
+              "id": "ticket_url",
+              "name": "ticket_url",
+              "value": "={{ $('Create PIX Payment').item.json.point_of_interaction?.transaction_data?.ticket_url }}",
+              "type": "string"
+            },
+            {
+              "id": "expiration_date",
+              "name": "expiration_date",
+              "value": "={{ $('Create PIX Payment').item.json.date_of_expiration }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [760, -60],
+      "id": "format-success",
+      "name": "Format Success Response"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "success",
+              "name": "success",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "error",
+              "name": "error",
+              "value": "={{ $('Create PIX Payment').item.json.message || $('Create PIX Payment').item.json.error || 'Erro ao criar pagamento PIX' }}",
+              "type": "string"
+            },
+            {
+              "id": "error_code",
+              "name": "error_code",
+              "value": "={{ $('Create PIX Payment').item.json.status || 'UNKNOWN' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [760, 120],
+      "id": "format-error",
+      "name": "Format Error Response"
+    },
+    {
+      "parameters": {
+        "numberInputs": 2
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [1000, 0],
+      "id": "merge-results",
+      "name": "Merge Results"
+    },
+    {
+      "parameters": {
+        "jsCode": "return {\n  response: $input.last().json\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1240, 0],
+      "id": "final-response",
+      "name": "Final Response"
+    }
+  ],
+  "connections": {
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Create PIX Payment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create PIX Payment": {
+      "main": [
+        [
+          {
+            "node": "Payment Created?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Payment Created?": {
+      "main": [
+        [
+          {
+            "node": "Format Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Format Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Success Response": {
+      "main": [
+        [
+          {
+            "node": "Merge Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Error Response": {
+      "main": [
+        [
+          {
+            "node": "Merge Results",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Results": {
+      "main": [
+        [
+          {
+            "node": "Final Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": [
+    {
+      "name": "VilaFood"
+    }
+  ]
+}
