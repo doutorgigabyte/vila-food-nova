@@ -660,6 +660,50 @@ export type Database = {
         }
         Relationships: []
       }
+      auth_codes: {
+        Row: {
+          code: string
+          created_at: string
+          establishment_id: string | null
+          expires_at: string
+          id: string
+          phone: string
+          type: string
+          used: boolean | null
+          used_at: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          establishment_id?: string | null
+          expires_at: string
+          id?: string
+          phone: string
+          type: string
+          used?: boolean | null
+          used_at?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          establishment_id?: string | null
+          expires_at?: string
+          id?: string
+          phone?: string
+          type?: string
+          used?: boolean | null
+          used_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "auth_codes_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       banners: {
         Row: {
           created_at: string | null

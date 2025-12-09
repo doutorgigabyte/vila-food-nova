@@ -175,7 +175,7 @@ const SystemChecklistProgress = () => {
         { id: 'w3', label: 'Templates de mensagens do sistema', status: 'passed' },
         { id: 'w4', label: 'Disparo em massa com filtro por tags', status: 'passed' },
         { id: 'w5', label: 'Agendamento de campanhas', status: 'passed' },
-        { id: 'w6', label: 'Envio de código de autenticação via WhatsApp', status: 'pending' },
+        { id: 'w6', label: 'Envio de código de autenticação via WhatsApp', status: 'passed' },
         { id: 'w7', label: 'Notificação de novo pedido para lojista', status: 'pending' },
         { id: 'w8', label: 'Alerta de pagamento pendente', status: 'pending' },
         { id: 'w9', label: 'Aviso de manutenção programada', status: 'pending' },
