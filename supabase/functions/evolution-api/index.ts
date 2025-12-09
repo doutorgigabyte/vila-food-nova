@@ -298,31 +298,42 @@ serve(async (req) => {
 
     const { action, instanceName, establishmentId, evolutionApiUrl, evolutionApiKey } = body;
 
-    // Get config from request or from database
-    let config: EvolutionConfig;
+    // Get config from request, database, or environment variables (with fallback)
+    let config: EvolutionConfig | null = null;
     
+    // 1. First try explicit credentials from request body
     if (evolutionApiUrl && evolutionApiKey) {
       config = { apiUrl: evolutionApiUrl, apiKey: evolutionApiKey };
-    } else if (establishmentId) {
+      console.log('Using credentials from request body');
+    }
+    
+    // 2. Try database if establishmentId provided and no explicit config
+    if (!config && establishmentId) {
       const { data: instance } = await supabase
         .from('whatsapp_instances')
         .select('evolution_api_url, evolution_api_key')
         .eq('establishment_id', establishmentId)
-        .single();
+        .maybeSingle();
       
-      if (!instance?.evolution_api_url || !instance?.evolution_api_key) {
-        throw new Error('Evolution API credentials not configured');
+      if (instance?.evolution_api_url && instance?.evolution_api_key) {
+        config = { apiUrl: instance.evolution_api_url, apiKey: instance.evolution_api_key };
+        console.log('Using credentials from database');
       }
-      config = { apiUrl: instance.evolution_api_url, apiKey: instance.evolution_api_key };
-    } else {
-      // Try environment variables
+    }
+    
+    // 3. Fall back to environment variables
+    if (!config) {
       const envUrl = Deno.env.get('EVOLUTION_API_URL');
       const envKey = Deno.env.get('EVOLUTION_API_KEY');
       
-      if (!envUrl || !envKey) {
-        throw new Error('Evolution API credentials required');
+      if (envUrl && envKey) {
+        config = { apiUrl: envUrl, apiKey: envKey };
+        console.log('Using credentials from environment variables');
       }
-      config = { apiUrl: envUrl, apiKey: envKey };
+    }
+    
+    if (!config) {
+      throw new Error('Evolution API credentials required - check environment variables or database configuration');
     }
 
     let result: any;
