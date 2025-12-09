@@ -112,6 +112,9 @@ const SystemChecklistProgress = () => {
         { id: 'a12', label: 'Configurar gateways de pagamento', status: 'pending' },
         { id: 'a13', label: 'Visualizar logs de auditoria', status: 'pending' },
         { id: 'a14', label: 'Gerenciar vilas/regiões', status: 'pending' },
+        { id: 'a15', label: 'Sidebar sem links quebrados', status: 'pending' },
+        { id: 'a16', label: 'Configurar taxa entrega Turbo', status: 'pending' },
+        { id: 'a17', label: 'Configurar máximo pedidos por batch', status: 'pending' },
       ]
     },
     {
