@@ -42,6 +42,158 @@ interface CheckoutRequest {
   generate_pix?: boolean;
 }
 
+interface PaymentGatewayResult {
+  gateway: 'mercadopago' | 'pagseguro' | 'none';
+  available: boolean;
+  token?: string;
+}
+
+// Determina qual gateway de pagamento usar
+async function determinePaymentGateway(
+  supabase: any,
+  establishmentId: string,
+  establishment: any
+): Promise<PaymentGatewayResult> {
+  console.log('Determining payment gateway for establishment:', establishmentId);
+  
+  // 1. Verificar configuração global da plataforma
+  const { data: platformSettings } = await supabase
+    .from('platform_settings')
+    .select('mercadopago_enabled, pagseguro_enabled')
+    .single();
+  
+  const mpGlobalEnabled = platformSettings?.mercadopago_enabled !== false; // default true
+  const psGlobalEnabled = platformSettings?.pagseguro_enabled === true; // default false (em homologação)
+  
+  console.log('Platform settings - MP:', mpGlobalEnabled, 'PS:', psGlobalEnabled);
+  
+  // 2. Verificar tokens do estabelecimento
+  const hasMercadoPagoToken = !!establishment.mercado_pago_token;
+  const hasPagSeguroToken = !!establishment.pagseguro_token;
+  
+  console.log('Establishment tokens - MP:', hasMercadoPagoToken, 'PS:', hasPagSeguroToken);
+  
+  // 3. Prioridade: Mercado Pago > PagSeguro > Nenhum
+  if (mpGlobalEnabled && hasMercadoPagoToken) {
+    return {
+      gateway: 'mercadopago',
+      available: true,
+      token: establishment.mercado_pago_token
+    };
+  }
+  
+  if (psGlobalEnabled && hasPagSeguroToken) {
+    return {
+      gateway: 'pagseguro',
+      available: true,
+      token: establishment.pagseguro_token
+    };
+  }
+  
+  // Nenhum gateway disponível
+  return {
+    gateway: 'none',
+    available: false
+  };
+}
+
+// Gera PIX via Mercado Pago
+async function generateMercadoPagoPix(
+  supabaseUrl: string,
+  anonKey: string,
+  establishmentId: string,
+  orderId: string,
+  total: number,
+  orderNumber: string,
+  establishmentName: string,
+  customerPhone: string,
+  customerName: string
+): Promise<any> {
+  const pixResponse = await fetch(
+    `${supabaseUrl}/functions/v1/mercadopago-pix`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${anonKey}`,
+      },
+      body: JSON.stringify({
+        establishment_id: establishmentId,
+        order_id: orderId,
+        amount: total,
+        description: `Pedido #${orderNumber} - ${establishmentName}`,
+        payer: {
+          email: `${customerPhone}@whatsapp.customer`,
+          name: customerName,
+        },
+      }),
+    }
+  );
+
+  if (pixResponse.ok) {
+    const pix = await pixResponse.json();
+    if (pix.success) {
+      return {
+        qr_code: pix.qr_code,
+        qr_code_base64: pix.qr_code_base64,
+        payment_id: pix.payment_id,
+        copy_paste: pix.qr_code,
+        gateway: 'mercadopago'
+      };
+    }
+  }
+  return null;
+}
+
+// Gera PIX via PagSeguro
+async function generatePagSeguroPix(
+  supabaseUrl: string,
+  anonKey: string,
+  establishmentId: string,
+  orderId: string,
+  total: number,
+  orderNumber: string,
+  establishmentName: string,
+  customerPhone: string,
+  customerName: string
+): Promise<any> {
+  const pixResponse = await fetch(
+    `${supabaseUrl}/functions/v1/pagseguro-pix`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${anonKey}`,
+      },
+      body: JSON.stringify({
+        establishment_id: establishmentId,
+        order_id: orderId,
+        amount: total,
+        description: `Pedido #${orderNumber} - ${establishmentName}`,
+        payer: {
+          email: `${customerPhone}@whatsapp.customer`,
+          name: customerName,
+          phone: customerPhone,
+        },
+      }),
+    }
+  );
+
+  if (pixResponse.ok) {
+    const pix = await pixResponse.json();
+    if (pix.success) {
+      return {
+        qr_code: pix.qr_code || pix.pix_code,
+        qr_code_base64: pix.qr_code_base64,
+        payment_id: pix.charge_id || pix.payment_id,
+        copy_paste: pix.qr_code || pix.pix_code,
+        gateway: 'pagseguro'
+      };
+    }
+  }
+  return null;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -52,6 +204,9 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
 
     const body: CheckoutRequest = await req.json();
     const { 
@@ -183,12 +338,12 @@ serve(async (req) => {
       if (delivery_address.latitude && delivery_address.longitude) {
         try {
           const deliveryResponse = await fetch(
-            `${Deno.env.get('SUPABASE_URL')}/functions/v1/calculate-delivery`,
+            `${supabaseUrl}/functions/v1/calculate-delivery`,
             {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`,
+                'Authorization': `Bearer ${anonKey}`,
               },
               body: JSON.stringify({
                 establishment_id: establishmentId,
@@ -318,45 +473,59 @@ serve(async (req) => {
       },
     });
 
-    // Generate PIX if requested (N8N mode)
+    // Generate PIX if requested (N8N mode) - with multi-gateway support
     let pixData = null;
-    if (generate_pix && payment_method === 'pix' && establishment.mercado_pago_token) {
-      try {
-        const pixResponse = await fetch(
-          `${Deno.env.get('SUPABASE_URL')}/functions/v1/mercadopago-pix`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`,
-            },
-            body: JSON.stringify({
-              establishment_id: establishmentId,
-              order_id: order.id,
-              amount: total,
-              description: `Pedido #${order.order_number} - ${establishment.name}`,
-              payer: {
-                email: `${customerPhone}@whatsapp.customer`,
-                name: customerName,
-              },
-            }),
+    if (generate_pix && payment_method === 'pix') {
+      // Determinar qual gateway usar
+      const gatewayResult = await determinePaymentGateway(supabase, establishmentId, establishment);
+      
+      console.log('Gateway determination result:', gatewayResult);
+      
+      if (gatewayResult.available) {
+        try {
+          if (gatewayResult.gateway === 'mercadopago') {
+            pixData = await generateMercadoPagoPix(
+              supabaseUrl,
+              anonKey,
+              establishmentId,
+              order.id,
+              total,
+              order.order_number,
+              establishment.name,
+              customerPhone,
+              customerName
+            );
+          } else if (gatewayResult.gateway === 'pagseguro') {
+            pixData = await generatePagSeguroPix(
+              supabaseUrl,
+              anonKey,
+              establishmentId,
+              order.id,
+              total,
+              order.order_number,
+              establishment.name,
+              customerPhone,
+              customerName
+            );
           }
-        );
-
-        if (pixResponse.ok) {
-          const pix = await pixResponse.json();
-          if (pix.success) {
-            pixData = {
-              qr_code: pix.qr_code,
-              qr_code_base64: pix.qr_code_base64,
-              payment_id: pix.payment_id,
-              copy_paste: pix.qr_code,
-            };
-            console.log('PIX generated successfully for order:', order.order_number);
+          
+          if (pixData) {
+            console.log(`PIX generated successfully via ${gatewayResult.gateway} for order:`, order.order_number);
           }
+        } catch (pixError) {
+          console.error('Error generating PIX:', pixError);
         }
-      } catch (pixError) {
-        console.error('Error generating PIX:', pixError);
+      } else {
+        console.log('No payment gateway available for PIX generation');
+        // Se tem PIX key estática, usar como fallback
+        if (establishment.pix_key) {
+          pixData = {
+            copy_paste: establishment.pix_key,
+            gateway: 'static',
+            is_static: true
+          };
+          console.log('Using static PIX key as fallback');
+        }
       }
     }
 
@@ -395,7 +564,11 @@ serve(async (req) => {
     // Add PIX instructions if generated
     if (pixData) {
       confirmationMessage += `\n\n💳 *Pagamento PIX:*\n`;
-      confirmationMessage += `Copie o código abaixo e pague no seu banco:\n\n`;
+      if (pixData.is_static) {
+        confirmationMessage += `Copie a chave PIX abaixo e pague no seu banco:\n\n`;
+      } else {
+        confirmationMessage += `Copie o código abaixo e pague no seu banco:\n\n`;
+      }
       confirmationMessage += `\`${pixData.copy_paste}\``;
     }
 
@@ -412,6 +585,7 @@ serve(async (req) => {
       delivery_type,
       // N8N fields
       pix: pixData,
+      payment_gateway: pixData?.gateway || 'none',
       customer_phone: customerPhone,
       establishment_name: establishment.name,
     }), {

@@ -1,0 +1,608 @@
+{
+  "name": "VilaFood Payment Gateway Selector",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [200, 400],
+      "id": "trigger",
+      "name": "Trigger"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/platform_settings?select=mercadopago_enabled,pagseguro_enabled&limit=1",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [420, 400],
+      "id": "get-platform-settings",
+      "name": "Busca Config Plataforma"
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/establishments?select=mercado_pago_token,pagseguro_token,pix_key&id=eq.{{ $json.establishment_id }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [640, 400],
+      "id": "get-establishment-tokens",
+      "name": "Busca Tokens Lojista"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "mp_global_enabled",
+              "name": "mp_global_enabled",
+              "value": "={{ $('Busca Config Plataforma').item.json[0]?.mercadopago_enabled !== false }}",
+              "type": "boolean"
+            },
+            {
+              "id": "ps_global_enabled",
+              "name": "ps_global_enabled",
+              "value": "={{ $('Busca Config Plataforma').item.json[0]?.pagseguro_enabled === true }}",
+              "type": "boolean"
+            },
+            {
+              "id": "has_mp_token",
+              "name": "has_mp_token",
+              "value": "={{ !!$('Busca Tokens Lojista').item.json[0]?.mercado_pago_token }}",
+              "type": "boolean"
+            },
+            {
+              "id": "has_ps_token",
+              "name": "has_ps_token",
+              "value": "={{ !!$('Busca Tokens Lojista').item.json[0]?.pagseguro_token }}",
+              "type": "boolean"
+            },
+            {
+              "id": "pix_key",
+              "name": "pix_key",
+              "value": "={{ $('Busca Tokens Lojista').item.json[0]?.pix_key || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "establishment_id",
+              "name": "establishment_id",
+              "value": "={{ $('Trigger').item.json.establishment_id }}",
+              "type": "string"
+            },
+            {
+              "id": "order_id",
+              "name": "order_id",
+              "value": "={{ $('Trigger').item.json.order_id }}",
+              "type": "string"
+            },
+            {
+              "id": "amount",
+              "name": "amount",
+              "value": "={{ $('Trigger').item.json.amount }}",
+              "type": "number"
+            },
+            {
+              "id": "description",
+              "name": "description",
+              "value": "={{ $('Trigger').item.json.description }}",
+              "type": "string"
+            },
+            {
+              "id": "customer_phone",
+              "name": "customer_phone",
+              "value": "={{ $('Trigger').item.json.customer_phone }}",
+              "type": "string"
+            },
+            {
+              "id": "customer_name",
+              "name": "customer_name",
+              "value": "={{ $('Trigger').item.json.customer_name }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [860, 400],
+      "id": "prepare-data",
+      "name": "Prepara Dados"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.mp_global_enabled && $json.has_mp_token }}",
+                    "rightValue": true,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "mercadopago"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.ps_global_enabled && $json.has_ps_token }}",
+                    "rightValue": true,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "pagseguro"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.pix_key }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notEquals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "pix_estatico"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [1080, 400],
+      "id": "gateway-switch",
+      "name": "Seleciona Gateway"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/functions/v1/mercadopago-pix",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"establishment_id\": \"{{ $('Prepara Dados').item.json.establishment_id }}\",\n  \"order_id\": \"{{ $('Prepara Dados').item.json.order_id }}\",\n  \"amount\": {{ $('Prepara Dados').item.json.amount }},\n  \"description\": \"{{ $('Prepara Dados').item.json.description }}\",\n  \"payer\": {\n    \"email\": \"{{ $('Prepara Dados').item.json.customer_phone }}@whatsapp.customer\",\n    \"name\": \"{{ $('Prepara Dados').item.json.customer_name }}\"\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1300, 200],
+      "id": "call-mercadopago",
+      "name": "Gera PIX Mercado Pago"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/functions/v1/pagseguro-pix",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"establishment_id\": \"{{ $('Prepara Dados').item.json.establishment_id }}\",\n  \"order_id\": \"{{ $('Prepara Dados').item.json.order_id }}\",\n  \"amount\": {{ $('Prepara Dados').item.json.amount }},\n  \"description\": \"{{ $('Prepara Dados').item.json.description }}\",\n  \"payer\": {\n    \"email\": \"{{ $('Prepara Dados').item.json.customer_phone }}@whatsapp.customer\",\n    \"name\": \"{{ $('Prepara Dados').item.json.customer_name }}\",\n    \"phone\": \"{{ $('Prepara Dados').item.json.customer_phone }}\"\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1300, 400],
+      "id": "call-pagseguro",
+      "name": "Gera PIX PagSeguro"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "success",
+              "name": "success",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "gateway",
+              "name": "gateway",
+              "value": "static",
+              "type": "string"
+            },
+            {
+              "id": "qr_code",
+              "name": "qr_code",
+              "value": "={{ $('Prepara Dados').item.json.pix_key }}",
+              "type": "string"
+            },
+            {
+              "id": "copy_paste",
+              "name": "copy_paste",
+              "value": "={{ $('Prepara Dados').item.json.pix_key }}",
+              "type": "string"
+            },
+            {
+              "id": "is_static",
+              "name": "is_static",
+              "value": true,
+              "type": "boolean"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1300, 600],
+      "id": "use-static-pix",
+      "name": "Usa PIX Estático"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "success",
+              "name": "success",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "gateway",
+              "name": "gateway",
+              "value": "none",
+              "type": "string"
+            },
+            {
+              "id": "error",
+              "name": "error",
+              "value": "Nenhum gateway de pagamento configurado",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1300, 800],
+      "id": "no-gateway",
+      "name": "Sem Gateway"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "success",
+              "name": "success",
+              "value": "={{ $json.success === true }}",
+              "type": "boolean"
+            },
+            {
+              "id": "gateway",
+              "name": "gateway",
+              "value": "mercadopago",
+              "type": "string"
+            },
+            {
+              "id": "qr_code",
+              "name": "qr_code",
+              "value": "={{ $json.qr_code }}",
+              "type": "string"
+            },
+            {
+              "id": "qr_code_base64",
+              "name": "qr_code_base64",
+              "value": "={{ $json.qr_code_base64 }}",
+              "type": "string"
+            },
+            {
+              "id": "copy_paste",
+              "name": "copy_paste",
+              "value": "={{ $json.qr_code }}",
+              "type": "string"
+            },
+            {
+              "id": "payment_id",
+              "name": "payment_id",
+              "value": "={{ $json.payment_id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1520, 200],
+      "id": "format-mp-response",
+      "name": "Formata Resposta MP"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "success",
+              "name": "success",
+              "value": "={{ $json.success === true }}",
+              "type": "boolean"
+            },
+            {
+              "id": "gateway",
+              "name": "gateway",
+              "value": "pagseguro",
+              "type": "string"
+            },
+            {
+              "id": "qr_code",
+              "name": "qr_code",
+              "value": "={{ $json.qr_code || $json.pix_code }}",
+              "type": "string"
+            },
+            {
+              "id": "qr_code_base64",
+              "name": "qr_code_base64",
+              "value": "={{ $json.qr_code_base64 }}",
+              "type": "string"
+            },
+            {
+              "id": "copy_paste",
+              "name": "copy_paste",
+              "value": "={{ $json.qr_code || $json.pix_code }}",
+              "type": "string"
+            },
+            {
+              "id": "payment_id",
+              "name": "payment_id",
+              "value": "={{ $json.charge_id || $json.payment_id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1520, 400],
+      "id": "format-ps-response",
+      "name": "Formata Resposta PS"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "mergeByFields": {
+          "values": []
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.1,
+      "position": [1740, 400],
+      "id": "merge-results",
+      "name": "Merge Resultados"
+    }
+  ],
+  "connections": {
+    "Trigger": {
+      "main": [
+        [
+          {
+            "node": "Busca Config Plataforma",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca Config Plataforma": {
+      "main": [
+        [
+          {
+            "node": "Busca Tokens Lojista",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca Tokens Lojista": {
+      "main": [
+        [
+          {
+            "node": "Prepara Dados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepara Dados": {
+      "main": [
+        [
+          {
+            "node": "Seleciona Gateway",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Seleciona Gateway": {
+      "main": [
+        [
+          {
+            "node": "Gera PIX Mercado Pago",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Gera PIX PagSeguro",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Usa PIX Estático",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Sem Gateway",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gera PIX Mercado Pago": {
+      "main": [
+        [
+          {
+            "node": "Formata Resposta MP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gera PIX PagSeguro": {
+      "main": [
+        [
+          {
+            "node": "Formata Resposta PS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formata Resposta MP": {
+      "main": [
+        [
+          {
+            "node": "Merge Resultados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formata Resposta PS": {
+      "main": [
+        [
+          {
+            "node": "Merge Resultados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Usa PIX Estático": {
+      "main": [
+        [
+          {
+            "node": "Merge Resultados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sem Gateway": {
+      "main": [
+        [
+          {
+            "node": "Merge Resultados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "id": "vilafood",
+      "name": "VilaFood"
+    },
+    {
+      "id": "payment",
+      "name": "Payment"
+    }
+  ],
+  "triggerCount": 0,
+  "updatedAt": "2024-01-15T00:00:00.000Z",
+  "versionId": "1"
+}
