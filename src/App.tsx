@@ -104,7 +104,6 @@ const AdminVouchersManagement = lazy(() => import("./pages/admin/AdminVouchersMa
 const DataMigration = lazy(() => import("./pages/admin/DataMigration"));
 const ExternalDataMigration = lazy(() => import("./pages/admin/ExternalDataMigration"));
 const DiagnosticoSistema = lazy(() => import("./pages/admin/DiagnosticoSistema"));
-const Roadmap = lazy(() => import("./pages/admin/Roadmap"));
 const ImplementationRoadmap = lazy(() => import("./pages/admin/ImplementationRoadmap"));
 const SystemHealthCheck = lazy(() => import("./pages/admin/SystemHealthCheck"));
 const ImageFillManager = lazy(() => import("./pages/admin/ImageFillManager"));
@@ -294,7 +293,6 @@ const AppRoutes = () => {
               <Route path="/admin/migracao" element={<DataMigration />} />
               <Route path="/admin/migracao-externa" element={<ProtectedAdminRoute><ExternalDataMigration /></ProtectedAdminRoute>} />
               <Route path="/admin/diagnostico" element={<ProtectedAdminRoute><DiagnosticoSistema /></ProtectedAdminRoute>} />
-              <Route path="/admin/roadmap" element={<ProtectedAdminRoute><Roadmap /></ProtectedAdminRoute>} />
               <Route path="/admin/health" element={<ProtectedAdminRoute><SystemHealthCheck /></ProtectedAdminRoute>} />
               <Route path="/admin/progresso" element={<ProtectedAdminRoute><ImplementationRoadmap /></ProtectedAdminRoute>} />
               <Route path="/admin/preencher-imagens" element={<ProtectedAdminRoute><ImageFillManager /></ProtectedAdminRoute>} />

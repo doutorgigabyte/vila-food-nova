@@ -1,8 +1,12 @@
 /**
- * Mercado Pago PIX - Checkout Transparente com Split
+ * Mercado Pago PIX - Checkout Transparente com Split (Modelo Blindado)
  * 
  * Gera QR codes PIX dinâmicos usando a API de Checkout Transparente do MP.
- * Usa o modelo Marketplace: pagamento via token da plataforma com split para vendedor.
+ * 
+ * MODELO BLINDADO - Plataforma como SaaS:
+ * - 100% do FRETE vai para a LOJA (establishment)
+ * - Plataforma recebe apenas: 5% do valor dos PRODUTOS + R$1 taxa de serviço
+ * - Loja é responsável por pagar o entregador diretamente
  * 
  * https://www.mercadopago.com.br/developers/pt/docs/checkout-api/landing
  * https://www.mercadopago.com.br/developers/pt/docs/split-payment/integration-configuration/payments
@@ -20,12 +24,15 @@ const corsHeaders = {
 
 // Platform Access Token (from secrets)
 const PLATFORM_ACCESS_TOKEN = Deno.env.get('MERCADOPAGO_ACCESS_TOKEN');
-const PLATFORM_FEE_PERCENT = 5; // 5% platform fee
+const PLATFORM_FEE_PERCENT = 5; // 5% platform fee (only on PRODUCTS, not delivery)
+const PLATFORM_SERVICE_FEE = 1; // R$1 fixed service fee
 
 interface PixRequest {
   establishment_id: string;
   order_id: string;
-  amount: number;
+  amount: number; // Total amount including delivery
+  products_amount?: number; // Amount of products only (without delivery)
+  delivery_fee?: number; // Delivery fee amount
   description?: string;
   payer_email?: string;
   payer_name?: string;
@@ -51,7 +58,9 @@ serve(async (req) => {
     const { 
       establishment_id, 
       order_id, 
-      amount, 
+      amount,
+      products_amount,
+      delivery_fee, 
       description, 
       payer_email, 
       payer_name,
@@ -63,6 +72,8 @@ serve(async (req) => {
       establishment_id,
       order_id,
       amount,
+      products_amount,
+      delivery_fee,
       description,
       payer_email: payer_email ? '***@***' : null,
       payer_name: payer_name || null,
@@ -218,8 +229,30 @@ serve(async (req) => {
     const payerLastName = payer_name?.split(' ').slice(1).join(' ') || 'VilaFood';
     const payerEmail = payer_email || `cliente_${order_id.slice(-8)}@vilafood.com.br`;
     
-    // Calculate platform fee for split
-    const platformFee = useSplit ? Math.round(amount * PLATFORM_FEE_PERCENT) / 100 : 0;
+    // MODELO BLINDADO - Calculate platform fee correctly:
+    // Platform receives: 5% of PRODUCTS only + R$1 service fee
+    // Establishment receives: 100% of delivery fee + (products - 5% - R$1)
+    const actualProductsAmount = products_amount || (amount - (delivery_fee || 0));
+    const actualDeliveryFee = delivery_fee || 0;
+    
+    // Platform fee = 5% of products + R$1 service fee
+    const platformProductFee = useSplit ? Math.round(actualProductsAmount * PLATFORM_FEE_PERCENT) / 100 : 0;
+    const platformServiceFee = useSplit ? PLATFORM_SERVICE_FEE : 0;
+    const totalPlatformFee = platformProductFee + platformServiceFee;
+    
+    // Establishment receives = Total - Platform fee (includes 100% of delivery)
+    const establishmentReceives = amount - totalPlatformFee;
+
+    console.log('[mercadopago-pix] MODELO BLINDADO Split calculation:', {
+      total_amount: amount,
+      products_amount: actualProductsAmount,
+      delivery_fee: actualDeliveryFee,
+      platform_product_fee_5pct: platformProductFee,
+      platform_service_fee: platformServiceFee,
+      total_platform_fee: totalPlatformFee,
+      establishment_receives: establishmentReceives,
+      note: '100% do frete vai para a loja - loja paga entregador',
+    });
 
     // Build Mercado Pago payment payload
     const mpPayload: Record<string, unknown> = {
@@ -247,10 +280,12 @@ serve(async (req) => {
     // Note: For PIX, split payments are handled differently via bank transfers after payment
     // application_fee doesn't work with PIX, so we'll handle splits in the webhook
     if (useSplit && sellerId) {
-      console.log('[mercadopago-pix] Split will be processed after payment via webhook:', {
-        platform_fee: platformFee,
-        seller_receives: amount - platformFee,
+      console.log('[mercadopago-pix] MODELO BLINDADO - Split will be processed after payment via webhook:', {
+        platform_fee: totalPlatformFee,
+        establishment_receives: establishmentReceives,
         seller_id: sellerId,
+        delivery_fee_to_establishment: actualDeliveryFee,
+        note: 'Loja recebe 100% do frete + produtos menos comissão',
       });
     }
 
@@ -366,7 +401,7 @@ serve(async (req) => {
       throw new Error('QR Code PIX não encontrado na resposta do Mercado Pago');
     }
 
-    // Log transaction
+    // Log transaction with MODELO BLINDADO details
     try {
       await supabase.from('mp_transactions').insert({
         establishment_id,
@@ -377,8 +412,14 @@ serve(async (req) => {
         metadata: {
           order_id,
           expiration: paymentData.date_of_expiration,
-          platform_fee: platformFee,
+          platform_fee: totalPlatformFee,
+          platform_product_fee: platformProductFee,
+          platform_service_fee: platformServiceFee,
+          delivery_fee: actualDeliveryFee,
+          products_amount: actualProductsAmount,
+          establishment_receives: establishmentReceives,
           use_split: useSplit,
+          modelo: 'blindado',
         },
       });
     } catch (txError) {
@@ -418,7 +459,12 @@ serve(async (req) => {
       ticket_url: pixData.ticket_url,
       amount,
       order_id,
-      platform_fee: platformFee,
+      // MODELO BLINDADO - Platform receives only commission
+      platform_fee: totalPlatformFee,
+      platform_product_fee: platformProductFee,
+      platform_service_fee: platformServiceFee,
+      delivery_fee: actualDeliveryFee,
+      establishment_receives: establishmentReceives,
       expiration: paymentData.date_of_expiration,
       message: `💰 *Pagamento via PIX*\n\nValor: R$ ${amount.toFixed(2)}\n\n📱 Escaneie o QR Code ou copie o código PIX\n\n⏰ Válido até: ${new Date(paymentData.date_of_expiration).toLocaleString('pt-BR')}\n\nO pedido será confirmado automaticamente após o pagamento!`,
     }), {

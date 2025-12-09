@@ -180,31 +180,8 @@ export const useDriverDeliveries = () => {
       return false;
     }
 
-    // Trigger real-time payment split when delivery is completed
-    if (status === 'delivered' && currentDelivery) {
-      try {
-        const { data: sessionData } = await supabase.auth.getSession();
-        const token = sessionData?.session?.access_token;
-        
-        if (token && currentDelivery.order?.delivery_fee) {
-          const response = await supabase.functions.invoke('driver-payment-split', {
-            body: {
-              order_id: currentDelivery.order_id,
-              driver_id: currentDelivery.driver_id,
-              delivery_tracking_id: deliveryId,
-              delivery_fee: currentDelivery.order.delivery_fee,
-            },
-          });
-          
-          if (response.data?.success) {
-            toast.success(`+R$ ${response.data.driver_earnings.toFixed(2)} adicionados ao saldo!`);
-          }
-        }
-      } catch (splitError) {
-        console.error('Error processing payment split:', splitError);
-        // Don't block delivery completion if split fails
-      }
-    }
+    // Note: Payment split removed - establishment pays driver directly (Modelo Blindado)
+    // Driver earnings are managed by the establishment, not the platform
 
     await fetchDeliveries();
     
