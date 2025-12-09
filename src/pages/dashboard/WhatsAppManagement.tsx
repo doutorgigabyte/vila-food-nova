@@ -146,25 +146,49 @@ const WhatsAppManagement = () => {
     setTestResult(null);
     
     try {
+      // Generate instance name from establishment slug or id
+      const instanceName = establishment?.whatsapp_instance_name || 
+                          establishment?.slug || 
+                          `instance-${establishmentId?.slice(0, 8)}`;
+
       // Call Edge Function to create/connect instance
       const { data, error } = await supabase.functions.invoke('evolution-api', {
         body: {
           action: 'create_instance',
-          establishment_id: establishmentId,
+          instanceName,
+          establishmentId,
         }
       });
 
       if (error) throw error;
 
-      // Update instance with QR code
-      if (data?.qrcode?.base64) {
+      // Create or update instance record in database
+      const { data: existingInstance } = await supabase
+        .from("whatsapp_instances")
+        .select("id")
+        .eq("establishment_id", establishmentId)
+        .maybeSingle();
+
+      if (existingInstance) {
         await supabase
           .from("whatsapp_instances")
           .update({ 
+            instance_name: instanceName,
             status: 'connecting', 
-            qr_code: data.qrcode.base64 
+            qr_code: data?.qrcode?.base64 || data?.base64 || null
           })
-          .eq("establishment_id", establishmentId);
+          .eq("id", existingInstance.id);
+      } else {
+        await supabase
+          .from("whatsapp_instances")
+          .insert({
+            establishment_id: establishmentId,
+            instance_name: instanceName,
+            status: 'connecting',
+            qr_code: data?.qrcode?.base64 || data?.base64 || null,
+            whatsapp_level: 1,
+            keywords_enabled: true,
+          });
       }
 
       fetchInstance();
