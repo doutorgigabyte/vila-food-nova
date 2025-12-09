@@ -513,9 +513,19 @@ const Checkout = () => {
               establishmentId={currentEstablishmentId}
               amount={total}
               description={`Pedido #${createdOrderId.slice(-8)}`}
+              items={items.map(item => ({
+                id: item.product.id,
+                title: item.product.name,
+                description: item.product.name,
+                category_id: 'food',
+                quantity: item.quantity,
+                unit_price: item.product.promotional_price || item.product.price,
+                picture_url: item.product.image_url
+              }))}
               payerEmail={user?.email}
               payerName={user?.user_metadata?.full_name}
               payerPhone={customerPhone.replace(/\D/g, '')}
+              deliveryFee={deliveryFee}
               onPaymentComplete={(paymentId) => {
                 console.log('Card payment completed:', paymentId);
                 handlePaymentComplete();
