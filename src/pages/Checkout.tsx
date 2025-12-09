@@ -42,6 +42,7 @@ import { CheckoutSummary } from "@/components/checkout/CheckoutSummary";
 import { CouponInput } from "@/components/checkout/CouponInput";
 import { GatewaySelector, GatewayProvider } from "@/components/checkout/GatewaySelector";
 import { trackInitiateCheckout, trackPurchase } from "@/lib/analytics";
+import { supabase } from "@/integrations/supabase/client";
 
 type CheckoutStep = "cart" | "delivery" | "payment" | "processing" | "success";
 
@@ -112,11 +113,41 @@ const Checkout = () => {
   const [customerPhone, setCustomerPhone] = useState("");
   
   // Saved addresses
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const { addresses: savedAddresses, isAuthenticated, getDefaultAddress } = useSavedAddresses();
   const [selectedSavedAddressId, setSelectedSavedAddressId] = useState<string | undefined>();
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [saveAddressDialogOpen, setSaveAddressDialogOpen] = useState(false);
+
+  // Pre-fill phone from user profile
+  useEffect(() => {
+    if (user?.id && !customerPhone) {
+      supabase
+        .from('profiles')
+        .select('phone')
+        .eq('id', user.id)
+        .single()
+        .then(({ data }) => {
+          if (data?.phone) {
+            // Format phone number
+            const value = data.phone.replace(/\D/g, '');
+            let formatted = value;
+            if (value.length > 2) {
+              formatted = `(${value.slice(0, 2)}) ${value.slice(2)}`;
+            }
+            if (value.length > 7) {
+              formatted = `(${value.slice(0, 2)}) ${value.slice(2, 7)}-${value.slice(7)}`;
+            }
+            setCustomerPhone(formatted);
+          }
+        });
+    }
+  }, [user?.id, customerPhone]);
+
+  // Scroll to top on step change
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [step]);
 
   const uniqueEstablishments = getUniqueEstablishments();
   const isMultiStore = isMultiEstablishment();
@@ -786,16 +817,39 @@ const Checkout = () => {
         {/* Payment Step */}
         {step === "payment" && (
           <div className="space-y-6 animate-fade-up">
-            {/* Gateway Selector - only shows if multiple gateways available */}
-            {firstEstablishment && (
-              <GatewaySelector
-                establishmentId={firstEstablishment.id}
-                selectedGateway={selectedGateway}
-                onGatewayChange={setSelectedGateway}
-              />
-            )}
+            {/* 1. Products Summary - TOP */}
+            <CheckoutSummary
+              itemsCount={totalItems}
+              subtotal={subtotal}
+              deliveryFee={deliveryFee}
+              platformFee={platformFee}
+              discount={discount}
+              couponCode={appliedCoupon?.code}
+              total={total}
+            />
 
-            {/* Coupon Input */}
+            {/* 2. Observations */}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Observações</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="relative">
+                  <Textarea
+                    placeholder="Alguma observação para o pedido?"
+                    value={observations}
+                    onChange={(e) => setObservations(e.target.value.slice(0, 150))}
+                    className="resize-none"
+                    rows={3}
+                  />
+                  <span className="absolute bottom-2 right-2 text-xs text-muted-foreground">
+                    {observations.length}/150
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* 3. Coupon Input */}
             {firstEstablishment && (
               <CouponInput
                 establishmentId={firstEstablishment.id}
@@ -806,12 +860,23 @@ const Checkout = () => {
               />
             )}
 
-            {/* Payment Method */}
+            {/* 4. Payment Method */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">Forma de pagamento</CardTitle>
               </CardHeader>
               <CardContent>
+                {/* Gateway Selector - only shows if multiple gateways available */}
+                {firstEstablishment && (
+                  <div className="mb-4">
+                    <GatewaySelector
+                      establishmentId={firstEstablishment.id}
+                      selectedGateway={selectedGateway}
+                      onGatewayChange={setSelectedGateway}
+                    />
+                  </div>
+                )}
+
                 <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod}>
                   <div className="flex items-center space-x-3 p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors cursor-pointer">
                     <RadioGroupItem value="pix" id="pix" />
@@ -868,28 +933,7 @@ const Checkout = () => {
               </CardContent>
             </Card>
 
-            {/* Observations */}
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Observações</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="relative">
-                  <Textarea
-                    placeholder="Alguma observação para o pedido?"
-                    value={observations}
-                    onChange={(e) => setObservations(e.target.value.slice(0, 150))}
-                    className="resize-none"
-                    rows={3}
-                  />
-                  <span className="absolute bottom-2 right-2 text-xs text-muted-foreground">
-                    {observations.length}/150
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* WhatsApp Tracking */}
+            {/* 5. WhatsApp Tracking */}
             <Card>
               <CardContent className="p-4">
                 <div className="flex items-start space-x-3">
@@ -933,16 +977,15 @@ const Checkout = () => {
               </CardContent>
             </Card>
 
-            {/* Summary */}
-            <CheckoutSummary
-              itemsCount={totalItems}
-              subtotal={subtotal}
-              deliveryFee={deliveryFee}
-              platformFee={platformFee}
-              discount={discount}
-              couponCode={appliedCoupon?.code}
-              total={total}
-            />
+            {/* 6. Total Final with Price */}
+            <Card className="bg-primary/5 border-primary/20">
+              <CardContent className="p-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-lg font-semibold">Total do pedido</span>
+                  <Price value={total} size="xl" className="text-primary font-bold" />
+                </div>
+              </CardContent>
+            </Card>
 
             {/* Submit Button */}
             <Button 
