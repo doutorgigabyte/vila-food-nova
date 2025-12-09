@@ -26,9 +26,112 @@ import {
   Settings,
   Save,
   Palette,
-  Users
+  Users,
+  CheckCircle,
+  XCircle,
+  Loader2
 } from "lucide-react";
 import { ImageUpload } from "@/components/ImageUpload";
+
+// Component to show available platform gateways
+const AvailableGatewaysCard = () => {
+  const [gateways, setGateways] = useState<Record<string, boolean>>({});
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchGateways = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("platform_settings")
+          .select("setting_key, setting_value")
+          .like("setting_key", "gateway_%");
+
+        if (error) throw error;
+
+        const gatewayMap: Record<string, boolean> = {};
+        data?.forEach(item => {
+          gatewayMap[item.setting_key] = item.setting_value === 'true' || item.setting_value === true;
+        });
+        setGateways(gatewayMap);
+      } catch (error) {
+        console.error("Error fetching gateways:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchGateways();
+  }, []);
+
+  const gatewayInfo = [
+    { key: "gateway_mercadopago_enabled", name: "Mercado Pago", description: "PIX, cartão de crédito/débito" },
+    { key: "gateway_pagseguro_enabled", name: "PagSeguro", description: "PIX, cartão de crédito/débito" },
+    { key: "gateway_pix_static_enabled", name: "PIX Estático", description: "QR Code fixo da loja" },
+    { key: "gateway_cash_enabled", name: "Dinheiro", description: "Pagamento em espécie" },
+  ];
+
+  if (loading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Carregando gateways...
+          </CardTitle>
+        </CardHeader>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Gateways Disponíveis na Plataforma</CardTitle>
+        <CardDescription>
+          Métodos de pagamento habilitados pelo administrador da plataforma
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {gatewayInfo.map(gateway => {
+            const isEnabled = gateways[gateway.key] ?? false;
+            return (
+              <div 
+                key={gateway.key}
+                className={`flex items-center gap-3 p-3 rounded-lg border ${
+                  isEnabled ? "bg-green-500/10 border-green-500/30" : "bg-muted/50 border-muted"
+                }`}
+              >
+                {isEnabled ? (
+                  <CheckCircle className="h-5 w-5 text-green-500 shrink-0" />
+                ) : (
+                  <XCircle className="h-5 w-5 text-muted-foreground shrink-0" />
+                )}
+                <div className="min-w-0">
+                  <p className={`font-medium text-sm ${!isEnabled && "text-muted-foreground"}`}>
+                    {gateway.name}
+                  </p>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {gateway.description}
+                  </p>
+                </div>
+                <Badge 
+                  variant={isEnabled ? "default" : "secondary"} 
+                  className="ml-auto shrink-0 text-xs"
+                >
+                  {isEnabled ? "Ativo" : "Inativo"}
+                </Badge>
+              </div>
+            );
+          })}
+        </div>
+        <p className="text-xs text-muted-foreground mt-4">
+          Para habilitar novos gateways, entre em contato com o administrador da plataforma.
+        </p>
+      </CardContent>
+    </Card>
+  );
+};
 
 interface Establishment {
   id: string;
@@ -496,10 +599,16 @@ const EstablishmentSettings = () => {
 
             {/* Payments Tab */}
             <TabsContent value="payments">
-              <MercadoPagoOAuth 
-                establishmentId={establishment?.id || ''} 
-                onConnected={fetchEstablishment}
-              />
+              <div className="space-y-6">
+                {/* Available Platform Gateways */}
+                <AvailableGatewaysCard />
+                
+                {/* Mercado Pago OAuth */}
+                <MercadoPagoOAuth 
+                  establishmentId={establishment?.id || ''} 
+                  onConnected={fetchEstablishment}
+                />
+              </div>
             </TabsContent>
 
             {/* Delivery Tab */}
