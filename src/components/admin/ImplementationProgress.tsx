@@ -417,7 +417,10 @@ const phases: ProgressPhase[] = [
       { name: 'UI: Editor de system_prompt personalizado', status: 'pending', priority: 'high' },
       { name: 'UI: Botão gerar/atualizar menu_json', status: 'pending', priority: 'medium' },
       { name: 'UI: Painel de teste de conversa IA', status: 'pending', priority: 'low' },
-      { name: 'Suporte a webhook N8N externo', status: 'pending', priority: 'medium' },
+      { name: 'Suporte a webhook N8N externo', status: 'completed', priority: 'medium' },
+      { name: 'Template n8n: VilaFood-Agent-Complete.json', status: 'completed', priority: 'critical' },
+      { name: 'Template n8n: VilaFood-MercadoPago-PIX.json', status: 'completed', priority: 'high' },
+      { name: 'Documentação: N8N_VILAFOOD_AGENT_ARCHITECTURE.md', status: 'completed', priority: 'high' },
     ]
   },
 
