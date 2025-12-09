@@ -12,7 +12,7 @@ interface EvolutionConfig {
 }
 
 interface RequestBody {
-  action: 'create_instance' | 'connect' | 'disconnect' | 'fetch_qr' | 'check_status' | 'fetch_instances' | 'set_webhook' | 'send_text' | 'send_media' | 'find_contacts' | 'find_messages';
+  action: 'create_instance' | 'connect' | 'disconnect' | 'delete_instance' | 'fetch_qr' | 'check_status' | 'fetch_instances' | 'set_webhook' | 'send_text' | 'send_media' | 'find_contacts' | 'find_messages';
   instanceName?: string;
   establishmentId?: string;
   evolutionApiUrl?: string;
@@ -126,7 +126,7 @@ async function fetchInstances(config: EvolutionConfig): Promise<any> {
   return await response.json();
 }
 
-// Disconnect instance
+// Disconnect instance (logout only)
 async function disconnectInstance(config: EvolutionConfig, instanceName: string): Promise<any> {
   console.log(`Disconnecting instance: ${instanceName}`);
   
@@ -141,6 +141,30 @@ async function disconnectInstance(config: EvolutionConfig, instanceName: string)
     const error = await response.text();
     console.error('Disconnect error:', error);
     throw new Error(`Failed to disconnect: ${error}`);
+  }
+
+  return await response.json();
+}
+
+// Delete instance completely
+async function deleteInstance(config: EvolutionConfig, instanceName: string): Promise<any> {
+  console.log(`Deleting instance: ${instanceName}`);
+  
+  const response = await fetch(`${config.apiUrl}/instance/delete/${instanceName}`, {
+    method: 'DELETE',
+    headers: {
+      'apikey': config.apiKey,
+    },
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    console.error('Delete instance error:', error);
+    // If instance doesn't exist, that's fine
+    if (response.status === 404 || error.includes('not found')) {
+      return { deleted: true, message: 'Instance not found or already deleted' };
+    }
+    throw new Error(`Failed to delete instance: ${error}`);
   }
 
   return await response.json();
@@ -387,6 +411,11 @@ serve(async (req) => {
       case 'disconnect':
         if (!instanceName) throw new Error('instanceName required');
         result = await disconnectInstance(config, instanceName);
+        break;
+
+      case 'delete_instance':
+        if (!instanceName) throw new Error('instanceName required');
+        result = await deleteInstance(config, instanceName);
         break;
 
       case 'set_webhook':
