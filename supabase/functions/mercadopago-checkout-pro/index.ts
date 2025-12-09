@@ -37,10 +37,14 @@ serve(async (req) => {
     const requestData: CheckoutProRequest = await req.json();
     const { order_id, establishment_id, amount, description, items, payer, back_urls } = requestData;
 
+    // Get origin from request for back_urls
+    const origin = req.headers.get('origin') || req.headers.get('referer')?.split('/').slice(0, 3).join('/') || 'https://vilafood.app';
+
     console.log('=== CHECKOUT PRO REQUEST ===');
     console.log('Order ID:', order_id);
     console.log('Establishment ID:', establishment_id);
     console.log('Amount:', amount);
+    console.log('Origin:', origin);
 
     // Validação básica
     if (!order_id || !establishment_id || !amount) {
@@ -88,8 +92,8 @@ serve(async (req) => {
       });
     }
 
-    // Construir URLs de retorno
-    const frontendUrl = Deno.env.get('FRONTEND_URL') || 'https://vilafood.app';
+    // Construir URLs de retorno usando origin da requisição
+    const frontendUrl = origin;
     const defaultBackUrls = {
       success: `${frontendUrl}/checkout/resultado?status=success&order_id=${order_id}`,
       failure: `${frontendUrl}/checkout/resultado?status=failure&order_id=${order_id}`,

@@ -65,7 +65,8 @@ export const RelatedProducts = ({
       const { data, error } = await supabase
         .from('products')
         .select('id, name, price, promotional_price, image_url, establishment_id, product_type, temperature_options')
-        .match({ establishment_id: primaryEstablishmentId, is_available: true })
+        .eq('establishment_id', primaryEstablishmentId)
+        .eq('is_active', true)
         .limit(10);
 
       if (error) throw error;

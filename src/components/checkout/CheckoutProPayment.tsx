@@ -104,9 +104,18 @@ export function CheckoutProPayment({
         window.location.href = redirectUrl;
       }, 500);
 
-    } catch (err) {
+    } catch (err: any) {
       console.error('Checkout Pro error:', err);
-      const message = err instanceof Error ? err.message : 'Erro ao iniciar pagamento';
+      // Try to get error from function response context
+      let message = 'Erro ao iniciar pagamento';
+      if (err?.context?.body) {
+        try {
+          const body = JSON.parse(err.context.body);
+          message = body.error || message;
+        } catch {}
+      } else if (err instanceof Error) {
+        message = err.message;
+      }
       setError(message);
       setStatus('failed');
       toast.error(message);
