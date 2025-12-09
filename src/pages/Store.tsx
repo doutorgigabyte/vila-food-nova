@@ -122,6 +122,7 @@ const Store = () => {
         accepts_pickup: establishment.accepts_pickup ?? true,
         accepts_delivery: establishment.accepts_delivery ?? true,
         is_open: establishment.is_open ?? false,
+        operating_hours: establishment.operating_hours as EstablishmentInfo['operating_hours'],
       }
     : null;
 

@@ -54,6 +54,7 @@ export interface EstablishmentInfo {
   accepts_pickup: boolean;
   accepts_delivery: boolean;
   is_open?: boolean;
+  operating_hours?: Record<string, { open: boolean; start: string; end: string }> | null;
 }
 
 interface CartContextType {
