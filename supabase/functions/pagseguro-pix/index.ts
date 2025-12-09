@@ -17,6 +17,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// PRODUÇÃO: Definir PAGSEGURO_ENVIRONMENT=production nos secrets
 const PAGSEGURO_ENVIRONMENT = Deno.env.get('PAGSEGURO_ENVIRONMENT') || 'sandbox';
 const PLATFORM_ACCOUNT_ID = Deno.env.get('PAGSEGURO_PLATFORM_ACCOUNT_ID');
 const PLATFORM_FEE_PERCENT = 5; // 5% taxa da plataforma
@@ -24,6 +25,8 @@ const PLATFORM_FEE_PERCENT = 5; // 5% taxa da plataforma
 const API_BASE_URL = PAGSEGURO_ENVIRONMENT === 'production' 
   ? 'https://api.pagseguro.com'
   : 'https://sandbox.api.pagseguro.com';
+
+console.log(`PagSeguro PIX running in ${PAGSEGURO_ENVIRONMENT} mode, API: ${API_BASE_URL}`);
 
 interface PixRequest {
   establishment_id: string;
