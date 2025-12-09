@@ -2,9 +2,10 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Utensils, LogIn, UserPlus, Sparkles } from "lucide-react";
+import { ArrowLeft, LogIn, UserPlus, Sparkles } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { OnboardingWizard } from "@/components/onboarding/OnboardingWizard";
+import logoHorizontal from "@/assets/logo-horizontal.png";
 
 const RegisterEstablishment = () => {
   const { user, loading } = useAuth();
@@ -20,7 +21,7 @@ const RegisterEstablishment = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center">
         <div className="animate-pulse text-center">
-          <Utensils className="w-12 h-12 text-primary mx-auto mb-4" />
+          <img src={logoHorizontal} alt="VilaFood" className="h-10 mx-auto mb-4" />
           <p className="text-muted-foreground">Carregando...</p>
         </div>
       </div>
@@ -47,13 +48,8 @@ const RegisterEstablishment = () => {
 
         <Card className="glass border-border/50">
           <CardHeader className="text-center pb-2">
-            <div className="flex items-center justify-center gap-2 mb-4">
-              <div className="p-2 bg-primary/10 rounded-xl">
-                <Utensils className="w-8 h-8 text-primary" />
-              </div>
-              <span className="text-2xl font-bold">
-                Vila<span className="text-primary">Food</span>
-              </span>
+            <div className="flex items-center justify-center mb-4">
+              <img src={logoHorizontal} alt="VilaFood" className="h-12" />
             </div>
             <CardTitle className="text-xl">Crie sua loja virtual</CardTitle>
             <CardDescription>

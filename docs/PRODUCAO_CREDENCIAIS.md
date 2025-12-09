@@ -18,7 +18,7 @@
    - ⚠️ Mantenha em segredo absoluto
 
 4. **MERCADOPAGO_REDIRECT_URI**
-   - Valor produção: `https://vilafood.app/painel/callback/mercadopago`
+   - Valor produção: `https://vilafood.delivery/painel/callback/mercadopago`
    - Deve estar registrado no painel MP
 
 ### ✅ PagSeguro/PagBank (Se usado)

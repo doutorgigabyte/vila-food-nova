@@ -59,7 +59,7 @@ serve(async (req) => {
     const { order_id, establishment_id, amount, description, items, payer, back_urls, shipments } = requestData;
 
     // Get origin from request for back_urls
-    const origin = req.headers.get('origin') || req.headers.get('referer')?.split('/').slice(0, 3).join('/') || 'https://vilafood.app';
+    const origin = req.headers.get('origin') || req.headers.get('referer')?.split('/').slice(0, 3).join('/') || 'https://vilafood.delivery';
 
     console.log('=== CHECKOUT PRO REQUEST ===');
     console.log('Order ID:', order_id);

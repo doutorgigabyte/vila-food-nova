@@ -192,7 +192,7 @@ const AffiliateDashboard = () => {
     }
   };
 
-  const affiliateLink = `https://vilafood.com/r/${stats.affiliateCode}`;
+  const affiliateLink = `https://vilafood.delivery/r/${stats.affiliateCode}`;
 
   const copyLink = () => {
     navigator.clipboard.writeText(affiliateLink);
