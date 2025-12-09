@@ -469,8 +469,8 @@ const phases: ProgressPhase[] = [
       { name: 'UI: Histórico de conversas por sessão', status: 'completed', priority: 'medium' },
       { name: 'UI: Log de ações do agente em tempo real', status: 'completed', priority: 'medium' },
       { name: 'UI: Editor visual de system_prompt', status: 'completed', priority: 'high' },
-      { name: 'Webhook N8N para Human Takeover (pausar IA)', status: 'pending', priority: 'medium' },
-      { name: 'Realtime: Notificação quando humano assume', status: 'pending', priority: 'medium' },
+      { name: 'Webhook N8N para Human Takeover (pausar IA)', status: 'completed', priority: 'medium' },
+      { name: 'Realtime: Notificação quando humano assume', status: 'completed', priority: 'medium' },
       { name: 'Analytics: Dashboard de métricas do agente', status: 'pending', priority: 'low' },
       { name: 'Analytics: Taxa de conversão do agente', status: 'pending', priority: 'low' },
     ]
