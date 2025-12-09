@@ -9,7 +9,14 @@ const corsHeaders = {
 interface OrderStatusPayload {
   order_id: string;
   status: string;
-  establishment_id: string;
+  establishment_id?: string;
+}
+
+// Generate a secure review token
+function generateReviewToken(): string {
+  const array = new Uint8Array(32);
+  crypto.getRandomValues(array);
+  return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
 }
 
 serve(async (req) => {
@@ -26,17 +33,17 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const payload: OrderStatusPayload = await req.json();
-    const { order_id, status, establishment_id } = payload;
+    const { order_id, status } = payload;
 
     console.log(`[whatsapp-order-notifications] Processing order ${order_id} with status ${status}`);
 
-    // Fetch order details
+    // Fetch order details with customer and establishment
     const { data: order, error: orderError } = await supabase
       .from("orders")
       .select(`
         *,
         customer:customers(name, phone),
-        establishment:establishments(name, slug, whatsapp)
+        establishment:establishments(id, name, slug, whatsapp, logo_url)
       `)
       .eq("id", order_id)
       .single();
@@ -49,11 +56,21 @@ serve(async (req) => {
       });
     }
 
+    // Check if WhatsApp tracking is enabled for this order
+    if (!order.whatsapp_tracking_enabled) {
+      console.log("[whatsapp-order-notifications] WhatsApp tracking not enabled for this order");
+      return new Response(JSON.stringify({ success: false, reason: "Tracking not enabled" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const establishmentId = order.establishment?.id || payload.establishment_id;
+
     // Fetch WhatsApp instance
     const { data: instance } = await supabase
       .from("whatsapp_instances")
       .select("*")
-      .eq("establishment_id", establishment_id)
+      .eq("establishment_id", establishmentId)
       .maybeSingle();
 
     if (!instance || instance.status !== "connected") {
@@ -67,12 +84,13 @@ serve(async (req) => {
     const { data: autoMessages } = await supabase
       .from("whatsapp_auto_messages")
       .select("*")
-      .eq("establishment_id", establishment_id)
+      .eq("establishment_id", establishmentId)
       .eq("is_active", true);
 
     // Map status to event_type
     const statusEventMap: Record<string, string> = {
-      confirmed: "order_confirmation",
+      pending: "order_received",
+      confirmed: "order_confirmed",
       preparing: "order_preparing",
       ready: "order_ready",
       out_for_delivery: "order_out_for_delivery",
@@ -97,16 +115,75 @@ serve(async (req) => {
       });
     }
 
+    // Build order items summary
+    let orderItemsSummary = "";
+    if (order.items && Array.isArray(order.items)) {
+      orderItemsSummary = order.items.map((item: any) => 
+        `• ${item.quantity}x ${item.name} - R$ ${(item.price * item.quantity).toFixed(2).replace(".", ",")}`
+      ).join("\n");
+    }
+
+    // Generate review link for delivered status
+    let ratingLink = "";
+    if (status === "delivered") {
+      const reviewToken = generateReviewToken();
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 7); // 7 days validity
+
+      // Save token to order
+      await supabase
+        .from("orders")
+        .update({
+          review_token: reviewToken,
+          review_token_expires_at: expiresAt.toISOString(),
+        })
+        .eq("id", order_id);
+
+      // Build the review link - use the app domain
+      const appDomain = Deno.env.get("APP_DOMAIN") || "vilafood.com.br";
+      ratingLink = `https://${appDomain}/avaliar/${order_id}/${reviewToken}`;
+    }
+
+    // Build delivery address string
+    const deliveryAddress = order.delivery_address 
+      ? `${order.delivery_address.address}, ${order.delivery_address.number}${order.delivery_address.complement ? ` - ${order.delivery_address.complement}` : ""}, ${order.delivery_address.neighborhood}`
+      : "";
+
     // Replace placeholders in message
     let message = messageConfig.message_template;
     message = message.replace(/\{\{order_number\}\}/g, String(order.order_number));
-    message = message.replace(/\{\{customer_name\}\}/g, order.customer?.name || "Cliente");
+    message = message.replace(/\{\{customer_name\}\}/g, order.customer?.name || order.customer_name || "Cliente");
     message = message.replace(/\{\{estimated_time\}\}/g, String(order.estimated_time || 45));
     message = message.replace(/\{\{establishment_name\}\}/g, order.establishment?.name || "");
     message = message.replace(/\{\{total\}\}/g, `R$ ${order.total?.toFixed(2).replace(".", ",")}`);
+    message = message.replace(/\{\{order_items\}\}/g, orderItemsSummary);
+    message = message.replace(/\{\{delivery_address\}\}/g, deliveryAddress);
+    message = message.replace(/\{\{rating_link\}\}/g, ratingLink);
+    message = message.replace(/\{\{is_delivery\}\}/g, order.delivery_type === "delivery" ? "true" : "");
+
+    // Handle conditional blocks {{#if is_delivery}}...{{else}}...{{/if}}
+    const conditionalRegex = /\{\{#if (\w+)\}\}([\s\S]*?)\{\{else\}\}([\s\S]*?)\{\{\/if\}\}/g;
+    message = message.replace(conditionalRegex, (_match: string, condition: string, ifBlock: string, elseBlock: string) => {
+      if (condition === "is_delivery") {
+        return order.delivery_type === "delivery" ? ifBlock.trim() : elseBlock.trim();
+      }
+      if (condition === "cancellation_reason") {
+        return order.cancellation_reason ? ifBlock.trim() : elseBlock.trim();
+      }
+      return "";
+    });
+
+    // Handle simple conditionals {{#if condition}}...{{/if}}
+    const simpleConditionalRegex = /\{\{#if (\w+)\}\}([\s\S]*?)\{\{\/if\}\}/g;
+    message = message.replace(simpleConditionalRegex, (_match: string, condition: string, block: string) => {
+      if (condition === "cancellation_reason" && order.cancellation_reason) {
+        return block.replace(/\{\{cancellation_reason\}\}/g, order.cancellation_reason).trim();
+      }
+      return "";
+    });
 
     // Get customer phone
-    const customerPhone = order.customer?.phone || order.delivery_address?.phone;
+    const customerPhone = order.customer_phone || order.customer?.phone || order.delivery_address?.phone;
     if (!customerPhone) {
       console.log("[whatsapp-order-notifications] No customer phone found");
       return new Response(JSON.stringify({ success: false, reason: "No customer phone" }), {
@@ -155,7 +232,7 @@ serve(async (req) => {
 
     // Log the notification
     await supabase.from("whatsapp_conversations").insert({
-      establishment_id,
+      establishment_id: establishmentId,
       customer_phone: formattedPhone,
       message_type: "outbound",
       message_content: message,
@@ -170,6 +247,7 @@ serve(async (req) => {
       order_id,
       status,
       phone: formattedPhone,
+      rating_link: ratingLink || undefined,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

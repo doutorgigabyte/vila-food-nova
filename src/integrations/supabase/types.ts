@@ -1450,6 +1450,8 @@ export type Database = {
           point_device_name: string | null
           point_terminal_id: string | null
           primary_color: string | null
+          rating_average: number | null
+          rating_count: number | null
           secondary_color: string | null
           segment_id: string | null
           service_area: Json | null
@@ -1503,6 +1505,8 @@ export type Database = {
           point_device_name?: string | null
           point_terminal_id?: string | null
           primary_color?: string | null
+          rating_average?: number | null
+          rating_count?: number | null
           secondary_color?: string | null
           segment_id?: string | null
           service_area?: Json | null
@@ -1556,6 +1560,8 @@ export type Database = {
           point_device_name?: string | null
           point_terminal_id?: string | null
           primary_color?: string | null
+          rating_average?: number | null
+          rating_count?: number | null
           secondary_color?: string | null
           segment_id?: string | null
           service_area?: Json | null
@@ -2079,6 +2085,7 @@ export type Database = {
           change_for: number | null
           created_at: string | null
           customer_id: string | null
+          customer_phone: string | null
           delivered_at: string | null
           delivery_address: Json | null
           delivery_fee: number | null
@@ -2093,12 +2100,15 @@ export type Database = {
           order_source: string | null
           payment_method: Database["public"]["Enums"]["payment_method"] | null
           platform_fee: number | null
+          review_token: string | null
+          review_token_expires_at: string | null
           scheduled_for: string | null
           status: Database["public"]["Enums"]["order_status"] | null
           subtotal: number
           table_number: string | null
           total: number
           updated_at: string | null
+          whatsapp_tracking_enabled: boolean | null
         }
         Insert: {
           cancellation_reason?: string | null
@@ -2106,6 +2116,7 @@ export type Database = {
           change_for?: number | null
           created_at?: string | null
           customer_id?: string | null
+          customer_phone?: string | null
           delivered_at?: string | null
           delivery_address?: Json | null
           delivery_fee?: number | null
@@ -2120,12 +2131,15 @@ export type Database = {
           order_source?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"] | null
           platform_fee?: number | null
+          review_token?: string | null
+          review_token_expires_at?: string | null
           scheduled_for?: string | null
           status?: Database["public"]["Enums"]["order_status"] | null
           subtotal?: number
           table_number?: string | null
           total?: number
           updated_at?: string | null
+          whatsapp_tracking_enabled?: boolean | null
         }
         Update: {
           cancellation_reason?: string | null
@@ -2133,6 +2147,7 @@ export type Database = {
           change_for?: number | null
           created_at?: string | null
           customer_id?: string | null
+          customer_phone?: string | null
           delivered_at?: string | null
           delivery_address?: Json | null
           delivery_fee?: number | null
@@ -2147,12 +2162,15 @@ export type Database = {
           order_source?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"] | null
           platform_fee?: number | null
+          review_token?: string | null
+          review_token_expires_at?: string | null
           scheduled_for?: string | null
           status?: Database["public"]["Enums"]["order_status"] | null
           subtotal?: number
           table_number?: string | null
           total?: number
           updated_at?: string | null
+          whatsapp_tracking_enabled?: boolean | null
         }
         Relationships: [
           {
@@ -2566,6 +2584,88 @@ export type Database = {
             columns: ["establishment_id"]
             isOneToOne: false
             referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reviews: {
+        Row: {
+          comment: string | null
+          created_at: string | null
+          customer_id: string | null
+          delivery_rating: number | null
+          establishment_id: string
+          food_rating: number | null
+          id: string
+          is_verified_purchase: boolean | null
+          is_visible: boolean | null
+          order_id: string | null
+          overall_rating: number
+          owner_response: string | null
+          owner_response_at: string | null
+          photos: Json | null
+          service_rating: number | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string | null
+          customer_id?: string | null
+          delivery_rating?: number | null
+          establishment_id: string
+          food_rating?: number | null
+          id?: string
+          is_verified_purchase?: boolean | null
+          is_visible?: boolean | null
+          order_id?: string | null
+          overall_rating: number
+          owner_response?: string | null
+          owner_response_at?: string | null
+          photos?: Json | null
+          service_rating?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string | null
+          customer_id?: string | null
+          delivery_rating?: number | null
+          establishment_id?: string
+          food_rating?: number | null
+          id?: string
+          is_verified_purchase?: boolean | null
+          is_visible?: boolean | null
+          order_id?: string | null
+          overall_rating?: number
+          owner_response?: string | null
+          owner_response_at?: string | null
+          photos?: Json | null
+          service_rating?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: true
+            referencedRelation: "orders"
             referencedColumns: ["id"]
           },
         ]
