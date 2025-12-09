@@ -450,8 +450,8 @@ const phases: ProgressPhase[] = [
       { name: 'Debounce em buscas e filtros (SmartSearch 300ms)', status: 'completed', priority: 'high' },
       { name: 'Image optimization: lazy loading nativo', status: 'completed', priority: 'high' },
       { name: 'Prefetch de dados críticos', status: 'pending', priority: 'medium' },
-      { name: 'Code splitting por feature', status: 'pending', priority: 'high' },
-      { name: 'Marketplace: infinite scroll com virtualization', status: 'pending', priority: 'high' },
+      { name: 'Code splitting por feature (lazy loading App.tsx)', status: 'completed', priority: 'high' },
+      { name: 'Marketplace: infinite scroll com IntersectionObserver', status: 'completed', priority: 'high' },
     ]
   },
 
