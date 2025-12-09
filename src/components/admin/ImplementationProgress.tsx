@@ -448,6 +448,34 @@ const phases: ProgressPhase[] = [
     ]
   },
 
+  // ===== AGENTE IA COMPLETO (N8N + SUPABASE) =====
+  {
+    id: 'n8n-agent-complete',
+    name: '🧠 Agente IA Completo (N8N)',
+    description: 'Infraestrutura completa para agente multi-lojista com memória e actions',
+    category: 'integration',
+    items: [
+      { name: 'Tabela n8n_chat_histories (memória de conversas)', status: 'completed', priority: 'critical' },
+      { name: 'Tabela agent_action_logs (log de ações do agente)', status: 'completed', priority: 'high' },
+      { name: 'Campos Human Takeover em whatsapp_sessions (ai_active, paused_by, pause_reason)', status: 'completed', priority: 'high' },
+      { name: 'Campos agent_type, processed_content, media_analyzed em whatsapp_messages', status: 'completed', priority: 'high' },
+      { name: 'Edge Function: whatsapp-ai-response com tools completos', status: 'completed', priority: 'critical' },
+      { name: 'Tool: add_to_cart (adiciona produto ao carrinho)', status: 'completed', priority: 'critical' },
+      { name: 'Tool: checkout (finaliza pedido com PIX)', status: 'completed', priority: 'critical' },
+      { name: 'Tool: send_product_photo (envia foto do produto)', status: 'completed', priority: 'critical' },
+      { name: 'Tool: search_menu (busca no cardápio)', status: 'completed', priority: 'high' },
+      { name: 'Tool: human_takeover (transfere para humano)', status: 'pending', priority: 'high' },
+      { name: 'UI: Painel Human Takeover (pausar/resumir IA)', status: 'pending', priority: 'high' },
+      { name: 'UI: Histórico de conversas por sessão', status: 'pending', priority: 'medium' },
+      { name: 'UI: Log de ações do agente em tempo real', status: 'pending', priority: 'medium' },
+      { name: 'UI: Editor visual de system_prompt', status: 'pending', priority: 'high' },
+      { name: 'Webhook N8N para Human Takeover (pausar IA)', status: 'pending', priority: 'medium' },
+      { name: 'Realtime: Notificação quando humano assume', status: 'pending', priority: 'medium' },
+      { name: 'Analytics: Dashboard de métricas do agente', status: 'pending', priority: 'low' },
+      { name: 'Analytics: Taxa de conversão do agente', status: 'pending', priority: 'low' },
+    ]
+  },
+
   // ===== NOVAS IMPLEMENTAÇÕES: ENDEREÇOS INTELIGENTES =====
   {
     id: 'addresses-google',
