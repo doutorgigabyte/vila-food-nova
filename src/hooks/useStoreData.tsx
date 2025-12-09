@@ -42,6 +42,8 @@ export interface StoreProduct {
   additionals: any;
   variations: any;
   preparation_time: number | null;
+  product_type?: string | null;
+  temperature_options?: string[] | null;
   category?: {
     id: string;
     name: string;
@@ -151,6 +153,8 @@ export const useStoreData = (slug: string | undefined) => {
             additionals,
             variations,
             preparation_time,
+            product_type,
+            temperature_options,
             categories (
               id,
               name,

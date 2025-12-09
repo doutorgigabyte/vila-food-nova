@@ -20,6 +20,8 @@ interface Product {
   promotional_price: number | null;
   image_url: string | null;
   establishment_id: string;
+  product_type: string | null;
+  temperature_options: string[] | null;
 }
 
 const RELATED_KEYWORDS: Record<string, string[]> = {
@@ -62,7 +64,7 @@ export const RelatedProducts = ({
       
       const { data, error } = await supabase
         .from('products')
-        .select('id, name, price, promotional_price, image_url, establishment_id')
+        .select('id, name, price, promotional_price, image_url, establishment_id, product_type, temperature_options')
         .match({ establishment_id: primaryEstablishmentId, is_available: true })
         .limit(10);
 
@@ -98,6 +100,8 @@ export const RelatedProducts = ({
         promotional_price: product.promotional_price,
         image_url: product.image_url,
         establishment_id: product.establishment_id,
+        product_type: product.product_type || undefined,
+        temperature_options: product.temperature_options || undefined,
       },
       establishmentInfo,
       1,

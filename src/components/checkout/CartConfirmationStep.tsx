@@ -5,8 +5,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Minus, Plus, Trash2, ChevronRight, Gift, Truck, ShoppingBag } from "lucide-react";
 import { Price } from "@/components/ui/price";
-import { CartItem, EstablishmentInfo } from "@/hooks/useCart";
+import { CartItem, EstablishmentInfo, getTemperatureOptions } from "@/hooks/useCart";
 import { RelatedProducts } from "./RelatedProducts";
+import { TemperatureSelector, TemperatureOption } from "@/components/products/TemperatureSelector";
 import { cn } from "@/lib/utils";
 
 interface CartConfirmationStepProps {
@@ -14,6 +15,7 @@ interface CartConfirmationStepProps {
   establishments: Map<string, EstablishmentInfo>;
   onUpdateQuantity: (productId: string, delta: number) => void;
   onRemove: (productId: string) => void;
+  onTemperatureChange: (productId: string, temperature: TemperatureOption) => void;
   onContinue: () => void;
   subtotal: number;
   freeDeliveryThreshold?: number;
@@ -24,6 +26,7 @@ export const CartConfirmationStep = ({
   establishments,
   onUpdateQuantity,
   onRemove,
+  onTemperatureChange,
   onContinue,
   subtotal,
   freeDeliveryThreshold = 50,
@@ -82,77 +85,98 @@ export const CartConfirmationStep = ({
             const hasDiscount = item.product.promotional_price && item.product.promotional_price < item.product.price;
             const isNew = addedFromRelated.includes(item.product.id);
             
+            // Get temperature options for this product
+            const temperatureOptions = getTemperatureOptions(
+              item.product.product_type,
+              item.product.temperature_options
+            );
+            const showTemperatureSelector = temperatureOptions.length > 0;
+            
             return (
               <div 
                 key={item.product.id} 
                 className={cn(
-                  "p-4 flex gap-3 transition-colors",
+                  "p-4 transition-colors",
                   isNew && "bg-primary/5"
                 )}
               >
-                {/* Product Image */}
-                <div className="relative w-16 h-16 rounded-lg overflow-hidden bg-muted flex-shrink-0">
-                  {item.product.image_url ? (
-                    <img
-                      src={item.product.image_url}
-                      alt={item.product.name}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <ShoppingBag className="w-6 h-6 text-muted-foreground" />
+                <div className="flex gap-3">
+                  {/* Product Image */}
+                  <div className="relative w-16 h-16 rounded-lg overflow-hidden bg-muted flex-shrink-0">
+                    {item.product.image_url ? (
+                      <img
+                        src={item.product.image_url}
+                        alt={item.product.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <ShoppingBag className="w-6 h-6 text-muted-foreground" />
+                      </div>
+                    )}
+                    {hasDiscount && (
+                      <Badge className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-[10px] px-1">
+                        -{Math.round(((item.product.price - (item.product.promotional_price || 0)) / item.product.price) * 100)}%
+                      </Badge>
+                    )}
+                  </div>
+
+                  {/* Product Info */}
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-medium text-sm line-clamp-2">{item.product.name}</h4>
+                    {item.observation && (
+                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
+                        {item.observation}
+                      </p>
+                    )}
+                    <div className="mt-1">
+                      <Price 
+                        value={price * item.quantity} 
+                        originalValue={hasDiscount ? item.product.price * item.quantity : undefined}
+                        size="sm"
+                      />
                     </div>
-                  )}
-                  {hasDiscount && (
-                    <Badge className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-[10px] px-1">
-                      -{Math.round(((item.product.price - (item.product.promotional_price || 0)) / item.product.price) * 100)}%
-                    </Badge>
-                  )}
-                </div>
+                  </div>
 
-                {/* Product Info */}
-                <div className="flex-1 min-w-0">
-                  <h4 className="font-medium text-sm line-clamp-2">{item.product.name}</h4>
-                  {item.observation && (
-                    <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
-                      {item.observation}
-                    </p>
-                  )}
-                  <div className="mt-1">
-                    <Price 
-                      value={price * item.quantity} 
-                      originalValue={hasDiscount ? item.product.price * item.quantity : undefined}
-                      size="sm"
+                  {/* Quantity Controls */}
+                  <div className="flex flex-col items-end justify-between">
+                    <button
+                      onClick={() => onRemove(item.product.id)}
+                      className="p-1 text-muted-foreground hover:text-destructive transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                    
+                    <div className="flex items-center gap-2 bg-muted rounded-full p-1">
+                      <button
+                        onClick={() => onUpdateQuantity(item.product.id, -1)}
+                        className="w-7 h-7 flex items-center justify-center rounded-full bg-background hover:bg-accent transition-colors"
+                        disabled={item.quantity <= 1}
+                      >
+                        <Minus className="w-3 h-3" />
+                      </button>
+                      <span className="w-6 text-center text-sm font-medium">{item.quantity}</span>
+                      <button
+                        onClick={() => onUpdateQuantity(item.product.id, 1)}
+                        className="w-7 h-7 flex items-center justify-center rounded-full bg-background hover:bg-accent transition-colors"
+                      >
+                        <Plus className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Temperature Selector - Only for eligible products */}
+                {showTemperatureSelector && (
+                  <div className="mt-3 pt-3 border-t border-border/50">
+                    <TemperatureSelector
+                      options={temperatureOptions}
+                      value={item.selectedTemperature || null}
+                      onChange={(temp) => onTemperatureChange(item.product.id, temp)}
+                      variant="compact"
                     />
                   </div>
-                </div>
-
-                {/* Quantity Controls */}
-                <div className="flex flex-col items-end justify-between">
-                  <button
-                    onClick={() => onRemove(item.product.id)}
-                    className="p-1 text-muted-foreground hover:text-destructive transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                  
-                  <div className="flex items-center gap-2 bg-muted rounded-full p-1">
-                    <button
-                      onClick={() => onUpdateQuantity(item.product.id, -1)}
-                      className="w-7 h-7 flex items-center justify-center rounded-full bg-background hover:bg-accent transition-colors"
-                      disabled={item.quantity <= 1}
-                    >
-                      <Minus className="w-3 h-3" />
-                    </button>
-                    <span className="w-6 text-center text-sm font-medium">{item.quantity}</span>
-                    <button
-                      onClick={() => onUpdateQuantity(item.product.id, 1)}
-                      className="w-7 h-7 flex items-center justify-center rounded-full bg-background hover:bg-accent transition-colors"
-                    >
-                      <Plus className="w-3 h-3" />
-                    </button>
-                  </div>
-                </div>
+                )}
               </div>
             );
           })}

@@ -57,6 +57,7 @@ const Checkout = () => {
     getEstablishmentSubtotal,
     isMultiEstablishment,
     updateQuantity,
+    updateItemTemperature,
     removeFromCart,
     clearCart
   } = useCart();
@@ -587,6 +588,7 @@ const Checkout = () => {
             establishments={establishments}
             onUpdateQuantity={updateQuantity}
             onRemove={removeFromCart}
+            onTemperatureChange={updateItemTemperature}
             onContinue={() => setStep("delivery")}
             subtotal={subtotal}
             freeDeliveryThreshold={50}
