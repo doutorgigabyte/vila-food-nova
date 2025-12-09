@@ -119,3 +119,12 @@ verify_jwt = false
 
 [functions.process-recurring-orders]
 verify_jwt = false
+
+[functions.system-broadcast]
+verify_jwt = true
+
+[functions.whatsapp-auth-code]
+verify_jwt = false
+
+[functions.verify-auth-code]
+verify_jwt = false
