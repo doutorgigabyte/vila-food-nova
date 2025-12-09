@@ -14,6 +14,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ProductTypeSelector, ProductType, getProductCategory } from "./ProductTypeSelector";
 import { TemperatureOption } from "./TemperatureSelector";
+import { ProductAdditionalsManager, ProductAdditional } from "./ProductAdditionalsManager";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { ImageUpload } from "@/components/ImageUpload";
@@ -118,6 +119,10 @@ export const ProductFormIntelligent = ({
   const [requiresRefrigeration, setRequiresRefrigeration] = useState(initialData?.requires_refrigeration || false);
   const [storageTemperature, setStorageTemperature] = useState<string>(initialData?.storage_temperature || '');
 
+  // Product Additionals (Extras, Bordas, Acompanhamentos)
+  const [additionals, setAdditionals] = useState<ProductAdditional[]>(
+    initialData?.additionals || []
+  );
   const form = useForm<ProductFormData>({
     resolver: zodResolver(productSchema),
     defaultValues: {
@@ -256,6 +261,8 @@ export const ProductFormIntelligent = ({
         expiration_days: productType === 'perishable' ? expirationDays : null,
         requires_refrigeration: productType === 'perishable' ? requiresRefrigeration : false,
         storage_temperature: productType === 'perishable' ? storageTemperature || null : null,
+        // Additionals (extras, bordas, etc.)
+        additionals: additionals.length > 0 ? additionals : null,
       };
 
       if (initialData?.id) {
@@ -778,6 +785,12 @@ export const ProductFormIntelligent = ({
                 </CardContent>
               </Card>
             )}
+
+            {/* Product Additionals - Available for all product types */}
+            <ProductAdditionalsManager
+              additionals={additionals}
+              onChange={setAdditionals}
+            />
           </TabsContent>
 
           <TabsContent value="settings" className="space-y-4 mt-4">

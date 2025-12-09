@@ -376,6 +376,39 @@ const phases: ProgressPhase[] = [
     ]
   },
 
+  // ===== AGENDAMENTO AVANÇADO =====
+  {
+    id: 'scheduling-advanced',
+    name: '📅 Agendamento Avançado',
+    description: 'Pedidos agendados e recorrentes',
+    category: 'operation',
+    items: [
+      { name: 'Modal de agendamento quando loja fechada', status: 'completed', priority: 'critical' },
+      { name: 'Seletor de data com dias disponíveis', status: 'completed', priority: 'high' },
+      { name: 'Seletor de horário baseado em operating_hours', status: 'completed', priority: 'high' },
+      { name: 'Salvar pedido agendado em scheduled_orders', status: 'pending', priority: 'high' },
+      { name: 'Agendamento recorrente (semanal/mensal)', status: 'pending', priority: 'medium' },
+      { name: 'Notificação de pedido agendado via WhatsApp', status: 'pending', priority: 'medium' },
+    ]
+  },
+
+  // ===== PRODUTOS AVANÇADOS =====
+  {
+    id: 'products-advanced',
+    name: '📦 Produtos Avançados',
+    description: 'Adicionais, kits e complementos',
+    category: 'operation',
+    items: [
+      { name: 'UI de cadastro de adicionais no produto', status: 'completed', priority: 'critical' },
+      { name: 'Grupos de adicionais (Bordas, Extras, etc)', status: 'completed', priority: 'high' },
+      { name: 'Adicionais obrigatórios vs opcionais', status: 'completed', priority: 'high' },
+      { name: 'Limite de quantidade por adicional', status: 'completed', priority: 'medium' },
+      { name: 'Kits de produtos (combinar existentes)', status: 'pending', priority: 'high' },
+      { name: 'Produtos complementares com desconto', status: 'pending', priority: 'medium' },
+      { name: 'Exibir adicionais no checkout', status: 'pending', priority: 'high' },
+    ]
+  },
+
   // ===== CONFIGURAÇÕES =====
   {
     id: 'store-config',

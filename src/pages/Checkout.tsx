@@ -23,8 +23,10 @@ import {
   AlertTriangle,
   Bookmark,
   MessageSquare,
-  ChevronRight
+  ChevronRight,
+  CalendarClock
 } from "lucide-react";
+import { ScheduledOrderModal } from "@/components/checkout/ScheduledOrderModal";
 import { toast } from "sonner";
 import { Price } from "@/components/ui/price";
 import { useCart } from "@/hooks/useCart";
@@ -223,18 +225,25 @@ const Checkout = () => {
     }
   }, [isLoaded, items.length, step, storeSlug, navigate]);
 
-  // Check if any establishment is closed
+  // Check if any establishment is closed and get operating hours
   const checkIfStoreOpen = () => {
     for (const estId of uniqueEstablishments) {
       const estInfo = establishments.get(estId);
       if (!estInfo?.is_open) {
-        return { isOpen: false, storeName: estInfo?.name || 'Estabelecimento' };
+        return { 
+          isOpen: false, 
+          storeName: estInfo?.name || 'Estabelecimento',
+          establishmentId: estId,
+          operatingHours: estInfo?.operating_hours || null
+        };
       }
     }
-    return { isOpen: true, storeName: '' };
+    return { isOpen: true, storeName: '', establishmentId: null, operatingHours: null };
   };
 
   const storeOpenStatus = checkIfStoreOpen();
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [scheduledFor, setScheduledFor] = useState<Date | null>(null);
 
   // Show loading while cart is being loaded
   if (!isLoaded) {
@@ -245,8 +254,16 @@ const Checkout = () => {
     );
   }
 
-  // Show store closed message
-  if (!storeOpenStatus.isOpen && items.length > 0) {
+  // Handle scheduled order
+  const handleScheduleOrder = async (date: Date) => {
+    setScheduledFor(date);
+    setShowScheduleModal(false);
+    toast.success(`Pedido agendado para ${date.toLocaleDateString('pt-BR')} às ${date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`);
+    // Continue with normal checkout flow - scheduledFor will be included in order creation
+  };
+
+  // Show store closed message with scheduling option
+  if (!storeOpenStatus.isOpen && items.length > 0 && !scheduledFor) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
         <header className="sticky top-0 z-50 bg-background border-b p-4">
@@ -259,19 +276,38 @@ const Checkout = () => {
         </header>
 
         <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
-          <div className="w-20 h-20 bg-destructive/10 rounded-full flex items-center justify-center mb-6">
-            <AlertCircle className="h-10 w-10 text-destructive" />
+          <div className="w-20 h-20 bg-orange-500/10 rounded-full flex items-center justify-center mb-6">
+            <Clock className="h-10 w-10 text-orange-500" />
           </div>
-          <h2 className="text-xl font-bold mb-2">Loja Fechada</h2>
+          <h2 className="text-xl font-bold mb-2">Loja Fechada no Momento</h2>
           <p className="text-muted-foreground mb-6 max-w-sm">
-            <strong>{storeOpenStatus.storeName}</strong> não está recebendo pedidos no momento. 
-            Tente novamente no horário de funcionamento.
+            <strong>{storeOpenStatus.storeName}</strong> não está recebendo pedidos agora, 
+            mas você pode agendar seu pedido para quando a loja abrir!
           </p>
-          <Button onClick={() => navigate(-1)}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Voltar à Loja
-          </Button>
+          
+          <div className="flex flex-col gap-3 w-full max-w-xs">
+            <Button 
+              onClick={() => setShowScheduleModal(true)}
+              className="w-full"
+              size="lg"
+            >
+              <CalendarClock className="h-4 w-4 mr-2" />
+              Agendar Pedido
+            </Button>
+            <Button variant="outline" onClick={() => navigate(-1)} className="w-full">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Voltar à Loja
+            </Button>
+          </div>
         </div>
+
+        <ScheduledOrderModal
+          isOpen={showScheduleModal}
+          onClose={() => setShowScheduleModal(false)}
+          onSchedule={handleScheduleOrder}
+          storeName={storeOpenStatus.storeName}
+          operatingHours={storeOpenStatus.operatingHours as any}
+        />
       </div>
     );
   }
