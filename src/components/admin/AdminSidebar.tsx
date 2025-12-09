@@ -22,14 +22,14 @@ import {
   Store,
   ShoppingCart,
   Package,
-  Rocket,
   Database,
   Heart,
   Tag,
   UserCheck,
   Image,
   Wallet,
-  MessageCircle
+  MessageCircle,
+  FileText
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import logo from "@/assets/logo.png";
@@ -90,9 +90,9 @@ const navItems: NavItem[] = [
       { icon: Heart, label: "Health Check", href: "/admin/health" },
       { icon: Shield, label: "Central de Segurança", href: "/admin/central-seguranca" },
       { icon: BarChart3, label: "Diagnóstico Pixels", href: "/admin/diagnostico-pixels" },
-      { icon: BarChart3, label: "Progresso", href: "/admin/progresso" },
-      { icon: Rocket, label: "Roadmap", href: "/admin/roadmap" },
+      { icon: BarChart3, label: "Progresso Checklist", href: "/admin/progresso" },
       { icon: Database, label: "Migração", href: "/admin/migracao" },
+      { icon: Database, label: "Migração Externa", href: "/admin/migracao-externa" },
       { icon: Database, label: "Banco de Dados", href: "/admin/banco-dados" },
       { icon: Image, label: "Preencher Imagens", href: "/admin/preencher-imagens" },
     ]
