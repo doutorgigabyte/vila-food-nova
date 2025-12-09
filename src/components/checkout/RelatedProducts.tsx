@@ -57,17 +57,19 @@ export const RelatedProducts = ({
       const establishmentIds = [...new Set(currentItems.map(item => item.product.establishment_id))];
       const currentProductIds = currentItems.map(item => item.product.id);
       
+      // Query products from the first establishment
+      const primaryEstablishmentId = establishmentIds[0];
+      
       const { data, error } = await supabase
         .from('products')
         .select('id, name, price, promotional_price, image_url, establishment_id')
-        .in('establishment_id', establishmentIds)
-        .eq('is_available', true)
+        .match({ establishment_id: primaryEstablishmentId, is_available: true })
         .limit(10);
 
       if (error) throw error;
 
-      const filtered = (data || [])
-        .filter((p: Product) => !currentProductIds.includes(p.id))
+      const filtered = ((data as Product[]) || [])
+        .filter((p) => !currentProductIds.includes(p.id))
         .slice(0, 4);
       
       setRelatedProducts(filtered);
