@@ -564,7 +564,7 @@ const phases: ProgressPhase[] = [
       { name: 'Switch para PIX estático (ativar/desativar)', status: 'completed', priority: 'high' },
       { name: 'Switch para dinheiro (ativar/desativar)', status: 'completed', priority: 'high' },
       { name: 'Campos na tabela platform_settings', status: 'completed', priority: 'high' },
-      { name: 'Lojista vê gateways disponíveis em EstablishmentSettings', status: 'pending', priority: 'medium' },
+      { name: 'Lojista vê gateways disponíveis em EstablishmentSettings', status: 'completed', priority: 'medium' },
     ]
   },
 ];
