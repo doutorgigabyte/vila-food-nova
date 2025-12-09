@@ -12,7 +12,9 @@ import {
   Bike,
   CheckCircle2,
   AlertTriangle,
-  XCircle
+  XCircle,
+  Megaphone,
+  MessageSquare
 } from 'lucide-react';
 
 interface ChecklistItem {
@@ -80,15 +82,15 @@ const SystemChecklistProgress = () => {
         { id: 'm14', label: 'Gerenciar estoque', status: 'pending' },
         { id: 'm15', label: 'Visualizar relatórios financeiros', status: 'pending' },
         { id: 'm16', label: 'Visualizar Extrato de Comissões (dívida)', status: 'pending' },
-        { id: 'm17', label: 'Cadastrar entregadores (sem financeiro)', status: 'pending' },
-        { id: 'm18', label: 'Configurar área de entrega', status: 'pending' },
-        { id: 'm19', label: 'Configurar taxas de entrega por zona/km', status: 'pending' },
-        { id: 'm20', label: 'Criar cupons de desconto', status: 'pending' },
-        { id: 'm21', label: 'Gerenciar banners', status: 'pending' },
-        { id: 'm22', label: 'Responder avaliações de clientes', status: 'pending' },
-        { id: 'm23', label: 'Imprimir cupom de pedido (formatado)', status: 'pending' },
-        { id: 'm24', label: 'Configurar entrega Turbo (taxa e habilitação)', status: 'pending' },
-        { id: 'm25', label: 'Configurar máximo de pedidos por batch (padrão 4)', status: 'pending' },
+        { id: 'm17', label: 'Aprovar/rejeitar solicitações de entregadores', status: 'passed' },
+        { id: 'm18', label: 'Configurar pagamento entregador (split ou por fora)', status: 'passed' },
+        { id: 'm19', label: 'Configurar área de entrega', status: 'pending' },
+        { id: 'm20', label: 'Configurar taxas de entrega por zona/km', status: 'pending' },
+        { id: 'm21', label: 'Criar cupons de desconto', status: 'pending' },
+        { id: 'm22', label: 'Gerenciar banners', status: 'pending' },
+        { id: 'm23', label: 'Responder avaliações de clientes', status: 'pending' },
+        { id: 'm24', label: 'Imprimir cupom de pedido (formatado)', status: 'pending' },
+        { id: 'm25', label: 'Configurar entrega Turbo (taxa e habilitação)', status: 'pending' },
         { id: 'm26', label: 'Rastrear entregas em tempo real', status: 'pending' },
       ]
     },
@@ -113,8 +115,9 @@ const SystemChecklistProgress = () => {
         { id: 'a13', label: 'Visualizar logs de auditoria', status: 'pending' },
         { id: 'a14', label: 'Gerenciar vilas/regiões', status: 'pending' },
         { id: 'a15', label: 'Sidebar sem links quebrados', status: 'pending' },
-        { id: 'a16', label: 'Configurar taxa entrega Turbo', status: 'pending' },
-        { id: 'a17', label: 'Configurar máximo pedidos por batch', status: 'pending' },
+        { id: 'a16', label: 'Central de Comunicação (Micro CRM)', status: 'passed' },
+        { id: 'a17', label: 'Disparos em massa para lojistas', status: 'passed' },
+        { id: 'a18', label: 'Templates de mensagens do sistema', status: 'passed' },
       ]
     },
     {
@@ -124,13 +127,13 @@ const SystemChecklistProgress = () => {
       description: 'Sistema de entregas com solicitações estilo Uber',
       items: [
         { id: 'd1', label: 'Fazer login no app', status: 'pending' },
-        { id: 'd2', label: 'Visualizar solicitações de entrega (estilo Uber)', status: 'pending' },
-        { id: 'd3', label: 'Card com valor, tempo, paradas e estabelecimento', status: 'pending' },
-        { id: 'd4', label: 'Card especial para entregas Turbo', status: 'pending' },
-        { id: 'd5', label: 'Temporizador de 60s para aceitar', status: 'pending' },
-        { id: 'd6', label: 'Proteção contra aceite duplicado (realtime)', status: 'pending' },
-        { id: 'd7', label: 'Escanear QR Code para vincular a estabelecimento', status: 'pending' },
-        { id: 'd8', label: 'Ver entregas apenas de lojas vinculadas', status: 'pending' },
+        { id: 'd2', label: 'Visualizar solicitações de entrega (estilo Uber)', status: 'passed' },
+        { id: 'd3', label: 'Card com valor, tempo, paradas e estabelecimento', status: 'passed' },
+        { id: 'd4', label: 'Card especial para entregas Turbo', status: 'passed' },
+        { id: 'd5', label: 'Temporizador de 60s para aceitar', status: 'passed' },
+        { id: 'd6', label: 'Proteção contra aceite duplicado (realtime)', status: 'passed' },
+        { id: 'd7', label: 'Escanear QR Code para vincular a estabelecimento', status: 'passed' },
+        { id: 'd8', label: 'Ver entregas apenas de lojas vinculadas', status: 'passed' },
         { id: 'd9', label: 'Navegar até o estabelecimento', status: 'pending' },
         { id: 'd10', label: 'Confirmar coleta', status: 'pending' },
         { id: 'd11', label: 'Navegar até o cliente', status: 'pending' },
@@ -139,7 +142,7 @@ const SystemChecklistProgress = () => {
         { id: 'd14', label: 'Histórico de entregas', status: 'pending' },
         { id: 'd15', label: 'Entrega Turbo (prioridade única)', status: 'pending' },
         { id: 'd16', label: 'Múltiplas entregas com rota otimizada', status: 'pending' },
-        { id: 'd17', label: 'Multi-estabelecimento (entregador em várias lojas)', status: 'pending' },
+        { id: 'd17', label: 'Multi-estabelecimento (entregador em várias lojas)', status: 'passed' },
       ]
     },
     {
@@ -156,9 +159,29 @@ const SystemChecklistProgress = () => {
         { id: 'f6', label: 'Trava para lojas com dívida alta', status: 'pending' },
         { id: 'f7', label: 'Webhook confirma pagamento PIX', status: 'pending' },
         { id: 'f8', label: 'Termos de uso atualizados (SaaS, não transportadora)', status: 'pending' },
-        { id: 'f9', label: 'Lojista configura pagamento entregador (split ou por fora)', status: 'pending' },
-        { id: 'f10', label: 'Aprovar/rejeitar entregadores que escanearam QR', status: 'pending' },
-        { id: 'f11', label: 'Configurar valor/% do frete para entregador', status: 'pending' },
+        { id: 'f9', label: 'Lojista configura pagamento entregador (split ou por fora)', status: 'passed' },
+        { id: 'f10', label: 'Aprovar/rejeitar entregadores que escanearam QR', status: 'passed' },
+        { id: 'f11', label: 'Configurar valor/% do frete para entregador', status: 'passed' },
+      ]
+    },
+    {
+      id: 'whatsapp',
+      name: 'Sistema WhatsApp (Doutorgigabyte)',
+      icon: <MessageSquare className="w-5 h-5" />,
+      description: 'Instância do sistema para notificações e autenticação',
+      items: [
+        { id: 'w1', label: 'Micro CRM de contatos de lojistas', status: 'passed' },
+        { id: 'w2', label: 'Auto-cadastro de contato ao criar loja', status: 'passed' },
+        { id: 'w3', label: 'Templates de mensagens do sistema', status: 'passed' },
+        { id: 'w4', label: 'Disparo em massa com filtro por tags', status: 'passed' },
+        { id: 'w5', label: 'Agendamento de campanhas', status: 'passed' },
+        { id: 'w6', label: 'Envio de código de autenticação via WhatsApp', status: 'pending' },
+        { id: 'w7', label: 'Notificação de novo pedido para lojista', status: 'pending' },
+        { id: 'w8', label: 'Alerta de pagamento pendente', status: 'pending' },
+        { id: 'w9', label: 'Aviso de manutenção programada', status: 'pending' },
+        { id: 'w10', label: 'Comunicado de novas funcionalidades', status: 'pending' },
+        { id: 'w11', label: 'Opt-out para contatos', status: 'passed' },
+        { id: 'w12', label: 'Relatório de entregas de campanhas', status: 'passed' },
       ]
     }
   ]);
@@ -200,160 +223,121 @@ const SystemChecklistProgress = () => {
     const total = allItems.length;
     const passed = allItems.filter(i => i.status === 'passed').length;
     const failed = allItems.filter(i => i.status === 'failed').length;
-    const testing = allItems.filter(i => i.status === 'testing').length;
-    return { total, passed, failed, testing, progress: Math.round((passed / total) * 100) };
+    return { total, passed, failed, progress: Math.round((passed / total) * 100) };
   };
 
   const getStatusIcon = (status: ChecklistItem['status']) => {
     switch (status) {
-      case 'passed': return <CheckCircle2 className="w-4 h-4 text-green-500" />;
-      case 'failed': return <XCircle className="w-4 h-4 text-red-500" />;
-      case 'testing': return <AlertTriangle className="w-4 h-4 text-yellow-500" />;
-      default: return null;
-    }
-  };
-
-  const getStatusBadge = (status: ChecklistItem['status']) => {
-    switch (status) {
-      case 'passed': return <Badge className="bg-green-500">Passou</Badge>;
-      case 'failed': return <Badge className="bg-red-500">Falhou</Badge>;
-      case 'testing': return <Badge className="bg-yellow-500">Testando</Badge>;
-      default: return <Badge variant="outline">Pendente</Badge>;
+      case 'passed':
+        return <CheckCircle2 className="w-4 h-4 text-green-500" />;
+      case 'failed':
+        return <XCircle className="w-4 h-4 text-red-500" />;
+      case 'testing':
+        return <AlertTriangle className="w-4 h-4 text-yellow-500" />;
+      default:
+        return null;
     }
   };
 
   const overall = getOverallStats();
 
   return (
-    <div className="space-y-6">
-      {/* Overall Progress */}
-      <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <span>Checklist de Produção</span>
-            <Badge variant="outline" className="text-lg px-4 py-1">
-              {overall.progress}%
-            </Badge>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Progress value={overall.progress} className="h-3 mb-4" />
-          <div className="grid grid-cols-4 gap-4 text-center">
-            <div>
-              <p className="text-2xl font-bold text-muted-foreground">{overall.total}</p>
-              <p className="text-sm text-muted-foreground">Total</p>
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-green-500">{overall.passed}</p>
-              <p className="text-sm text-muted-foreground">Passou</p>
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-yellow-500">{overall.testing}</p>
-              <p className="text-sm text-muted-foreground">Testando</p>
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-red-500">{overall.failed}</p>
-              <p className="text-sm text-muted-foreground">Falhou</p>
-            </div>
+    <Card className="w-full">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="text-xl">Roadmap de Implementação</CardTitle>
+            <p className="text-sm text-muted-foreground mt-1">
+              Checklist de verificação para lançamento em produção
+            </p>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Sections */}
-      {sections.map(section => {
-        const stats = getSectionStats(section);
-        const isOpen = openSections.includes(section.id);
-
-        return (
-          <Card key={section.id}>
-            <Collapsible open={isOpen} onOpenChange={() => toggleSection(section.id)}>
+          <div className="text-right">
+            <div className="text-2xl font-bold">{overall.progress}%</div>
+            <p className="text-xs text-muted-foreground">
+              {overall.passed}/{overall.total} itens
+            </p>
+          </div>
+        </div>
+        <Progress value={overall.progress} className="h-2 mt-4" />
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {sections.map(section => {
+          const stats = getSectionStats(section);
+          const isOpen = openSections.includes(section.id);
+          
+          return (
+            <Collapsible
+              key={section.id}
+              open={isOpen}
+              onOpenChange={() => toggleSection(section.id)}
+            >
               <CollapsibleTrigger className="w-full">
-                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-primary/10 rounded-lg">
-                        {section.icon}
-                      </div>
-                      <div className="text-left">
-                        <CardTitle className="text-lg">{section.name}</CardTitle>
-                        <p className="text-sm text-muted-foreground">{section.description}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <div className="text-right">
-                        <p className="font-bold">{stats.passed}/{stats.total}</p>
-                        <Progress value={stats.progress} className="w-24 h-2" />
-                      </div>
-                      <ChevronDown className={`w-5 h-5 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg hover:bg-muted transition-colors">
+                  <div className="flex items-center gap-3">
+                    {section.icon}
+                    <div className="text-left">
+                      <h3 className="font-medium">{section.name}</h3>
+                      <p className="text-xs text-muted-foreground">{section.description}</p>
                     </div>
                   </div>
-                </CardHeader>
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="bg-green-100 text-green-700">
+                        {stats.passed} ✓
+                      </Badge>
+                      {stats.failed > 0 && (
+                        <Badge variant="outline" className="bg-red-100 text-red-700">
+                          {stats.failed} ✗
+                        </Badge>
+                      )}
+                      <span className="text-sm text-muted-foreground">
+                        {stats.progress}%
+                      </span>
+                    </div>
+                    <ChevronDown className={`w-5 h-5 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                  </div>
+                </div>
               </CollapsibleTrigger>
               <CollapsibleContent>
-                <CardContent className="pt-0">
-                  <div className="space-y-2">
-                    {section.items.map(item => (
-                      <div 
-                        key={item.id} 
-                        className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-muted/30 transition-colors"
-                      >
-                        <div className="flex items-center gap-3">
-                          <Checkbox 
-                            checked={item.status === 'passed'}
-                            onCheckedChange={(checked) => {
-                              updateItemStatus(section.id, item.id, checked ? 'passed' : 'pending');
-                            }}
-                          />
-                          <span className={item.status === 'passed' ? 'line-through text-muted-foreground' : ''}>
-                            {item.label}
-                          </span>
-                          {getStatusIcon(item.status)}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => updateItemStatus(section.id, item.id, 'testing')}
-                            className="text-xs px-2 py-1 rounded bg-yellow-500/10 text-yellow-600 hover:bg-yellow-500/20"
-                          >
-                            Testando
-                          </button>
-                          <button
-                            onClick={() => updateItemStatus(section.id, item.id, 'failed')}
-                            className="text-xs px-2 py-1 rounded bg-red-500/10 text-red-600 hover:bg-red-500/20"
-                          >
-                            Falhou
-                          </button>
-                          <button
-                            onClick={() => updateItemStatus(section.id, item.id, 'passed')}
-                            className="text-xs px-2 py-1 rounded bg-green-500/10 text-green-600 hover:bg-green-500/20"
-                          >
-                            Passou
-                          </button>
-                        </div>
+                <div className="mt-2 space-y-2 pl-4">
+                  {section.items.map(item => (
+                    <div 
+                      key={item.id} 
+                      className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/30"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Checkbox
+                          checked={item.status === 'passed'}
+                          onCheckedChange={(checked) => 
+                            updateItemStatus(section.id, item.id, checked ? 'passed' : 'pending')
+                          }
+                        />
+                        <span className={item.status === 'passed' ? 'line-through text-muted-foreground' : ''}>
+                          {item.label}
+                        </span>
                       </div>
-                    ))}
-                  </div>
-                </CardContent>
+                      <div className="flex items-center gap-2">
+                        {getStatusIcon(item.status)}
+                        <select
+                          value={item.status}
+                          onChange={(e) => updateItemStatus(section.id, item.id, e.target.value as ChecklistItem['status'])}
+                          className="text-xs border rounded px-2 py-1 bg-background"
+                        >
+                          <option value="pending">Pendente</option>
+                          <option value="testing">Testando</option>
+                          <option value="passed">OK</option>
+                          <option value="failed">Falhou</option>
+                        </select>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </CollapsibleContent>
             </Collapsible>
-          </Card>
-        );
-      })}
-
-      {/* Instructions */}
-      <Card className="bg-muted/30">
-        <CardContent className="p-4">
-          <h3 className="font-semibold mb-2">📋 Como usar este checklist</h3>
-          <ul className="text-sm text-muted-foreground space-y-1">
-            <li>• Clique em cada seção para expandir os itens de teste</li>
-            <li>• Use os botões para marcar o status de cada item</li>
-            <li>• <span className="text-yellow-500">Testando</span>: item está sendo verificado</li>
-            <li>• <span className="text-green-500">Passou</span>: item funcionando corretamente</li>
-            <li>• <span className="text-red-500">Falhou</span>: item com problemas a resolver</li>
-            <li>• Meta: 100% dos itens marcados como "Passou" antes do deploy</li>
-          </ul>
-        </CardContent>
-      </Card>
-    </div>
+          );
+        })}
+      </CardContent>
+    </Card>
   );
 };
 
