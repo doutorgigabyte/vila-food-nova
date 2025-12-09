@@ -119,10 +119,21 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    const payload: WebhookPayload = await req.json();
+    const payload = await req.json();
     console.log('Webhook received:', JSON.stringify(payload, null, 2));
 
-    const { event, instance, data } = payload;
+    // Handle test/health check requests
+    if (payload.test === true || !payload.instance) {
+      console.log('Test request or missing instance, returning OK');
+      return new Response(JSON.stringify({ 
+        status: 'ok', 
+        message: 'Webhook is working. Send Evolution API events with instance name.' 
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const { event, instance, data } = payload as WebhookPayload;
 
     // Find WhatsApp instance by name
     const { data: whatsappInstance, error: instanceError } = await supabase
@@ -133,7 +144,7 @@ serve(async (req) => {
 
     if (instanceError || !whatsappInstance) {
       console.error('Instance not found:', instance);
-      return new Response(JSON.stringify({ error: 'Instance not found' }), {
+      return new Response(JSON.stringify({ error: 'Instance not found', instance }), {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
