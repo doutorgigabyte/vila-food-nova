@@ -4145,6 +4145,7 @@ export type Database = {
           send_media_enabled: boolean | null
           status: string | null
           updated_at: string | null
+          webhook_configured_at: string | null
           webhook_url: string | null
           welcome_message: string | null
           whatsapp_level: number | null
@@ -4177,6 +4178,7 @@ export type Database = {
           send_media_enabled?: boolean | null
           status?: string | null
           updated_at?: string | null
+          webhook_configured_at?: string | null
           webhook_url?: string | null
           welcome_message?: string | null
           whatsapp_level?: number | null
@@ -4209,6 +4211,7 @@ export type Database = {
           send_media_enabled?: boolean | null
           status?: string | null
           updated_at?: string | null
+          webhook_configured_at?: string | null
           webhook_url?: string | null
           welcome_message?: string | null
           whatsapp_level?: number | null

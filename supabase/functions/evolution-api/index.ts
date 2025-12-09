@@ -389,6 +389,19 @@ serve(async (req) => {
           console.log('N8N webhook configured automatically:', N8N_WEBHOOK_URL);
           result.webhookConfigured = true;
           result.webhookUrl = N8N_WEBHOOK_URL;
+          
+          // Update whatsapp_instances with webhook config
+          if (establishmentId) {
+            await supabase
+              .from('whatsapp_instances')
+              .update({
+                n8n_webhook_url: N8N_WEBHOOK_URL,
+                n8n_enabled: true,
+                webhook_configured_at: new Date().toISOString()
+              })
+              .eq('establishment_id', establishmentId);
+            console.log('Webhook config saved to database');
+          }
         } catch (e) {
           console.warn('Could not set N8N webhook:', e);
           result.webhookConfigured = false;
