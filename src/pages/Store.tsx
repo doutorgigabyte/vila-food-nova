@@ -18,6 +18,7 @@ import { StoreFloatingCart } from "@/components/store/StoreFloatingCart";
 import { StoreAccountTab } from "@/components/store/StoreAccountTab";
 import StoreBottomNav from "@/components/store/StoreBottomNav";
 import StoreStories from "@/components/store/StoreStories";
+import StoreReviewsSection from "@/components/store/StoreReviewsSection";
 import { ServiceRequestModal } from "@/components/products/ServiceRequestModal";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -355,6 +356,14 @@ const Store = () => {
                   />
                 )
             )
+          )}
+
+          {/* Reviews Section */}
+          {establishment && products.length > 0 && (
+            <StoreReviewsSection
+              establishmentId={establishment.id}
+              establishmentName={establishment.name}
+            />
           )}
         </>
       )}
