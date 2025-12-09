@@ -7,12 +7,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Search, Store as StoreIcon, Package, ArrowLeft } from "lucide-react";
 import { useStoreData, type StoreProduct } from "@/hooks/useStoreData";
 import { useCart, type CartProduct, type EstablishmentInfo } from "@/hooks/useCart";
+import { useProductKits } from "@/hooks/useProductKits";
 import { ProductModal } from "@/components/store/ProductModal";
 import { CartSheet } from "@/components/store/CartSheet";
 import { StoreHero } from "@/components/store/StoreHero";
 import { StoreBanners } from "@/components/store/StoreBanners";
 import { StoreCategoryNav } from "@/components/store/StoreCategoryNav";
 import { StoreProductGrid } from "@/components/store/StoreProductGrid";
+import { StoreKitsSection } from "@/components/store/StoreKitsSection";
 import { StoreInfoTab } from "@/components/store/StoreInfoTab";
 import { StoreFloatingCart } from "@/components/store/StoreFloatingCart";
 import { StoreAccountTab } from "@/components/store/StoreAccountTab";
@@ -53,6 +55,9 @@ const Store = () => {
     loading,
     error,
   } = useStoreData(slug);
+
+  // Fetch product kits
+  const { kits } = useProductKits(establishment?.id);
 
   const {
     items,
@@ -330,6 +335,15 @@ const Store = () => {
             promoCount={promotionalProducts.length}
             featuredCount={featuredProducts.length}
           />
+
+          {/* Product Kits Section */}
+          {kits.length > 0 && currentEstablishmentInfo && (
+            <StoreKitsSection
+              kits={kits}
+              establishmentSlug={establishment.slug}
+              establishmentInfo={currentEstablishmentInfo}
+            />
+          )}
 
           {/* Products */}
           {products.length === 0 ? (
