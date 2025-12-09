@@ -3922,7 +3922,7 @@ export type Database = {
         | "cashier"
         | "attendant"
         | "driver"
-      delivery_type: "delivery" | "pickup" | "table" | "other"
+      delivery_type: "delivery" | "pickup" | "table" | "other" | "turbo"
       establishment_status: "active" | "inactive" | "suspended" | "pending"
       notification_priority: "critical" | "high" | "medium" | "low"
       notification_type:
@@ -4091,7 +4091,7 @@ export const Constants = {
         "attendant",
         "driver",
       ],
-      delivery_type: ["delivery", "pickup", "table", "other"],
+      delivery_type: ["delivery", "pickup", "table", "other", "turbo"],
       establishment_status: ["active", "inactive", "suspended", "pending"],
       notification_priority: ["critical", "high", "medium", "low"],
       notification_type: [
