@@ -25,6 +25,9 @@ export interface Establishment {
   segment_id: string | null;
   created_at?: string | null;
   orders_count?: number;
+  rating_average?: number | null;
+  rating_count?: number | null;
+  delivery_base_fee?: number | null;
 }
 
 export interface Category {

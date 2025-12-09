@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
@@ -21,7 +22,8 @@ import {
   ShoppingBag,
   AlertTriangle,
   Bookmark,
-  Info
+  Info,
+  MessageSquare
 } from "lucide-react";
 import { toast } from "sonner";
 import { Price } from "@/components/ui/price";
@@ -95,6 +97,10 @@ const Checkout = () => {
   // Payment
   const [change, setChange] = useState("");
   const [observations, setObservations] = useState("");
+  
+  // WhatsApp tracking
+  const [whatsappTracking, setWhatsappTracking] = useState(true);
+  const [customerPhone, setCustomerPhone] = useState("");
   
   // Saved addresses
   const { user } = useAuth();
@@ -285,6 +291,8 @@ const Checkout = () => {
             } : undefined,
             change_for: paymentMethod === 'cash' && change ? parseFloat(change) : undefined,
             observations: observations || undefined,
+            whatsapp_tracking_enabled: whatsappTracking,
+            customer_phone: whatsappTracking ? customerPhone.replace(/\D/g, '') : undefined,
           });
 
           if (result.success && result.order) {
@@ -346,6 +354,8 @@ const Checkout = () => {
           reference: addressData.reference,
         } : undefined,
         observations: observations || undefined,
+        whatsapp_tracking_enabled: whatsappTracking,
+        customer_phone: whatsappTracking ? customerPhone.replace(/\D/g, '') : undefined,
       });
 
       if (result.success && result.order) {
@@ -826,6 +836,61 @@ const Checkout = () => {
                   value={observations}
                   onChange={(e) => setObservations(e.target.value)}
                 />
+              </CardContent>
+            </Card>
+
+            {/* WhatsApp Tracking */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <MessageSquare className="w-5 h-5" />
+                  Acompanhar pelo WhatsApp
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-start space-x-3">
+                  <Checkbox
+                    id="whatsapp-tracking"
+                    checked={whatsappTracking}
+                    onCheckedChange={(checked) => setWhatsappTracking(checked === true)}
+                  />
+                  <div className="space-y-1">
+                    <Label htmlFor="whatsapp-tracking" className="font-medium cursor-pointer">
+                      Receber atualizações do pedido via WhatsApp
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                      Você receberá notificações sobre cada etapa: confirmação, preparo, saída para entrega e conclusão
+                    </p>
+                  </div>
+                </div>
+                
+                {whatsappTracking && (
+                  <div className="space-y-2 pt-2">
+                    <Label htmlFor="customer-phone">Número do WhatsApp</Label>
+                    <Input
+                      id="customer-phone"
+                      placeholder="(99) 99999-9999"
+                      value={customerPhone}
+                      onChange={(e) => {
+                        // Format phone as user types
+                        const value = e.target.value.replace(/\D/g, '');
+                        if (value.length <= 11) {
+                          let formatted = value;
+                          if (value.length > 2) {
+                            formatted = `(${value.slice(0, 2)}) ${value.slice(2)}`;
+                          }
+                          if (value.length > 7) {
+                            formatted = `(${value.slice(0, 2)}) ${value.slice(2, 7)}-${value.slice(7)}`;
+                          }
+                          setCustomerPhone(formatted);
+                        }
+                      }}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Insira seu número com DDD para receber as atualizações
+                    </p>
+                  </div>
+                )}
               </CardContent>
             </Card>
 

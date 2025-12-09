@@ -105,8 +105,8 @@ const EstablishmentCard = memo(({
           <CardContent className="p-3">
             <div className="flex items-center gap-1.5 mb-1">
               <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
-              <span className="font-medium text-xs">4.5</span>
-              <span className="text-xs text-muted-foreground">(0)</span>
+              <span className="font-medium text-xs">{est.rating_average?.toFixed(1) || '0.0'}</span>
+              <span className="text-xs text-muted-foreground">({est.rating_count || 0})</span>
             </div>
             <h3 className="font-semibold text-sm truncate">{est.name}</h3>
             {est.description && (
@@ -161,7 +161,8 @@ const EstablishmentCard = memo(({
               <div className="flex items-center gap-2 md:gap-3">
                 <div className="flex items-center gap-1">
                   <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
-                  <span className="font-semibold text-sm">4.5</span>
+                  <span className="font-semibold text-sm">{est.rating_average?.toFixed(1) || '0.0'}</span>
+                  <span className="text-xs text-muted-foreground">({est.rating_count || 0})</span>
                 </div>
                 {est.avg_delivery_time && (
                   <div className="flex items-center gap-1 text-muted-foreground text-xs">
@@ -250,8 +251,8 @@ const EstablishmentCard = memo(({
           <div className="flex items-center justify-between mt-2 text-xs">
             <div className="flex items-center gap-1">
               <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
-              <span className="font-medium">4.5</span>
-              <span className="text-muted-foreground">(0)</span>
+              <span className="font-medium">{est.rating_average?.toFixed(1) || '0.0'}</span>
+              <span className="text-muted-foreground">({est.rating_count || 0})</span>
             </div>
             {est.avg_delivery_time && (
               <div className="flex items-center gap-1 text-muted-foreground">
