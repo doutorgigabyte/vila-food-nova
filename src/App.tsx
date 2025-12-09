@@ -76,6 +76,9 @@ const EstablishmentSettings = lazy(() => import("./pages/dashboard/Establishment
 const AffiliateDashboard = lazy(() => import("./pages/dashboard/AffiliateDashboard"));
 const ReviewsManagement = lazy(() => import("./pages/dashboard/ReviewsManagement"));
 
+// Checkout callback pages
+const CheckoutResult = lazy(() => import("./pages/checkout/CheckoutResult"));
+
 // Public pages
 const ReviewOrder = lazy(() => import("./pages/ReviewOrder"));
 
@@ -191,6 +194,7 @@ const AppRoutes = () => {
               <Route path="/vilas" element={<Vilas />} />
               <Route path="/vila/:slug" element={<Vila />} />
               <Route path="/checkout" element={<Checkout />} />
+              <Route path="/checkout/resultado" element={<CheckoutResult />} />
               <Route path="/pedidos" element={<Orders />} />
               <Route path="/menu" element={<Menu />} />
               <Route path="/favoritos" element={<Favorites />} />
