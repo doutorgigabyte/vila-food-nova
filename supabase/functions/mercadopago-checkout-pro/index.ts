@@ -6,25 +6,46 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+interface CheckoutItem {
+  id: string;
+  title: string;
+  description?: string;
+  category_id?: string;
+  quantity: number;
+  unit_price: number;
+  picture_url?: string;
+}
+
 interface CheckoutProRequest {
   order_id: string;
   establishment_id: string;
   amount: number;
   description: string;
-  items?: Array<{
-    title: string;
-    quantity: number;
-    unit_price: number;
-  }>;
+  items?: CheckoutItem[];
   payer?: {
     email?: string;
     name?: string;
+    first_name?: string;
+    last_name?: string;
     phone?: string;
+    identification?: {
+      type?: string;
+      number?: string;
+    };
+    address?: {
+      zip_code?: string;
+      street_name?: string;
+      street_number?: string;
+    };
   };
   back_urls?: {
     success?: string;
     failure?: string;
     pending?: string;
+  };
+  shipments?: {
+    cost?: number;
+    mode?: string;
   };
 }
 
@@ -35,7 +56,7 @@ serve(async (req) => {
 
   try {
     const requestData: CheckoutProRequest = await req.json();
-    const { order_id, establishment_id, amount, description, items, payer, back_urls } = requestData;
+    const { order_id, establishment_id, amount, description, items, payer, back_urls, shipments } = requestData;
 
     // Get origin from request for back_urls
     const origin = req.headers.get('origin') || req.headers.get('referer')?.split('/').slice(0, 3).join('/') || 'https://vilafood.app';
@@ -45,6 +66,8 @@ serve(async (req) => {
     console.log('Establishment ID:', establishment_id);
     console.log('Amount:', amount);
     console.log('Origin:', origin);
+    console.log('Items:', JSON.stringify(items));
+    console.log('Payer:', JSON.stringify(payer));
 
     // Validação básica
     if (!order_id || !establishment_id || !amount) {
@@ -101,20 +124,71 @@ serve(async (req) => {
       pending: `${frontendUrl}/checkout/resultado?status=pending&order_id=${order_id}`
     };
 
-    // Construir items para a preferência
+    // Construir items para a preferência com todos os campos recomendados
     const preferenceItems = items && items.length > 0 
       ? items.map(item => ({
+          id: item.id || `item-${Date.now()}`,
           title: item.title,
+          description: item.description || item.title,
+          category_id: item.category_id || 'others',
           quantity: item.quantity,
           unit_price: item.unit_price,
-          currency_id: 'BRL'
+          currency_id: 'BRL',
+          ...(item.picture_url && { picture_url: item.picture_url })
         }))
       : [{
+          id: `order-${order_id}`,
           title: description || `Pedido ${establishment.name}`,
+          description: description || `Pedido realizado em ${establishment.name}`,
+          category_id: 'food',
           quantity: 1,
           unit_price: amount,
           currency_id: 'BRL'
         }];
+
+    // Construir dados do pagador com campos obrigatórios e recomendados
+    const payerData: Record<string, unknown> = {};
+    
+    if (payer) {
+      // Email é OBRIGATÓRIO
+      if (payer.email) {
+        payerData.email = payer.email;
+      }
+      
+      // Nome separado em first_name e last_name
+      if (payer.first_name) {
+        payerData.first_name = payer.first_name;
+      } else if (payer.name) {
+        const nameParts = payer.name.split(' ');
+        payerData.first_name = nameParts[0];
+        if (nameParts.length > 1) {
+          payerData.last_name = nameParts.slice(1).join(' ');
+        }
+      }
+      
+      if (payer.last_name) {
+        payerData.last_name = payer.last_name;
+      }
+      
+      // Telefone
+      if (payer.phone) {
+        const cleanPhone = payer.phone.replace(/\D/g, '');
+        payerData.phone = { 
+          area_code: cleanPhone.substring(0, 2),
+          number: cleanPhone.substring(2)
+        };
+      }
+      
+      // Identificação (CPF)
+      if (payer.identification) {
+        payerData.identification = payer.identification;
+      }
+      
+      // Endereço
+      if (payer.address) {
+        payerData.address = payer.address;
+      }
+    }
 
     // Construir payload da preferência otimizado para delivery
     const preferencePayload: Record<string, unknown> = {
@@ -154,16 +228,15 @@ serve(async (req) => {
     };
 
     // Adicionar dados do pagador se disponível
-    if (payer) {
-      preferencePayload.payer = {
-        ...(payer.email && { email: payer.email }),
-        ...(payer.name && { name: payer.name }),
-        ...(payer.phone && { 
-          phone: { 
-            area_code: payer.phone.substring(0, 2),
-            number: payer.phone.substring(2)
-          }
-        })
+    if (Object.keys(payerData).length > 0) {
+      preferencePayload.payer = payerData;
+    }
+
+    // Adicionar frete se disponível
+    if (shipments?.cost && shipments.cost > 0) {
+      preferencePayload.shipments = {
+        cost: shipments.cost,
+        mode: shipments.mode || 'not_specified'
       };
     }
 
