@@ -10,7 +10,10 @@ import {
   Rocket,
   CheckCircle,
   Clock,
-  AlertCircle
+  AlertCircle,
+  Thermometer,
+  Star,
+  ShoppingCart
 } from "lucide-react";
 
 interface Phase {
@@ -69,6 +72,8 @@ const phases: Phase[] = [
       { name: "Split Payment (Edge Function)", status: 'completed' },
       { name: "Assinaturas SaaS (Edge Function)", status: 'completed' },
       { name: "Webhooks MP", status: 'completed' },
+      { name: "PagSeguro OAuth Integration", status: 'completed' },
+      { name: "PagSeguro PIX com Split", status: 'completed' },
     ]
   },
   {
@@ -83,6 +88,9 @@ const phases: Phase[] = [
       { name: "Bot de Atendimento IA", status: 'completed' },
       { name: "Webhook WhatsApp", status: 'completed' },
       { name: "Notificações automáticas (Hook)", status: 'completed' },
+      { name: "Rastreamento de Pedidos WhatsApp", status: 'completed' },
+      { name: "Notificações por Status do Pedido", status: 'completed' },
+      { name: "Link de Avaliação pós-entrega", status: 'completed' },
     ]
   },
   {
@@ -112,6 +120,51 @@ const phases: Phase[] = [
       { name: "Health Check System", status: 'completed' },
       { name: "Preparação de produção", status: 'completed' },
       { name: "Go-Live", status: 'completed' },
+    ]
+  },
+  {
+    id: 7,
+    name: "Checkout Avançado",
+    description: "Temperatura dinâmica e produtos relacionados",
+    icon: Thermometer,
+    status: 'completed',
+    progress: 100,
+    tasks: [
+      { name: "Seleção de temperatura por tipo de produto", status: 'completed' },
+      { name: "Opções: Gelada/Ambiente/Congelada/In Natura", status: 'completed' },
+      { name: "Integração no CartConfirmationStep", status: 'completed' },
+      { name: "product_type e temperature_options no carrinho", status: 'completed' },
+      { name: "Produtos Relacionados no Checkout", status: 'completed' },
+    ]
+  },
+  {
+    id: 8,
+    name: "Sistema de Avaliações",
+    description: "Reviews de produtos e estabelecimentos",
+    icon: Star,
+    status: 'completed',
+    progress: 100,
+    tasks: [
+      { name: "Tabela reviews com múltiplas dimensões", status: 'completed' },
+      { name: "StarRating, ReviewForm, ReviewCard componentes", status: 'completed' },
+      { name: "Link seguro via WhatsApp (7 dias)", status: 'completed' },
+      { name: "Resposta do lojista às avaliações", status: 'completed' },
+      { name: "ReviewsManagement no Dashboard", status: 'completed' },
+      { name: "Média de avaliações no Marketplace", status: 'completed' },
+    ]
+  },
+  {
+    id: 9,
+    name: "Carrinho e Pedidos",
+    description: "Melhorias no fluxo de compra",
+    icon: ShoppingCart,
+    status: 'completed',
+    progress: 100,
+    tasks: [
+      { name: "updateItemTemperature no useCart", status: 'completed' },
+      { name: "TemperatureSelector integrado no checkout", status: 'completed' },
+      { name: "Validação de temperatura antes do pedido", status: 'completed' },
+      { name: "Temperatura incluída nos itens do pedido", status: 'completed' },
     ]
   },
 ];
