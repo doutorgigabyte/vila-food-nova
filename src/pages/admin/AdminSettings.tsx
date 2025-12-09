@@ -14,6 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 import { MercadoPagoOAuth } from "@/components/payment/MercadoPagoOAuth";
+import { N8nTemplatesDownload } from "@/components/admin/N8nTemplatesDownload";
 import { 
   Menu, 
   Globe, 
@@ -25,7 +26,8 @@ import {
   Save,
   Key,
   Database,
-  Bell
+  Bell,
+  Bot
 } from "lucide-react";
 
 const AdminSettings = () => {
@@ -144,6 +146,10 @@ const AdminSettings = () => {
               <TabsTrigger value="integrations" className="gap-2 text-xs sm:text-sm">
                 <Link2 className="w-4 h-4" />
                 <span className="hidden sm:inline">Integrações</span>
+              </TabsTrigger>
+              <TabsTrigger value="n8n" className="gap-2 text-xs sm:text-sm">
+                <Bot className="w-4 h-4" />
+                <span className="hidden sm:inline">n8n / IA</span>
               </TabsTrigger>
               <TabsTrigger value="security" className="gap-2 text-xs sm:text-sm">
                 <Shield className="w-4 h-4" />
@@ -353,6 +359,11 @@ const AdminSettings = () => {
                   </CardContent>
                 </Card>
               </div>
+            </TabsContent>
+
+            {/* n8n / AI Templates Tab */}
+            <TabsContent value="n8n">
+              <N8nTemplatesDownload />
             </TabsContent>
 
             {/* Security Tab */}
