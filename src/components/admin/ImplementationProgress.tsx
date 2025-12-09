@@ -371,7 +371,7 @@ const phases: ProgressPhase[] = [
       { name: 'Tabela address_cache para otimização', status: 'completed', priority: 'medium' },
       { name: 'Integrar no Checkout', status: 'completed', priority: 'critical' },
       { name: 'Integrar no Onboarding', status: 'completed', priority: 'high' },
-      { name: 'Integrar em EstablishmentSettings', status: 'pending', priority: 'high' },
+      { name: 'Integrar em EstablishmentSettings', status: 'completed', priority: 'high' },
       { name: 'Integrar na página Meus Endereços', status: 'completed', priority: 'high' },
     ]
   },
