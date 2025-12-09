@@ -74,6 +74,10 @@ const StoriesManagement = lazy(() => import("./pages/dashboard/StoriesManagement
 const AIAnalysisDashboard = lazy(() => import("./pages/dashboard/AIAnalysisDashboard"));
 const EstablishmentSettings = lazy(() => import("./pages/dashboard/EstablishmentSettings"));
 const AffiliateDashboard = lazy(() => import("./pages/dashboard/AffiliateDashboard"));
+const ReviewsManagement = lazy(() => import("./pages/dashboard/ReviewsManagement"));
+
+// Public pages
+const ReviewOrder = lazy(() => import("./pages/ReviewOrder"));
 
 // Admin pages - lazy loaded
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
