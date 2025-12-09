@@ -492,19 +492,19 @@ const phases: ProgressPhase[] = [
     ]
   },
 
-  // ===== FUTURO: PAGSEGURO =====
+  // ===== PAGSEGURO (COMPLETO) =====
   {
     id: 'pagseguro-integration',
-    name: '💳 Integração PagSeguro (Futuro)',
+    name: '💳 Integração PagSeguro',
     description: 'Suporte a pagamentos via PagSeguro',
     category: 'financial',
     items: [
       { name: 'Gateway PagSeguro (estrutura base)', status: 'completed', priority: 'high' },
-      { name: 'PIX via PagSeguro API', status: 'pending', priority: 'critical' },
-      { name: 'Checkout transparente (cartão)', status: 'pending', priority: 'critical' },
-      { name: 'Webhook para confirmação', status: 'pending', priority: 'critical' },
-      { name: 'OAuth para conectar contas', status: 'pending', priority: 'high' },
-      { name: 'Split de pagamentos', status: 'pending', priority: 'high' },
+      { name: 'PIX via PagSeguro API (pagseguro-pix)', status: 'completed', priority: 'critical' },
+      { name: 'Checkout transparente (cartão) (pagseguro-card)', status: 'completed', priority: 'critical' },
+      { name: 'Webhook para confirmação (pagseguro-webhook)', status: 'completed', priority: 'critical' },
+      { name: 'OAuth para conectar contas (pagseguro-oauth)', status: 'completed', priority: 'high' },
+      { name: 'Split de pagamentos', status: 'completed', priority: 'high' },
     ]
   },
 
@@ -570,7 +570,7 @@ const phases: ProgressPhase[] = [
       // Integração no Checkout
       { name: 'Integrar CheckoutProPayment no Checkout.tsx', status: 'completed', priority: 'critical' },
       { name: 'Seletor de método: PIX ou Cartão', status: 'completed', priority: 'high' },
-      { name: 'Testar fluxo completo em sandbox', status: 'pending', priority: 'critical' },
+      { name: 'Testar fluxo completo em sandbox', status: 'completed', priority: 'critical' },
     ]
   },
 
@@ -626,7 +626,7 @@ const phases: ProgressPhase[] = [
       { name: 'payer.first_name e last_name', status: 'completed', priority: 'high' },
       { name: 'payer.phone com area_code', status: 'completed', priority: 'medium' },
       { name: 'payer.identification (CPF)', status: 'completed', priority: 'medium' },
-      { name: 'payer.address do checkout', status: 'pending', priority: 'medium' },
+      { name: 'payer.address do checkout', status: 'completed', priority: 'medium' },
       { name: 'shipments.cost (taxa de entrega)', status: 'completed', priority: 'high' },
     ]
   },
@@ -700,7 +700,7 @@ const phases: ProgressPhase[] = [
       { name: 'Campo recurrence na tabela scheduled_orders', status: 'completed', priority: 'high' },
       { name: 'Integração com checkout (scheduledFor state)', status: 'completed', priority: 'critical' },
       { name: 'Edge Function process-recurring-orders', status: 'completed', priority: 'medium' },
-      { name: 'Cron job para processar pedidos recorrentes', status: 'pending', priority: 'low' },
+      { name: 'Cron job para processar pedidos recorrentes', status: 'completed', priority: 'low' },
     ]
   },
 
