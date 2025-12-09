@@ -321,7 +321,7 @@ export const SmartAddressInput = ({
           variant="default"
           onClick={getCurrentLocation}
           disabled={isLoadingLocation || !isMapLoaded}
-          className="w-full h-12 text-base font-semibold"
+          className="w-full h-12 text-base font-semibold bg-primary hover:bg-primary/90"
         >
           {isLoadingLocation ? (
             <Loader2 className="w-5 h-5 mr-2 animate-spin" />
@@ -332,23 +332,19 @@ export const SmartAddressInput = ({
         </Button>
       )}
 
-      {/* Divider */}
+      {/* Divider Text */}
       {showGpsButton && (
-        <div className="flex items-center gap-3">
-          <div className="h-px flex-1 bg-border" />
-          <span className="text-xs text-muted-foreground">ou digite o endereço</span>
-          <div className="h-px flex-1 bg-border" />
-        </div>
+        <p className="text-center text-xs text-muted-foreground">
+          ou digite o endereço
+        </p>
       )}
 
       {/* CEP Input */}
-      <div className={compact ? "grid grid-cols-2 gap-3" : ""}>
-        <CepAutocomplete
-          value={value.cep}
-          onChange={(cep) => onChange({ ...value, cep })}
-          onAddressFound={handleCepFound}
-        />
-      </div>
+      <CepAutocomplete
+        value={value.cep}
+        onChange={(cep) => onChange({ ...value, cep })}
+        onAddressFound={handleCepFound}
+      />
 
       {/* Google Places Search */}
       <div className="space-y-2 relative">
