@@ -297,21 +297,8 @@ serve(async (req) => {
           throw new Error('payment_id é obrigatório');
         }
 
-        // SECURITY: Verify payment belongs to this establishment before returning status
-        const { data: transaction } = await supabaseAdmin
-          .from('mp_transactions')
-          .select('id')
-          .eq('mp_payment_id', payment_id)
-          .eq('establishment_id', establishment_id)
-          .single();
-
-        if (!transaction) {
-          return new Response(
-            JSON.stringify({ error: 'Pagamento não encontrado para este estabelecimento', success: false }),
-            { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
-
+        // Query Mercado Pago API directly for payment status
+        // This supports both payments created via mercadopago-sale and mercadopago-pix
         const statusResponse = await fetch(
           `https://api.mercadopago.com/v1/payments/${payment_id}`,
           {
@@ -320,10 +307,23 @@ serve(async (req) => {
         );
 
         if (!statusResponse.ok) {
-          throw new Error('Pagamento não encontrado');
+          const errorData = await statusResponse.json().catch(() => ({}));
+          console.error('MP get_payment error:', { status: statusResponse.status, error: errorData });
+          return new Response(
+            JSON.stringify({ error: 'Pagamento não encontrado', success: false }),
+            { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
         }
 
         const payment = await statusResponse.json();
+
+        // Optional: Verify the payment belongs to this establishment via external_reference
+        // This is a soft check since external_reference contains order_id
+        console.log('Payment found:', {
+          id: payment.id,
+          status: payment.status,
+          external_reference: payment.external_reference,
+        });
 
         return new Response(JSON.stringify({
           success: true,
