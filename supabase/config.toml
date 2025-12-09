@@ -54,6 +54,9 @@ verify_jwt = false
 [functions.mercadopago-point]
 verify_jwt = false
 
+[functions.mercadopago-checkout-pro]
+verify_jwt = false
+
 [functions.pagseguro-oauth]
 verify_jwt = false
 
