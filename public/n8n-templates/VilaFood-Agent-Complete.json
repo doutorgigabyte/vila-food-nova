@@ -1,5 +1,5 @@
 {
-  "name": "VilaFood-Agent-Complete",
+  "name": "VilaFood AI Agent - Complete",
   "nodes": [
     {
       "parameters": {
@@ -9,7 +9,7 @@
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [-1200, 0],
+      "position": [200, 600],
       "id": "webhook-evolution",
       "name": "Evolution API Webhook",
       "webhookId": "vilafood-evolution-webhook"
@@ -47,9 +47,34 @@
       },
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [-960, 0],
+      "position": [420, 600],
       "id": "filter-self-messages",
       "name": "Filter Self Messages"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "establishments",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "whatsapp_instance_name",
+              "keyValue": "={{ $json.body.instance }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [640, 600],
+      "id": "get-establishment",
+      "name": "Busca Estabelecimento",
+      "credentials": {
+        "supabaseApi": {
+          "id": "supabase-credentials",
+          "name": "Supabase VilaFood"
+        }
+      }
     },
     {
       "parameters": {
@@ -76,7 +101,7 @@
             {
               "id": "push_name",
               "name": "push_name",
-              "value": "={{ $('Evolution API Webhook').item.json.body.data.pushName }}",
+              "value": "={{ $('Evolution API Webhook').item.json.body.data.pushName || 'Cliente' }}",
               "type": "string"
             },
             {
@@ -98,33 +123,51 @@
               "type": "string"
             },
             {
-              "id": "server_url",
-              "name": "server_url",
-              "value": "={{ $('Evolution API Webhook').item.json.body.server_url }}",
-              "type": "string"
-            },
-            {
-              "id": "api_key",
-              "name": "api_key",
-              "value": "={{ $('Evolution API Webhook').item.json.body.apikey }}",
-              "type": "string"
-            },
-            {
               "id": "session_key",
               "name": "session_key",
               "value": "={{ $('Evolution API Webhook').item.json.body.instance }}:{{ $('Evolution API Webhook').item.json.body.data.key.remoteJid.replace('@s.whatsapp.net', '') }}",
               "type": "string"
             },
             {
-              "id": "date_time",
-              "name": "date_time",
-              "value": "={{ $now.format('yyyy-MM-dd HH:mm:ss') }}",
+              "id": "establishment_id",
+              "name": "establishment_id",
+              "value": "={{ $('Busca Estabelecimento').item.json.id }}",
               "type": "string"
             },
             {
-              "id": "week_day",
-              "name": "week_day",
-              "value": "={{ $today.weekdayLong }}",
+              "id": "establishment_name",
+              "name": "establishment_name",
+              "value": "={{ $('Busca Estabelecimento').item.json.name }}",
+              "type": "string"
+            },
+            {
+              "id": "system_prompt",
+              "name": "system_prompt",
+              "value": "={{ $('Busca Estabelecimento').item.json.system_prompt || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "menu_json",
+              "name": "menu_json",
+              "value": "={{ JSON.stringify($('Busca Estabelecimento').item.json.menu_json || []) }}",
+              "type": "string"
+            },
+            {
+              "id": "mercado_pago_token",
+              "name": "mercado_pago_token",
+              "value": "={{ $('Busca Estabelecimento').item.json.mercado_pago_token || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "pix_key",
+              "name": "pix_key",
+              "value": "={{ $('Busca Estabelecimento').item.json.pix_key || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "evolution_api_token",
+              "name": "evolution_api_token",
+              "value": "={{ $('Busca Estabelecimento').item.json.evolution_api_token || '' }}",
               "type": "string"
             }
           ]
@@ -133,87 +176,353 @@
       },
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [-720, 0],
+      "position": [860, 600],
       "id": "extract-fields",
-      "name": "Extract Message Fields"
+      "name": "Extrai Campos"
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "={{ $credentials.supabase.url }}/functions/v1/whatsapp-cart",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
+        "rules": {
+          "values": [
             {
-              "name": "Content-Type",
-              "value": "application/json"
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.message_type }}",
+                    "rightValue": "imageMessage",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "imagem"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.message_type }}",
+                    "rightValue": "conversation",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "texto"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.message_type }}",
+                    "rightValue": "audioMessage",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "audio"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.message_type }}",
+                    "rightValue": "extendedTextMessage",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "texto"
             }
           ]
         },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={\n  \"action\": \"get_session\",\n  \"instance_name\": \"{{ $('Extract Message Fields').item.json.instance_name }}\",\n  \"remote_jid\": \"{{ $('Extract Message Fields').item.json.remote_jid }}\"\n}",
         "options": {}
       },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [-480, 0],
-      "id": "get-establishment",
-      "name": "Get Establishment Config",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [1080, 600],
+      "id": "switch-message-type",
+      "name": "Tipo de Mensagem"
+    },
+    {
+      "parameters": {
+        "resource": "chat-api",
+        "operation": "get-media-base64",
+        "instanceName": "={{ $('Extrai Campos').item.json.instance_name }}",
+        "messageId": "={{ $('Extrai Campos').item.json.message_id }}",
+        "convertToMp4": true
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [1300, 400],
+      "id": "get-image-base64",
+      "name": "Busca Imagem Base64",
       "credentials": {
-        "httpHeaderAuth": {
-          "id": "supabase-service-role",
-          "name": "Supabase Service Role"
+        "evolutionApi": {
+          "id": "evolution-api-credentials",
+          "name": "Evolution API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "toBinary",
+        "sourceProperty": "data.base64",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [1520, 400],
+      "id": "convert-image-binary",
+      "name": "Converte Imagem"
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "text": "Analise esta imagem enviada por um cliente. Se for um comprovante de pagamento (PIX, transferência, etc), extraia: valor, data/hora, tipo. Se for foto de produto ou cardápio, descreva o que vê. Se não conseguir identificar, descreva a imagem normalmente.",
+        "inputType": "binary",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [1740, 400],
+      "id": "analyze-image",
+      "name": "Analisa Imagem",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "google-gemini-credentials",
+          "name": "Google Gemini API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "chat-api",
+        "operation": "get-media-base64",
+        "instanceName": "={{ $('Extrai Campos').item.json.instance_name }}",
+        "messageId": "={{ $('Extrai Campos').item.json.message_id }}",
+        "convertToMp4": true
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [1300, 800],
+      "id": "get-audio-base64",
+      "name": "Busca Áudio Base64",
+      "credentials": {
+        "evolutionApi": {
+          "id": "evolution-api-credentials",
+          "name": "Evolution API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "toBinary",
+        "sourceProperty": "data.base64",
+        "options": {
+          "fileName": "audio.mp3",
+          "mimeType": "audio/mpeg"
+        }
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [1520, 800],
+      "id": "convert-audio-binary",
+      "name": "Converte Áudio"
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "inputType": "binary",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [1740, 800],
+      "id": "transcribe-audio",
+      "name": "Transcreve Áudio",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "google-gemini-credentials",
+          "name": "Google Gemini API"
         }
       }
     },
     {
       "parameters": {
         "operation": "push",
-        "list": "=msgs-{{ $('Extract Message Fields').item.json.session_key }}",
-        "messageData": "={{ $('Extract Message Fields').item.json.message_text }}"
+        "list": "=vilafood:debounce:{{ $('Extrai Campos').item.json.session_key }}",
+        "messageData": "={{ JSON.stringify({ messageId: $('Extrai Campos').item.json.message_id, mensagem: $('Extrai Campos').item.json.message_text }) }}",
+        "tail": true
       },
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
-      "position": [-240, 0],
-      "id": "redis-push",
-      "name": "Redis Push Message",
+      "position": [1300, 600],
+      "id": "redis-push-text",
+      "name": "Redis Push Texto",
       "credentials": {
         "redis": {
-          "id": "redis-account",
-          "name": "Redis Account"
+          "id": "redis-credentials",
+          "name": "Redis"
         }
       }
     },
     {
       "parameters": {
-        "amount": 2
+        "amount": 3,
+        "unit": "seconds"
       },
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
-      "position": [0, 0],
+      "position": [1520, 600],
       "id": "debounce-wait",
-      "name": "Debounce Wait (2s)",
-      "webhookId": "debounce-webhook"
+      "name": "Debounce 3s",
+      "webhookId": "debounce-wait-webhook"
     },
     {
       "parameters": {
         "operation": "get",
-        "propertyName": "messages",
-        "key": "=msgs-{{ $('Extract Message Fields').item.json.session_key }}",
+        "propertyName": "mensagens",
+        "key": "=vilafood:debounce:{{ $('Extrai Campos').item.json.session_key }}",
+        "keyType": "list",
         "options": {}
       },
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
-      "position": [240, 0],
-      "id": "redis-get",
-      "name": "Redis Get Messages",
+      "position": [1740, 600],
+      "id": "redis-get-messages",
+      "name": "Redis Get Mensagens",
       "credentials": {
         "redis": {
-          "id": "redis-account",
-          "name": "Redis Account"
+          "id": "redis-credentials",
+          "name": "Redis"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ JSON.parse($json.mensagens?.last())?.messageId }}",
+              "rightValue": "={{ $('Extrai Campos').item.json.message_id }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [1960, 600],
+      "id": "check-last-message",
+      "name": "É Última Mensagem?"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "content",
+              "name": "content",
+              "value": "={{ $json.mensagens ? $json.mensagens.map(m => JSON.parse(m).mensagem).join(' ') : $('Extrai Campos').item.json.message_text }}",
+              "type": "string"
+            },
+            {
+              "id": "session_key",
+              "name": "session_key",
+              "value": "={{ $('Extrai Campos').item.json.session_key }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [2180, 500],
+      "id": "combine-text-messages",
+      "name": "Combina Mensagens Texto"
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "key": "=vilafood:debounce:{{ $('Extrai Campos').item.json.session_key }}"
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [2400, 500],
+      "id": "redis-clear-debounce",
+      "name": "Redis Clear Debounce",
+      "credentials": {
+        "redis": {
+          "id": "redis-credentials",
+          "name": "Redis"
         }
       }
     },
@@ -222,9 +531,15 @@
         "assignments": {
           "assignments": [
             {
-              "id": "combined_text",
-              "name": "text",
-              "value": "={{ $json.messages.join(' ') }}",
+              "id": "content",
+              "name": "content",
+              "value": "=[IMAGEM ANALISADA] {{ $json.content || $json.text }}",
+              "type": "string"
+            },
+            {
+              "id": "session_key",
+              "name": "session_key",
+              "value": "={{ $('Extrai Campos').item.json.session_key }}",
               "type": "string"
             }
           ]
@@ -233,798 +548,388 @@
       },
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [480, 0],
-      "id": "combine-messages",
-      "name": "Combine Messages"
+      "position": [1960, 400],
+      "id": "format-image-result",
+      "name": "Formata Resultado Imagem"
     },
     {
       "parameters": {
-        "operation": "delete",
-        "key": "=msgs-{{ $('Extract Message Fields').item.json.session_key }}"
+        "assignments": {
+          "assignments": [
+            {
+              "id": "content",
+              "name": "content",
+              "value": "=[ÁUDIO TRANSCRITO] {{ $json.text }}",
+              "type": "string"
+            },
+            {
+              "id": "session_key",
+              "name": "session_key",
+              "value": "={{ $('Extrai Campos').item.json.session_key }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1960, 800],
+      "id": "format-audio-result",
+      "name": "Formata Resultado Áudio"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [2620, 600],
+      "id": "merge-all-content",
+      "name": "Merge Conteúdo"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "propertyName": "cart_data",
+        "key": "=vilafood:cart:{{ $json.session_key }}",
+        "options": {}
       },
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
-      "position": [720, 0],
-      "id": "redis-clear",
-      "name": "Redis Clear Messages",
+      "position": [2840, 600],
+      "id": "redis-get-cart",
+      "name": "Busca Carrinho",
       "credentials": {
         "redis": {
-          "id": "redis-account",
-          "name": "Redis Account"
+          "id": "redis-credentials",
+          "name": "Redis"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "customers",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "phone",
+              "keyValue": "={{ $('Extrai Campos').item.json.phone }}"
+            },
+            {
+              "keyName": "establishment_id",
+              "keyValue": "={{ $('Extrai Campos').item.json.establishment_id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [3060, 600],
+      "id": "get-customer",
+      "name": "Busca Cliente",
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "supabase-credentials",
+          "name": "Supabase VilaFood"
         }
       }
     },
     {
       "parameters": {
         "promptType": "define",
-        "text": "={{ $('Combine Messages').item.json.text }}",
+        "text": "={{ $('Merge Conteúdo').item.json.content }}",
+        "hasOutputParser": false,
         "options": {
-          "systemMessage": "={{ $('Get Establishment Config').item.json.system_prompt }}\n\n---\n\n### Cardápio Atual\n\n{{ JSON.stringify($('Get Establishment Config').item.json.menu_json) }}\n\n---\n\n### Dados do Cliente\n\nNome: {{ $('Get Establishment Config').item.json.customer?.name || $('Extract Message Fields').item.json.push_name }}\nTelefone: {{ $('Extract Message Fields').item.json.phone }}\nEndereço: {{ $('Get Establishment Config').item.json.customer?.address || 'Não informado' }}\n\n---\n\n### Carrinho Atual\n\n{{ JSON.stringify($('Get Establishment Config').item.json.cart || []) }}\n\n---\n\n### Contexto\n\n- Data e Hora: {{ $('Extract Message Fields').item.json.date_time }}\n- Dia da Semana: {{ $('Extract Message Fields').item.json.week_day }}\n\n---\n\n### Histórico da Conversa\n\n{{ $('Get Chat History').item.json.history || 'Início da conversa' }}"
+          "systemMessage": "=# Você é o assistente virtual da {{ $('Extrai Campos').item.json.establishment_name }}\n\n{{ $('Extrai Campos').item.json.system_prompt }}\n\n## CARDÁPIO DISPONÍVEL:\n{{ $('Extrai Campos').item.json.menu_json }}\n\n## DADOS DO CLIENTE:\n- Nome: {{ $('Extrai Campos').item.json.push_name }}\n- Telefone: {{ $('Extrai Campos').item.json.phone }}\n- Endereço: {{ $('Busca Cliente').item.json.default_address ? JSON.stringify($('Busca Cliente').item.json.default_address) : 'Não cadastrado' }}\n\n## CARRINHO ATUAL:\n{{ $('Busca Carrinho').item.json.cart_data || 'Vazio' }}\n\n## INSTRUÇÕES:\n1. Seja simpático e prestativo\n2. Use as TOOLS disponíveis para ações específicas\n3. Sempre confirme antes de finalizar pedidos\n4. Ofereça produtos complementares quando apropriado\n5. Para mostrar produtos, use send_product_photo\n6. Para pagamento PIX, use create_order_pix\n7. Se receber [ÁUDIO TRANSCRITO], responda como se fosse texto normal\n8. Se receber [IMAGEM ANALISADA], use o contexto da análise\n\n## FORMATO DE RESPOSTA:\n- Respostas curtas e diretas\n- Use emojis moderadamente\n- Sempre pergunte se deseja mais algo antes de fechar"
         }
       },
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 1.7,
-      "position": [960, 0],
-      "id": "vilafood-ai-agent",
+      "position": [3280, 600],
+      "id": "ai-agent",
       "name": "VilaFood AI Agent"
     },
     {
       "parameters": {
-        "model": "gemini-2.5-flash",
+        "modelName": "models/gemini-2.5-flash",
         "options": {
-          "temperature": 0.3
+          "temperature": 0.7,
+          "maxOutputTokens": 1024
         }
       },
       "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
       "typeVersion": 1,
-      "position": [960, 220],
-      "id": "gemini-model",
-      "name": "Google Gemini",
+      "position": [3180, 800],
+      "id": "google-gemini-chat",
+      "name": "Google Gemini Chat",
       "credentials": {
         "googleGeminiApi": {
-          "id": "google-gemini",
-          "name": "Google Gemini"
+          "id": "google-gemini-credentials",
+          "name": "Google Gemini API"
         }
       }
     },
     {
       "parameters": {
         "sessionIdType": "customKey",
-        "sessionKey": "={{ $('Extract Message Fields').item.json.session_key }}"
+        "sessionKey": "={{ $('Merge Conteúdo').item.json.session_key }}",
+        "contextWindowLength": 20
       },
       "type": "@n8n/n8n-nodes-langchain.memoryRedisChat",
-      "typeVersion": 1.4,
-      "position": [1120, 220],
-      "id": "redis-memory",
+      "typeVersion": 1.3,
+      "position": [3380, 800],
+      "id": "redis-chat-memory",
       "name": "Redis Chat Memory",
       "credentials": {
         "redis": {
-          "id": "redis-account",
-          "name": "Redis Account"
+          "id": "redis-credentials",
+          "name": "Redis"
         }
       }
     },
     {
       "parameters": {
         "name": "search_menu",
-        "description": "Busca produtos no cardápio do estabelecimento. Use para encontrar pizzas, bebidas, lanches, etc.",
-        "workflowId": {
-          "__rl": true,
-          "value": "search-menu-workflow",
-          "mode": "id"
-        },
-        "workflowInputs": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "query": "={{ $fromAI('query', 'Termo de busca para encontrar produtos no cardápio', 'string') }}",
-            "establishment_id": "={{ $('Get Establishment Config').item.json.establishment_id }}"
-          }
-        }
+        "description": "Busca produtos no cardápio por nome ou categoria",
+        "workflowId": { "__rl": true, "mode": "list", "value": "" },
+        "specifyInputSchema": true,
+        "schemaType": "fromJson",
+        "jsonSchemaExample": "{ \"query\": \"pizza calabresa\" }"
       },
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
-      "typeVersion": 2.1,
-      "position": [720, 400],
+      "typeVersion": 1.2,
+      "position": [3080, 920],
       "id": "tool-search-menu",
       "name": "search_menu"
     },
     {
       "parameters": {
         "name": "send_product_photo",
-        "description": "Envia uma foto do produto para o cliente via WhatsApp. Use quando o cliente pedir para ver um produto.",
-        "method": "POST",
-        "url": "={{ $('Get Establishment Config').item.json.server_url }}/message/sendMedia/{{ $('Extract Message Fields').item.json.instance_name }}",
-        "sendHeaders": true,
-        "parametersHeaders": {
-          "values": [
-            {
-              "name": "apikey",
-              "value": "={{ $('Get Establishment Config').item.json.api_key }}"
-            },
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={\n  \"number\": \"{{ $('Extract Message Fields').item.json.remote_jid }}\",\n  \"mediatype\": \"image\",\n  \"media\": \"{image_url}\",\n  \"caption\": \"{caption}\"\n}",
-        "placeholderDefinitions": {
-          "values": [
-            {
-              "name": "image_url",
-              "description": "URL da imagem do produto (img_url do cardápio)",
-              "type": "string"
-            },
-            {
-              "name": "caption",
-              "description": "Descrição do produto com nome e preço",
-              "type": "string"
-            }
-          ]
-        }
+        "description": "Envia foto do produto com nome, descrição e preço para o cliente via WhatsApp",
+        "workflowId": { "__rl": true, "mode": "list", "value": "" },
+        "specifyInputSchema": true,
+        "schemaType": "fromJson",
+        "jsonSchemaExample": "{ \"product_id\": \"uuid\", \"product_name\": \"Pizza\", \"product_price\": 45.90, \"image_url\": \"https://...\" }"
       },
-      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
-      "typeVersion": 1.1,
-      "position": [880, 400],
-      "id": "tool-send-photo",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 1.2,
+      "position": [3180, 920],
+      "id": "tool-send-product-photo",
       "name": "send_product_photo"
     },
     {
       "parameters": {
         "name": "add_to_cart",
-        "description": "Adiciona um produto ao carrinho do cliente",
-        "method": "POST",
-        "url": "={{ $credentials.supabase.url }}/functions/v1/whatsapp-cart",
-        "sendHeaders": true,
-        "parametersHeaders": {
-          "values": [
-            {
-              "name": "Authorization",
-              "value": "=Bearer {{ $credentials.supabase.serviceRoleKey }}"
-            },
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={\n  \"action\": \"add_item\",\n  \"instance_name\": \"{{ $('Extract Message Fields').item.json.instance_name }}\",\n  \"remote_jid\": \"{{ $('Extract Message Fields').item.json.remote_jid }}\",\n  \"product_id\": \"{product_id}\",\n  \"product_name\": \"{product_name}\",\n  \"quantity\": {quantity},\n  \"price\": {price},\n  \"observations\": \"{observations}\"\n}",
-        "placeholderDefinitions": {
-          "values": [
-            {
-              "name": "product_id",
-              "description": "ID do produto",
-              "type": "string"
-            },
-            {
-              "name": "product_name",
-              "description": "Nome do produto",
-              "type": "string"
-            },
-            {
-              "name": "quantity",
-              "description": "Quantidade",
-              "type": "number"
-            },
-            {
-              "name": "price",
-              "description": "Preço unitário",
-              "type": "number"
-            },
-            {
-              "name": "observations",
-              "description": "Observações do cliente sobre o produto",
-              "type": "string"
-            }
-          ]
-        }
+        "description": "Adiciona produto ao carrinho do cliente",
+        "workflowId": { "__rl": true, "mode": "list", "value": "" },
+        "specifyInputSchema": true,
+        "schemaType": "fromJson",
+        "jsonSchemaExample": "{ \"product_id\": \"uuid\", \"product_name\": \"Pizza\", \"quantity\": 1, \"unit_price\": 45.90 }"
       },
-      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
-      "typeVersion": 1.1,
-      "position": [1040, 400],
-      "id": "tool-add-cart",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 1.2,
+      "position": [3280, 920],
+      "id": "tool-add-to-cart",
       "name": "add_to_cart"
     },
     {
       "parameters": {
-        "name": "save_customer",
-        "description": "Salva ou atualiza os dados do cliente (nome, endereço, CPF, email)",
-        "method": "POST",
-        "url": "={{ $credentials.supabase.url }}/functions/v1/whatsapp-cart",
-        "sendHeaders": true,
-        "parametersHeaders": {
-          "values": [
-            {
-              "name": "Authorization",
-              "value": "=Bearer {{ $credentials.supabase.serviceRoleKey }}"
-            },
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={\n  \"action\": \"save_customer\",\n  \"instance_name\": \"{{ $('Extract Message Fields').item.json.instance_name }}\",\n  \"remote_jid\": \"{{ $('Extract Message Fields').item.json.remote_jid }}\",\n  \"customer_phone\": \"{{ $('Extract Message Fields').item.json.phone }}\",\n  \"name\": \"{name}\",\n  \"email\": \"{email}\",\n  \"cpf\": \"{cpf}\",\n  \"address\": \"{address}\",\n  \"neighborhood\": \"{neighborhood}\",\n  \"city\": \"{city}\",\n  \"state\": \"{state}\",\n  \"zip_code\": \"{zip_code}\",\n  \"lat\": \"{lat}\",\n  \"lng\": \"{lng}\"\n}",
-        "placeholderDefinitions": {
-          "values": [
-            {
-              "name": "name",
-              "description": "Nome completo do cliente",
-              "type": "string"
-            },
-            {
-              "name": "email",
-              "description": "Email do cliente",
-              "type": "string"
-            },
-            {
-              "name": "cpf",
-              "description": "CPF do cliente",
-              "type": "string"
-            },
-            {
-              "name": "address",
-              "description": "Endereço completo",
-              "type": "string"
-            },
-            {
-              "name": "neighborhood",
-              "description": "Bairro",
-              "type": "string"
-            },
-            {
-              "name": "city",
-              "description": "Cidade",
-              "type": "string"
-            },
-            {
-              "name": "state",
-              "description": "Estado (UF)",
-              "type": "string"
-            },
-            {
-              "name": "zip_code",
-              "description": "CEP",
-              "type": "string"
-            },
-            {
-              "name": "lat",
-              "description": "Latitude",
-              "type": "string"
-            },
-            {
-              "name": "lng",
-              "description": "Longitude",
-              "type": "string"
-            }
-          ]
-        }
+        "name": "create_order_pix",
+        "description": "Cria pedido e gera QR Code PIX para pagamento",
+        "workflowId": { "__rl": true, "mode": "list", "value": "" },
+        "specifyInputSchema": true,
+        "schemaType": "fromJson",
+        "jsonSchemaExample": "{ \"items\": [], \"total\": 45.90, \"delivery_address\": \"Rua X, 123\" }"
       },
-      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
-      "typeVersion": 1.1,
-      "position": [1200, 400],
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 1.2,
+      "position": [3380, 920],
+      "id": "tool-create-order-pix",
+      "name": "create_order_pix"
+    },
+    {
+      "parameters": {
+        "name": "save_customer",
+        "description": "Salva ou atualiza dados do cliente (nome, endereço)",
+        "workflowId": { "__rl": true, "mode": "list", "value": "" },
+        "specifyInputSchema": true,
+        "schemaType": "fromJson",
+        "jsonSchemaExample": "{ \"name\": \"João\", \"address\": \"Rua X, 123\", \"neighborhood\": \"Centro\" }"
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 1.2,
+      "position": [3480, 920],
       "id": "tool-save-customer",
       "name": "save_customer"
     },
     {
       "parameters": {
-        "name": "find_google_maps",
-        "description": "Busca endereço no Google Maps e calcula distância até o estabelecimento",
-        "method": "POST",
-        "url": "={{ $credentials.supabase.url }}/functions/v1/calculate-delivery",
-        "sendHeaders": true,
-        "parametersHeaders": {
-          "values": [
-            {
-              "name": "Authorization",
-              "value": "=Bearer {{ $credentials.supabase.serviceRoleKey }}"
-            },
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={\n  \"establishment_id\": \"{{ $('Get Establishment Config').item.json.establishment_id }}\",\n  \"customer_address\": \"{address}\"\n}",
-        "placeholderDefinitions": {
-          "values": [
-            {
-              "name": "address",
-              "description": "Endereço completo do cliente para geocodificação",
-              "type": "string"
-            }
-          ]
-        }
+        "resource": "messages-api",
+        "instanceName": "={{ $('Extrai Campos').item.json.instance_name }}",
+        "remoteJid": "={{ $('Extrai Campos').item.json.remote_jid }}",
+        "messageText": "={{ $json.output }}",
+        "options_message": {}
       },
-      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
-      "typeVersion": 1.1,
-      "position": [1360, 400],
-      "id": "tool-find-location",
-      "name": "find_google_maps"
-    },
-    {
-      "parameters": {
-        "name": "create_order_pix",
-        "description": "Cria o pedido final e gera QR Code PIX para pagamento via Mercado Pago",
-        "method": "POST",
-        "url": "={{ $credentials.supabase.url }}/functions/v1/whatsapp-checkout",
-        "sendHeaders": true,
-        "parametersHeaders": {
-          "values": [
-            {
-              "name": "Authorization",
-              "value": "=Bearer {{ $credentials.supabase.serviceRoleKey }}"
-            },
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={\n  \"instance_name\": \"{{ $('Extract Message Fields').item.json.instance_name }}\",\n  \"remote_jid\": \"{{ $('Extract Message Fields').item.json.remote_jid }}\",\n  \"customer_phone\": \"{{ $('Extract Message Fields').item.json.phone }}\",\n  \"customer_name\": \"{customer_name}\",\n  \"delivery_type\": \"{delivery_type}\",\n  \"payment_method\": \"pix\",\n  \"generate_pix\": true,\n  \"observations\": \"{observations}\"\n}",
-        "placeholderDefinitions": {
-          "values": [
-            {
-              "name": "customer_name",
-              "description": "Nome do cliente",
-              "type": "string"
-            },
-            {
-              "name": "delivery_type",
-              "description": "Tipo: 'delivery' ou 'pickup'",
-              "type": "string"
-            },
-            {
-              "name": "observations",
-              "description": "Observações gerais do pedido",
-              "type": "string"
-            }
-          ]
-        }
-      },
-      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
-      "typeVersion": 1.1,
-      "position": [720, 560],
-      "id": "tool-create-order",
-      "name": "create_order_pix"
-    },
-    {
-      "parameters": {
-        "name": "send_order_to_owner",
-        "description": "Envia o resumo do pedido para o WhatsApp do dono do estabelecimento",
-        "method": "POST",
-        "url": "={{ $('Get Establishment Config').item.json.server_url }}/message/sendText/{{ $('Extract Message Fields').item.json.instance_name }}",
-        "sendHeaders": true,
-        "parametersHeaders": {
-          "values": [
-            {
-              "name": "apikey",
-              "value": "={{ $('Get Establishment Config').item.json.api_key }}"
-            },
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={\n  \"number\": \"{{ $('Get Establishment Config').item.json.owner_whatsapp }}\",\n  \"text\": \"{message}\"\n}",
-        "placeholderDefinitions": {
-          "values": [
-            {
-              "name": "message",
-              "description": "Mensagem com resumo do pedido: cliente, itens, endereço, valor total",
-              "type": "string"
-            }
-          ]
-        }
-      },
-      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
-      "typeVersion": 1.1,
-      "position": [880, 560],
-      "id": "tool-send-order",
-      "name": "send_order_to_owner"
-    },
-    {
-      "parameters": {
-        "name": "send_pix_qrcode",
-        "description": "Envia a imagem do QR Code PIX para o cliente",
-        "method": "POST",
-        "url": "={{ $('Get Establishment Config').item.json.server_url }}/message/sendMedia/{{ $('Extract Message Fields').item.json.instance_name }}",
-        "sendHeaders": true,
-        "parametersHeaders": {
-          "values": [
-            {
-              "name": "apikey",
-              "value": "={{ $('Get Establishment Config').item.json.api_key }}"
-            },
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={\n  \"number\": \"{{ $('Extract Message Fields').item.json.remote_jid }}\",\n  \"mediatype\": \"image\",\n  \"media\": \"{qrcode_url}\",\n  \"caption\": \"🔒 PIX - Escaneie o QR Code acima ou copie o código:\\n\\n{pix_code}\"\n}",
-        "placeholderDefinitions": {
-          "values": [
-            {
-              "name": "qrcode_url",
-              "description": "URL da imagem do QR Code PIX",
-              "type": "string"
-            },
-            {
-              "name": "pix_code",
-              "description": "Código PIX copia e cola",
-              "type": "string"
-            }
-          ]
-        }
-      },
-      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
-      "typeVersion": 1.1,
-      "position": [1040, 560],
-      "id": "tool-send-pix",
-      "name": "send_pix_qrcode"
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "={{ $('Get Establishment Config').item.json.server_url }}/message/sendText/{{ $('Extract Message Fields').item.json.instance_name }}",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "apikey",
-              "value": "={{ $('Get Establishment Config').item.json.api_key }}"
-            },
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={\n  \"number\": \"{{ $('Extract Message Fields').item.json.remote_jid }}\",\n  \"text\": \"{{ $('VilaFood AI Agent').item.json.output }}\"\n}",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [1440, 0],
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [3540, 600],
       "id": "send-response",
-      "name": "Send Response via Evolution API"
+      "name": "Envia Resposta",
+      "credentials": {
+        "evolutionApi": {
+          "id": "evolution-api-credentials",
+          "name": "Evolution API"
+        }
+      }
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "={{ $credentials.supabase.url }}/functions/v1/whatsapp-cart",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Authorization",
-              "value": "=Bearer {{ $credentials.supabase.serviceRoleKey }}"
-            },
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={\n  \"action\": \"log_message\",\n  \"instance_name\": \"{{ $('Extract Message Fields').item.json.instance_name }}\",\n  \"remote_jid\": \"{{ $('Extract Message Fields').item.json.remote_jid }}\",\n  \"direction\": \"outgoing\",\n  \"message\": \"{{ $('VilaFood AI Agent').item.json.output }}\",\n  \"message_type\": \"text\"\n}",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [1680, 0],
-      "id": "log-response",
-      "name": "Log AI Response"
-    },
-    {
-      "parameters": {
-        "operation": "get",
+        "operation": "create",
         "tableId": "whatsapp_messages",
-        "filters": {
-          "conditions": [
-            {
-              "keyName": "session_key",
-              "keyValue": "={{ $('Extract Message Fields').item.json.session_key }}"
-            }
+        "fieldsToSend": {
+          "fieldValues": [
+            { "fieldName": "establishment_id", "fieldValue": "={{ $('Extrai Campos').item.json.establishment_id }}" },
+            { "fieldName": "instance_name", "fieldValue": "={{ $('Extrai Campos').item.json.instance_name }}" },
+            { "fieldName": "phone", "fieldValue": "={{ $('Extrai Campos').item.json.phone }}" },
+            { "fieldName": "direction", "fieldValue": "outgoing" },
+            { "fieldName": "message_type", "fieldValue": "text" },
+            { "fieldName": "content", "fieldValue": "={{ $('VilaFood AI Agent').item.json.output }}" },
+            { "fieldName": "is_from_ai", "fieldValue": true }
           ]
-        },
-        "returnAll": false,
-        "limit": 20,
-        "additionalOptions": {
-          "orderByColumn": "created_at",
-          "orderByDirection": "desc"
         }
       },
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
-      "position": [720, -200],
-      "id": "get-chat-history",
-      "name": "Get Chat History",
+      "position": [3760, 600],
+      "id": "log-response",
+      "name": "Salva Log Resposta",
       "credentials": {
         "supabaseApi": {
-          "id": "supabase-api",
-          "name": "Supabase API"
+          "id": "supabase-credentials",
+          "name": "Supabase VilaFood"
         }
       }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [2180, 700],
+      "id": "no-op-not-last",
+      "name": "Não é última (ignora)"
     }
   ],
   "connections": {
     "Evolution API Webhook": {
-      "main": [
-        [
-          {
-            "node": "Filter Self Messages",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Filter Self Messages", "type": "main", "index": 0 }]]
     },
     "Filter Self Messages": {
+      "main": [[{ "node": "Busca Estabelecimento", "type": "main", "index": 0 }]]
+    },
+    "Busca Estabelecimento": {
+      "main": [[{ "node": "Extrai Campos", "type": "main", "index": 0 }]]
+    },
+    "Extrai Campos": {
+      "main": [[{ "node": "Tipo de Mensagem", "type": "main", "index": 0 }]]
+    },
+    "Tipo de Mensagem": {
       "main": [
-        [
-          {
-            "node": "Extract Message Fields",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Busca Imagem Base64", "type": "main", "index": 0 }],
+        [{ "node": "Redis Push Texto", "type": "main", "index": 0 }],
+        [{ "node": "Busca Áudio Base64", "type": "main", "index": 0 }],
+        [{ "node": "Redis Push Texto", "type": "main", "index": 0 }]
       ]
     },
-    "Extract Message Fields": {
+    "Busca Imagem Base64": {
+      "main": [[{ "node": "Converte Imagem", "type": "main", "index": 0 }]]
+    },
+    "Converte Imagem": {
+      "main": [[{ "node": "Analisa Imagem", "type": "main", "index": 0 }]]
+    },
+    "Analisa Imagem": {
+      "main": [[{ "node": "Formata Resultado Imagem", "type": "main", "index": 0 }]]
+    },
+    "Formata Resultado Imagem": {
+      "main": [[{ "node": "Merge Conteúdo", "type": "main", "index": 0 }]]
+    },
+    "Busca Áudio Base64": {
+      "main": [[{ "node": "Converte Áudio", "type": "main", "index": 0 }]]
+    },
+    "Converte Áudio": {
+      "main": [[{ "node": "Transcreve Áudio", "type": "main", "index": 0 }]]
+    },
+    "Transcreve Áudio": {
+      "main": [[{ "node": "Formata Resultado Áudio", "type": "main", "index": 0 }]]
+    },
+    "Formata Resultado Áudio": {
+      "main": [[{ "node": "Merge Conteúdo", "type": "main", "index": 0 }]]
+    },
+    "Redis Push Texto": {
+      "main": [[{ "node": "Debounce 3s", "type": "main", "index": 0 }]]
+    },
+    "Debounce 3s": {
+      "main": [[{ "node": "Redis Get Mensagens", "type": "main", "index": 0 }]]
+    },
+    "Redis Get Mensagens": {
+      "main": [[{ "node": "É Última Mensagem?", "type": "main", "index": 0 }]]
+    },
+    "É Última Mensagem?": {
       "main": [
-        [
-          {
-            "node": "Get Establishment Config",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Combina Mensagens Texto", "type": "main", "index": 0 }],
+        [{ "node": "Não é última (ignora)", "type": "main", "index": 0 }]
       ]
     },
-    "Get Establishment Config": {
-      "main": [
-        [
-          {
-            "node": "Redis Push Message",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "Combina Mensagens Texto": {
+      "main": [[{ "node": "Redis Clear Debounce", "type": "main", "index": 0 }]]
     },
-    "Redis Push Message": {
-      "main": [
-        [
-          {
-            "node": "Debounce Wait (2s)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "Redis Clear Debounce": {
+      "main": [[{ "node": "Merge Conteúdo", "type": "main", "index": 0 }]]
     },
-    "Debounce Wait (2s)": {
-      "main": [
-        [
-          {
-            "node": "Redis Get Messages",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "Merge Conteúdo": {
+      "main": [[{ "node": "Busca Carrinho", "type": "main", "index": 0 }]]
     },
-    "Redis Get Messages": {
-      "main": [
-        [
-          {
-            "node": "Combine Messages",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "Busca Carrinho": {
+      "main": [[{ "node": "Busca Cliente", "type": "main", "index": 0 }]]
     },
-    "Combine Messages": {
-      "main": [
-        [
-          {
-            "node": "Redis Clear Messages",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Get Chat History",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "Busca Cliente": {
+      "main": [[{ "node": "VilaFood AI Agent", "type": "main", "index": 0 }]]
     },
-    "Redis Clear Messages": {
-      "main": [
-        [
-          {
-            "node": "VilaFood AI Agent",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Get Chat History": {
-      "main": [
-        [
-          {
-            "node": "VilaFood AI Agent",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Google Gemini": {
-      "ai_languageModel": [
-        [
-          {
-            "node": "VilaFood AI Agent",
-            "type": "ai_languageModel",
-            "index": 0
-          }
-        ]
-      ]
+    "Google Gemini Chat": {
+      "ai_languageModel": [[{ "node": "VilaFood AI Agent", "type": "ai_languageModel", "index": 0 }]]
     },
     "Redis Chat Memory": {
-      "ai_memory": [
-        [
-          {
-            "node": "VilaFood AI Agent",
-            "type": "ai_memory",
-            "index": 0
-          }
-        ]
-      ]
+      "ai_memory": [[{ "node": "VilaFood AI Agent", "type": "ai_memory", "index": 0 }]]
     },
     "search_menu": {
-      "ai_tool": [
-        [
-          {
-            "node": "VilaFood AI Agent",
-            "type": "ai_tool",
-            "index": 0
-          }
-        ]
-      ]
+      "ai_tool": [[{ "node": "VilaFood AI Agent", "type": "ai_tool", "index": 0 }]]
     },
     "send_product_photo": {
-      "ai_tool": [
-        [
-          {
-            "node": "VilaFood AI Agent",
-            "type": "ai_tool",
-            "index": 0
-          }
-        ]
-      ]
+      "ai_tool": [[{ "node": "VilaFood AI Agent", "type": "ai_tool", "index": 0 }]]
     },
     "add_to_cart": {
-      "ai_tool": [
-        [
-          {
-            "node": "VilaFood AI Agent",
-            "type": "ai_tool",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "save_customer": {
-      "ai_tool": [
-        [
-          {
-            "node": "VilaFood AI Agent",
-            "type": "ai_tool",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "find_google_maps": {
-      "ai_tool": [
-        [
-          {
-            "node": "VilaFood AI Agent",
-            "type": "ai_tool",
-            "index": 0
-          }
-        ]
-      ]
+      "ai_tool": [[{ "node": "VilaFood AI Agent", "type": "ai_tool", "index": 0 }]]
     },
     "create_order_pix": {
-      "ai_tool": [
-        [
-          {
-            "node": "VilaFood AI Agent",
-            "type": "ai_tool",
-            "index": 0
-          }
-        ]
-      ]
+      "ai_tool": [[{ "node": "VilaFood AI Agent", "type": "ai_tool", "index": 0 }]]
     },
-    "send_order_to_owner": {
-      "ai_tool": [
-        [
-          {
-            "node": "VilaFood AI Agent",
-            "type": "ai_tool",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "send_pix_qrcode": {
-      "ai_tool": [
-        [
-          {
-            "node": "VilaFood AI Agent",
-            "type": "ai_tool",
-            "index": 0
-          }
-        ]
-      ]
+    "save_customer": {
+      "ai_tool": [[{ "node": "VilaFood AI Agent", "type": "ai_tool", "index": 0 }]]
     },
     "VilaFood AI Agent": {
-      "main": [
-        [
-          {
-            "node": "Send Response via Evolution API",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Envia Resposta", "type": "main", "index": 0 }]]
     },
-    "Send Response via Evolution API": {
-      "main": [
-        [
-          {
-            "node": "Log AI Response",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "Envia Resposta": {
+      "main": [[{ "node": "Salva Log Resposta", "type": "main", "index": 0 }]]
     }
   },
-  "active": false,
-  "settings": {
-    "executionOrder": "v1"
-  },
-  "meta": {
-    "templateCredsSetupCompleted": true
-  },
+  "settings": { "executionOrder": "v1" },
+  "meta": { "templateCredsSetupCompleted": true },
   "tags": [
-    {
-      "name": "VilaFood"
-    }
+    { "name": "VilaFood" },
+    { "name": "WhatsApp" },
+    { "name": "AI Agent" },
+    { "name": "Audio" },
+    { "name": "Image" }
   ]
 }
