@@ -128,3 +128,6 @@ verify_jwt = false
 
 [functions.verify-auth-code]
 verify_jwt = false
+
+[functions.notify-merchant-order]
+verify_jwt = false

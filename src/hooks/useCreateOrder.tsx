@@ -108,6 +108,17 @@ export const useCreateOrder = () => {
         status: order.status,
       });
 
+      // Send WhatsApp notification to merchant (async, don't block)
+      supabase.functions.invoke('notify-merchant-order', {
+        body: {
+          order_id: order.id,
+          establishment_id: orderData.establishment_id,
+          notification_type: 'new_order',
+        },
+      }).catch((err) => {
+        console.warn('[useCreateOrder] Failed to send merchant notification:', err);
+      });
+
       // MODELO BLINDADO: Register commission debt for cash/card-on-delivery payments
       if (orderData.payment_method === 'cash' || orderData.payment_method === 'debit_card') {
         try {
