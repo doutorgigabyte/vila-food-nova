@@ -17,6 +17,7 @@ import {
   QrCode,
   Store,
   Clock,
+  AlertCircle,
   CheckCircle,
   ShoppingBag,
   AlertTriangle,
@@ -222,11 +223,55 @@ const Checkout = () => {
     }
   }, [isLoaded, items.length, step, storeSlug, navigate]);
 
+  // Check if any establishment is closed
+  const checkIfStoreOpen = () => {
+    for (const estId of uniqueEstablishments) {
+      const estInfo = establishments.get(estId);
+      if (!estInfo?.is_open) {
+        return { isOpen: false, storeName: estInfo?.name || 'Estabelecimento' };
+      }
+    }
+    return { isOpen: true, storeName: '' };
+  };
+
+  const storeOpenStatus = checkIfStoreOpen();
+
   // Show loading while cart is being loaded
   if (!isLoaded) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  // Show store closed message
+  if (!storeOpenStatus.isOpen && items.length > 0) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col">
+        <header className="sticky top-0 z-50 bg-background border-b p-4">
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <h1 className="text-lg font-bold">Checkout</h1>
+          </div>
+        </header>
+
+        <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
+          <div className="w-20 h-20 bg-destructive/10 rounded-full flex items-center justify-center mb-6">
+            <AlertCircle className="h-10 w-10 text-destructive" />
+          </div>
+          <h2 className="text-xl font-bold mb-2">Loja Fechada</h2>
+          <p className="text-muted-foreground mb-6 max-w-sm">
+            <strong>{storeOpenStatus.storeName}</strong> não está recebendo pedidos no momento. 
+            Tente novamente no horário de funcionamento.
+          </p>
+          <Button onClick={() => navigate(-1)}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Voltar à Loja
+          </Button>
+        </div>
       </div>
     );
   }

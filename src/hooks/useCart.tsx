@@ -53,6 +53,7 @@ export interface EstablishmentInfo {
   min_order_value: number;
   accepts_pickup: boolean;
   accepts_delivery: boolean;
+  is_open?: boolean;
 }
 
 interface CartContextType {
