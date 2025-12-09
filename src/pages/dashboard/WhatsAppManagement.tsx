@@ -28,6 +28,7 @@ import { WhatsAppHealthCheck } from "@/components/whatsapp/WhatsAppHealthCheck";
 import { WhatsAppRealTimeStats } from "@/components/whatsapp/WhatsAppRealTimeStats";
 import { HumanTakeoverPanel } from "@/components/whatsapp/HumanTakeoverPanel";
 import { AgentActionLogs } from "@/components/whatsapp/AgentActionLogs";
+import { SystemPromptEditor } from "@/components/whatsapp/SystemPromptEditor";
 
 interface WhatsAppInstance {
   id: string;
@@ -937,6 +938,9 @@ Seja sempre educado e prestativo. Se não souber responder algo, peça para o cl
                       </div>
                     </CardContent>
                   </Card>
+
+                  {/* System Prompt Editor */}
+                  <SystemPromptEditor establishmentId={establishmentId!} />
 
                   {/* Human Takeover Panel */}
                   <HumanTakeoverPanel 
