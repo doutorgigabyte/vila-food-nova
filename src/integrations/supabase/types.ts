@@ -1499,6 +1499,7 @@ export type Database = {
           latitude: number | null
           logo_url: string | null
           longitude: number | null
+          max_batch_orders: number | null
           max_delivery_radius_km: number | null
           menu_json: Json | null
           menu_json_updated_at: string | null
@@ -1531,6 +1532,8 @@ export type Database = {
           slug: string
           status: Database["public"]["Enums"]["establishment_status"] | null
           system_prompt: string | null
+          turbo_delivery_enabled: boolean | null
+          turbo_delivery_fee: number | null
           updated_at: string | null
           vila_id: string | null
           whatsapp: string | null
@@ -1558,6 +1561,7 @@ export type Database = {
           latitude?: number | null
           logo_url?: string | null
           longitude?: number | null
+          max_batch_orders?: number | null
           max_delivery_radius_km?: number | null
           menu_json?: Json | null
           menu_json_updated_at?: string | null
@@ -1590,6 +1594,8 @@ export type Database = {
           slug: string
           status?: Database["public"]["Enums"]["establishment_status"] | null
           system_prompt?: string | null
+          turbo_delivery_enabled?: boolean | null
+          turbo_delivery_fee?: number | null
           updated_at?: string | null
           vila_id?: string | null
           whatsapp?: string | null
@@ -1617,6 +1623,7 @@ export type Database = {
           latitude?: number | null
           logo_url?: string | null
           longitude?: number | null
+          max_batch_orders?: number | null
           max_delivery_radius_km?: number | null
           menu_json?: Json | null
           menu_json_updated_at?: string | null
@@ -1649,6 +1656,8 @@ export type Database = {
           slug?: string
           status?: Database["public"]["Enums"]["establishment_status"] | null
           system_prompt?: string | null
+          turbo_delivery_enabled?: boolean | null
+          turbo_delivery_fee?: number | null
           updated_at?: string | null
           vila_id?: string | null
           whatsapp?: string | null
