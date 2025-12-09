@@ -31,7 +31,7 @@ console.log(`PagSeguro Card running in ${PAGSEGURO_ENVIRONMENT} mode, API: ${API
 interface CardPaymentRequest {
   establishment_id: string;
   order_id: string;
-  amount: number;
+  amount: number; // Em centavos
   description?: string;
   encrypted_card: string;
   security_code: string;
@@ -51,8 +51,19 @@ interface CardPaymentRequest {
     quantity: number;
     unit_amount: number;
   }>;
+  shipping?: {
+    street?: string;
+    number?: string;
+    complement?: string;
+    locality?: string;
+    city?: string;
+    region_code?: string;
+    country?: string;
+    postal_code?: string;
+  };
   with_split?: boolean;
   store_card?: boolean;
+  notification_urls?: string[];
 }
 
 serve(async (req) => {
@@ -178,6 +189,8 @@ serve(async (req) => {
     const amountInCents = Math.round(amount);
 
     // Build order payload for PagBank
+    const WEBHOOK_URL = `${Deno.env.get('SUPABASE_URL')}/functions/v1/pagseguro-webhook`;
+    
     const orderPayload: any = {
       reference_id: order_id,
       customer: {
@@ -192,10 +205,12 @@ serve(async (req) => {
         }] : undefined
       },
       items: items || [{
+        reference_id: order_id,
         name: description || `Pedido ${establishment.name}`,
         quantity: 1,
         unit_amount: amountInCents
       }],
+      notification_urls: [WEBHOOK_URL],
       charges: [{
         reference_id: `charge-${order_id}`,
         description: description || `Pagamento do Pedido - ${establishment.name}`,
