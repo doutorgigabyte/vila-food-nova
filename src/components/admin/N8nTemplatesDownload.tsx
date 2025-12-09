@@ -25,30 +25,64 @@ interface N8nTemplate {
 
 const templates: N8nTemplate[] = [
   {
+    id: "master-router",
+    name: "Master Router (Multi-Tenant)",
+    description: "Roteador principal que recebe webhooks, busca config por lojista e chama o AI Brain",
+    icon: <Workflow className="w-6 h-6" />,
+    filename: "VilaFood-Master-Router.json",
+    features: [
+      "Webhook Evolution API",
+      "Filtro mensagens próprias",
+      "Busca config por instance_name",
+      "Redis Debounce (1s)",
+      "Agregação de mensagens múltiplas",
+      "Chamada dinâmica AI Brain",
+      "Token/prompt por lojista",
+      "Log de mensagens Supabase"
+    ],
+    difficulty: "Intermediário"
+  },
+  {
+    id: "ai-brain",
+    name: "AI Brain (Gemini + Tools)",
+    description: "Cérebro do agente com Google Gemini, memória por sessão e 7 tools especializadas",
+    icon: <Bot className="w-6 h-6" />,
+    filename: "VilaFood-AI-Brain.json",
+    features: [
+      "Google Gemini 2.5 Flash",
+      "Window Buffer Memory",
+      "system_prompt dinâmico",
+      "Tool: search_menu",
+      "Tool: send_product_photo",
+      "Tool: add_to_cart",
+      "Tool: save_customer",
+      "Tool: find_customer_location",
+      "Tool: create_order_pix",
+      "Histórico de chat Supabase"
+    ],
+    difficulty: "Avançado"
+  },
+  {
     id: "agent-complete",
-    name: "VilaFood AI Agent Completo",
-    description: "Fluxo principal do agente de IA com suporte a texto, áudio e imagem via WhatsApp",
+    name: "Agent Completo (All-in-One)",
+    description: "Fluxo único com todas funcionalidades integradas - ideal para setup simplificado",
     icon: <Bot className="w-6 h-6" />,
     filename: "VilaFood-Agent-Complete.json",
     features: [
-      "Nó Supabase nativo (busca/insere)",
-      "Switch: Texto / Áudio / Imagem",
-      "Transcrição de áudio (Gemini)",
-      "Análise de imagem (Gemini)",
-      "Redis Debounce (3s)",
-      "Memória de conversa por sessão",
-      "search_menu - Busca cardápio",
-      "send_product_photo - Envia foto Base64",
-      "add_to_cart - Carrinho Redis",
-      "create_order_pix - Gera PIX MP",
-      "save_customer - Salva cliente Supa",
-      "Log de mensagens no Supabase"
+      "Tudo em um workflow",
+      "Texto / Áudio / Imagem",
+      "Transcrição de áudio",
+      "Análise de imagem",
+      "Redis Debounce",
+      "Memória de conversa",
+      "Todas as tools integradas",
+      "Log de mensagens"
     ],
     difficulty: "Avançado"
   },
   {
     id: "send-product-photo",
-    name: "Enviar Foto do Produto (Base64)",
+    name: "Tool: Enviar Foto do Produto",
     description: "Subfluxo que baixa imagem do CloudFront, converte para Base64 e envia via Evolution API",
     icon: <MessageSquare className="w-6 h-6" />,
     filename: "VilaFood-Send-Product-Photo.json",
@@ -64,7 +98,7 @@ const templates: N8nTemplate[] = [
   },
   {
     id: "mercadopago-pix",
-    name: "Mercado Pago PIX",
+    name: "Tool: Mercado Pago PIX",
     description: "Subfluxo para geração de pagamento PIX usando o token OAuth do lojista",
     icon: <CreditCard className="w-6 h-6" />,
     filename: "VilaFood-MercadoPago-PIX.json",
