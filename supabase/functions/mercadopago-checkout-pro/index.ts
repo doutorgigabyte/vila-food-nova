@@ -79,8 +79,9 @@ serve(async (req) => {
       });
     }
 
-    // Usar token do estabelecimento ou token da plataforma
-    const accessToken = establishment.mercado_pago_token || Deno.env.get('MERCADOPAGO_ACCESS_TOKEN');
+    // Priorizar token da plataforma, depois token do estabelecimento
+    const platformToken = Deno.env.get('MERCADOPAGO_ACCESS_TOKEN');
+    const accessToken = platformToken || establishment.mercado_pago_token;
     
     if (!accessToken) {
       return new Response(JSON.stringify({
