@@ -1,0 +1,314 @@
+{
+  "name": "VilaFood-Send-Product-Photo",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            { "name": "product_id" },
+            { "name": "product_name" },
+            { "name": "product_description" },
+            { "name": "product_price" },
+            { "name": "image_url" },
+            { "name": "phone" },
+            { "name": "instance_name" },
+            { "name": "evolution_api_url" },
+            { "name": "evolution_api_key" }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [-200, 0],
+      "id": "start-trigger",
+      "name": "Start"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "product_id",
+              "name": "product_id",
+              "value": "={{ $json.product_id }}",
+              "type": "string"
+            },
+            {
+              "id": "product_name",
+              "name": "product_name",
+              "value": "={{ $json.product_name }}",
+              "type": "string"
+            },
+            {
+              "id": "description",
+              "name": "description",
+              "value": "={{ $json.product_description || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "price",
+              "name": "price",
+              "value": "={{ $json.product_price }}",
+              "type": "number"
+            },
+            {
+              "id": "price_formatted",
+              "name": "price_formatted",
+              "value": "={{ 'R$ ' + Number($json.product_price).toFixed(2).replace('.', ',') }}",
+              "type": "string"
+            },
+            {
+              "id": "image_url",
+              "name": "image_url",
+              "value": "={{ $json.image_url }}",
+              "type": "string"
+            },
+            {
+              "id": "phone",
+              "name": "phone",
+              "value": "={{ $json.phone }}",
+              "type": "string"
+            },
+            {
+              "id": "remote_jid",
+              "name": "remote_jid",
+              "value": "={{ $json.phone + '@s.whatsapp.net' }}",
+              "type": "string"
+            },
+            {
+              "id": "instance_name",
+              "name": "instance_name",
+              "value": "={{ $json.instance_name }}",
+              "type": "string"
+            },
+            {
+              "id": "evolution_api_url",
+              "name": "evolution_api_url",
+              "value": "={{ $json.evolution_api_url }}",
+              "type": "string"
+            },
+            {
+              "id": "evolution_api_key",
+              "name": "evolution_api_key",
+              "value": "={{ $json.evolution_api_key }}",
+              "type": "string"
+            },
+            {
+              "id": "caption",
+              "name": "caption",
+              "value": "=*{{ $json.product_name }}*\n\n{{ $json.product_description || '' }}\n\n💰 *R$ {{ Number($json.product_price).toFixed(2).replace('.', ',') }}*\n\n✨ Digite a quantidade desejada ou pergunte mais detalhes!",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [60, 0],
+      "id": "config-node",
+      "name": "Config"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.image_url }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [320, 0],
+      "id": "download-image",
+      "name": "Download Image from CloudFront"
+    },
+    {
+      "parameters": {
+        "operation": "toBase64",
+        "binaryPropertyName": "data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [580, 0],
+      "id": "convert-base64",
+      "name": "Convert to Base64"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Config').item.json.evolution_api_url }}/message/sendMedia/{{ $('Config').item.json.instance_name }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $('Config').item.json.evolution_api_key }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"number\": \"{{ $('Config').item.json.remote_jid }}\",\n  \"mediatype\": \"image\",\n  \"mimetype\": \"image/jpeg\",\n  \"caption\": {{ JSON.stringify($('Config').item.json.caption) }},\n  \"media\": \"data:image/jpeg;base64,{{ $json.data }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [840, 0],
+      "id": "send-media",
+      "name": "Send Image via Evolution API"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.key?.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [1100, 0],
+      "id": "check-sent",
+      "name": "Image Sent?"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "success",
+              "name": "success",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "message",
+              "name": "message",
+              "value": "=Foto do produto '{{ $('Config').item.json.product_name }}' enviada com sucesso!",
+              "type": "string"
+            },
+            {
+              "id": "product_id",
+              "name": "product_id",
+              "value": "={{ $('Config').item.json.product_id }}",
+              "type": "string"
+            },
+            {
+              "id": "message_id",
+              "name": "message_id",
+              "value": "={{ $('Send Image via Evolution API').item.json.key?.id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1360, -100],
+      "id": "success-response",
+      "name": "Success Response"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "success",
+              "name": "success",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "message",
+              "name": "message",
+              "value": "Não foi possível enviar a foto do produto. Tente novamente.",
+              "type": "string"
+            },
+            {
+              "id": "error",
+              "name": "error",
+              "value": "={{ $('Send Image via Evolution API').item.json.message || 'Erro desconhecido' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1360, 100],
+      "id": "error-response",
+      "name": "Error Response"
+    }
+  ],
+  "connections": {
+    "Start": {
+      "main": [
+        [{ "node": "Config", "type": "main", "index": 0 }]
+      ]
+    },
+    "Config": {
+      "main": [
+        [{ "node": "Download Image from CloudFront", "type": "main", "index": 0 }]
+      ]
+    },
+    "Download Image from CloudFront": {
+      "main": [
+        [{ "node": "Convert to Base64", "type": "main", "index": 0 }]
+      ]
+    },
+    "Convert to Base64": {
+      "main": [
+        [{ "node": "Send Image via Evolution API", "type": "main", "index": 0 }]
+      ]
+    },
+    "Send Image via Evolution API": {
+      "main": [
+        [{ "node": "Image Sent?", "type": "main", "index": 0 }]
+      ]
+    },
+    "Image Sent?": {
+      "main": [
+        [{ "node": "Success Response", "type": "main", "index": 0 }],
+        [{ "node": "Error Response", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "vilafood-send-product-photo"
+  },
+  "tags": [
+    { "name": "VilaFood" },
+    { "name": "WhatsApp" },
+    { "name": "Product" },
+    { "name": "Image" }
+  ]
+}
