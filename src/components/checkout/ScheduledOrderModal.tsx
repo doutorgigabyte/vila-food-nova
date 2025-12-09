@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { format, addDays, setHours, setMinutes, isBefore, isAfter, startOfToday } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Calendar, Clock, CalendarClock, AlertCircle } from "lucide-react";
+import { Calendar, Clock, CalendarClock, AlertCircle, Repeat, CalendarDays } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -13,7 +13,9 @@ import { Button } from "@/components/ui/button";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 
 interface OperatingHours {
   [key: string]: {
@@ -23,10 +25,17 @@ interface OperatingHours {
   };
 }
 
+interface RecurrenceConfig {
+  enabled: boolean;
+  type: 'daily' | 'weekly' | 'custom';
+  days: number[]; // 0-6 (domingo-sábado)
+  endDate?: Date;
+}
+
 interface ScheduledOrderModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSchedule: (scheduledFor: Date) => void;
+  onSchedule: (scheduledFor: Date, recurrence?: RecurrenceConfig) => void;
   storeName: string;
   operatingHours: OperatingHours | null;
 }
@@ -51,6 +60,16 @@ const dayNames: { [key: string]: string } = {
   saturday: 'Sábado',
 };
 
+const weekDays = [
+  { value: 1, label: 'Seg', fullLabel: 'Segunda' },
+  { value: 2, label: 'Ter', fullLabel: 'Terça' },
+  { value: 3, label: 'Qua', fullLabel: 'Quarta' },
+  { value: 4, label: 'Qui', fullLabel: 'Quinta' },
+  { value: 5, label: 'Sex', fullLabel: 'Sexta' },
+  { value: 6, label: 'Sáb', fullLabel: 'Sábado' },
+  { value: 0, label: 'Dom', fullLabel: 'Domingo' },
+];
+
 export function ScheduledOrderModal({
   isOpen,
   onClose,
@@ -60,6 +79,12 @@ export function ScheduledOrderModal({
 }: ScheduledOrderModalProps) {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedTime, setSelectedTime] = useState<string>("");
+  const [recurrence, setRecurrence] = useState<RecurrenceConfig>({
+    enabled: false,
+    type: 'weekly',
+    days: [],
+    endDate: undefined,
+  });
 
   // Get available times for selected date
   const availableTimes = useMemo(() => {
@@ -160,13 +185,43 @@ export function ScheduledOrderModal({
     return !dayHours?.open;
   };
 
+  const toggleRecurrenceDay = (day: number) => {
+    setRecurrence(prev => ({
+      ...prev,
+      days: prev.days.includes(day)
+        ? prev.days.filter(d => d !== day)
+        : [...prev.days, day].sort((a, b) => a - b),
+    }));
+  };
+
   const handleSchedule = () => {
     if (!selectedDate || !selectedTime) return;
 
     const [hours, minutes] = selectedTime.split(':').map(Number);
     const scheduledDate = setMinutes(setHours(selectedDate, hours), minutes);
     
-    onSchedule(scheduledDate);
+    onSchedule(scheduledDate, recurrence.enabled ? recurrence : undefined);
+  };
+
+  const getRecurrenceSummary = () => {
+    if (!recurrence.enabled) return null;
+    
+    if (recurrence.type === 'daily') {
+      return 'Todos os dias';
+    }
+    
+    if (recurrence.days.length === 0) return 'Selecione os dias';
+    
+    if (recurrence.days.length === 5 && 
+        recurrence.days.every(d => d >= 1 && d <= 5)) {
+      return 'Segunda a Sexta';
+    }
+    
+    const dayLabels = recurrence.days.map(d => 
+      weekDays.find(wd => wd.value === d)?.label
+    ).join(', ');
+    
+    return dayLabels;
   };
 
   return (
@@ -255,8 +310,120 @@ export function ScheduledOrderModal({
             </div>
           )}
 
-          {/* Selected Summary */}
+          {/* Recurrence Section */}
           {selectedDate && selectedTime && (
+            <div className="space-y-3 pt-2 border-t">
+              <div className="flex items-center justify-between">
+                <Label className="flex items-center gap-2 cursor-pointer">
+                  <Repeat className="h-4 w-4" />
+                  Repetir pedido
+                </Label>
+                <Switch
+                  checked={recurrence.enabled}
+                  onCheckedChange={(checked) => 
+                    setRecurrence(prev => ({ ...prev, enabled: checked }))
+                  }
+                />
+              </div>
+
+              {recurrence.enabled && (
+                <div className="space-y-3 p-3 bg-muted/50 rounded-lg animate-in fade-in slide-in-from-top-2 duration-200">
+                  {/* Recurrence Type */}
+                  <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground">Frequência</Label>
+                    <RadioGroup
+                      value={recurrence.type}
+                      onValueChange={(v) => setRecurrence(prev => ({ 
+                        ...prev, 
+                        type: v as 'daily' | 'weekly' | 'custom',
+                        days: v === 'daily' ? [0,1,2,3,4,5,6] : v === 'weekly' ? [1,2,3,4,5] : prev.days
+                      }))}
+                      className="flex gap-2"
+                    >
+                      <div className="flex items-center">
+                        <RadioGroupItem value="daily" id="rec-daily" className="peer sr-only" />
+                        <Label
+                          htmlFor="rec-daily"
+                          className="px-3 py-1.5 text-xs border rounded-full cursor-pointer hover:bg-accent peer-data-[state=checked]:bg-primary peer-data-[state=checked]:text-primary-foreground transition-colors"
+                        >
+                          Diário
+                        </Label>
+                      </div>
+                      <div className="flex items-center">
+                        <RadioGroupItem value="weekly" id="rec-weekly" className="peer sr-only" />
+                        <Label
+                          htmlFor="rec-weekly"
+                          className="px-3 py-1.5 text-xs border rounded-full cursor-pointer hover:bg-accent peer-data-[state=checked]:bg-primary peer-data-[state=checked]:text-primary-foreground transition-colors"
+                        >
+                          Seg-Sex
+                        </Label>
+                      </div>
+                      <div className="flex items-center">
+                        <RadioGroupItem value="custom" id="rec-custom" className="peer sr-only" />
+                        <Label
+                          htmlFor="rec-custom"
+                          className="px-3 py-1.5 text-xs border rounded-full cursor-pointer hover:bg-accent peer-data-[state=checked]:bg-primary peer-data-[state=checked]:text-primary-foreground transition-colors"
+                        >
+                          Personalizado
+                        </Label>
+                      </div>
+                    </RadioGroup>
+                  </div>
+
+                  {/* Custom Days Selection */}
+                  {recurrence.type === 'custom' && (
+                    <div className="space-y-2">
+                      <Label className="text-xs text-muted-foreground">Dias da semana</Label>
+                      <div className="flex gap-1 flex-wrap">
+                        {weekDays.map((day) => (
+                          <button
+                            key={day.value}
+                            type="button"
+                            onClick={() => toggleRecurrenceDay(day.value)}
+                            className={`w-10 h-10 rounded-full text-xs font-medium transition-colors ${
+                              recurrence.days.includes(day.value)
+                                ? 'bg-primary text-primary-foreground'
+                                : 'bg-background border hover:bg-accent'
+                            }`}
+                          >
+                            {day.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* End Date */}
+                  <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                      <CalendarDays className="h-3 w-3" />
+                      Até quando? (opcional)
+                    </Label>
+                    <Input
+                      type="date"
+                      min={format(addDays(new Date(), 1), 'yyyy-MM-dd')}
+                      max={format(addDays(new Date(), 90), 'yyyy-MM-dd')}
+                      value={recurrence.endDate ? format(recurrence.endDate, 'yyyy-MM-dd') : ''}
+                      onChange={(e) => setRecurrence(prev => ({
+                        ...prev,
+                        endDate: e.target.value ? new Date(e.target.value) : undefined
+                      }))}
+                      className="h-9 text-sm"
+                    />
+                  </div>
+
+                  {/* Summary */}
+                  <div className="text-xs text-muted-foreground bg-background/50 p-2 rounded">
+                    📅 {getRecurrenceSummary()} às {selectedTime}
+                    {recurrence.endDate && ` até ${format(recurrence.endDate, "dd/MM/yyyy")}`}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Selected Summary */}
+          {selectedDate && selectedTime && !recurrence.enabled && (
             <div className="p-3 bg-muted rounded-lg">
               <p className="text-sm font-medium">Seu pedido será agendado para:</p>
               <p className="text-lg font-bold text-primary">
@@ -272,11 +439,11 @@ export function ScheduledOrderModal({
           </Button>
           <Button
             onClick={handleSchedule}
-            disabled={!selectedDate || !selectedTime}
+            disabled={!selectedDate || !selectedTime || (recurrence.enabled && recurrence.type === 'custom' && recurrence.days.length === 0)}
             className="flex-1"
           >
             <CalendarClock className="h-4 w-4 mr-2" />
-            Agendar Pedido
+            {recurrence.enabled ? 'Agendar Recorrente' : 'Agendar Pedido'}
           </Button>
         </div>
       </DialogContent>
