@@ -151,8 +151,10 @@ const WhatsAppManagement = () => {
                           establishment?.slug || 
                           `instance-${establishmentId?.slice(0, 8)}`;
 
-      // Call Edge Function to create/connect instance
-      const { data, error } = await supabase.functions.invoke('evolution-api', {
+      console.log('Step 1: Creating instance:', instanceName);
+      
+      // Step 1: Create instance
+      const { data: createData, error: createError } = await supabase.functions.invoke('evolution-api', {
         body: {
           action: 'create_instance',
           instanceName,
@@ -160,7 +162,26 @@ const WhatsAppManagement = () => {
         }
       });
 
-      if (error) throw error;
+      if (createError) throw createError;
+      console.log('Instance created:', createData);
+
+      // Step 2: Get QR Code via connect endpoint
+      console.log('Step 2: Fetching QR code');
+      const { data: qrData, error: qrError } = await supabase.functions.invoke('evolution-api', {
+        body: {
+          action: 'fetch_qr',
+          instanceName,
+          establishmentId,
+        }
+      });
+
+      if (qrError) {
+        console.warn('QR fetch error (may need to retry):', qrError);
+      }
+      console.log('QR data:', qrData);
+
+      // Extract QR code from response - Evolution API returns { pairingCode, code, count } or { base64, code }
+      const qrCode = qrData?.data?.base64 || qrData?.base64 || qrData?.data?.code || qrData?.code || null;
 
       // Create or update instance record in database
       const { data: existingInstance } = await supabase
@@ -175,7 +196,7 @@ const WhatsAppManagement = () => {
           .update({ 
             instance_name: instanceName,
             status: 'connecting', 
-            qr_code: data?.qrcode?.base64 || data?.base64 || null
+            qr_code: qrCode
           })
           .eq("id", existingInstance.id);
       } else {
@@ -185,14 +206,19 @@ const WhatsAppManagement = () => {
             establishment_id: establishmentId,
             instance_name: instanceName,
             status: 'connecting',
-            qr_code: data?.qrcode?.base64 || data?.base64 || null,
+            qr_code: qrCode,
             whatsapp_level: 1,
             keywords_enabled: true,
           });
       }
 
       fetchInstance();
-      toast.success("Escaneie o QR Code para conectar!");
+      
+      if (qrCode) {
+        toast.success("Escaneie o QR Code para conectar!");
+      } else {
+        toast.info("Instância criada! Clique em 'Atualizar QR' para gerar o código.");
+      }
     } catch (error: any) {
       console.error('Connect error:', error);
       toast.error(error.message || "Erro ao conectar. Tente novamente.");
