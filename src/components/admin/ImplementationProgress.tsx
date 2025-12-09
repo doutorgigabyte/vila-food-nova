@@ -494,11 +494,45 @@ const phases: ProgressPhase[] = [
       { name: 'Logging detalhado no MercadoPagoGateway', status: 'completed', priority: 'critical' },
       { name: 'Logging detalhado no PixPayment', status: 'completed', priority: 'critical' },
       { name: 'RLS policy para INSERT anon/authenticated em orders', status: 'completed', priority: 'critical' },
-      { name: 'Validar establishment tem mercado_pago_token', status: 'in-progress', priority: 'critical' },
-      { name: 'Debug Edge Function mercadopago-pix', status: 'in-progress', priority: 'critical' },
+      { name: 'Validar establishment tem mercado_pago_token', status: 'completed', priority: 'critical' },
+      { name: 'Debug Edge Function mercadopago-pix', status: 'completed', priority: 'critical' },
       { name: 'Fallback para PIX estático quando MP falha', status: 'completed', priority: 'high' },
       { name: 'Testar checkout como usuário anônimo', status: 'pending', priority: 'critical' },
       { name: 'Testar checkout como usuário logado', status: 'pending', priority: 'critical' },
+    ]
+  },
+
+  // ===== ARQUITETURA HÍBRIDA DE PAGAMENTOS =====
+  {
+    id: 'hybrid-payment-architecture',
+    name: '💳 Arquitetura Híbrida de Pagamentos',
+    description: 'PIX Transparente + Checkout Pro para cartões com binary_mode',
+    category: 'financial',
+    items: [
+      // Edge Functions
+      { name: 'Edge Function: mercadopago-checkout-pro', status: 'completed', priority: 'critical' },
+      { name: 'Checkout Pro com binary_mode: true', status: 'completed', priority: 'critical' },
+      { name: 'Checkout Pro com auto_return: approved', status: 'completed', priority: 'critical' },
+      { name: 'Exclusão de boleto e lotérica (ticket, atm)', status: 'completed', priority: 'high' },
+      { name: 'statement_descriptor: VILA FOOD na fatura', status: 'completed', priority: 'medium' },
+      { name: 'external_reference para reconciliação', status: 'completed', priority: 'high' },
+      // Tratamento de Erros de Cartão
+      { name: 'Mapa de erros cc_rejected_* em errors.ts', status: 'completed', priority: 'critical' },
+      { name: 'Mensagens específicas por tipo de rejeição', status: 'completed', priority: 'high' },
+      { name: 'Ação sugerida por erro (highlight, suggest_pix, block)', status: 'completed', priority: 'high' },
+      // Componentes
+      { name: 'Componente CheckoutProPayment', status: 'completed', priority: 'critical' },
+      { name: 'Redirecionamento seguro para MP', status: 'completed', priority: 'critical' },
+      { name: 'Estados: idle, creating, redirecting, completed, failed', status: 'completed', priority: 'high' },
+      // Página de Callback
+      { name: 'Página /checkout/resultado', status: 'completed', priority: 'critical' },
+      { name: 'Tratamento de success, failure, pending', status: 'completed', priority: 'critical' },
+      { name: 'Rota registrada no App.tsx', status: 'completed', priority: 'high' },
+      { name: 'Detalhes do pedido e link para acompanhamento', status: 'completed', priority: 'medium' },
+      // Próximos passos
+      { name: 'Integrar CheckoutProPayment no Checkout.tsx', status: 'pending', priority: 'critical' },
+      { name: 'Seletor de método: PIX ou Cartão', status: 'pending', priority: 'high' },
+      { name: 'Testar fluxo completo em sandbox', status: 'pending', priority: 'critical' },
     ]
   },
 
@@ -509,10 +543,10 @@ const phases: ProgressPhase[] = [
     description: 'Cliente escolhe Mercado Pago ou PagSeguro',
     category: 'financial',
     items: [
-      { name: 'Componente GatewaySelector', status: 'pending', priority: 'high' },
-      { name: 'Buscar gateways ativos do estabelecimento', status: 'pending', priority: 'high' },
-      { name: 'Mostrar opções (MP, PagSeguro) com ícones', status: 'pending', priority: 'high' },
-      { name: 'Auto-selecionar se apenas 1 gateway ativo', status: 'pending', priority: 'medium' },
+      { name: 'Componente GatewaySelector', status: 'completed', priority: 'high' },
+      { name: 'Buscar gateways ativos do estabelecimento', status: 'completed', priority: 'high' },
+      { name: 'Mostrar opções (MP, PagSeguro) com ícones', status: 'completed', priority: 'high' },
+      { name: 'Auto-selecionar se apenas 1 gateway ativo', status: 'completed', priority: 'medium' },
       { name: 'Integrar no Checkout.tsx', status: 'pending', priority: 'high' },
     ]
   },
