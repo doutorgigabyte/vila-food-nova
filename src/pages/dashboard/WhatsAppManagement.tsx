@@ -111,8 +111,9 @@ const WhatsAppManagement = () => {
         return;
       }
 
-      const state = data?.data?.state || data?.state || data?.instance?.state;
-      console.log('Status check - state:', state, 'current status:', instance.status);
+        // Evolution API response structure: { success: true, data: { instance: { state: "open" } } }
+        const state = data?.data?.instance?.state || data?.data?.state || data?.state || data?.instance?.state;
+        console.log('Status check - state:', state, 'full response:', JSON.stringify(data));
 
       if (state === 'open' && instance.status !== 'connected') {
         // Evolution API says connected but our DB says otherwise - sync it
@@ -178,8 +179,9 @@ const WhatsAppManagement = () => {
           return;
         }
 
-        const state = data?.data?.state || data?.state || data?.instance?.state;
-        console.log('Poll result - state:', state);
+        // Evolution API response structure: { success: true, data: { instance: { state: "open" } } }
+        const state = data?.data?.instance?.state || data?.data?.state || data?.state || data?.instance?.state;
+        console.log('Poll result - state:', state, 'full response:', JSON.stringify(data));
 
         if (state === 'open') {
           // Connected! Update database and UI directly
