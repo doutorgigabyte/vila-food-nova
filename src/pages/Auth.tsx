@@ -10,6 +10,8 @@ import { Utensils, Mail, Lock, User, Phone, ArrowLeft, Eye, EyeOff, RefreshCw } 
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { ProfileTypeSelector, ProfileType } from "@/components/checkout/ProfileTypeSelector";
+import { PasswordStrengthIndicator } from "@/components/auth/PasswordStrengthIndicator";
+import { validatePassword } from "@/lib/passwordValidation";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -80,8 +82,9 @@ const Auth = () => {
       toast.error("As senhas não coincidem");
       return;
     }
-    if (registerPassword.length < 6) {
-      toast.error("A senha deve ter pelo menos 6 caracteres");
+    const passwordValidation = validatePassword(registerPassword);
+    if (!passwordValidation.isValid) {
+      toast.error("A senha não atende aos requisitos mínimos de segurança");
       return;
     }
     
@@ -345,7 +348,7 @@ const Auth = () => {
                       <Input
                         id="register-password"
                         type={showPassword ? "text" : "password"}
-                        placeholder="Mínimo 6 caracteres"
+                        placeholder="Crie uma senha forte"
                         className="pl-10 pr-10"
                         value={registerPassword}
                         onChange={(e) => setRegisterPassword(e.target.value)}
@@ -358,6 +361,7 @@ const Auth = () => {
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
+                    <PasswordStrengthIndicator password={registerPassword} />
                   </div>
 
                   <div className="space-y-2">
@@ -398,7 +402,11 @@ const Auth = () => {
                     </Label>
                   </div>
 
-                  <Button type="submit" className="w-full" disabled={isLoading || !acceptedTerms}>
+                  <Button 
+                    type="submit" 
+                    className="w-full" 
+                    disabled={isLoading || !acceptedTerms || !validatePassword(registerPassword).isValid}
+                  >
                     {isLoading ? "Criando conta..." : "Criar conta"}
                   </Button>
                 </form>
