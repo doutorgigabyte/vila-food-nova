@@ -80,6 +80,7 @@ const WhatsAppManagement = () => {
   const [welcomeMessage, setWelcomeMessage] = useState("");
   const [aiEnabled, setAiEnabled] = useState(false);
   const [keywordsEnabled, setKeywordsEnabled] = useState(true);
+  const [pollingActive, setPollingActive] = useState(false);
 
   useEffect(() => {
     if (user || accessingEstablishmentId) fetchEstablishment();
@@ -91,6 +92,82 @@ const WhatsAppManagement = () => {
       fetchKeywords();
     }
   }, [establishmentId]);
+
+  // Auto-polling when connecting - check status every 5 seconds
+  useEffect(() => {
+    if (!instance?.instance_name || instance?.status !== 'connecting') {
+      setPollingActive(false);
+      return;
+    }
+
+    setPollingActive(true);
+    console.log('Starting auto-polling for connection status...');
+
+    const pollStatus = async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke('evolution-api', {
+          body: {
+            action: 'check_status',
+            instanceName: instance.instance_name,
+            establishmentId,
+          }
+        });
+
+        if (error) {
+          console.warn('Status poll error:', error);
+          return;
+        }
+
+        const state = data?.state || data?.instance?.state;
+        console.log('Poll result - state:', state);
+
+        if (state === 'open') {
+          // Connected! Update database and UI
+          await supabase
+            .from("whatsapp_instances")
+            .update({ status: 'connected', qr_code: null })
+            .eq("id", instance.id);
+          
+          toast.success("WhatsApp conectado com sucesso!");
+          fetchInstance();
+          setPollingActive(false);
+        } else if (state === 'close' || state === 'connecting') {
+          // Still connecting, try to refresh QR code
+          const { data: qrData } = await supabase.functions.invoke('evolution-api', {
+            body: {
+              action: 'fetch_qr',
+              instanceName: instance.instance_name,
+              establishmentId,
+            }
+          });
+
+          const newQR = qrData?.data?.base64 || qrData?.base64 || qrData?.data?.code || qrData?.code;
+          if (newQR && newQR !== instance.qr_code) {
+            await supabase
+              .from("whatsapp_instances")
+              .update({ qr_code: newQR })
+              .eq("id", instance.id);
+            
+            setInstance(prev => prev ? { ...prev, qr_code: newQR } : null);
+            console.log('QR code updated');
+          }
+        }
+      } catch (err) {
+        console.warn('Polling error:', err);
+      }
+    };
+
+    // Poll immediately
+    pollStatus();
+
+    // Then poll every 5 seconds
+    const interval = setInterval(pollStatus, 5000);
+
+    return () => {
+      clearInterval(interval);
+      setPollingActive(false);
+    };
+  }, [instance?.instance_name, instance?.status, instance?.id, establishmentId]);
 
   const fetchEstablishment = async () => {
     let query = supabase.from("establishments").select("id, name, slug, whatsapp_instance_name");
@@ -389,6 +466,9 @@ const WhatsAppManagement = () => {
           <div className="flex items-center gap-2 text-green-600">
             <Wifi className="w-5 h-5" />
             <span className="font-medium">Conectado</span>
+            <Badge variant="outline" className="ml-2 text-green-600 border-green-600">
+              Online
+            </Badge>
           </div>
         );
       case "connecting":
@@ -396,6 +476,11 @@ const WhatsAppManagement = () => {
           <div className="flex items-center gap-2 text-yellow-600">
             <Loader2 className="w-5 h-5 animate-spin" />
             <span className="font-medium">Aguardando conexão...</span>
+            {pollingActive && (
+              <Badge variant="outline" className="ml-2 text-yellow-600 border-yellow-600 animate-pulse">
+                Verificando a cada 5s
+              </Badge>
+            )}
           </div>
         );
       default:
