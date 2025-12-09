@@ -154,9 +154,8 @@ const WhatsAppManagement = () => {
       console.log('Connecting instance:', instanceName);
       
       let qrCode = null;
-      let instanceCreated = false;
 
-      // Step 1: Try to create instance
+      // Step 1: Try to create instance (may already exist)
       const { data: createData, error: createError } = await supabase.functions.invoke('evolution-api', {
         body: {
           action: 'create_instance',
@@ -165,25 +164,23 @@ const WhatsAppManagement = () => {
         }
       });
 
-      // Check if instance already exists
+      // Check if instance already exists - this is fine, just proceed to fetch QR
       const alreadyExists = createData?.data?.alreadyExists || createData?.alreadyExists;
 
       if (alreadyExists) {
-        console.log('Instance already exists, will fetch QR code directly');
+        console.log('Instance already exists, fetching QR code');
       } else if (createError) {
         console.error('Create error:', createError);
-        throw createError;
-      } else if (createData?.success === false) {
+        // Don't throw, try to fetch QR anyway
+      } else if (createData?.success === false && !createData?.error?.includes('already')) {
         console.error('Create failed:', createData);
-        throw new Error(createData?.error || 'Failed to create instance');
+        // Don't throw, try to fetch QR anyway
       } else {
-        console.log('Instance created successfully:', createData);
-        instanceCreated = true;
-        // Try to extract QR from create response if available
+        console.log('Instance created/exists:', createData);
         qrCode = createData?.data?.qrcode?.base64 || createData?.data?.base64 || null;
       }
 
-      // Step 2: If no QR code yet, fetch it via connect endpoint
+      // Step 2: Always try to fetch QR code if we don't have one
       if (!qrCode) {
         console.log('Fetching QR code via connect endpoint');
         const { data: qrData, error: qrError } = await supabase.functions.invoke('evolution-api', {
@@ -214,7 +211,7 @@ const WhatsAppManagement = () => {
           .from("whatsapp_instances")
           .update({ 
             instance_name: instanceName,
-            status: 'connecting', 
+            status: qrCode ? 'connecting' : 'disconnected', 
             qr_code: qrCode
           })
           .eq("id", existingInstance.id);
@@ -224,19 +221,19 @@ const WhatsAppManagement = () => {
           .insert({
             establishment_id: establishmentId,
             instance_name: instanceName,
-            status: 'connecting',
+            status: qrCode ? 'connecting' : 'disconnected',
             qr_code: qrCode,
             whatsapp_level: 1,
             keywords_enabled: true,
           });
       }
 
-      fetchInstance();
+      await fetchInstance();
       
       if (qrCode) {
         toast.success("Escaneie o QR Code para conectar!");
       } else {
-        toast.info("Clique em 'Atualizar QR' para gerar o código.");
+        toast.info("Instância criada. Clique em 'Atualizar QR' para gerar o código.");
       }
     } catch (error: any) {
       console.error('Connect error:', error);
@@ -452,8 +449,8 @@ const WhatsAppManagement = () => {
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Not connected - Show connect button */}
-            {(!instance || instance.status === 'disconnected') && (
+            {/* Not connected or connecting without QR - Show connect button */}
+            {(!instance || instance.status === 'disconnected' || (instance.status === 'connecting' && !instance.qr_code)) && (
               <div className="text-center py-8">
                 <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-green-500/10 flex items-center justify-center">
                   <Smartphone className="w-10 h-10 text-green-500" />
@@ -474,7 +471,7 @@ const WhatsAppManagement = () => {
                   ) : (
                     <QrCode className="w-5 h-5" />
                   )}
-                  Conectar WhatsApp
+                  {instance?.status === 'connecting' ? 'Gerar QR Code' : 'Conectar WhatsApp'}
                 </Button>
               </div>
             )}
