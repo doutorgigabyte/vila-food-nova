@@ -151,9 +151,12 @@ const WhatsAppManagement = () => {
                           establishment?.slug || 
                           `instance-${establishmentId?.slice(0, 8)}`;
 
-      console.log('Step 1: Creating instance:', instanceName);
+      console.log('Connecting instance:', instanceName);
       
-      // Step 1: Create instance
+      let qrCode = null;
+      let instanceCreated = false;
+
+      // Step 1: Try to create instance
       const { data: createData, error: createError } = await supabase.functions.invoke('evolution-api', {
         body: {
           action: 'create_instance',
@@ -162,26 +165,42 @@ const WhatsAppManagement = () => {
         }
       });
 
-      if (createError) throw createError;
-      console.log('Instance created:', createData);
+      // Check if instance already exists (403 error with "already in use")
+      const alreadyExists = createError?.message?.includes('already in use') || 
+                           createData?.error?.includes('already in use') ||
+                           (createData?.success === false && createData?.error?.includes('already in use'));
 
-      // Step 2: Get QR Code via connect endpoint
-      console.log('Step 2: Fetching QR code');
-      const { data: qrData, error: qrError } = await supabase.functions.invoke('evolution-api', {
-        body: {
-          action: 'fetch_qr',
-          instanceName,
-          establishmentId,
-        }
-      });
-
-      if (qrError) {
-        console.warn('QR fetch error (may need to retry):', qrError);
+      if (alreadyExists) {
+        console.log('Instance already exists, will fetch QR code directly');
+      } else if (createError) {
+        throw createError;
+      } else if (createData?.success === false) {
+        throw new Error(createData?.error || 'Failed to create instance');
+      } else {
+        console.log('Instance created successfully:', createData);
+        instanceCreated = true;
+        // Try to extract QR from create response if available
+        qrCode = createData?.data?.qrcode?.base64 || createData?.data?.base64 || null;
       }
-      console.log('QR data:', qrData);
 
-      // Extract QR code from response - Evolution API returns { pairingCode, code, count } or { base64, code }
-      const qrCode = qrData?.data?.base64 || qrData?.base64 || qrData?.data?.code || qrData?.code || null;
+      // Step 2: If no QR code yet, fetch it via connect endpoint
+      if (!qrCode) {
+        console.log('Fetching QR code via connect endpoint');
+        const { data: qrData, error: qrError } = await supabase.functions.invoke('evolution-api', {
+          body: {
+            action: 'fetch_qr',
+            instanceName,
+            establishmentId,
+          }
+        });
+
+        if (qrError) {
+          console.warn('QR fetch error:', qrError);
+        } else {
+          console.log('QR data received:', qrData);
+          qrCode = qrData?.data?.base64 || qrData?.base64 || qrData?.data?.code || qrData?.code || null;
+        }
+      }
 
       // Create or update instance record in database
       const { data: existingInstance } = await supabase
@@ -217,7 +236,7 @@ const WhatsAppManagement = () => {
       if (qrCode) {
         toast.success("Escaneie o QR Code para conectar!");
       } else {
-        toast.info("Instância criada! Clique em 'Atualizar QR' para gerar o código.");
+        toast.info("Clique em 'Atualizar QR' para gerar o código.");
       }
     } catch (error: any) {
       console.error('Connect error:', error);
