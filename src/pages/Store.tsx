@@ -121,6 +121,7 @@ const Store = () => {
         min_order_value: establishment.min_order_value || 0,
         accepts_pickup: establishment.accepts_pickup ?? true,
         accepts_delivery: establishment.accepts_delivery ?? true,
+        is_open: establishment.is_open ?? false,
       }
     : null;
 

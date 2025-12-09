@@ -30,6 +30,7 @@ const RegisterEstablishment = lazy(() => import("./pages/RegisterEstablishment")
 const Marketplace = lazy(() => import("./pages/Marketplace"));
 const Checkout = lazy(() => import("./pages/Checkout"));
 const Orders = lazy(() => import("./pages/Orders"));
+const OrderTracking = lazy(() => import("./pages/orders/OrderTracking"));
 const Menu = lazy(() => import("./pages/Menu"));
 const Favorites = lazy(() => import("./pages/Favorites"));
 const ProductsListing = lazy(() => import("./pages/ProductsListing"));
@@ -196,6 +197,8 @@ const AppRoutes = () => {
               <Route path="/checkout" element={<Checkout />} />
               <Route path="/checkout/resultado" element={<CheckoutResult />} />
               <Route path="/pedidos" element={<Orders />} />
+              <Route path="/pedidos/:orderId/rastreamento" element={<OrderTracking />} />
+              <Route path="/meus-pedidos" element={<Orders />} />
               <Route path="/menu" element={<Menu />} />
               <Route path="/favoritos" element={<Favorites />} />
               <Route path="/conta" element={<Account />} />

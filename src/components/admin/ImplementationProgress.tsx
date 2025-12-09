@@ -11,7 +11,7 @@ interface ProgressPhase {
   id: string;
   name: string;
   description: string;
-  category: 'completed' | 'security' | 'operation' | 'vilatok' | 'admin' | 'financial' | 'ux' | 'integration';
+  category: 'completed' | 'security' | 'operation' | 'vilatok' | 'admin' | 'financial' | 'ux' | 'integration' | 'customer';
   items: {
     name: string;
     status: 'completed' | 'in-progress' | 'pending';
@@ -612,6 +612,39 @@ const phases: ProgressPhase[] = [
       { name: 'Atualizar status do pedido no callback', status: 'completed', priority: 'high' },
     ]
   },
+
+  // ===== RASTREAMENTO DE PEDIDOS =====
+  {
+    id: 'order-tracking',
+    name: '📦 Rastreamento de Pedidos',
+    description: 'Sistema de acompanhamento em tempo real',
+    category: 'customer',
+    items: [
+      { name: 'Página OrderTracking.tsx criada', status: 'completed', priority: 'high' },
+      { name: 'Timeline visual com status do pedido', status: 'completed', priority: 'high' },
+      { name: 'Atualização em tempo real via Realtime', status: 'completed', priority: 'high' },
+      { name: 'Exibir informações do entregador', status: 'completed', priority: 'medium' },
+      { name: 'Contato WhatsApp com estabelecimento', status: 'completed', priority: 'medium' },
+      { name: 'Endereço de entrega exibido', status: 'completed', priority: 'low' },
+      { name: 'Resumo do pedido na página', status: 'completed', priority: 'low' },
+      { name: 'Rota /pedidos/:orderId/rastreamento', status: 'completed', priority: 'high' },
+    ]
+  },
+
+  // ===== VALIDAÇÃO LOJA FECHADA =====
+  {
+    id: 'store-closed-validation',
+    name: '🕒 Validação Loja Fechada',
+    description: 'Bloquear pedidos quando loja está fechada',
+    category: 'operation',
+    items: [
+      { name: 'Verificar is_open no Checkout', status: 'completed', priority: 'critical' },
+      { name: 'Exibir mensagem de loja fechada', status: 'completed', priority: 'high' },
+      { name: 'Bloquear botão "Fazer Pedido"', status: 'completed', priority: 'critical' },
+      { name: 'Configurar horário Doces e Tortas (08h-22h)', status: 'completed', priority: 'high' },
+      { name: 'Validação automática por operating_hours', status: 'pending', priority: 'medium' },
+    ]
+  },
 ];
 
 export function ImplementationProgress() {
@@ -670,6 +703,8 @@ export function ImplementationProgress() {
         return <Users className="h-5 w-5 text-purple-500" />;
       case 'integration':
         return <Bot className="h-5 w-5 text-cyan-500" />;
+      case 'customer':
+        return <Users className="h-5 w-5 text-indigo-500" />;
       default:
         return <Settings className="h-5 w-5 text-muted-foreground" />;
     }
@@ -693,6 +728,8 @@ export function ImplementationProgress() {
         return 'bg-purple-500/10 border-purple-500/30';
       case 'integration':
         return 'bg-cyan-500/10 border-cyan-500/30';
+      case 'customer':
+        return 'bg-indigo-500/10 border-indigo-500/30';
       default:
         return '';
     }
