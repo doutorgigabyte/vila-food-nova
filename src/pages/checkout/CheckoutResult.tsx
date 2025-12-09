@@ -21,9 +21,26 @@ export default function CheckoutResult() {
     total?: number 
   } | null>(null);
 
-  const status = (searchParams.get('status') as PaymentResult) || 'unknown';
-  const orderId = searchParams.get('order_id') || searchParams.get('external_reference');
-  const paymentId = searchParams.get('payment_id');
+  // Parse status - MP returns 'approved', 'rejected', 'pending', etc
+  const rawStatus = searchParams.get('status') || searchParams.get('collection_status');
+  const status: PaymentResult = rawStatus === 'approved' 
+    ? 'success' 
+    : rawStatus === 'rejected' || rawStatus === 'cancelled'
+      ? 'failure'
+      : rawStatus === 'pending' || rawStatus === 'in_process'
+        ? 'pending'
+        : 'unknown';
+
+  // Parse order ID - check multiple params
+  const orderId = searchParams.get('order_id') 
+    || searchParams.get('external_reference') 
+    || searchParams.get('preference_id');
+  
+  // Parse payment ID - check multiple params  
+  const paymentId = searchParams.get('payment_id') 
+    || searchParams.get('collection_id')
+    || searchParams.get('merchant_order_id');
+    
   const statusDetail = searchParams.get('status_detail');
 
   // Buscar detalhes do pedido
@@ -44,6 +61,23 @@ export default function CheckoutResult() {
         });
     }
   }, [orderId]);
+
+  // Update order status based on payment result
+  useEffect(() => {
+    if (orderId && status === 'success') {
+      supabase
+        .from('orders')
+        .update({ 
+          status: 'confirmed',
+          payment_status: 'paid',
+          mp_payment_id: paymentId || undefined
+        })
+        .eq('id', orderId)
+        .then(({ error }) => {
+          if (error) console.error('Error updating order:', error);
+        });
+    }
+  }, [orderId, status, paymentId]);
 
   const getStatusConfig = () => {
     switch (status) {
@@ -113,7 +147,7 @@ export default function CheckoutResult() {
                 <span className="text-muted-foreground">Pedido:</span>
                 <span className="font-mono">#{orderId.slice(-8)}</span>
               </div>
-              {paymentId && (
+              {paymentId && paymentId !== 'null' && (
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">ID Pagamento:</span>
                   <span className="font-mono">{paymentId}</span>

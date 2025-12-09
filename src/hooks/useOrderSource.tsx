@@ -13,7 +13,7 @@ interface OrderSourceContextType {
 const OrderSourceContext = createContext<OrderSourceContextType | undefined>(undefined);
 
 const ORDER_SOURCE_KEY = "vilafood_order_source";
-const PLATFORM_FEE_PERCENT = 5; // 5% platform fee for marketplace orders
+const PLATFORM_FEE_PERCENT = 0; // Platform fee disabled
 
 export const OrderSourceProvider = ({ children }: { children: ReactNode }) => {
   const [source, setSourceState] = useState<OrderSource>('direct');

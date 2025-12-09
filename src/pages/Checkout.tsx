@@ -960,11 +960,22 @@ const Checkout = () => {
                     <p className="text-xs text-muted-foreground">
                       Receba atualizações sobre seu pedido
                     </p>
+                    {/* Show pre-filled phone if from profile */}
+                    {whatsappTracking && customerPhone && user?.id && (
+                      <p className="text-xs text-green-600 flex items-center gap-1 mt-1">
+                        <CheckCircle className="w-3 h-3" />
+                        Notificações para: {customerPhone}
+                      </p>
+                    )}
                   </div>
                 </div>
                 
-                {whatsappTracking && (
+                {/* Only show input if user is not logged in OR has no phone in profile */}
+                {whatsappTracking && (!user?.id || !customerPhone) && (
                   <div className="mt-3 pt-3 border-t">
+                    <Label className="text-xs text-muted-foreground mb-2 block">
+                      Informe seu WhatsApp para receber atualizações
+                    </Label>
                     <Input
                       placeholder="(99) 99999-9999"
                       value={customerPhone}
