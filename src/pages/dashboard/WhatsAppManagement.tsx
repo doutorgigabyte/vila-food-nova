@@ -281,8 +281,8 @@ const WhatsAppManagement = () => {
       const { data, error } = await supabase.functions.invoke('evolution-api', {
         body: {
           action: 'check_status',
-          instance_name: instance?.instance_name,
-          establishment_id: establishmentId,
+          instanceName: instance?.instance_name,
+          establishmentId,
         }
       });
 
@@ -317,8 +317,8 @@ const WhatsAppManagement = () => {
       await supabase.functions.invoke('evolution-api', {
         body: {
           action: 'disconnect',
-          instance_name: instance.instance_name,
-          establishment_id: establishmentId,
+          instanceName: instance.instance_name,
+          establishmentId,
         }
       });
 
