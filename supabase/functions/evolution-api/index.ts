@@ -150,17 +150,15 @@ async function setWebhook(config: EvolutionConfig, instanceName: string, webhook
       'apikey': config.apiKey,
     },
     body: JSON.stringify({
-      webhook: {
-        enabled: true,
-        url: webhookUrl,
-        webhookByEvents: false,
-        events: [
-          'QRCODE_UPDATED',
-          'MESSAGES_UPSERT',
-          'MESSAGES_UPDATE',
-          'CONNECTION_UPDATE',
-        ],
-      },
+      url: webhookUrl,
+      webhook_by_events: false,
+      webhook_base64: true,
+      events: [
+        'QRCODE_UPDATED',
+        'MESSAGES_UPSERT',
+        'MESSAGES_UPDATE',
+        'CONNECTION_UPDATE',
+      ],
     }),
   });
 
