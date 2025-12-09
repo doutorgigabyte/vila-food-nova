@@ -699,7 +699,8 @@ const phases: ProgressPhase[] = [
       { name: 'Data limite para recorrência', status: 'completed', priority: 'medium' },
       { name: 'Campo recurrence na tabela scheduled_orders', status: 'completed', priority: 'high' },
       { name: 'Integração com checkout (scheduledFor state)', status: 'completed', priority: 'critical' },
-      { name: 'Edge Function para criar pedidos recorrentes', status: 'pending', priority: 'medium' },
+      { name: 'Edge Function process-recurring-orders', status: 'completed', priority: 'medium' },
+      { name: 'Cron job para processar pedidos recorrentes', status: 'pending', priority: 'low' },
     ]
   },
 
@@ -724,7 +725,9 @@ const phases: ProgressPhase[] = [
       { name: 'Página ProductComplementsManagement.tsx', status: 'completed', priority: 'medium' },
       { name: 'UI para vincular produtos complementares', status: 'completed', priority: 'medium' },
       { name: 'Desconto ao comprar produto complementar junto', status: 'completed', priority: 'medium' },
-      { name: 'Exibir kits no checkout e loja', status: 'pending', priority: 'high' },
+      { name: 'Exibir kits na página da loja', status: 'completed', priority: 'high' },
+      { name: 'Hook useProductKits para buscar kits', status: 'completed', priority: 'high' },
+      { name: 'Componente StoreKitsSection', status: 'completed', priority: 'high' },
       { name: 'Rota /painel/:slug/kits', status: 'completed', priority: 'high' },
       { name: 'Rota /painel/:slug/complementos', status: 'completed', priority: 'high' },
     ]
