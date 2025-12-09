@@ -105,9 +105,6 @@ verify_jwt = false
 [functions.ai-product-assistant]
 verify_jwt = false
 
-[functions.driver-payment-split]
-verify_jwt = false
-
 [functions.fix-broken-images]
 verify_jwt = false
 

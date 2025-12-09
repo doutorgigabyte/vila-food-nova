@@ -1,15 +1,15 @@
 import AdminLayout from '@/components/admin/AdminLayout';
-import { ImplementationProgress } from '@/components/admin/ImplementationProgress';
+import SystemChecklistProgress from '@/components/admin/SystemChecklistProgress';
 
 const ImplementationRoadmap = () => {
   return (
-    <AdminLayout title="Roadmap de Implementação">
+    <AdminLayout title="Checklist de Produção">
       <div className="space-y-6">
         <p className="text-muted-foreground">
-          Acompanhe o progresso do desenvolvimento do VilaFood
+          Valide cada funcionalidade antes do deploy para produção
         </p>
 
-        <ImplementationProgress />
+        <SystemChecklistProgress />
       </div>
     </AdminLayout>
   );

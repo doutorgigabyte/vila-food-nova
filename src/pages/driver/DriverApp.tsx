@@ -355,15 +355,11 @@ const DriverApp = () => {
           </div>
         </div>
 
-        {/* Today's Stats */}
-        <div className="grid grid-cols-3 gap-4 mt-4">
+        {/* Today's Stats - Simplified (no earnings - establishment pays directly) */}
+        <div className="grid grid-cols-2 gap-4 mt-4">
           <div className="text-center">
             <p className="text-2xl font-bold">{stats.deliveries}</p>
-            <p className="text-xs opacity-80">Entregas</p>
-          </div>
-          <div className="text-center">
-            <p className="text-2xl font-bold">R$ {stats.earnings.toFixed(0)}</p>
-            <p className="text-xs opacity-80">Ganhos</p>
+            <p className="text-xs opacity-80">Entregas Hoje</p>
           </div>
           <div className="text-center">
             <p className="text-2xl font-bold">{stats.distance.toFixed(1)}</p>
