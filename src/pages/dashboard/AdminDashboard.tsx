@@ -133,7 +133,7 @@ const AdminDashboard = () => {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-sm truncate">Super Admin</p>
-                <p className="text-xs text-muted-foreground truncate">admin@vilafood.com</p>
+                <p className="text-xs text-muted-foreground truncate">admin@vilafood.delivery</p>
               </div>
               <Button variant="ghost" size="icon">
                 <LogOut className="w-4 h-4" />

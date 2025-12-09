@@ -143,8 +143,8 @@ export const BasicDataStep = ({ data, updateData, onNext, onBack }: BasicDataSte
           <Label htmlFor="subdomain">Link da sua loja *</Label>
           <div className="relative">
             <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input id="subdomain" placeholder="minhaloja" className="pl-10 pr-32" value={data.subdomain} onChange={(e) => handleSubdomainChange(e.target.value)} />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">.vilafood.com</span>
+            <Input id="subdomain" placeholder="minhaloja" className="pl-10 pr-36" value={data.subdomain} onChange={(e) => handleSubdomainChange(e.target.value)} />
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">.vilafood.delivery</span>
           </div>
           {data.subdomain.length >= 3 && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className={`flex items-center gap-2 text-sm ${checkingSlug ? "text-muted-foreground" : slugAvailable ? "text-green-600" : "text-destructive"}`}>

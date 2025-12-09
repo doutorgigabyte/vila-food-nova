@@ -19,7 +19,7 @@ export const isProduction = (): boolean => {
   // Check URL for production domain
   if (typeof window !== 'undefined') {
     const hostname = window.location.hostname;
-    if (hostname === 'vilafood.app' || hostname.endsWith('.vilafood.app')) {
+    if (hostname === 'vilafood.delivery' || hostname.endsWith('.vilafood.delivery')) {
       return true;
     }
   }

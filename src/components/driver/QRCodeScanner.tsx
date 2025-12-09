@@ -139,7 +139,7 @@ export const QRCodeScanner = ({ open, onOpenChange, onEstablishmentFound }: QRCo
               <div className="space-y-2">
                 <Label>Link do cardápio digital</Label>
                 <Input
-                  placeholder="https://vilafood.com/loja/nome-da-loja"
+                  placeholder="https://vilafood.delivery/loja/nome-da-loja"
                   value={manualLink}
                   onChange={(e) => setManualLink(e.target.value)}
                 />

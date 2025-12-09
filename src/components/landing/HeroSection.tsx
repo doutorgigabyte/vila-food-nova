@@ -75,7 +75,7 @@ const HeroSection = () => {
                   </div>
                   <div>
                     <h3 className="font-semibold text-foreground">Pizzaria Bella</h3>
-                    <p className="text-sm text-muted-foreground">pizzariabella.vilafood.com</p>
+                    <p className="text-sm text-muted-foreground">pizzariabella.vilafood.delivery</p>
                   </div>
                 </div>
                 <div className="space-y-3">

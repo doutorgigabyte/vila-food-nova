@@ -6,12 +6,13 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Utensils, Mail, Lock, User, Phone, ArrowLeft, Eye, EyeOff, RefreshCw } from "lucide-react";
+import { Mail, Lock, User, Phone, ArrowLeft, Eye, EyeOff, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { ProfileTypeSelector, ProfileType } from "@/components/checkout/ProfileTypeSelector";
 import { PasswordStrengthIndicator } from "@/components/auth/PasswordStrengthIndicator";
 import { validatePassword } from "@/lib/passwordValidation";
+import logoHorizontal from "@/assets/logo-horizontal.png";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -169,13 +170,8 @@ const Auth = () => {
 
         <Card className="glass border-border/50">
           <CardHeader className="text-center pb-2">
-            <div className="flex items-center justify-center gap-2 mb-4">
-              <div className="p-2 bg-primary/10 rounded-xl">
-                <Utensils className="w-8 h-8 text-primary" />
-              </div>
-              <span className="text-2xl font-bold">
-                Vila<span className="text-primary">Food</span>
-              </span>
+            <div className="flex items-center justify-center mb-4">
+              <img src={logoHorizontal} alt="VilaFood" className="h-12" />
             </div>
             <CardTitle className="text-xl">Bem-vindo de volta!</CardTitle>
             <CardDescription>

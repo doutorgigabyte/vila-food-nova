@@ -43,7 +43,7 @@ const AdminSettings = () => {
   const [platformSettings, setPlatformSettings] = useState({
     platform_name: "VilaFood",
     platform_description: "Plataforma de delivery e cardápio digital",
-    support_email: "suporte@vilafood.com.br",
+    support_email: "suporte@vilafood.delivery",
     support_phone: "",
   });
   
