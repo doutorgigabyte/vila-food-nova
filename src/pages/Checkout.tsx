@@ -35,6 +35,7 @@ import { SmartAddressInput } from "@/components/address";
 import { SavedAddressSelector } from "@/components/checkout/SavedAddressSelector";
 import { SaveAddressDialog } from "@/components/checkout/SaveAddressDialog";
 import { PaymentProcessor } from "@/components/checkout/PaymentProcessor";
+import { CheckoutProPayment } from "@/components/checkout/CheckoutProPayment";
 import { CartConfirmationStep } from "@/components/checkout/CartConfirmationStep";
 import { DeliveryOptionsCards } from "@/components/checkout/DeliveryOptionsCards";
 import { CheckoutSummary } from "@/components/checkout/CheckoutSummary";
@@ -234,12 +235,51 @@ const Checkout = () => {
       const paymentMethodMap: Record<string, 'pix' | 'cash' | 'credit_card' | 'debit_card'> = {
         'pix': 'pix',
         'cash': 'cash',
-        'credit': 'credit_card',
-        'debit': 'debit_card',
+        'card': 'credit_card',
       };
 
-      // For multi-store or if not PIX, create all orders
-      if (isMultiStore || paymentMethod !== 'pix') {
+      // For card payments via Checkout Pro, create order and redirect
+      if (paymentMethod === 'card' && !isMultiStore) {
+        const result = await createOrder({
+          establishment_id: estId,
+          delivery_type: deliveryType as 'delivery' | 'pickup',
+          payment_method: 'credit_card',
+          items: estItems.map(item => ({
+            product_id: item.product.id,
+            name: item.product.name,
+            price: item.product.promotional_price || item.product.price,
+            quantity: item.quantity,
+            observation: item.observation,
+          })),
+          subtotal: estSubtotal,
+          delivery_fee: estDeliveryFee,
+          total: estSubtotal + estDeliveryFee - (appliedCoupon?.discountValue || 0),
+          delivery_address: deliveryType === 'delivery' ? {
+            cep: addressData.cep,
+            address: addressData.address,
+            number: addressData.number,
+            complement: addressData.complement,
+            neighborhood: addressData.neighborhood,
+            reference: addressData.reference,
+          } : undefined,
+          observations: observations || undefined,
+          whatsapp_tracking_enabled: whatsappTracking,
+          customer_phone: whatsappTracking ? customerPhone.replace(/\D/g, '') : undefined,
+        });
+
+        if (result.success && result.order) {
+          setCreatedOrderId(result.order.id);
+          setCurrentEstablishmentId(estId);
+          setStep("processing");
+        } else {
+          throw new Error('Falha ao criar pedido');
+        }
+        setIsLoading(false);
+        return;
+      }
+
+      // For multi-store or cash payments, create all orders immediately
+      if (isMultiStore || paymentMethod === 'cash') {
         const orderNumbers: string[] = [];
         
         for (const estId of uniqueEstablishments) {
@@ -415,7 +455,7 @@ const Checkout = () => {
   const { subtotal, deliveryFee, platformFee, discount, total } = calculateTotals();
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
 
-  // Processing step - show payment processor
+  // Processing step - show payment processor (PIX or Card)
   if (step === "processing" && createdOrderId && currentEstablishmentId) {
     return (
       <div className="min-h-screen bg-background">
@@ -432,18 +472,42 @@ const Checkout = () => {
             </div>
           </div>
         </header>
-        <main className="container mx-auto px-4 py-6 max-w-md">
-          <PaymentProcessor
-            orderId={createdOrderId}
-            establishmentId={currentEstablishmentId}
-            amount={total}
-            paymentMethod={paymentMethod as 'pix' | 'credit' | 'debit' | 'cash'}
-            payerEmail={user?.email}
-            payerName={user?.user_metadata?.full_name}
-            onPaymentComplete={handlePaymentComplete}
-            onPaymentFailed={handlePaymentFailed}
-            onCancel={() => setStep("payment")}
-          />
+        <main className="container mx-auto px-4 py-6 max-w-md space-y-4">
+          {/* Card payment via Checkout Pro */}
+          {paymentMethod === 'card' && (
+            <CheckoutProPayment
+              orderId={createdOrderId}
+              establishmentId={currentEstablishmentId}
+              amount={total}
+              description={`Pedido #${createdOrderId.slice(-8)}`}
+              payerEmail={user?.email}
+              payerName={user?.user_metadata?.full_name}
+              payerPhone={customerPhone.replace(/\D/g, '')}
+              onPaymentComplete={(paymentId) => {
+                console.log('Card payment completed:', paymentId);
+                handlePaymentComplete();
+              }}
+              onPaymentFailed={(error) => {
+                console.error('Card payment failed:', error);
+                // Don't go back to payment, let user retry or choose PIX
+              }}
+            />
+          )}
+
+          {/* PIX payment via PaymentProcessor */}
+          {paymentMethod === 'pix' && (
+            <PaymentProcessor
+              orderId={createdOrderId}
+              establishmentId={currentEstablishmentId}
+              amount={total}
+              paymentMethod="pix"
+              payerEmail={user?.email}
+              payerName={user?.user_metadata?.full_name}
+              onPaymentComplete={handlePaymentComplete}
+              onPaymentFailed={handlePaymentFailed}
+              onCancel={() => setStep("payment")}
+            />
+          )}
         </main>
       </div>
     );
@@ -752,22 +816,15 @@ const Checkout = () => {
                   {!isMultiStore && (
                     <>
                       <div className="flex items-center space-x-3 p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors cursor-pointer mt-2">
-                        <RadioGroupItem value="credit" id="credit" />
-                        <Label htmlFor="credit" className="flex items-center gap-3 cursor-pointer flex-1">
+                        <RadioGroupItem value="card" id="card" />
+                        <Label htmlFor="card" className="flex items-center gap-3 cursor-pointer flex-1">
                           <CreditCard className="w-5 h-5 text-primary" />
-                          <div>
-                            <p className="font-medium">Cartão de crédito</p>
-                            <p className="text-sm text-muted-foreground">Na entrega</p>
-                          </div>
-                        </Label>
-                      </div>
-                      <div className="flex items-center space-x-3 p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors cursor-pointer mt-2">
-                        <RadioGroupItem value="debit" id="debit" />
-                        <Label htmlFor="debit" className="flex items-center gap-3 cursor-pointer flex-1">
-                          <CreditCard className="w-5 h-5 text-primary" />
-                          <div>
-                            <p className="font-medium">Cartão de débito</p>
-                            <p className="text-sm text-muted-foreground">Na entrega</p>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <p className="font-medium">Cartão de Crédito/Débito</p>
+                              <Badge variant="secondary" className="text-xs">Checkout Seguro</Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground">Via Mercado Pago</p>
                           </div>
                         </Label>
                       </div>

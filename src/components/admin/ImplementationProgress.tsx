@@ -529,9 +529,9 @@ const phases: ProgressPhase[] = [
       { name: 'Tratamento de success, failure, pending', status: 'completed', priority: 'critical' },
       { name: 'Rota registrada no App.tsx', status: 'completed', priority: 'high' },
       { name: 'Detalhes do pedido e link para acompanhamento', status: 'completed', priority: 'medium' },
-      // Próximos passos
-      { name: 'Integrar CheckoutProPayment no Checkout.tsx', status: 'pending', priority: 'critical' },
-      { name: 'Seletor de método: PIX ou Cartão', status: 'pending', priority: 'high' },
+      // Integração no Checkout
+      { name: 'Integrar CheckoutProPayment no Checkout.tsx', status: 'completed', priority: 'critical' },
+      { name: 'Seletor de método: PIX ou Cartão', status: 'completed', priority: 'high' },
       { name: 'Testar fluxo completo em sandbox', status: 'pending', priority: 'critical' },
     ]
   },
