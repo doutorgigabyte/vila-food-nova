@@ -108,6 +108,48 @@ export const useCreateOrder = () => {
         status: order.status,
       });
 
+      // MODELO BLINDADO: Register commission debt for cash/card-on-delivery payments
+      if (orderData.payment_method === 'cash' || orderData.payment_method === 'debit_card') {
+        try {
+          const productsAmount = orderData.subtotal - (orderData.discount || 0);
+          const platformProductFee = productsAmount * 0.05; // 5% dos produtos
+          const platformServiceFee = 1; // R$1 taxa de serviço
+          const totalCommissionDue = platformProductFee + platformServiceFee;
+
+          const { error: debtError } = await supabase
+            .from('establishment_commission_debt')
+            .insert({
+              establishment_id: orderData.establishment_id,
+              order_id: order.id,
+              products_amount: productsAmount,
+              delivery_fee: orderData.delivery_fee || 0,
+              total_order: orderData.total,
+              platform_product_fee: platformProductFee,
+              platform_service_fee: platformServiceFee,
+              total_commission_due: totalCommissionDue,
+              status: 'pending',
+            });
+
+          if (debtError) {
+            console.error('[useCreateOrder] Error registering commission debt:', debtError);
+            // Don't block order creation if debt registration fails
+          } else {
+            console.log('[useCreateOrder] Commission debt registered:', {
+              order_id: order.id,
+              commission_due: totalCommissionDue,
+            });
+
+            // Mark order as having commission debt created
+            await supabase
+              .from('orders')
+              .update({ commission_debt_created: true })
+              .eq('id', order.id);
+          }
+        } catch (debtError) {
+          console.error('[useCreateOrder] Exception registering commission debt:', debtError);
+        }
+      }
+
       return {
         success: true,
         order,

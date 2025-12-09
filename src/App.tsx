@@ -78,6 +78,7 @@ const AffiliateDashboard = lazy(() => import("./pages/dashboard/AffiliateDashboa
 const ReviewsManagement = lazy(() => import("./pages/dashboard/ReviewsManagement"));
 const ProductKitsManagement = lazy(() => import("./pages/dashboard/ProductKitsManagement"));
 const ProductComplementsManagement = lazy(() => import("./pages/dashboard/ProductComplementsManagement"));
+const CommissionDebtManagement = lazy(() => import("./pages/dashboard/CommissionDebtManagement"));
 
 // Checkout callback pages
 const CheckoutResult = lazy(() => import("./pages/checkout/CheckoutResult"));
@@ -241,6 +242,7 @@ const AppRoutes = () => {
               <Route path="/painel/:slug/kits" element={<ProductKitsManagement />} />
               <Route path="/painel/:slug/complementos" element={<ProductComplementsManagement />} />
               <Route path="/painel/:slug/avaliacoes" element={<ReviewsManagement />} />
+              <Route path="/painel/:slug/comissoes" element={<CommissionDebtManagement />} />
               {/* Routes without slug for establishment owners */}
               <Route path="/painel/produtos" element={<ProductsManagement />} />
               <Route path="/painel/categorias" element={<CategoriesManagement />} />
