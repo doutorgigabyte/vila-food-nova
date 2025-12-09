@@ -314,7 +314,7 @@ export const SmartAddressInput = ({
 
   return (
     <div className="space-y-4">
-      {/* GPS Button - FIRST */}
+      {/* 1. GPS Button - FIRST (Priority) */}
       {showGpsButton && (
         <Button
           type="button"
@@ -332,23 +332,22 @@ export const SmartAddressInput = ({
         </Button>
       )}
 
-      {/* Divider Text */}
-      {showGpsButton && (
-        <p className="text-center text-xs text-muted-foreground">
-          ou digite o endereço
-        </p>
+      {/* 2. Map - RIGHT AFTER GPS (always visible after GPS or search) */}
+      {showMap && mapVisible && (
+        <div className="space-y-2">
+          <div
+            ref={mapRef}
+            className="w-full h-48 rounded-lg border border-border overflow-hidden"
+          />
+          <p className="text-xs text-muted-foreground text-center">
+            Arraste o marcador para ajustar a localização exata
+          </p>
+        </div>
       )}
 
-      {/* CEP Input */}
-      <CepAutocomplete
-        value={value.cep}
-        onChange={(cep) => onChange({ ...value, cep })}
-        onAddressFound={handleCepFound}
-      />
-
-      {/* Google Places Search */}
+      {/* 3. Google Places Search - BELOW MAP */}
       <div className="space-y-2 relative">
-        <Label>Buscar endereço (Google)</Label>
+        <Label className="text-sm font-medium">Buscar endereço</Label>
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
@@ -379,20 +378,7 @@ export const SmartAddressInput = ({
         )}
       </div>
 
-      {/* Map */}
-      {showMap && mapVisible && (
-        <div className="space-y-3">
-          <div
-            ref={mapRef}
-            className="w-full h-48 rounded-lg border border-border overflow-hidden"
-          />
-          <p className="text-xs text-muted-foreground text-center">
-            Arraste o marcador para ajustar a localização exata
-          </p>
-        </div>
-      )}
-
-      {/* Confirmed Address */}
+      {/* 4. Confirmed Address Banner */}
       {value.formatted_address && (
         <Card className="bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800">
           <CardContent className="p-3">
@@ -411,9 +397,21 @@ export const SmartAddressInput = ({
         </Card>
       )}
 
-      {/* Address Fields */}
-      {(value.address || value.cep) && (
-        <div className="space-y-3">
+      {/* 5. Manual Address Fields - LAST (includes CEP) */}
+      {(value.address || value.cep || mapVisible) && (
+        <div className="space-y-3 pt-2">
+          <p className="text-xs text-muted-foreground">
+            Preencha ou ajuste os dados abaixo:
+          </p>
+          
+          {/* CEP */}
+          <CepAutocomplete
+            value={value.cep}
+            onChange={(cep) => onChange({ ...value, cep })}
+            onAddressFound={handleCepFound}
+          />
+
+          {/* Address + Number */}
           <div className={compact ? "grid grid-cols-4 gap-2" : "grid grid-cols-3 gap-3"}>
             <div className={compact ? "col-span-3" : "col-span-2"}>
               <Label htmlFor="address" className="text-xs">Endereço</Label>
@@ -442,6 +440,7 @@ export const SmartAddressInput = ({
             </div>
           </div>
 
+          {/* Complement + Neighborhood */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label htmlFor="complement" className="text-xs">Complemento</Label>
@@ -464,6 +463,7 @@ export const SmartAddressInput = ({
             </div>
           </div>
 
+          {/* City + State */}
           <div className={compact ? "grid grid-cols-3 gap-2" : "grid grid-cols-2 gap-3"}>
             <div className={compact ? "col-span-2" : ""}>
               <Label htmlFor="city" className="text-xs">Cidade</Label>
@@ -490,8 +490,9 @@ export const SmartAddressInput = ({
             </div>
           </div>
 
+          {/* Reference */}
           <div>
-            <Label htmlFor="reference" className="text-xs">Ponto de Referência</Label>
+            <Label htmlFor="reference" className="text-xs">Ponto de referência</Label>
             <Input
               id="reference"
               placeholder="Próximo a..."
@@ -501,25 +502,6 @@ export const SmartAddressInput = ({
             />
           </div>
         </div>
-      )}
-
-      {/* GPS Button (compact mode) */}
-      {compact && showGpsButton && (
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={getCurrentLocation}
-          disabled={isLoadingLocation || !isMapLoaded}
-          className="w-full"
-        >
-          {isLoadingLocation ? (
-            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-          ) : (
-            <Navigation className="w-4 h-4 mr-2" />
-          )}
-          Usar GPS
-        </Button>
       )}
     </div>
   );

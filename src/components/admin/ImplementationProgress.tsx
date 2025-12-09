@@ -568,6 +568,50 @@ const phases: ProgressPhase[] = [
       { name: 'Lojista vê gateways disponíveis em EstablishmentSettings', status: 'completed', priority: 'medium' },
     ]
   },
+
+  // ===== MELHORIAS MERCADO PAGO (QUALIDADE 73+) =====
+  {
+    id: 'mercadopago-quality',
+    name: '📊 Qualidade Mercado Pago (73+)',
+    description: 'Atingir pontuação mínima de qualidade da integração',
+    category: 'financial',
+    items: [
+      { name: 'items.quantity enviado na preferência', status: 'completed', priority: 'critical' },
+      { name: 'items.unit_price enviado na preferência', status: 'completed', priority: 'critical' },
+      { name: 'items.id enviado na preferência', status: 'completed', priority: 'high' },
+      { name: 'items.title enviado na preferência', status: 'completed', priority: 'high' },
+      { name: 'items.description enviado na preferência', status: 'completed', priority: 'high' },
+      { name: 'items.category_id com categorias específicas MP', status: 'completed', priority: 'high' },
+      { name: 'statement_descriptor: VILA FOOD', status: 'completed', priority: 'high' },
+      { name: 'back_urls (success, failure, pending)', status: 'completed', priority: 'critical' },
+      { name: 'binary_mode: true', status: 'completed', priority: 'high' },
+      { name: 'payer.email (obrigatório)', status: 'completed', priority: 'critical' },
+      { name: 'payer.first_name e last_name', status: 'completed', priority: 'high' },
+      { name: 'payer.phone com area_code', status: 'completed', priority: 'medium' },
+      { name: 'payer.identification (CPF)', status: 'completed', priority: 'medium' },
+      { name: 'payer.address do checkout', status: 'pending', priority: 'medium' },
+      { name: 'shipments.cost (taxa de entrega)', status: 'completed', priority: 'high' },
+    ]
+  },
+
+  // ===== UX CHECKOUT =====
+  {
+    id: 'checkout-ux-improvements',
+    name: '🛒 Melhorias UX Checkout',
+    description: 'Otimizações de experiência no checkout',
+    category: 'ux',
+    items: [
+      { name: 'Layout GPS-first no SmartAddressInput', status: 'completed', priority: 'high' },
+      { name: 'Mapa logo após botão GPS', status: 'completed', priority: 'high' },
+      { name: 'Campo "Buscar endereço" abaixo do mapa', status: 'completed', priority: 'high' },
+      { name: 'CEP junto com campos manuais no final', status: 'completed', priority: 'high' },
+      { name: 'Remover taxa de serviço (5% → 0%)', status: 'completed', priority: 'high' },
+      { name: 'WhatsApp tracking: pré-preencher do perfil', status: 'completed', priority: 'high' },
+      { name: 'WhatsApp tracking: esconder input se telefone já existe', status: 'completed', priority: 'medium' },
+      { name: 'Corrigir payment_id null no CheckoutResult', status: 'completed', priority: 'high' },
+      { name: 'Atualizar status do pedido no callback', status: 'completed', priority: 'high' },
+    ]
+  },
 ];
 
 export function ImplementationProgress() {
