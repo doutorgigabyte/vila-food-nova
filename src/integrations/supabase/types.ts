@@ -2443,6 +2443,140 @@ export type Database = {
         }
         Relationships: []
       }
+      product_complements: {
+        Row: {
+          complement_id: string
+          created_at: string | null
+          discount_fixed: number | null
+          discount_percentage: number | null
+          id: string
+          is_active: boolean | null
+          product_id: string
+        }
+        Insert: {
+          complement_id: string
+          created_at?: string | null
+          discount_fixed?: number | null
+          discount_percentage?: number | null
+          id?: string
+          is_active?: boolean | null
+          product_id: string
+        }
+        Update: {
+          complement_id?: string
+          created_at?: string | null
+          discount_fixed?: number | null
+          discount_percentage?: number | null
+          id?: string
+          is_active?: boolean | null
+          product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_complements_complement_id_fkey"
+            columns: ["complement_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_complements_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_kit_items: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_replaceable: boolean | null
+          kit_id: string
+          product_id: string
+          quantity: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_replaceable?: boolean | null
+          kit_id: string
+          product_id: string
+          quantity?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_replaceable?: boolean | null
+          kit_id?: string
+          product_id?: string
+          quantity?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_kit_items_kit_id_fkey"
+            columns: ["kit_id"]
+            isOneToOne: false
+            referencedRelation: "product_kits"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_kit_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_kits: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          establishment_id: string
+          id: string
+          image_url: string | null
+          is_active: boolean | null
+          kit_price: number
+          name: string
+          original_price: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          establishment_id: string
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          kit_price: number
+          name: string
+          original_price?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          establishment_id?: string
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          kit_price?: number
+          name?: string
+          original_price?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_kits_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           additionals: Json | null
@@ -2791,6 +2925,7 @@ export type Database = {
           items: Json
           notes: string | null
           payment_method: string | null
+          recurrence: Json | null
           scheduled_for: string
           status: string | null
           subtotal: number
@@ -2807,6 +2942,7 @@ export type Database = {
           items?: Json
           notes?: string | null
           payment_method?: string | null
+          recurrence?: Json | null
           scheduled_for: string
           status?: string | null
           subtotal?: number
@@ -2823,6 +2959,7 @@ export type Database = {
           items?: Json
           notes?: string | null
           payment_method?: string | null
+          recurrence?: Json | null
           scheduled_for?: string
           status?: string | null
           subtotal?: number

@@ -675,7 +675,52 @@ const phases: ProgressPhase[] = [
       { name: 'Exibir mensagem de loja fechada', status: 'completed', priority: 'high' },
       { name: 'Bloquear botão "Fazer Pedido"', status: 'completed', priority: 'critical' },
       { name: 'Configurar horário Doces e Tortas (08h-22h)', status: 'completed', priority: 'high' },
-      { name: 'Validação automática por operating_hours', status: 'pending', priority: 'medium' },
+      { name: 'Validação automática por operating_hours', status: 'completed', priority: 'medium' },
+    ]
+  },
+
+  // ===== AGENDAMENTO AVANÇADO =====
+  {
+    id: 'advanced-scheduling',
+    name: '📅 Agendamento Avançado',
+    description: 'Agendamento de pedidos quando loja fechada + recorrência',
+    category: 'operation',
+    items: [
+      { name: 'Modal ScheduledOrderModal para agendar pedido', status: 'completed', priority: 'critical' },
+      { name: 'Seleção de data com calendário', status: 'completed', priority: 'high' },
+      { name: 'Seleção de horário baseado em operating_hours', status: 'completed', priority: 'high' },
+      { name: 'Próximo horário disponível destacado', status: 'completed', priority: 'medium' },
+      { name: 'Opção de recorrência (diário, seg-sex, personalizado)', status: 'completed', priority: 'high' },
+      { name: 'Seleção de dias da semana para recorrência', status: 'completed', priority: 'high' },
+      { name: 'Data limite para recorrência', status: 'completed', priority: 'medium' },
+      { name: 'Campo recurrence na tabela scheduled_orders', status: 'completed', priority: 'high' },
+      { name: 'Integração com checkout (scheduledFor state)', status: 'completed', priority: 'critical' },
+      { name: 'Edge Function para criar pedidos recorrentes', status: 'pending', priority: 'medium' },
+    ]
+  },
+
+  // ===== PRODUTOS AVANÇADOS =====
+  {
+    id: 'advanced-products',
+    name: '📦 Produtos Avançados',
+    description: 'Kits, adicionais e complementos com desconto',
+    category: 'operation',
+    items: [
+      { name: 'Cadastro de adicionais no produto (ProductAdditionalsManager)', status: 'completed', priority: 'critical' },
+      { name: 'Interface para nome, preço, obrigatório, quantidade', status: 'completed', priority: 'high' },
+      { name: 'Agrupamento de adicionais (Bordas, Extras, etc)', status: 'completed', priority: 'high' },
+      { name: 'Tabela product_kits criada', status: 'completed', priority: 'high' },
+      { name: 'Tabela product_kit_items criada', status: 'completed', priority: 'high' },
+      { name: 'RLS policies para kits', status: 'completed', priority: 'high' },
+      { name: 'Página ProductKitsManagement.tsx', status: 'completed', priority: 'critical' },
+      { name: 'Criar kit selecionando produtos existentes', status: 'completed', priority: 'high' },
+      { name: 'Definir quantidade de cada produto no kit', status: 'completed', priority: 'high' },
+      { name: 'Calcular economia (preço original vs kit)', status: 'completed', priority: 'medium' },
+      { name: 'Tabela product_complements criada', status: 'completed', priority: 'high' },
+      { name: 'UI para vincular produtos complementares', status: 'pending', priority: 'medium' },
+      { name: 'Desconto ao comprar produto complementar junto', status: 'pending', priority: 'medium' },
+      { name: 'Exibir kits no checkout e loja', status: 'pending', priority: 'high' },
+      { name: 'Rota /painel/:slug/kits', status: 'completed', priority: 'high' },
     ]
   },
 ];
