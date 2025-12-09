@@ -5,9 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Utensils, Mail, Lock, User, Phone, ArrowLeft, Eye, EyeOff, CheckCircle, RefreshCw } from "lucide-react";
+import { Utensils, Mail, Lock, User, Phone, ArrowLeft, Eye, EyeOff, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
+import { ProfileTypeSelector, ProfileType } from "@/components/checkout/ProfileTypeSelector";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -29,6 +30,7 @@ const Auth = () => {
   const [registerPhone, setRegisterPhone] = useState("");
   const [registerPassword, setRegisterPassword] = useState("");
   const [registerConfirmPassword, setRegisterConfirmPassword] = useState("");
+  const [profileType, setProfileType] = useState<ProfileType>("customer");
 
   // Redirect if already logged in
   useEffect(() => {
@@ -91,17 +93,27 @@ const Auth = () => {
     
     // Check if email confirmation is required
     if (data?.user && !data?.session) {
-      // Email confirmation required
       setEmailVerificationSent(true);
       setPendingEmail(registerEmail);
       toast.success("Verifique seu e-mail para confirmar a conta!");
       return;
     }
     
-    // If session exists, user is already confirmed (shouldn't happen with email confirmation enabled)
+    // If session exists, redirect based on profile type
     if (data?.session) {
       toast.success("Conta criada com sucesso!");
-      navigate('/marketplace');
+      
+      // Redirect based on profile type
+      switch (profileType) {
+        case "merchant":
+          navigate('/cadastro-estabelecimento');
+          break;
+        case "driver":
+          navigate('/entregador/cadastro');
+          break;
+        default:
+          navigate('/marketplace');
+      }
     }
   };
 
@@ -254,6 +266,12 @@ const Auth = () => {
               {/* Register Tab */}
               <TabsContent value="register">
                 <form onSubmit={handleRegister} className="space-y-4">
+                  {/* Profile Type Selector */}
+                  <ProfileTypeSelector
+                    value={profileType}
+                    onChange={setProfileType}
+                  />
+
                   <div className="space-y-2">
                     <Label htmlFor="register-name">Nome completo *</Label>
                     <div className="relative">
@@ -409,18 +427,6 @@ const Auth = () => {
               </div>
             </CardContent>
           </Card>
-        )}
-
-        {/* Register as establishment */}
-        {!emailVerificationSent && (
-          <div className="mt-6 text-center">
-            <p className="text-muted-foreground text-sm">
-              Tem um estabelecimento?{" "}
-              <Link to="/cadastro-estabelecimento" className="text-primary font-medium hover:underline">
-                Cadastre-se aqui
-              </Link>
-            </p>
-          </div>
         )}
       </div>
     </div>
