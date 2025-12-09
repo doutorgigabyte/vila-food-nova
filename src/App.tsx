@@ -191,6 +191,7 @@ const AppRoutes = () => {
         <Routes>
                 <Route path="/" element={<Index />} />
               <Route path="/conheca" element={<Conheca />} />
+              <Route path="/cadastro-estabelecimento" element={<RegisterEstablishment />} />
               <Route path="/marketplace" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/termos" element={<TermsOfUse />} />

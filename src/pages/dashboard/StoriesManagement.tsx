@@ -47,7 +47,6 @@ const StoriesManagement = () => {
     if (!establishment?.id) return;
 
     try {
-      // In production, upload to S3 first
       const { error } = await supabase
         .from("establishment_videos")
         .insert({
@@ -57,6 +56,10 @@ const StoriesManagement = () => {
           description: storyData.description,
           duration: storyData.duration,
           is_active: true,
+          display_in_store: storyData.displayInStore,
+          display_in_marketplace: storyData.displayInMarketplace,
+          scheduled_for: storyData.scheduledFor?.toISOString() || null,
+          repost_days: storyData.repostDays || [],
         });
 
       if (error) throw error;
