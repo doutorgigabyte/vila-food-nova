@@ -93,6 +93,66 @@ const WhatsAppManagement = () => {
     }
   }, [establishmentId]);
 
+  // Check status on initial load to sync with Evolution API
+  const checkAndSyncStatus = useCallback(async () => {
+    if (!instance?.instance_name || !establishmentId) return;
+
+    try {
+      const { data, error } = await supabase.functions.invoke('evolution-api', {
+        body: {
+          action: 'check_status',
+          instanceName: instance.instance_name,
+          establishmentId,
+        }
+      });
+
+      if (error) {
+        console.warn('Status check error:', error);
+        return;
+      }
+
+      const state = data?.data?.state || data?.state || data?.instance?.state;
+      console.log('Status check - state:', state, 'current status:', instance.status);
+
+      if (state === 'open' && instance.status !== 'connected') {
+        // Evolution API says connected but our DB says otherwise - sync it
+        console.log('Syncing status to connected');
+        const { error: updateError } = await supabase
+          .from("whatsapp_instances")
+          .update({ status: 'connected', qr_code: null })
+          .eq("id", instance.id);
+        
+        if (!updateError) {
+          setInstance(prev => prev ? { ...prev, status: 'connected', qr_code: null } : null);
+          toast.success("WhatsApp conectado com sucesso!");
+        } else {
+          console.error('Update error:', updateError);
+        }
+      } else if ((state === 'close' || state === 'connecting') && instance.status === 'connected') {
+        // Evolution API says disconnected but our DB says connected - sync it
+        console.log('Syncing status to disconnected');
+        await supabase
+          .from("whatsapp_instances")
+          .update({ status: 'disconnected' })
+          .eq("id", instance.id);
+        
+        setInstance(prev => prev ? { ...prev, status: 'disconnected' } : null);
+      }
+
+      return state;
+    } catch (err) {
+      console.warn('Status check error:', err);
+      return null;
+    }
+  }, [instance?.instance_name, instance?.status, instance?.id, establishmentId]);
+
+  // Check status on initial load when instance exists
+  useEffect(() => {
+    if (instance?.instance_name && establishmentId) {
+      checkAndSyncStatus();
+    }
+  }, [instance?.instance_name, establishmentId]);
+
   // Auto-polling when connecting - check status every 5 seconds
   useEffect(() => {
     if (!instance?.instance_name || instance?.status !== 'connecting') {
@@ -118,19 +178,24 @@ const WhatsAppManagement = () => {
           return;
         }
 
-        const state = data?.state || data?.instance?.state;
+        const state = data?.data?.state || data?.state || data?.instance?.state;
         console.log('Poll result - state:', state);
 
         if (state === 'open') {
-          // Connected! Update database and UI
-          await supabase
+          // Connected! Update database and UI directly
+          console.log('Detected connected state, updating...');
+          const { error: updateError } = await supabase
             .from("whatsapp_instances")
             .update({ status: 'connected', qr_code: null })
             .eq("id", instance.id);
           
-          toast.success("WhatsApp conectado com sucesso!");
-          fetchInstance();
-          setPollingActive(false);
+          if (!updateError) {
+            setInstance(prev => prev ? { ...prev, status: 'connected', qr_code: null } : null);
+            toast.success("WhatsApp conectado com sucesso!");
+            setPollingActive(false);
+          } else {
+            console.error('Update failed:', updateError);
+          }
         } else if (state === 'close' || state === 'connecting') {
           // Still connecting, try to refresh QR code
           const { data: qrData } = await supabase.functions.invoke('evolution-api', {
