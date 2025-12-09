@@ -289,6 +289,53 @@ export type Database = {
         }
         Relationships: []
       }
+      agent_action_logs: {
+        Row: {
+          action_data: Json | null
+          action_type: string
+          created_at: string
+          error_message: string | null
+          establishment_id: string | null
+          execution_time_ms: number | null
+          id: string
+          result: Json | null
+          session_id: string
+          success: boolean | null
+        }
+        Insert: {
+          action_data?: Json | null
+          action_type: string
+          created_at?: string
+          error_message?: string | null
+          establishment_id?: string | null
+          execution_time_ms?: number | null
+          id?: string
+          result?: Json | null
+          session_id: string
+          success?: boolean | null
+        }
+        Update: {
+          action_data?: Json | null
+          action_type?: string
+          created_at?: string
+          error_message?: string | null
+          establishment_id?: string | null
+          execution_time_ms?: number | null
+          id?: string
+          result?: Json | null
+          session_id?: string
+          success?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_action_logs_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_credits: {
         Row: {
           created_at: string
@@ -1906,6 +1953,27 @@ export type Database = {
           },
         ]
       }
+      n8n_chat_histories: {
+        Row: {
+          created_at: string
+          id: string
+          message: Json
+          session_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: Json
+          session_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: Json
+          session_id?: string
+        }
+        Relationships: []
+      }
       notification_preferences: {
         Row: {
           created_at: string | null
@@ -3439,37 +3507,46 @@ export type Database = {
       }
       whatsapp_messages: {
         Row: {
+          agent_type: string | null
           content: string
           created_at: string | null
           id: string
           is_from_bot: boolean | null
+          media_analyzed: boolean | null
           media_type: string | null
           media_url: string | null
           message_type: string | null
+          processed_content: string | null
           product_id: string | null
           sender: string
           session_id: string
         }
         Insert: {
+          agent_type?: string | null
           content: string
           created_at?: string | null
           id?: string
           is_from_bot?: boolean | null
+          media_analyzed?: boolean | null
           media_type?: string | null
           media_url?: string | null
           message_type?: string | null
+          processed_content?: string | null
           product_id?: string | null
           sender: string
           session_id: string
         }
         Update: {
+          agent_type?: string | null
           content?: string
           created_at?: string | null
           id?: string
           is_from_bot?: boolean | null
+          media_analyzed?: boolean | null
           media_type?: string | null
           media_url?: string | null
           message_type?: string | null
+          processed_content?: string | null
           product_id?: string | null
           sender?: string
           session_id?: string
@@ -3534,6 +3611,7 @@ export type Database = {
       }
       whatsapp_sessions: {
         Row: {
+          ai_active: boolean | null
           cart: Json | null
           context: Json | null
           created_at: string | null
@@ -3542,9 +3620,13 @@ export type Database = {
           establishment_id: string
           id: string
           last_message_at: string | null
+          pause_reason: string | null
+          paused_at: string | null
+          paused_by: string | null
           status: string | null
         }
         Insert: {
+          ai_active?: boolean | null
           cart?: Json | null
           context?: Json | null
           created_at?: string | null
@@ -3553,9 +3635,13 @@ export type Database = {
           establishment_id: string
           id?: string
           last_message_at?: string | null
+          pause_reason?: string | null
+          paused_at?: string | null
+          paused_by?: string | null
           status?: string | null
         }
         Update: {
+          ai_active?: boolean | null
           cart?: Json | null
           context?: Json | null
           created_at?: string | null
@@ -3564,6 +3650,9 @@ export type Database = {
           establishment_id?: string
           id?: string
           last_message_at?: string | null
+          pause_reason?: string | null
+          paused_at?: string | null
+          paused_by?: string | null
           status?: string | null
         }
         Relationships: [
