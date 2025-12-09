@@ -26,6 +26,8 @@ import AdminLayout from "@/components/admin/AdminLayout";
 import { ConversationHistory } from "@/components/whatsapp/ConversationHistory";
 import { WhatsAppHealthCheck } from "@/components/whatsapp/WhatsAppHealthCheck";
 import { WhatsAppRealTimeStats } from "@/components/whatsapp/WhatsAppRealTimeStats";
+import { HumanTakeoverPanel } from "@/components/whatsapp/HumanTakeoverPanel";
+import { AgentActionLogs } from "@/components/whatsapp/AgentActionLogs";
 
 interface WhatsAppInstance {
   id: string;
@@ -935,6 +937,15 @@ Seja sempre educado e prestativo. Se não souber responder algo, peça para o cl
                       </div>
                     </CardContent>
                   </Card>
+
+                  {/* Human Takeover Panel */}
+                  <HumanTakeoverPanel 
+                    establishmentId={establishmentId} 
+                    instanceId={instance?.id}
+                  />
+
+                  {/* Agent Action Logs */}
+                  <AgentActionLogs establishmentId={establishmentId} />
                 </>
               )}
             </TabsContent>
