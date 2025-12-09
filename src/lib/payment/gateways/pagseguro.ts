@@ -142,25 +142,63 @@ export class PagSeguroGateway {
   }
 
   /**
-   * Cria pagamento via cartão de crédito
+   * Cria pagamento via cartão de crédito usando checkout transparente
    */
   async createCardPayment(
     orderId: string,
     amount: number,
     description: string,
     encryptedCard: string,
+    securityCode: string,
+    holder: { name: string; tax_id: string },
     installments: number = 1,
-    payer?: { email?: string; name?: string; tax_id?: string }
+    payer?: { email?: string; name?: string; tax_id?: string; phone?: string },
+    withSplit: boolean = true
   ): Promise<CreatePaymentResponse> {
-    // TODO: Implementar quando necessário
-    console.log('PagBank Card payment - implementation pending');
-    return {
-      success: false,
-      payment_id: '',
-      status: 'rejected',
-      gateway: 'pagseguro',
-      error: 'Pagamento via cartão PagBank ainda não implementado',
-    };
+    try {
+      const { data, error } = await supabase.functions.invoke('pagseguro-card', {
+        body: {
+          establishment_id: this.establishmentId,
+          order_id: orderId,
+          amount: Math.round(amount * 100), // Converter para centavos
+          description,
+          encrypted_card: encryptedCard,
+          security_code: securityCode,
+          holder,
+          installments,
+          customer: payer,
+          with_split: withSplit,
+        },
+      });
+
+      if (error) throw error;
+
+      if (!data.success) {
+        return {
+          success: false,
+          payment_id: '',
+          status: 'rejected',
+          gateway: 'pagseguro',
+          error: data.error || 'Pagamento não aprovado',
+        };
+      }
+
+      return {
+        success: true,
+        payment_id: data.payment_id || data.charge_id,
+        status: this.mapPagBankStatus(data.charge_status || data.status),
+        gateway: 'pagseguro',
+      };
+    } catch (error: any) {
+      console.error('PagBank Card error:', error);
+      return {
+        success: false,
+        payment_id: '',
+        status: 'rejected',
+        gateway: 'pagseguro',
+        error: error.message || 'Erro ao processar pagamento com cartão',
+      };
+    }
   }
 
   /**
