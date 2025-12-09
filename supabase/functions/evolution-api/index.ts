@@ -183,7 +183,14 @@ async function sendTextMessage(config: EvolutionConfig, instanceName: string, ph
     },
     body: JSON.stringify({
       number: phone,
-      text: message,
+      textMessage: {
+        text: message,
+      },
+      options: {
+        delay: 1200,
+        presence: 'composing',
+        linkPreview: true,
+      },
     }),
   });
 
