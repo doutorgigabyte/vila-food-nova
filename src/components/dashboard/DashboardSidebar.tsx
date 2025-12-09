@@ -34,6 +34,8 @@ import {
   Settings,
   Plug,
   Star,
+  PackagePlus,
+  Layers,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -62,6 +64,8 @@ const getMenuItems = (baseUrl: string) => [
   { icon: ClipboardList, label: "Comanda Digital", href: `${baseUrl}/comanda` },
   { icon: ChefHat, label: "Display Cozinha", href: `${baseUrl}/cozinha` },
   { icon: Package, label: "Produtos", href: `${baseUrl}/produtos` },
+  { icon: PackagePlus, label: "Kits de Produtos", href: `${baseUrl}/kits` },
+  { icon: Layers, label: "Complementos", href: `${baseUrl}/complementos` },
   { icon: Tag, label: "Categorias", href: `${baseUrl}/categorias` },
   { icon: Boxes, label: "Estoque", href: `${baseUrl}/estoque` },
   { icon: Star, label: "Avaliações", href: `${baseUrl}/avaliacoes`, badge: "Novo" },
