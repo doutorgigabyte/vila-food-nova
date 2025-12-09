@@ -170,6 +170,9 @@ async function deleteInstance(config: EvolutionConfig, instanceName: string): Pr
   return await response.json();
 }
 
+// N8N Webhook URL - all WhatsApp messages go to N8N for AI processing
+const N8N_WEBHOOK_URL = 'https://n8n.vilafood.delivery/webhook/vilafood-webhook';
+
 // Set webhook for receiving messages
 async function setWebhook(config: EvolutionConfig, instanceName: string, webhookUrl: string): Promise<any> {
   console.log(`Setting webhook for: ${instanceName} -> ${webhookUrl}`);
@@ -182,13 +185,12 @@ async function setWebhook(config: EvolutionConfig, instanceName: string, webhook
     },
     body: JSON.stringify({
       url: webhookUrl,
-      webhook_by_events: false,
-      webhook_base64: true,
+      webhook_by_events: false,  // All events to single URL
+      webhook_base64: false,     // Use URLs for media (CloudFront compatible)
       events: [
-        'QRCODE_UPDATED',
-        'MESSAGES_UPSERT',
-        'MESSAGES_UPDATE',
-        'CONNECTION_UPDATE',
+        'MESSAGES_UPSERT',       // Incoming messages
+        'CONNECTION_UPDATE',     // Connection status changes
+        'QRCODE_UPDATED',        // QR code updates
       ],
     }),
   });
@@ -381,15 +383,15 @@ serve(async (req) => {
         if (!instanceName) throw new Error('instanceName required');
         result = await createInstance(config, instanceName, body.token);
         
-        // Auto-configure webhook if establishment provided
-        if (establishmentId) {
-          const webhookUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/whatsapp-webhook`;
-          try {
-            await setWebhook(config, instanceName, webhookUrl);
-            console.log('Webhook configured automatically');
-          } catch (e) {
-            console.warn('Could not set webhook:', e);
-          }
+        // Auto-configure N8N webhook for AI processing
+        try {
+          await setWebhook(config, instanceName, N8N_WEBHOOK_URL);
+          console.log('N8N webhook configured automatically:', N8N_WEBHOOK_URL);
+          result.webhookConfigured = true;
+          result.webhookUrl = N8N_WEBHOOK_URL;
+        } catch (e) {
+          console.warn('Could not set N8N webhook:', e);
+          result.webhookConfigured = false;
         }
         break;
 
