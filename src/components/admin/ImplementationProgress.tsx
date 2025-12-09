@@ -482,6 +482,57 @@ const phases: ProgressPhase[] = [
       { name: 'E-mail apenas para validação (não notificações)', status: 'completed', priority: 'medium' },
     ]
   },
+
+  // ===== DEBUG DE PAGAMENTOS =====
+  {
+    id: 'payment-debug',
+    name: '🐛 Debug de Pagamentos',
+    description: 'Corrigir erros de criação de pedido e PIX',
+    category: 'financial',
+    items: [
+      { name: 'Logging detalhado no useCreateOrder', status: 'completed', priority: 'critical' },
+      { name: 'Logging detalhado no MercadoPagoGateway', status: 'completed', priority: 'critical' },
+      { name: 'Logging detalhado no PixPayment', status: 'completed', priority: 'critical' },
+      { name: 'RLS policy para INSERT anon/authenticated em orders', status: 'completed', priority: 'critical' },
+      { name: 'Validar establishment tem mercado_pago_token', status: 'in-progress', priority: 'critical' },
+      { name: 'Debug Edge Function mercadopago-pix', status: 'in-progress', priority: 'critical' },
+      { name: 'Fallback para PIX estático quando MP falha', status: 'completed', priority: 'high' },
+      { name: 'Testar checkout como usuário anônimo', status: 'pending', priority: 'critical' },
+      { name: 'Testar checkout como usuário logado', status: 'pending', priority: 'critical' },
+    ]
+  },
+
+  // ===== SELEÇÃO DE GATEWAY NO CHECKOUT =====
+  {
+    id: 'gateway-selection-checkout',
+    name: '💳 Seleção de Gateway no Checkout',
+    description: 'Cliente escolhe Mercado Pago ou PagSeguro',
+    category: 'financial',
+    items: [
+      { name: 'Componente GatewaySelector', status: 'pending', priority: 'high' },
+      { name: 'Buscar gateways ativos do estabelecimento', status: 'pending', priority: 'high' },
+      { name: 'Mostrar opções (MP, PagSeguro) com ícones', status: 'pending', priority: 'high' },
+      { name: 'Auto-selecionar se apenas 1 gateway ativo', status: 'pending', priority: 'medium' },
+      { name: 'Integrar no Checkout.tsx', status: 'pending', priority: 'high' },
+    ]
+  },
+
+  // ===== CONFIGURAÇÃO DE GATEWAYS NO ADMIN =====
+  {
+    id: 'gateway-config-admin',
+    name: '⚙️ Configuração de Gateways (Admin)',
+    description: 'Admin ativa/desativa gateways da plataforma',
+    category: 'admin',
+    items: [
+      { name: 'Nova aba "Gateways" em AdminSettings', status: 'pending', priority: 'high' },
+      { name: 'Switch para Mercado Pago (ativar/desativar)', status: 'pending', priority: 'high' },
+      { name: 'Switch para PagSeguro (ativar/desativar)', status: 'pending', priority: 'high' },
+      { name: 'Switch para PIX estático (ativar/desativar)', status: 'pending', priority: 'high' },
+      { name: 'Switch para dinheiro (ativar/desativar)', status: 'pending', priority: 'high' },
+      { name: 'Campos na tabela platform_settings', status: 'pending', priority: 'high' },
+      { name: 'Lojista vê gateways disponíveis em EstablishmentSettings', status: 'pending', priority: 'medium' },
+    ]
+  },
 ];
 
 export function ImplementationProgress() {

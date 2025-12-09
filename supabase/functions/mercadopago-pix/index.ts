@@ -26,6 +26,8 @@ interface PixRequest {
 }
 
 serve(async (req) => {
+  console.log('[mercadopago-pix] Request received:', req.method);
+  
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -39,9 +41,21 @@ serve(async (req) => {
     const body: PixRequest = await req.json();
     const { establishment_id, order_id, amount, description, payer_email, payer_name, external_reference } = body;
 
+    console.log('[mercadopago-pix] Request body:', {
+      establishment_id,
+      order_id,
+      amount,
+      description,
+      payer_email: payer_email ? '***' : null,
+    });
+
     // Validate required fields
     if (!establishment_id) {
-      return new Response(JSON.stringify({ error: 'establishment_id é obrigatório' }), {
+      console.error('[mercadopago-pix] Missing establishment_id');
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: 'establishment_id é obrigatório' 
+      }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -49,20 +63,28 @@ serve(async (req) => {
 
     // SECURITY: Require order_id to prevent abuse
     if (!order_id) {
-      return new Response(JSON.stringify({ error: 'order_id é obrigatório para gerar PIX' }), {
+      console.error('[mercadopago-pix] Missing order_id');
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: 'order_id é obrigatório para gerar PIX' 
+      }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
     if (!amount || amount <= 0) {
-      return new Response(JSON.stringify({ error: 'Valor do pagamento inválido' }), {
+      console.error('[mercadopago-pix] Invalid amount:', amount);
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: 'Valor do pagamento inválido' 
+      }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    console.log('PIX request:', { establishment_id, order_id, amount });
+    console.log('[mercadopago-pix] Validating order...');
 
     // SECURITY: Validate that the order exists and belongs to the establishment
     const { data: order, error: orderError } = await supabase
@@ -72,21 +94,44 @@ serve(async (req) => {
       .eq('establishment_id', establishment_id)
       .single();
 
-    if (orderError || !order) {
-      console.error('Order validation failed:', orderError);
-      return new Response(JSON.stringify({ error: 'Pedido não encontrado ou não pertence ao estabelecimento' }), {
+    if (orderError) {
+      console.error('[mercadopago-pix] Order query error:', orderError);
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: 'Erro ao validar pedido',
+        details: orderError.message
+      }), {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
+    if (!order) {
+      console.error('[mercadopago-pix] Order not found:', { order_id, establishment_id });
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: 'Pedido não encontrado ou não pertence ao estabelecimento' 
+      }), {
+        status: 404,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    console.log('[mercadopago-pix] Order found:', { id: order.id, status: order.status, total: order.total });
+
     // Validate order is in a valid state for payment
     if (order.status === 'cancelled' || order.status === 'delivered') {
-      return new Response(JSON.stringify({ error: 'Pedido não pode receber pagamento neste status' }), {
+      console.error('[mercadopago-pix] Invalid order status:', order.status);
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: 'Pedido não pode receber pagamento neste status' 
+      }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+    console.log('[mercadopago-pix] Fetching establishment...');
 
     // Get establishment's Mercado Pago token (excluding sensitive columns from log)
     const { data: establishment, error: estError } = await supabase
@@ -95,12 +140,34 @@ serve(async (req) => {
       .eq('id', establishment_id)
       .single();
 
-    if (estError || !establishment) {
-      return new Response(JSON.stringify({ error: 'Estabelecimento não encontrado' }), {
+    if (estError) {
+      console.error('[mercadopago-pix] Establishment query error:', estError);
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: 'Erro ao buscar estabelecimento',
+        details: estError.message
+      }), {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+    if (!establishment) {
+      console.error('[mercadopago-pix] Establishment not found:', establishment_id);
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: 'Estabelecimento não encontrado' 
+      }), {
+        status: 404,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    console.log('[mercadopago-pix] Establishment:', {
+      name: establishment.name,
+      has_mp_token: !!establishment.mercado_pago_token,
+      has_pix_key: !!establishment.pix_key,
+    });
 
     // Check if establishment has Mercado Pago configured
     if (!establishment.mercado_pago_token) {

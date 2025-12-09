@@ -46,8 +46,12 @@ export function PixPayment({
 
   const generatePix = async () => {
     setLoading(true);
+    console.log('[PixPayment] Generating PIX:', { orderId, establishmentId, amount });
+    
     try {
       const gateway = createPaymentGateway(establishmentId);
+      console.log('[PixPayment] Gateway created, calling createPixPayment...');
+      
       const result = await gateway.createPixPayment(
         orderId,
         amount,
@@ -55,13 +59,24 @@ export function PixPayment({
         { email: payerEmail, name: payerName }
       );
 
+      console.log('[PixPayment] PIX result:', {
+        success: result.success,
+        payment_id: result.payment_id,
+        status: result.status,
+        error: result.error,
+        has_qr_code: !!result.pix_qr_code,
+        has_qr_code_base64: !!result.pix_qr_code_base64,
+      });
+
       setPaymentData(result);
       setStatus(result.status);
 
       if (!result.success) {
+        console.error('[PixPayment] PIX generation failed:', result.error);
         onPaymentFailed?.(result.error || 'Erro ao gerar PIX');
       }
     } catch (error) {
+      console.error('[PixPayment] Exception:', error);
       const message = error instanceof Error ? error.message : 'Erro ao gerar PIX';
       toast.error(message);
       onPaymentFailed?.(message);

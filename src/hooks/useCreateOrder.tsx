@@ -54,37 +54,59 @@ export const useCreateOrder = () => {
       // First, try to find or create customer
       const customerId = orderData.customer_id;
 
+      // DEBUG: Log the order data being sent
+      const orderPayload = {
+        establishment_id: orderData.establishment_id,
+        customer_id: customerId || null,
+        delivery_type: orderData.delivery_type,
+        payment_method: orderData.payment_method,
+        items: orderData.items as any,
+        subtotal: orderData.subtotal,
+        delivery_fee: orderData.delivery_fee || 0,
+        discount: orderData.discount || 0,
+        platform_fee: orderData.platform_fee || 0,
+        order_source: orderSource,
+        total: orderData.total,
+        delivery_address: orderData.delivery_address as any || null,
+        change_for: orderData.change_for || null,
+        observations: orderData.observations || null,
+        table_number: orderData.table_number || null,
+        scheduled_for: orderData.scheduled_for || null,
+        whatsapp_tracking_enabled: orderData.whatsapp_tracking_enabled ?? false,
+        customer_phone: orderData.customer_phone || null,
+        status: 'pending' as const,
+      };
+      
+      console.log('[useCreateOrder] Creating order with payload:', {
+        establishment_id: orderPayload.establishment_id,
+        delivery_type: orderPayload.delivery_type,
+        payment_method: orderPayload.payment_method,
+        total: orderPayload.total,
+        items_count: orderPayload.items?.length || 0,
+      });
+
       // Insert the order
       const { data: order, error } = await supabase
         .from('orders')
-        .insert([{
-          establishment_id: orderData.establishment_id,
-          customer_id: customerId || null,
-          delivery_type: orderData.delivery_type,
-          payment_method: orderData.payment_method,
-          items: orderData.items as any,
-          subtotal: orderData.subtotal,
-          delivery_fee: orderData.delivery_fee || 0,
-          discount: orderData.discount || 0,
-          platform_fee: orderData.platform_fee || 0,
-          order_source: orderSource,
-          total: orderData.total,
-          delivery_address: orderData.delivery_address as any || null,
-          change_for: orderData.change_for || null,
-          observations: orderData.observations || null,
-          table_number: orderData.table_number || null,
-          scheduled_for: orderData.scheduled_for || null,
-          whatsapp_tracking_enabled: orderData.whatsapp_tracking_enabled ?? false,
-          customer_phone: orderData.customer_phone || null,
-          status: 'pending' as const,
-        }])
+        .insert([orderPayload])
         .select()
         .single();
 
       if (error) {
-        console.error('Error creating order:', error);
-        throw new Error('Falha ao criar pedido');
+        console.error('[useCreateOrder] Supabase error:', {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+        });
+        throw new Error(error.message || 'Falha ao criar pedido');
       }
+
+      console.log('[useCreateOrder] Order created successfully:', {
+        id: order.id,
+        order_number: order.order_number,
+        status: order.status,
+      });
 
       return {
         success: true,
@@ -92,7 +114,7 @@ export const useCreateOrder = () => {
         orderNumber: order.order_number,
       };
     } catch (error: any) {
-      console.error('Create order error:', error);
+      console.error('[useCreateOrder] Error:', error);
       toast.error(error.message || 'Erro ao criar pedido');
       return {
         success: false,
