@@ -15,15 +15,14 @@ import {
   CreditCard, 
   Banknote, 
   QrCode,
-  Bike,
   Store,
   Clock,
   CheckCircle,
   ShoppingBag,
   AlertTriangle,
   Bookmark,
-  Info,
-  MessageSquare
+  MessageSquare,
+  ChevronRight
 } from "lucide-react";
 import { toast } from "sonner";
 import { Price } from "@/components/ui/price";
@@ -36,8 +35,13 @@ import { SmartAddressInput } from "@/components/address";
 import { SavedAddressSelector } from "@/components/checkout/SavedAddressSelector";
 import { SaveAddressDialog } from "@/components/checkout/SaveAddressDialog";
 import { PaymentProcessor } from "@/components/checkout/PaymentProcessor";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { CartConfirmationStep } from "@/components/checkout/CartConfirmationStep";
+import { DeliveryOptionsCards } from "@/components/checkout/DeliveryOptionsCards";
+import { CheckoutSummary } from "@/components/checkout/CheckoutSummary";
+import { CouponInput } from "@/components/checkout/CouponInput";
 import { trackInitiateCheckout, trackPurchase } from "@/lib/analytics";
+
+type CheckoutStep = "cart" | "delivery" | "payment" | "processing" | "success";
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -52,20 +56,24 @@ const Checkout = () => {
     getEstablishmentItems, 
     getEstablishmentSubtotal,
     isMultiEstablishment,
-    clearEstablishmentCart,
+    updateQuantity,
+    removeFromCart,
     clearCart
   } = useCart();
 
   const { createOrder, loading: creatingOrder } = useCreateOrder();
   const { source, shouldApplyPlatformFee, platformFeePercent } = useOrderSource();
 
-  const [step, setStep] = useState<"delivery" | "payment" | "processing" | "success">("delivery");
+  const [step, setStep] = useState<CheckoutStep>("cart");
   const [deliveryType, setDeliveryType] = useState("pickup");
   const [paymentMethod, setPaymentMethod] = useState("pix");
   const [createdOrderId, setCreatedOrderId] = useState<string | null>(null);
   const [currentEstablishmentId, setCurrentEstablishmentId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [completedOrders, setCompletedOrders] = useState<string[]>([]);
+  
+  // Coupon
+  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discountValue: number; discountType: string } | null>(null);
   
   // Address form
   const [addressData, setAddressData] = useState<{
@@ -89,9 +97,6 @@ const Checkout = () => {
     city: "",
     state: "",
     reference: "",
-    lat: undefined,
-    lng: undefined,
-    formatted_address: "",
   });
   
   // Payment
@@ -108,6 +113,9 @@ const Checkout = () => {
   const [selectedSavedAddressId, setSelectedSavedAddressId] = useState<string | undefined>();
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [saveAddressDialogOpen, setSaveAddressDialogOpen] = useState(false);
+
+  const uniqueEstablishments = getUniqueEstablishments();
+  const isMultiStore = isMultiEstablishment();
 
   // Auto-select default address when available
   useEffect(() => {
@@ -162,14 +170,8 @@ const Checkout = () => {
       city: "",
       state: "",
       reference: "",
-      lat: undefined,
-      lng: undefined,
-      formatted_address: "",
     });
   };
-
-  const uniqueEstablishments = getUniqueEstablishments();
-  const isMultiStore = isMultiEstablishment();
 
   // For multi-establishment orders, force pickup only
   useEffect(() => {
@@ -193,26 +195,6 @@ const Checkout = () => {
       </div>
     );
   }
-
-  const fetchCep = async (cepValue: string) => {
-    if (cepValue.length === 8) {
-      try {
-        const response = await fetch(`https://viacep.com.br/ws/${cepValue}/json/`);
-        const data = await response.json();
-        if (!data.erro) {
-          setAddressData(prev => ({
-            ...prev,
-            address: data.logradouro || "",
-            neighborhood: data.bairro || "",
-            city: data.localidade || "",
-            state: data.uf || "",
-          }));
-        }
-      } catch (error) {
-        console.error("Erro ao buscar CEP:", error);
-      }
-    }
-  };
 
   const handleSubmitDelivery = () => {
     if (deliveryType === "delivery") {
@@ -242,14 +224,12 @@ const Checkout = () => {
     setIsLoading(true);
     
     try {
-      // For single establishment orders with online payment (PIX), create order first
       const estId = uniqueEstablishments[0];
       const estInfo = establishments.get(estId);
       const estItems = getEstablishmentItems(estId);
       const estSubtotal = getEstablishmentSubtotal(estId);
       const estDeliveryFee = deliveryType === 'delivery' ? (estInfo?.delivery_base_fee || 0) : 0;
       
-      // Map payment method to database enum
       const paymentMethodMap: Record<string, 'pix' | 'cash' | 'credit_card' | 'debit_card'> = {
         'pix': 'pix',
         'cash': 'cash',
@@ -257,7 +237,7 @@ const Checkout = () => {
         'debit': 'debit_card',
       };
 
-      // For multi-store or if PIX, create all orders
+      // For multi-store or if not PIX, create all orders
       if (isMultiStore || paymentMethod !== 'pix') {
         const orderNumbers: string[] = [];
         
@@ -280,7 +260,7 @@ const Checkout = () => {
             })),
             subtotal: estSubtotal,
             delivery_fee: estDeliveryFee,
-            total: estSubtotal + estDeliveryFee,
+            total: estSubtotal + estDeliveryFee - (appliedCoupon?.discountValue || 0),
             delivery_address: deliveryType === 'delivery' ? {
               cep: addressData.cep,
               address: addressData.address,
@@ -302,7 +282,7 @@ const Checkout = () => {
           }
         }
         
-        // Track Purchase events for each order
+        // Track Purchase events
         try {
           for (const estId of uniqueEstablishments) {
             const estItems = getEstablishmentItems(estId);
@@ -344,7 +324,7 @@ const Checkout = () => {
         })),
         subtotal: estSubtotal,
         delivery_fee: estDeliveryFee,
-        total: estSubtotal + estDeliveryFee,
+        total: estSubtotal + estDeliveryFee - (appliedCoupon?.discountValue || 0),
         delivery_address: deliveryType === 'delivery' ? {
           cep: addressData.cep,
           address: addressData.address,
@@ -373,7 +353,6 @@ const Checkout = () => {
   };
 
   const handlePaymentComplete = () => {
-    // Track Purchase event
     try {
       if (currentEstablishmentId && createdOrderId) {
         const estItems = getEstablishmentItems(currentEstablishmentId);
@@ -413,24 +392,27 @@ const Checkout = () => {
       const estSubtotal = getEstablishmentSubtotal(estId);
       subtotal += estSubtotal;
       
-      if (deliveryType === "delivery") {
+      if (deliveryType === "delivery" || deliveryType === "turbo") {
         const estInfo = establishments.get(estId);
-        totalDeliveryFee += estInfo?.delivery_base_fee || 0;
+        const baseFee = estInfo?.delivery_base_fee || 0;
+        totalDeliveryFee += deliveryType === "turbo" ? baseFee * 1.5 : baseFee;
       }
     });
 
-    // Calculate platform fee (5% for marketplace orders)
     const platformFee = shouldApplyPlatformFee ? (subtotal * platformFeePercent) / 100 : 0;
+    const discount = appliedCoupon?.discountValue || 0;
     
     return { 
       subtotal, 
       deliveryFee: totalDeliveryFee, 
       platformFee,
-      total: subtotal + totalDeliveryFee + platformFee 
+      discount,
+      total: Math.max(0, subtotal + totalDeliveryFee + platformFee - discount)
     };
   };
 
-  const { subtotal, deliveryFee, platformFee, total } = calculateTotals();
+  const { subtotal, deliveryFee, platformFee, discount, total } = calculateTotals();
+  const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
 
   // Processing step - show payment processor
   if (step === "processing" && createdOrderId && currentEstablishmentId) {
@@ -466,6 +448,7 @@ const Checkout = () => {
     );
   }
 
+  // Success step
   if (step === "success") {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -523,6 +506,16 @@ const Checkout = () => {
     );
   }
 
+  const stepTitles: Record<CheckoutStep, string> = {
+    cart: "Confirmar carrinho",
+    delivery: "Entrega",
+    payment: "Pagamento",
+    processing: "Processando",
+    success: "Sucesso"
+  };
+
+  const firstEstablishment = establishments.values().next().value;
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -531,17 +524,15 @@ const Checkout = () => {
           <div className="flex items-center gap-4">
             <button
               onClick={() => {
-                if (step === "payment") {
-                  setStep("delivery");
-                } else {
-                  navigate(-1);
-                }
+                if (step === "payment") setStep("delivery");
+                else if (step === "delivery") setStep("cart");
+                else navigate(-1);
               }}
               className="p-2 hover:bg-muted rounded-full transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
-            <h1 className="text-lg font-semibold">Finalizar pedido</h1>
+            <h1 className="text-lg font-semibold">{stepTitles[step]}</h1>
           </div>
         </div>
       </header>
@@ -565,72 +556,57 @@ const Checkout = () => {
           </Card>
         )}
 
-        {/* Progress */}
-        <div className="flex items-center justify-center gap-2 mb-8">
-          <div className={`flex items-center gap-2 ${step === "delivery" ? "text-primary" : "text-muted-foreground"}`}>
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-              step === "delivery" ? "bg-primary text-primary-foreground" : "bg-green-500 text-white"
-            }`}>
-              {step === "delivery" ? "1" : "✓"}
-            </div>
-            <span className="text-sm font-medium">Entrega</span>
-          </div>
-          <div className={`w-12 h-1 rounded ${step === "payment" ? "bg-primary" : "bg-muted"}`} />
-          <div className={`flex items-center gap-2 ${step === "payment" ? "text-primary" : "text-muted-foreground"}`}>
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-              step === "payment" ? "bg-primary text-primary-foreground" : "bg-muted"
-            }`}>
-              2
-            </div>
-            <span className="text-sm font-medium">Pagamento</span>
-          </div>
+        {/* Progress Steps */}
+        <div className="flex items-center justify-center gap-1 mb-8">
+          {["cart", "delivery", "payment"].map((s, idx) => {
+            const isActive = step === s;
+            const isPast = ["cart", "delivery", "payment"].indexOf(step) > idx;
+            
+            return (
+              <div key={s} className="flex items-center">
+                <div className={`
+                  w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all
+                  ${isActive ? "bg-primary text-primary-foreground" : ""}
+                  ${isPast ? "bg-green-500 text-white" : ""}
+                  ${!isActive && !isPast ? "bg-muted text-muted-foreground" : ""}
+                `}>
+                  {isPast ? "✓" : idx + 1}
+                </div>
+                {idx < 2 && (
+                  <div className={`w-8 h-1 rounded mx-1 ${isPast ? "bg-green-500" : "bg-muted"}`} />
+                )}
+              </div>
+            );
+          })}
         </div>
+
+        {/* Cart Confirmation Step (NEW) */}
+        {step === "cart" && (
+          <CartConfirmationStep
+            items={items}
+            establishments={establishments}
+            onUpdateQuantity={updateQuantity}
+            onRemove={removeFromCart}
+            onContinue={() => setStep("delivery")}
+            subtotal={subtotal}
+            freeDeliveryThreshold={50}
+          />
+        )}
 
         {/* Delivery Step */}
         {step === "delivery" && (
           <div className="space-y-6 animate-fade-up">
-            {/* Delivery Type */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Como deseja receber?</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <RadioGroup value={deliveryType} onValueChange={setDeliveryType}>
-                  {!isMultiStore && (
-                    <div className="flex items-center space-x-3 p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors cursor-pointer">
-                      <RadioGroupItem value="delivery" id="delivery" />
-                      <Label htmlFor="delivery" className="flex items-center gap-3 cursor-pointer flex-1">
-                        <Bike className="w-5 h-5 text-primary" />
-                        <div>
-                          <p className="font-medium">Delivery</p>
-                          <p className="text-sm text-muted-foreground">Receba no seu endereço</p>
-                        </div>
-                      </Label>
-                      <span className="text-sm text-muted-foreground">R$ {deliveryFee.toFixed(2)}</span>
-                    </div>
-                  )}
-                  <div className={`flex items-center space-x-3 p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors cursor-pointer ${!isMultiStore ? 'mt-2' : ''}`}>
-                    <RadioGroupItem value="pickup" id="pickup" />
-                    <Label htmlFor="pickup" className="flex items-center gap-3 cursor-pointer flex-1">
-                      <Store className="w-5 h-5 text-primary" />
-                      <div>
-                        <p className="font-medium">Retirada no local</p>
-                        <p className="text-sm text-muted-foreground">
-                          {isMultiStore 
-                            ? `Retire em ${uniqueEstablishments.length} estabelecimentos`
-                            : "Retire na loja"
-                          }
-                        </p>
-                      </div>
-                    </Label>
-                    <span className="text-sm text-green-600 font-medium">Grátis</span>
-                  </div>
-                </RadioGroup>
-              </CardContent>
-            </Card>
+            <DeliveryOptionsCards
+              selectedOption={deliveryType}
+              onOptionChange={setDeliveryType}
+              deliveryFee={firstEstablishment?.delivery_base_fee || 8}
+              isMultiStore={isMultiStore}
+              acceptsDelivery={firstEstablishment?.accepts_delivery}
+              acceptsPickup={firstEstablishment?.accepts_pickup}
+            />
 
             {/* Address Form */}
-            {deliveryType === "delivery" && !isMultiStore && (
+            {(deliveryType === "delivery" || deliveryType === "turbo") && !isMultiStore && (
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
@@ -639,7 +615,6 @@ const Checkout = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {/* Saved Addresses - only show if user has saved addresses and not showing form */}
                   {isAuthenticated && savedAddresses.length > 0 && !showAddressForm && (
                     <SavedAddressSelector
                       selectedId={selectedSavedAddressId}
@@ -648,7 +623,6 @@ const Checkout = () => {
                     />
                   )}
 
-                  {/* Address Autocomplete - show if no saved addresses OR user clicked "add new" */}
                   {(!isAuthenticated || savedAddresses.length === 0 || showAddressForm) && (
                     <>
                       <SmartAddressInput
@@ -657,7 +631,6 @@ const Checkout = () => {
                         showMap={true}
                       />
                       
-                      {/* Option to save address for authenticated users */}
                       {isAuthenticated && addressData.address && addressData.number && (
                         <Button
                           type="button"
@@ -670,7 +643,6 @@ const Checkout = () => {
                         </Button>
                       )}
 
-                      {/* Option to use saved address if user has some */}
                       {isAuthenticated && savedAddresses.length > 0 && showAddressForm && (
                         <Button
                           type="button"
@@ -682,7 +654,6 @@ const Checkout = () => {
                         </Button>
                       )}
 
-                      {/* Prompt to create account for guest users */}
                       {!isAuthenticated && addressData.address && (
                         <p className="text-sm text-muted-foreground text-center">
                           <a href="/auth" className="text-primary hover:underline">Crie uma conta</a> para salvar seus endereços
@@ -694,14 +665,11 @@ const Checkout = () => {
               </Card>
             )}
 
-            {/* Save Address Dialog */}
             <SaveAddressDialog
               open={saveAddressDialogOpen}
               onOpenChange={setSaveAddressDialogOpen}
               addressData={addressData}
-              onSaved={() => {
-                setShowAddressForm(false);
-              }}
+              onSaved={() => setShowAddressForm(false)}
             />
 
             {/* Pickup locations for multi-establishment */}
@@ -740,8 +708,9 @@ const Checkout = () => {
               </Card>
             )}
 
-            <Button onClick={handleSubmitDelivery} className="w-full" size="lg">
+            <Button onClick={handleSubmitDelivery} className="w-full h-12 text-base font-semibold">
               Continuar para pagamento
+              <ChevronRight className="w-5 h-5 ml-2" />
             </Button>
           </div>
         )}
@@ -749,15 +718,21 @@ const Checkout = () => {
         {/* Payment Step */}
         {step === "payment" && (
           <div className="space-y-6 animate-fade-up">
+            {/* Coupon Input */}
+            {firstEstablishment && (
+              <CouponInput
+                establishmentId={firstEstablishment.id}
+                subtotal={subtotal}
+                onCouponApplied={setAppliedCoupon}
+                onCouponRemoved={() => setAppliedCoupon(null)}
+                appliedCoupon={appliedCoupon}
+              />
+            )}
+
             {/* Payment Method */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">Forma de pagamento</CardTitle>
-                {isMultiStore && (
-                  <p className="text-sm text-muted-foreground">
-                    O pagamento será feito separadamente em cada estabelecimento na retirada
-                  </p>
-                )}
               </CardHeader>
               <CardContent>
                 <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod}>
@@ -767,12 +742,11 @@ const Checkout = () => {
                       <QrCode className="w-5 h-5 text-primary" />
                       <div>
                         <p className="font-medium">PIX</p>
-                        <p className="text-sm text-muted-foreground">
-                          {isMultiStore ? "Pague na retirada via PIX" : "Pagamento instantâneo"}
-                        </p>
+                        <p className="text-sm text-muted-foreground">Pagamento instantâneo</p>
                       </div>
                     </Label>
                   </div>
+                  
                   {!isMultiStore && (
                     <>
                       <div className="flex items-center space-x-3 p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors cursor-pointer mt-2">
@@ -797,15 +771,14 @@ const Checkout = () => {
                       </div>
                     </>
                   )}
+                  
                   <div className="flex items-center space-x-3 p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors cursor-pointer mt-2">
                     <RadioGroupItem value="cash" id="cash" />
                     <Label htmlFor="cash" className="flex items-center gap-3 cursor-pointer flex-1">
                       <Banknote className="w-5 h-5 text-primary" />
                       <div>
                         <p className="font-medium">Dinheiro</p>
-                        <p className="text-sm text-muted-foreground">
-                          {isMultiStore ? "Pague na retirada" : "Na entrega"}
-                        </p>
+                        <p className="text-sm text-muted-foreground">Na entrega/retirada</p>
                       </div>
                     </Label>
                   </div>
@@ -827,52 +800,51 @@ const Checkout = () => {
 
             {/* Observations */}
             <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Observações</CardTitle>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Observações</CardTitle>
               </CardHeader>
               <CardContent>
-                <Textarea
-                  placeholder="Alguma observação para o pedido?"
-                  value={observations}
-                  onChange={(e) => setObservations(e.target.value)}
-                />
+                <div className="relative">
+                  <Textarea
+                    placeholder="Alguma observação para o pedido?"
+                    value={observations}
+                    onChange={(e) => setObservations(e.target.value.slice(0, 150))}
+                    className="resize-none"
+                    rows={3}
+                  />
+                  <span className="absolute bottom-2 right-2 text-xs text-muted-foreground">
+                    {observations.length}/150
+                  </span>
+                </div>
               </CardContent>
             </Card>
 
             {/* WhatsApp Tracking */}
             <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <MessageSquare className="w-5 h-5" />
-                  Acompanhar pelo WhatsApp
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="p-4">
                 <div className="flex items-start space-x-3">
                   <Checkbox
                     id="whatsapp-tracking"
                     checked={whatsappTracking}
                     onCheckedChange={(checked) => setWhatsappTracking(checked === true)}
                   />
-                  <div className="space-y-1">
-                    <Label htmlFor="whatsapp-tracking" className="font-medium cursor-pointer">
-                      Receber atualizações do pedido via WhatsApp
+                  <div className="space-y-1 flex-1">
+                    <Label htmlFor="whatsapp-tracking" className="font-medium cursor-pointer flex items-center gap-2">
+                      <MessageSquare className="w-4 h-4 text-green-600" />
+                      Acompanhar pelo WhatsApp
                     </Label>
-                    <p className="text-sm text-muted-foreground">
-                      Você receberá notificações sobre cada etapa: confirmação, preparo, saída para entrega e conclusão
+                    <p className="text-xs text-muted-foreground">
+                      Receba atualizações sobre seu pedido
                     </p>
                   </div>
                 </div>
                 
                 {whatsappTracking && (
-                  <div className="space-y-2 pt-2">
-                    <Label htmlFor="customer-phone">Número do WhatsApp</Label>
+                  <div className="mt-3 pt-3 border-t">
                     <Input
-                      id="customer-phone"
                       placeholder="(99) 99999-9999"
                       value={customerPhone}
                       onChange={(e) => {
-                        // Format phone as user types
                         const value = e.target.value.replace(/\D/g, '');
                         if (value.length <= 11) {
                           let formatted = value;
@@ -886,103 +858,39 @@ const Checkout = () => {
                         }
                       }}
                     />
-                    <p className="text-xs text-muted-foreground">
-                      Insira seu número com DDD para receber as atualizações
-                    </p>
                   </div>
                 )}
               </CardContent>
             </Card>
 
-            {/* Order Summary */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Resumo do pedido</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {uniqueEstablishments.map((estId) => {
-                  const estInfo = establishments.get(estId);
-                  const estItems = getEstablishmentItems(estId);
-                  const estSubtotal = getEstablishmentSubtotal(estId);
-                  
-                  return (
-                    <div key={estId} className="space-y-3">
-                      {isMultiStore && (
-                        <div className="flex items-center gap-2">
-                          {estInfo?.logo_url && (
-                            <img 
-                              src={estInfo.logo_url} 
-                              alt={estInfo.name}
-                              className="w-6 h-6 rounded-full object-cover"
-                            />
-                          )}
-                          <span className="font-medium">{estInfo?.name}</span>
-                        </div>
-                      )}
-                      {estItems.map((item) => (
-                        <div key={item.product.id} className="flex justify-between text-sm">
-                          <span>{item.quantity}x {item.product.name}</span>
-                          <span>R$ {((item.product.promotional_price || item.product.price) * item.quantity).toFixed(2)}</span>
-                        </div>
-                      ))}
-                      {isMultiStore && (
-                        <>
-                          <div className="flex justify-between text-sm font-medium">
-                            <span>Subtotal {estInfo?.name}</span>
-                            <span>R$ {estSubtotal.toFixed(2)}</span>
-                          </div>
-                          <Separator />
-                        </>
-                      )}
-                    </div>
-                  );
-                })}
-                
-                {!isMultiStore && <Separator />}
-                
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Subtotal</span>
-                  <span>R$ {subtotal.toFixed(2)}</span>
-                </div>
-                {deliveryType === "delivery" && deliveryFee > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Taxa de entrega</span>
-                    <span>R$ {deliveryFee.toFixed(2)}</span>
-                  </div>
-                )}
-                {shouldApplyPlatformFee && platformFee > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground flex items-center gap-1">
-                      Taxa de serviço
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Info className="w-3.5 h-3.5 text-muted-foreground cursor-help" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="text-xs max-w-[200px]">
-                            Taxa de {platformFeePercent}% para pedidos realizados pelo marketplace VilaFood
-                          </p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </span>
-                    <span>R$ {platformFee.toFixed(2)}</span>
-                  </div>
-                )}
-                <Separator />
-                <div className="flex justify-between font-bold">
-                  <span>Total</span>
-                  <span>R$ {total.toFixed(2)}</span>
-                </div>
-              </CardContent>
-            </Card>
+            {/* Summary */}
+            <CheckoutSummary
+              itemsCount={totalItems}
+              subtotal={subtotal}
+              deliveryFee={deliveryFee}
+              platformFee={platformFee}
+              discount={discount}
+              couponCode={appliedCoupon?.code}
+              total={total}
+            />
 
-            <Button
+            {/* Submit Button */}
+            <Button 
               onClick={handleSubmitPayment} 
-              className="w-full" 
-              size="lg"
-              disabled={isLoading}
+              className="w-full h-14 text-base font-bold"
+              disabled={isLoading || creatingOrder}
             >
-              {isLoading ? "Processando..." : `Finalizar pedido • R$ ${total.toFixed(2)}`}
+              {isLoading || creatingOrder ? (
+                <span className="flex items-center gap-2">
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Processando...
+                </span>
+              ) : (
+                <span className="flex items-center gap-2">
+                  FAZER PEDIDO
+                  <Price value={total} className="text-primary-foreground" />
+                </span>
+              )}
             </Button>
           </div>
         )}
