@@ -721,10 +721,12 @@ const phases: ProgressPhase[] = [
       { name: 'Definir quantidade de cada produto no kit', status: 'completed', priority: 'high' },
       { name: 'Calcular economia (preço original vs kit)', status: 'completed', priority: 'medium' },
       { name: 'Tabela product_complements criada', status: 'completed', priority: 'high' },
-      { name: 'UI para vincular produtos complementares', status: 'pending', priority: 'medium' },
-      { name: 'Desconto ao comprar produto complementar junto', status: 'pending', priority: 'medium' },
+      { name: 'Página ProductComplementsManagement.tsx', status: 'completed', priority: 'medium' },
+      { name: 'UI para vincular produtos complementares', status: 'completed', priority: 'medium' },
+      { name: 'Desconto ao comprar produto complementar junto', status: 'completed', priority: 'medium' },
       { name: 'Exibir kits no checkout e loja', status: 'pending', priority: 'high' },
       { name: 'Rota /painel/:slug/kits', status: 'completed', priority: 'high' },
+      { name: 'Rota /painel/:slug/complementos', status: 'completed', priority: 'high' },
     ]
   },
 ];
