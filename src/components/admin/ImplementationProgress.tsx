@@ -558,12 +558,12 @@ const phases: ProgressPhase[] = [
     description: 'Admin ativa/desativa gateways da plataforma',
     category: 'admin',
     items: [
-      { name: 'Nova aba "Gateways" em AdminSettings', status: 'pending', priority: 'high' },
-      { name: 'Switch para Mercado Pago (ativar/desativar)', status: 'pending', priority: 'high' },
-      { name: 'Switch para PagSeguro (ativar/desativar)', status: 'pending', priority: 'high' },
-      { name: 'Switch para PIX estático (ativar/desativar)', status: 'pending', priority: 'high' },
-      { name: 'Switch para dinheiro (ativar/desativar)', status: 'pending', priority: 'high' },
-      { name: 'Campos na tabela platform_settings', status: 'pending', priority: 'high' },
+      { name: 'Nova aba "Gateways" em AdminSettings', status: 'completed', priority: 'high' },
+      { name: 'Switch para Mercado Pago (ativar/desativar)', status: 'completed', priority: 'high' },
+      { name: 'Switch para PagSeguro (ativar/desativar)', status: 'completed', priority: 'high' },
+      { name: 'Switch para PIX estático (ativar/desativar)', status: 'completed', priority: 'high' },
+      { name: 'Switch para dinheiro (ativar/desativar)', status: 'completed', priority: 'high' },
+      { name: 'Campos na tabela platform_settings', status: 'completed', priority: 'high' },
       { name: 'Lojista vê gateways disponíveis em EstablishmentSettings', status: 'pending', priority: 'medium' },
     ]
   },
