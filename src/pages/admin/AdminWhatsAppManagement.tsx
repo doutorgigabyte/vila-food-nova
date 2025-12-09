@@ -32,6 +32,7 @@ interface WhatsAppInstance {
   ai_enabled: boolean;
   keywords_enabled: boolean;
   establishment_id: string;
+  instance_type: string | null;
   establishments?: {
     name: string;
     slug: string;
@@ -156,6 +157,35 @@ const AdminWhatsAppManagement = () => {
       console.error('Error updating level:', error);
       toast.error('Erro ao atualizar');
     }
+  };
+
+  const updateInstanceType = async (instanceId: string, type: 'admin' | 'store') => {
+    try {
+      const { error } = await supabase
+        .from('whatsapp_instances')
+        .update({ instance_type: type })
+        .eq('id', instanceId);
+
+      if (error) throw error;
+      
+      setInstances(prev => prev.map(i => 
+        i.id === instanceId ? { ...i, instance_type: type } : i
+      ));
+      toast.success(`Tipo atualizado para ${type === 'admin' ? 'Admin' : 'Loja'}`);
+    } catch (error) {
+      console.error('Error updating instance type:', error);
+      toast.error('Erro ao atualizar tipo');
+    }
+  };
+
+  const getInstanceTypeBadge = (type: 'admin' | 'store' | null) => {
+    if (type === 'admin') {
+      return <Badge className="bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300">Admin</Badge>;
+    }
+    if (type === 'store') {
+      return <Badge className="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">Loja</Badge>;
+    }
+    return <Badge variant="outline" className="text-muted-foreground">Não definido</Badge>;
   };
 
   const filteredInstances = instances.filter(i => 
@@ -289,6 +319,7 @@ const AdminWhatsAppManagement = () => {
                       <TableRow>
                         <TableHead>Estabelecimento</TableHead>
                         <TableHead>Instância</TableHead>
+                        <TableHead>Tipo</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead>Nível</TableHead>
                         <TableHead>Chatbot</TableHead>
@@ -304,6 +335,26 @@ const AdminWhatsAppManagement = () => {
                           </TableCell>
                           <TableCell className="font-mono text-sm">
                             {instance.instance_name}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-1">
+                              <Button
+                                size="sm"
+                                variant={instance.instance_type === 'admin' ? 'destructive' : 'outline'}
+                                onClick={() => updateInstanceType(instance.id, 'admin')}
+                                className="h-6 px-2 text-xs"
+                              >
+                                Admin
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant={instance.instance_type === 'store' ? 'default' : 'outline'}
+                                onClick={() => updateInstanceType(instance.id, 'store')}
+                                className="h-6 px-2 text-xs"
+                              >
+                                Loja
+                              </Button>
+                            </div>
                           </TableCell>
                           <TableCell>{getStatusBadge(instance.status)}</TableCell>
                           <TableCell>

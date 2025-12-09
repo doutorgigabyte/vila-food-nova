@@ -406,21 +406,25 @@ const AdminSettings = () => {
                         </div>
 
                         {/* PagSeguro */}
-                        <div className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="flex items-center justify-between p-4 border rounded-lg opacity-60">
                           <div className="flex items-center gap-3">
                             <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
                               <CreditCard className="w-5 h-5 text-green-600 dark:text-green-400" />
                             </div>
                             <div>
-                              <p className="font-medium">PagSeguro (PagBank)</p>
+                              <div className="flex items-center gap-2">
+                                <p className="font-medium">PagSeguro (PagBank)</p>
+                                <Badge variant="secondary" className="text-xs">Em breve</Badge>
+                              </div>
                               <p className="text-sm text-muted-foreground">
-                                PIX, Cartão de Crédito/Débito
-                              </p>
+                                PIX, Cartão de Crédito/Débito</p>
+                              <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                                Aguardando homologação PagBank</p>
                             </div>
                           </div>
                           <Switch
-                            checked={gatewaySettings.pagseguro_enabled}
-                            onCheckedChange={(checked) => handleGatewayToggle('pagseguro_enabled', checked)}
+                            checked={false}
+                            disabled={true}
                           />
                         </div>
 
