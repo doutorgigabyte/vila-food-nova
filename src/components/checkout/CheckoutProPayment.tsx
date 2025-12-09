@@ -11,14 +11,27 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { getCardRejectionInfo } from '@/lib/payment/errors';
 
+interface CheckoutItem {
+  id: string;
+  title: string;
+  description?: string;
+  category_id?: string;
+  quantity: number;
+  unit_price: number;
+  picture_url?: string;
+}
+
 interface CheckoutProPaymentProps {
   orderId: string;
   establishmentId: string;
   amount: number;
   description?: string;
+  items?: CheckoutItem[];
   payerEmail?: string;
   payerName?: string;
   payerPhone?: string;
+  payerCpf?: string;
+  deliveryFee?: number;
   onPaymentComplete?: (paymentId: string) => void;
   onPaymentFailed?: (error: string) => void;
 }
@@ -30,9 +43,12 @@ export function CheckoutProPayment({
   establishmentId,
   amount,
   description,
+  items,
   payerEmail,
   payerName,
   payerPhone,
+  payerCpf,
+  deliveryFee,
   onPaymentComplete,
   onPaymentFailed
 }: CheckoutProPaymentProps) {
@@ -66,17 +82,34 @@ export function CheckoutProPayment({
     setError(null);
 
     try {
+      // Separar first_name e last_name do nome completo
+      const nameParts = payerName?.split(' ') || [];
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
+
       const { data, error: fnError } = await supabase.functions.invoke('mercadopago-checkout-pro', {
         body: {
           order_id: orderId,
           establishment_id: establishmentId,
           amount,
           description: description || `Pedido #${orderId.slice(-8)}`,
+          items: items && items.length > 0 ? items : undefined,
           payer: {
             email: payerEmail,
-            name: payerName,
-            phone: payerPhone
-          }
+            first_name: firstName,
+            last_name: lastName,
+            phone: payerPhone,
+            ...(payerCpf && {
+              identification: {
+                type: 'CPF',
+                number: payerCpf.replace(/\D/g, '')
+              }
+            })
+          },
+          shipments: deliveryFee && deliveryFee > 0 ? {
+            cost: deliveryFee,
+            mode: 'not_specified'
+          } : undefined
         }
       });
 
