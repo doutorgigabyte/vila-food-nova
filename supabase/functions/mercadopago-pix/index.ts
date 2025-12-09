@@ -1,8 +1,8 @@
 /**
- * Mercado Pago PIX - Geração de QR Code PIX
+ * Mercado Pago PIX - Checkout Transparente
  * 
- * Gera QR codes PIX dinâmicos para pagamento de pedidos.
- * Suporta fallback para PIX estático se não houver token MP configurado.
+ * Gera QR codes PIX dinâmicos usando a API de Checkout Transparente do MP.
+ * https://www.mercadopago.com.br/developers/pt/docs/checkout-api/landing
  * 
  * SECURITY: Requires valid order_id to generate PIX codes
  */
@@ -17,16 +17,18 @@ const corsHeaders = {
 
 interface PixRequest {
   establishment_id: string;
-  order_id: string; // Now required for security
+  order_id: string;
   amount: number;
-  description: string;
+  description?: string;
   payer_email?: string;
   payer_name?: string;
+  payer_cpf?: string;
   external_reference?: string;
 }
 
 serve(async (req) => {
-  console.log('[mercadopago-pix] Request received:', req.method);
+  console.log('[mercadopago-pix] ===== REQUEST START =====');
+  console.log('[mercadopago-pix] Method:', req.method);
   
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -39,19 +41,29 @@ serve(async (req) => {
     );
 
     const body: PixRequest = await req.json();
-    const { establishment_id, order_id, amount, description, payer_email, payer_name, external_reference } = body;
+    const { 
+      establishment_id, 
+      order_id, 
+      amount, 
+      description, 
+      payer_email, 
+      payer_name,
+      payer_cpf,
+      external_reference 
+    } = body;
 
-    console.log('[mercadopago-pix] Request body:', {
+    console.log('[mercadopago-pix] Request body:', JSON.stringify({
       establishment_id,
       order_id,
       amount,
       description,
-      payer_email: payer_email ? '***' : null,
-    });
+      payer_email: payer_email ? '***@***' : null,
+      payer_name: payer_name || null,
+    }, null, 2));
 
     // Validate required fields
     if (!establishment_id) {
-      console.error('[mercadopago-pix] Missing establishment_id');
+      console.error('[mercadopago-pix] ERROR: Missing establishment_id');
       return new Response(JSON.stringify({ 
         success: false,
         error: 'establishment_id é obrigatório' 
@@ -61,9 +73,8 @@ serve(async (req) => {
       });
     }
 
-    // SECURITY: Require order_id to prevent abuse
     if (!order_id) {
-      console.error('[mercadopago-pix] Missing order_id');
+      console.error('[mercadopago-pix] ERROR: Missing order_id');
       return new Response(JSON.stringify({ 
         success: false,
         error: 'order_id é obrigatório para gerar PIX' 
@@ -74,7 +85,7 @@ serve(async (req) => {
     }
 
     if (!amount || amount <= 0) {
-      console.error('[mercadopago-pix] Invalid amount:', amount);
+      console.error('[mercadopago-pix] ERROR: Invalid amount:', amount);
       return new Response(JSON.stringify({ 
         success: false,
         error: 'Valor do pagamento inválido' 
@@ -84,44 +95,36 @@ serve(async (req) => {
       });
     }
 
+    // Validate order
     console.log('[mercadopago-pix] Validating order...');
-
-    // SECURITY: Validate that the order exists and belongs to the establishment
     const { data: order, error: orderError } = await supabase
       .from('orders')
-      .select('id, establishment_id, total, status')
+      .select('id, establishment_id, total, status, customer_phone, customer_id')
       .eq('id', order_id)
       .eq('establishment_id', establishment_id)
       .single();
 
-    if (orderError) {
-      console.error('[mercadopago-pix] Order query error:', orderError);
+    if (orderError || !order) {
+      console.error('[mercadopago-pix] ERROR: Order validation failed:', orderError);
       return new Response(JSON.stringify({ 
         success: false,
-        error: 'Erro ao validar pedido',
-        details: orderError.message
+        error: 'Pedido não encontrado ou não pertence ao estabelecimento',
+        details: orderError?.message
       }), {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    if (!order) {
-      console.error('[mercadopago-pix] Order not found:', { order_id, establishment_id });
-      return new Response(JSON.stringify({ 
-        success: false,
-        error: 'Pedido não encontrado ou não pertence ao estabelecimento' 
-      }), {
-        status: 404,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+    console.log('[mercadopago-pix] Order found:', { 
+      id: order.id, 
+      status: order.status, 
+      total: order.total,
+      customer_id: order.customer_id 
+    });
 
-    console.log('[mercadopago-pix] Order found:', { id: order.id, status: order.status, total: order.total });
-
-    // Validate order is in a valid state for payment
     if (order.status === 'cancelled' || order.status === 'delivered') {
-      console.error('[mercadopago-pix] Invalid order status:', order.status);
+      console.error('[mercadopago-pix] ERROR: Invalid order status:', order.status);
       return new Response(JSON.stringify({ 
         success: false,
         error: 'Pedido não pode receber pagamento neste status' 
@@ -131,48 +134,40 @@ serve(async (req) => {
       });
     }
 
+    // Get establishment
     console.log('[mercadopago-pix] Fetching establishment...');
-
-    // Get establishment's Mercado Pago token (excluding sensitive columns from log)
     const { data: establishment, error: estError } = await supabase
       .from('establishments')
-      .select('mercado_pago_token, name, pix_key')
+      .select('mercado_pago_token, mp_public_key, name, pix_key')
       .eq('id', establishment_id)
       .single();
 
-    if (estError) {
-      console.error('[mercadopago-pix] Establishment query error:', estError);
+    if (estError || !establishment) {
+      console.error('[mercadopago-pix] ERROR: Establishment not found:', estError);
       return new Response(JSON.stringify({ 
         success: false,
-        error: 'Erro ao buscar estabelecimento',
-        details: estError.message
+        error: 'Estabelecimento não encontrado',
+        details: estError?.message
       }), {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    if (!establishment) {
-      console.error('[mercadopago-pix] Establishment not found:', establishment_id);
-      return new Response(JSON.stringify({ 
-        success: false,
-        error: 'Estabelecimento não encontrado' 
-      }), {
-        status: 404,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    console.log('[mercadopago-pix] Establishment:', {
+    console.log('[mercadopago-pix] Establishment found:', {
       name: establishment.name,
       has_mp_token: !!establishment.mercado_pago_token,
+      mp_token_length: establishment.mercado_pago_token?.length || 0,
+      has_mp_public_key: !!establishment.mp_public_key,
       has_pix_key: !!establishment.pix_key,
     });
 
-    // Check if establishment has Mercado Pago configured
+    // Check if MP is configured
     if (!establishment.mercado_pago_token) {
-      // If no MP token, check for PIX key and return static PIX
+      console.log('[mercadopago-pix] No MP token, checking for static PIX...');
+      
       if (establishment.pix_key) {
+        console.log('[mercadopago-pix] Returning static PIX');
         return new Response(JSON.stringify({
           success: true,
           type: 'static_pix',
@@ -186,71 +181,92 @@ serve(async (req) => {
         });
       }
 
+      console.error('[mercadopago-pix] ERROR: No payment method configured');
       return new Response(JSON.stringify({
         success: false,
         error: 'Pagamento PIX não configurado',
-        message: 'Este estabelecimento ainda não configurou o pagamento via PIX. Por favor, escolha outra forma de pagamento.',
+        message: 'Este estabelecimento ainda não configurou o pagamento via PIX.',
       }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Create PIX payment via Mercado Pago
-    const mpPayload = {
-      transaction_amount: amount,
-      description: description || `Pedido ${establishment.name}`,
+    // Prepare payer info - Checkout Transparente requires complete payer data
+    const payerFirstName = payer_name?.split(' ')[0] || 'Cliente';
+    const payerLastName = payer_name?.split(' ').slice(1).join(' ') || 'VilaFood';
+    const payerEmail = payer_email || `cliente_${order_id.slice(-8)}@vilafood.com.br`;
+    
+    // Build Mercado Pago payment payload for Checkout Transparente
+    // https://www.mercadopago.com.br/developers/pt/reference/payments/_payments/post
+    const mpPayload: Record<string, unknown> = {
+      transaction_amount: Number(amount.toFixed(2)),
+      description: description || `Pedido ${establishment.name} #${order_id.slice(-8)}`,
       payment_method_id: 'pix',
       payer: {
-        email: payer_email || 'cliente@email.com',
-        first_name: payer_name || 'Cliente',
+        email: payerEmail,
+        first_name: payerFirstName,
+        last_name: payerLastName,
       },
       external_reference: external_reference || order_id,
+      notification_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/mercadopago-webhook`,
     };
 
+    // Add CPF if provided (some accounts require it)
+    if (payer_cpf) {
+      (mpPayload.payer as Record<string, unknown>).identification = {
+        type: 'CPF',
+        number: payer_cpf.replace(/\D/g, ''),
+      };
+    }
+
+    console.log('[mercadopago-pix] Creating MP payment with payload:', JSON.stringify({
+      ...mpPayload,
+      payer: { ...mpPayload.payer as object, email: '***@***' }
+    }, null, 2));
+
+    // Generate idempotency key to prevent duplicate payments
+    const idempotencyKey = `pix_${establishment_id}_${order_id}_${Date.now()}`;
+    
+    console.log('[mercadopago-pix] Calling Mercado Pago API...');
+    console.log('[mercadopago-pix] Token prefix:', establishment.mercado_pago_token.substring(0, 20) + '...');
+    
     const mpResponse = await fetch('https://api.mercadopago.com/v1/payments', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${establishment.mercado_pago_token}`,
         'Content-Type': 'application/json',
-        'X-Idempotency-Key': `${establishment_id}-${order_id}`,
+        'X-Idempotency-Key': idempotencyKey,
       },
       body: JSON.stringify(mpPayload),
     });
 
-    if (!mpResponse.ok) {
-      const errorData = await mpResponse.json();
-      console.error('Mercado Pago error:', errorData);
-      
-      // Fallback to static PIX if available
-      if (establishment.pix_key) {
-        return new Response(JSON.stringify({
-          success: true,
-          type: 'static_pix',
-          pix_key: establishment.pix_key,
-          amount,
-          description,
-          order_id,
-          message: `💰 *Pagamento via PIX*\n\nValor: R$ ${amount.toFixed(2)}\n\nChave PIX: ${establishment.pix_key}\n\nApós o pagamento, envie o comprovante para confirmarmos seu pedido! 📸`,
-        }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
+    console.log('[mercadopago-pix] MP Response status:', mpResponse.status);
+    console.log('[mercadopago-pix] MP Response headers:', Object.fromEntries(mpResponse.headers.entries()));
 
-      throw new Error(errorData.message || 'Erro ao criar pagamento PIX');
+    const responseText = await mpResponse.text();
+    console.log('[mercadopago-pix] MP Response body:', responseText);
+
+    let paymentData;
+    try {
+      paymentData = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error('[mercadopago-pix] ERROR: Failed to parse MP response:', parseError);
+      throw new Error('Resposta inválida do Mercado Pago');
     }
 
-    const paymentData = await mpResponse.json();
-    console.log('Mercado Pago payment created:', { id: paymentData.id, status: paymentData.status });
-
-    const pixData = paymentData.point_of_interaction?.transaction_data;
-
-    // Validate PIX data exists
-    if (!pixData) {
-      console.error('PIX data not found in payment response:', paymentData);
+    if (!mpResponse.ok) {
+      console.error('[mercadopago-pix] ERROR: MP API error:', paymentData);
+      
+      // Extract error message
+      const errorMessage = paymentData.message || 
+        paymentData.cause?.[0]?.description || 
+        paymentData.error ||
+        'Erro ao criar pagamento PIX';
       
       // Fallback to static PIX if available
       if (establishment.pix_key) {
+        console.log('[mercadopago-pix] Falling back to static PIX');
         return new Response(JSON.stringify({
           success: true,
           type: 'static_pix',
@@ -258,13 +274,57 @@ serve(async (req) => {
           amount,
           description,
           order_id,
+          mp_error: errorMessage,
           message: `💰 *Pagamento via PIX*\n\nValor: R$ ${amount.toFixed(2)}\n\nChave PIX: ${establishment.pix_key}\n\nApós o pagamento, envie o comprovante para confirmarmos seu pedido! 📸`,
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
 
-      throw new Error('Dados PIX não encontrados na resposta do Mercado Pago');
+      throw new Error(errorMessage);
+    }
+
+    console.log('[mercadopago-pix] Payment created successfully:', {
+      id: paymentData.id,
+      status: paymentData.status,
+      status_detail: paymentData.status_detail,
+      date_of_expiration: paymentData.date_of_expiration,
+    });
+
+    // Extract PIX data from point_of_interaction
+    const pixData = paymentData.point_of_interaction?.transaction_data;
+    
+    console.log('[mercadopago-pix] PIX data available:', {
+      has_point_of_interaction: !!paymentData.point_of_interaction,
+      has_transaction_data: !!pixData,
+      has_qr_code: !!pixData?.qr_code,
+      has_qr_code_base64: !!pixData?.qr_code_base64,
+      qr_code_length: pixData?.qr_code?.length || 0,
+      qr_code_base64_length: pixData?.qr_code_base64?.length || 0,
+    });
+
+    if (!pixData || !pixData.qr_code) {
+      console.error('[mercadopago-pix] ERROR: PIX data not found in response');
+      console.error('[mercadopago-pix] Full payment response:', JSON.stringify(paymentData, null, 2));
+      
+      // Fallback to static PIX
+      if (establishment.pix_key) {
+        console.log('[mercadopago-pix] Falling back to static PIX (no QR in response)');
+        return new Response(JSON.stringify({
+          success: true,
+          type: 'static_pix',
+          pix_key: establishment.pix_key,
+          amount,
+          description,
+          order_id,
+          payment_id: paymentData.id,
+          message: `💰 *Pagamento via PIX*\n\nValor: R$ ${amount.toFixed(2)}\n\nChave PIX: ${establishment.pix_key}\n\nApós o pagamento, envie o comprovante para confirmarmos seu pedido! 📸`,
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      throw new Error('QR Code PIX não encontrado na resposta do Mercado Pago');
     }
 
     // Log analytics
@@ -277,56 +337,57 @@ serve(async (req) => {
           order_id,
           amount,
           status: paymentData.status,
+          type: 'dynamic_pix',
         },
       });
     } catch (analyticsError) {
-      console.error('Error logging analytics:', analyticsError);
-      // Don't fail the request if analytics fails
+      console.error('[mercadopago-pix] Analytics error (non-blocking):', analyticsError);
     }
 
-    const qrCodeBase64 = pixData?.qr_code_base64;
-    const qrCode = pixData?.qr_code;
-
-    if (!qrCode) {
-      console.error('QR Code not found in PIX data:', pixData);
-      
-      // Fallback to static PIX if available
-      if (establishment.pix_key) {
-        return new Response(JSON.stringify({
-          success: true,
-          type: 'static_pix',
-          pix_key: establishment.pix_key,
-          amount,
-          description,
+    // Log payment info (order table doesn't have payment columns - use mp_transactions instead)
+    try {
+      await supabase.from('mp_transactions').insert({
+        establishment_id,
+        type: 'pix',
+        status: paymentData.status,
+        mp_payment_id: paymentData.id?.toString(),
+        amount,
+        metadata: {
           order_id,
-          message: `💰 *Pagamento via PIX*\n\nValor: R$ ${amount.toFixed(2)}\n\nChave PIX: ${establishment.pix_key}\n\nApós o pagamento, envie o comprovante para confirmarmos seu pedido! 📸`,
-        }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-
-      throw new Error('QR Code PIX não encontrado na resposta');
+          expiration: paymentData.date_of_expiration,
+        },
+      });
+    } catch (txError) {
+      console.error('[mercadopago-pix] Transaction log error (non-blocking):', txError);
     }
+
+    console.log('[mercadopago-pix] ===== SUCCESS =====');
+    console.log('[mercadopago-pix] Returning QR Code with', pixData.qr_code_base64?.length || 0, 'bytes');
 
     return new Response(JSON.stringify({
       success: true,
       type: 'dynamic_pix',
       payment_id: paymentData.id,
       status: paymentData.status,
-      qr_code: qrCode,
-      qr_code_base64: qrCodeBase64,
-      qr_code_url: qrCodeBase64 ? `data:image/png;base64,${qrCodeBase64}` : null,
+      status_detail: paymentData.status_detail,
+      qr_code: pixData.qr_code,
+      qr_code_base64: pixData.qr_code_base64,
+      qr_code_url: pixData.qr_code_base64 ? `data:image/png;base64,${pixData.qr_code_base64}` : null,
+      ticket_url: pixData.ticket_url,
       amount,
       order_id,
       expiration: paymentData.date_of_expiration,
-      message: `💰 *Pagamento via PIX*\n\nValor: R$ ${amount.toFixed(2)}\n\n📱 Escaneie o QR Code ou copie o código abaixo:\n\n\`\`\`${qrCode}\`\`\`\n\n⏰ Válido por 30 minutos\n\nO pedido será confirmado automaticamente após o pagamento!`,
+      message: `💰 *Pagamento via PIX*\n\nValor: R$ ${amount.toFixed(2)}\n\n📱 Escaneie o QR Code ou copie o código PIX\n\n⏰ Válido até: ${new Date(paymentData.date_of_expiration).toLocaleString('pt-BR')}\n\nO pedido será confirmado automaticamente após o pagamento!`,
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
-    console.error('PIX error:', error);
+    console.error('[mercadopago-pix] ===== ERROR =====');
+    console.error('[mercadopago-pix] Exception:', error);
+    
     return new Response(JSON.stringify({ 
+      success: false,
       error: error instanceof Error ? error.message : 'Erro desconhecido',
       message: '❌ Erro ao gerar PIX. Por favor, tente novamente ou escolha outra forma de pagamento.',
     }), {
