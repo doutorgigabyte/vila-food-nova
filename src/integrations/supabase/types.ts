@@ -1682,6 +1682,8 @@ export type Database = {
           comments_count: number | null
           created_at: string | null
           description: string | null
+          display_in_marketplace: boolean | null
+          display_in_store: boolean | null
           duration: number | null
           establishment_id: string
           id: string
@@ -1705,6 +1707,8 @@ export type Database = {
           comments_count?: number | null
           created_at?: string | null
           description?: string | null
+          display_in_marketplace?: boolean | null
+          display_in_store?: boolean | null
           duration?: number | null
           establishment_id: string
           id?: string
@@ -1728,6 +1732,8 @@ export type Database = {
           comments_count?: number | null
           created_at?: string | null
           description?: string | null
+          display_in_marketplace?: boolean | null
+          display_in_store?: boolean | null
           duration?: number | null
           establishment_id?: string
           id?: string

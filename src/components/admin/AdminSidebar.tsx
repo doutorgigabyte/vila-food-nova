@@ -96,6 +96,7 @@ const navItems: NavItem[] = [
     children: [
       { icon: Heart, label: "Health Check", href: "/admin/health" },
       { icon: Shield, label: "Central de Segurança", href: "/admin/central-seguranca" },
+      { icon: FileText, label: "Documentação Segurança", href: "/admin/documentacao-seguranca" },
       { icon: BarChart3, label: "Diagnóstico Pixels", href: "/admin/diagnostico-pixels" },
       { icon: BarChart3, label: "Progresso Checklist", href: "/admin/progresso" },
       { icon: Database, label: "Migração", href: "/admin/migracao" },

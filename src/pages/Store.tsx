@@ -92,7 +92,7 @@ const Store = () => {
     }
   }, [searchParams, products, slug, navigate]);
 
-  // Fetch stories for this establishment
+  // Fetch stories for this establishment - filter by display_in_store
   const { data: stories } = useQuery({
     queryKey: ["store-stories", establishment?.id],
     queryFn: async () => {
@@ -102,6 +102,7 @@ const Store = () => {
         .select("id, video_url, thumbnail_url, description, duration")
         .eq("establishment_id", establishment.id)
         .eq("is_active", true)
+        .eq("display_in_store", true)
         .order("sort_order", { ascending: true });
       
       if (error) throw error;
