@@ -314,6 +314,33 @@ export const SmartAddressInput = ({
 
   return (
     <div className="space-y-4">
+      {/* GPS Button - FIRST */}
+      {showGpsButton && (
+        <Button
+          type="button"
+          variant="default"
+          onClick={getCurrentLocation}
+          disabled={isLoadingLocation || !isMapLoaded}
+          className="w-full h-12 text-base font-semibold"
+        >
+          {isLoadingLocation ? (
+            <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+          ) : (
+            <Navigation className="w-5 h-5 mr-2" />
+          )}
+          Usar minha localização atual
+        </Button>
+      )}
+
+      {/* Divider */}
+      {showGpsButton && (
+        <div className="flex items-center gap-3">
+          <div className="h-px flex-1 bg-border" />
+          <span className="text-xs text-muted-foreground">ou digite o endereço</span>
+          <div className="h-px flex-1 bg-border" />
+        </div>
+      )}
+
       {/* CEP Input */}
       <div className={compact ? "grid grid-cols-2 gap-3" : ""}>
         <CepAutocomplete
@@ -321,23 +348,6 @@ export const SmartAddressInput = ({
           onChange={(cep) => onChange({ ...value, cep })}
           onAddressFound={handleCepFound}
         />
-
-        {!compact && showGpsButton && (
-          <Button
-            type="button"
-            variant="outline"
-            onClick={getCurrentLocation}
-            disabled={isLoadingLocation || !isMapLoaded}
-            className="w-full mt-2"
-          >
-            {isLoadingLocation ? (
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            ) : (
-              <Navigation className="w-4 h-4 mr-2" />
-            )}
-            Usar minha localização atual
-          </Button>
-        )}
       </div>
 
       {/* Google Places Search */}
