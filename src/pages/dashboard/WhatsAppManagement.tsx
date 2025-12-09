@@ -165,16 +165,16 @@ const WhatsAppManagement = () => {
         }
       });
 
-      // Check if instance already exists (403 error with "already in use")
-      const alreadyExists = createError?.message?.includes('already in use') || 
-                           createData?.error?.includes('already in use') ||
-                           (createData?.success === false && createData?.error?.includes('already in use'));
+      // Check if instance already exists
+      const alreadyExists = createData?.data?.alreadyExists || createData?.alreadyExists;
 
       if (alreadyExists) {
         console.log('Instance already exists, will fetch QR code directly');
       } else if (createError) {
+        console.error('Create error:', createError);
         throw createError;
       } else if (createData?.success === false) {
+        console.error('Create failed:', createData);
         throw new Error(createData?.error || 'Failed to create instance');
       } else {
         console.log('Instance created successfully:', createData);
