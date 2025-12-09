@@ -36,7 +36,7 @@ const templates: N8nTemplate[] = [
       "Google Gemini LLM",
       "Memória de conversa por sessão",
       "search_menu - Busca no cardápio",
-      "send_product_photo - Envia foto do produto",
+      "send_product_photo - Envia foto (Base64)",
       "add_to_cart - Adiciona ao carrinho",
       "save_customer - Salva dados do cliente",
       "find_google_maps - Geocodificação",
@@ -47,18 +47,35 @@ const templates: N8nTemplate[] = [
     difficulty: "Avançado"
   },
   {
+    id: "send-product-photo",
+    name: "Enviar Foto do Produto (Base64)",
+    description: "Subfluxo que baixa imagem do CloudFront, converte para Base64 e envia via Evolution API",
+    icon: <MessageSquare className="w-6 h-6" />,
+    filename: "VilaFood-Send-Product-Photo.json",
+    features: [
+      "Download da imagem via HTTP",
+      "Conversão para Base64",
+      "Envio via Evolution API",
+      "Caption formatado com nome/preço",
+      "Tratamento de erros",
+      "Compatível com CloudFront/S3"
+    ],
+    difficulty: "Básico"
+  },
+  {
     id: "mercadopago-pix",
     name: "Mercado Pago PIX",
-    description: "Subfluxo para geração de pagamento PIX via Mercado Pago",
+    description: "Subfluxo para geração de pagamento PIX usando o token OAuth do lojista",
     icon: <CreditCard className="w-6 h-6" />,
     filename: "VilaFood-MercadoPago-PIX.json",
     features: [
       "API Mercado Pago v1",
+      "Token dinâmico por lojista",
       "Geração de QR Code PIX",
       "Código copia-e-cola",
-      "Validação de CPF",
       "Expiração configurável (30min)",
-      "Tratamento de erros"
+      "Fallback para PIX estático",
+      "Salva pedido no Supabase"
     ],
     difficulty: "Intermediário"
   }
