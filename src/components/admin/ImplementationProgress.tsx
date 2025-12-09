@@ -547,7 +547,7 @@ const phases: ProgressPhase[] = [
       { name: 'Buscar gateways ativos do estabelecimento', status: 'completed', priority: 'high' },
       { name: 'Mostrar opções (MP, PagSeguro) com ícones', status: 'completed', priority: 'high' },
       { name: 'Auto-selecionar se apenas 1 gateway ativo', status: 'completed', priority: 'medium' },
-      { name: 'Integrar no Checkout.tsx', status: 'pending', priority: 'high' },
+      { name: 'Integrar no Checkout.tsx', status: 'completed', priority: 'high' },
     ]
   },
 
