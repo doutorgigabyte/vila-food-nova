@@ -40,6 +40,7 @@ import { SavedAddressSelector } from "@/components/checkout/SavedAddressSelector
 import { SaveAddressDialog } from "@/components/checkout/SaveAddressDialog";
 import { PaymentProcessor } from "@/components/checkout/PaymentProcessor";
 import { CheckoutProPayment } from "@/components/checkout/CheckoutProPayment";
+import { PagBankCardPayment } from "@/components/checkout/PagBankCardPayment";
 import { CartConfirmationStep } from "@/components/checkout/CartConfirmationStep";
 import { DeliveryOptionsCards } from "@/components/checkout/DeliveryOptionsCards";
 import { CheckoutSummary } from "@/components/checkout/CheckoutSummary";
@@ -638,8 +639,28 @@ const Checkout = () => {
           </div>
         </header>
         <main className="container mx-auto px-4 py-6 max-w-md space-y-4">
-          {/* Card payment via Checkout Pro */}
-          {paymentMethod === 'card' && (
+          {/* Card payment via PagBank (transparent checkout) */}
+          {paymentMethod === 'card' && selectedGateway === 'pagseguro' && (
+            <PagBankCardPayment
+              orderId={createdOrderId}
+              establishmentId={currentEstablishmentId}
+              amount={total}
+              payerName={user?.user_metadata?.full_name || ''}
+              payerEmail={user?.email || ''}
+              payerPhone={customerPhone.replace(/\D/g, '')}
+              onPaymentComplete={(paymentId) => {
+                console.log('PagBank card payment completed:', paymentId);
+                handlePaymentComplete();
+              }}
+              onPaymentFailed={(error) => {
+                console.error('PagBank card payment failed:', error);
+                handlePaymentFailed(error);
+              }}
+            />
+          )}
+
+          {/* Card payment via Mercado Pago Checkout Pro */}
+          {paymentMethod === 'card' && selectedGateway !== 'pagseguro' && (
             <CheckoutProPayment
               orderId={createdOrderId}
               establishmentId={currentEstablishmentId}
@@ -664,7 +685,6 @@ const Checkout = () => {
               }}
               onPaymentFailed={(error) => {
                 console.error('Card payment failed:', error);
-                // Don't go back to payment, let user retry or choose PIX
               }}
             />
           )}
@@ -1042,7 +1062,9 @@ const Checkout = () => {
                               <p className="font-medium">Cartão de Crédito/Débito</p>
                               <Badge variant="secondary" className="text-xs">Checkout Seguro</Badge>
                             </div>
-                            <p className="text-sm text-muted-foreground">Via Mercado Pago</p>
+                            <p className="text-sm text-muted-foreground">
+                              {selectedGateway === 'pagseguro' ? 'Via PagBank' : 'Via Mercado Pago'}
+                            </p>
                           </div>
                         </Label>
                       </div>
