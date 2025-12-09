@@ -183,54 +183,33 @@ const OrdersManagement = () => {
     }
   };
 
-  const printOrder = (order: Order) => {
-    const printContent = `
-      <html>
-        <head>
-          <title>Pedido #${order.order_number}</title>
-          <style>
-            body { font-family: monospace; font-size: 12px; width: 280px; margin: 0; padding: 10px; }
-            .header { text-align: center; border-bottom: 1px dashed #000; padding-bottom: 10px; margin-bottom: 10px; }
-            .item { display: flex; justify-content: space-between; margin: 5px 0; }
-            .total { border-top: 1px dashed #000; padding-top: 10px; margin-top: 10px; font-weight: bold; }
-            .footer { text-align: center; margin-top: 20px; font-size: 10px; }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <h2>PEDIDO #${order.order_number}</h2>
-            <p>${new Date(order.created_at).toLocaleString('pt-BR')}</p>
-            <p>${order.delivery_type === 'delivery' ? 'DELIVERY' : order.delivery_type === 'pickup' ? 'RETIRADA' : 'MESA ' + order.table_number}</p>
-          </div>
-          <div class="items">
-            ${Array.isArray(order.items) ? order.items.map((item: any) => `
-              <div class="item">
-                <span>${item.quantity}x ${item.name}</span>
-                <span>R$ ${(item.price * item.quantity).toFixed(2)}</span>
-              </div>
-            `).join('') : ''}
-          </div>
-          <div class="total">
-            <div class="item"><span>Subtotal:</span><span>R$ ${order.subtotal.toFixed(2)}</span></div>
-            ${order.delivery_fee > 0 ? `<div class="item"><span>Taxa de entrega:</span><span>R$ ${order.delivery_fee.toFixed(2)}</span></div>` : ''}
-            ${order.discount > 0 ? `<div class="item"><span>Desconto:</span><span>-R$ ${order.discount.toFixed(2)}</span></div>` : ''}
-            <div class="item"><span>TOTAL:</span><span>R$ ${order.total.toFixed(2)}</span></div>
-          </div>
-          ${order.observations ? `<p><strong>Obs:</strong> ${order.observations}</p>` : ''}
-          ${order.delivery_address ? `<p><strong>Endereço:</strong> ${typeof order.delivery_address === 'object' ? JSON.stringify(order.delivery_address) : order.delivery_address}</p>` : ''}
-          <div class="footer">
-            <p>Obrigado pela preferência!</p>
-          </div>
-        </body>
-      </html>
-    `;
-
-    const printWindow = window.open('', '_blank');
-    if (printWindow) {
-      printWindow.document.write(printContent);
-      printWindow.document.close();
-      printWindow.print();
-    }
+  const printOrder = async (order: Order) => {
+    // Dynamic import to reduce initial bundle
+    const { printOrderReceipt } = await import('@/components/orders/OrderReceiptPrint');
+    
+    printOrderReceipt({
+      order: {
+        order_number: order.order_number,
+        created_at: order.created_at,
+        delivery_type: order.delivery_type,
+        table_number: order.table_number,
+        items: order.items,
+        subtotal: order.subtotal,
+        delivery_fee: order.delivery_fee,
+        discount: order.discount,
+        total: order.total,
+        payment_method: order.payment_method,
+        observations: order.observations,
+        delivery_address: order.delivery_address,
+      },
+      establishment: {
+        name: establishment?.name || 'Estabelecimento',
+        phone: establishment?.phone,
+        whatsapp: establishment?.whatsapp,
+        address: establishment?.address,
+        logo_url: establishment?.logo_url,
+      },
+    });
   };
 
   const filteredOrders = orders.filter(order => {

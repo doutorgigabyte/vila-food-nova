@@ -86,6 +86,10 @@ const SystemChecklistProgress = () => {
         { id: 'm20', label: 'Criar cupons de desconto', status: 'pending' },
         { id: 'm21', label: 'Gerenciar banners', status: 'pending' },
         { id: 'm22', label: 'Responder avaliações de clientes', status: 'pending' },
+        { id: 'm23', label: 'Imprimir cupom de pedido (formatado)', status: 'pending' },
+        { id: 'm24', label: 'Configurar entrega Turbo (taxa e habilitação)', status: 'pending' },
+        { id: 'm25', label: 'Configurar máximo de pedidos por batch (padrão 4)', status: 'pending' },
+        { id: 'm26', label: 'Rastrear entregas em tempo real', status: 'pending' },
       ]
     },
     {
@@ -125,6 +129,11 @@ const SystemChecklistProgress = () => {
         { id: 'd7', label: 'Confirmar entrega', status: 'pending' },
         { id: 'd8', label: 'GPS tracking funcionando', status: 'pending' },
         { id: 'd9', label: 'Histórico de entregas (sem valores)', status: 'pending' },
+        { id: 'd10', label: 'Entrega Turbo (prioridade única)', status: 'pending' },
+        { id: 'd11', label: 'Múltiplas entregas com rota otimizada (max 4)', status: 'pending' },
+        { id: 'd12', label: 'Rastreio em tempo real para cliente', status: 'pending' },
+        { id: 'd13', label: 'Rastreio em tempo real para lojista', status: 'pending' },
+        { id: 'd14', label: 'Cliente vê posição na fila de entregas', status: 'pending' },
       ]
     },
     {
