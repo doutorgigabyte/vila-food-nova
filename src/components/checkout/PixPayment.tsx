@@ -158,6 +158,16 @@ export function PixPayment({
             <p className="text-sm text-muted-foreground mt-1">
               {paymentData?.error || 'Tente novamente ou escolha outra forma de pagamento'}
             </p>
+            {process.env.NODE_ENV === 'development' && (
+              <details className="mt-2 text-left">
+                <summary className="text-xs text-muted-foreground cursor-pointer">
+                  Detalhes técnicos
+                </summary>
+                <pre className="text-xs bg-muted p-2 rounded mt-1 overflow-auto max-h-32">
+                  {JSON.stringify(paymentData, null, 2)}
+                </pre>
+              </details>
+            )}
           </div>
           <Button onClick={generatePix} variant="outline">
             <RefreshCw className="h-4 w-4 mr-2" />
