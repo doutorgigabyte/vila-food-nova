@@ -3357,13 +3357,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "scheduled_orders_customer_id_fkey"
-            columns: ["customer_id"]
-            isOneToOne: false
-            referencedRelation: "customers"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "scheduled_orders_establishment_id_fkey"
             columns: ["establishment_id"]
             isOneToOne: false
