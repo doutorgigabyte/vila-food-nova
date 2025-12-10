@@ -25,13 +25,11 @@ const VilasSection = () => {
     const fetchCounts = async () => {
       if (vilas.length === 0) return;
 
+      // Use secure RPC function that doesn't expose sensitive data
       const vilasData: VilaWithCount[] = await Promise.all(
         vilas.map(async (vila) => {
-          const { count } = await supabase
-            .from('establishments')
-            .select('*', { count: 'exact', head: true })
-            .eq('vila_id', vila.id)
-            .eq('status', 'active');
+          const { data: count } = await supabase
+            .rpc('count_public_establishments_by_vila', { p_vila_id: vila.id });
 
           return {
             ...vila,
