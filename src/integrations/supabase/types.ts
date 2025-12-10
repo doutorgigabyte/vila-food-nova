@@ -1642,6 +1642,68 @@ export type Database = {
           },
         ]
       }
+      disbursement_reports: {
+        Row: {
+          amount: number
+          created_at: string | null
+          establishment_id: string | null
+          id: string
+          paid_at: string | null
+          payment_method: string | null
+          payment_reference: string | null
+          period_end: string
+          period_start: string
+          recipient_id: string | null
+          recipient_name: string | null
+          recipient_type: string | null
+          report_type: string
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          establishment_id?: string | null
+          id?: string
+          paid_at?: string | null
+          payment_method?: string | null
+          payment_reference?: string | null
+          period_end: string
+          period_start: string
+          recipient_id?: string | null
+          recipient_name?: string | null
+          recipient_type?: string | null
+          report_type: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          establishment_id?: string | null
+          id?: string
+          paid_at?: string | null
+          payment_method?: string | null
+          payment_reference?: string | null
+          period_end?: string
+          period_start?: string
+          recipient_id?: string | null
+          recipient_name?: string | null
+          recipient_type?: string | null
+          report_type?: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "disbursement_reports_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       driver_establishment_links: {
         Row: {
           approved_at: string | null
@@ -2237,6 +2299,56 @@ export type Database = {
             columns: ["vila_id"]
             isOneToOne: false
             referencedRelation: "vilas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      expenses: {
+        Row: {
+          amount: number
+          category: string
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          establishment_id: string
+          expense_date: string
+          id: string
+          payment_method: string | null
+          receipt_url: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          amount: number
+          category: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          establishment_id: string
+          expense_date?: string
+          id?: string
+          payment_method?: string | null
+          receipt_url?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          category?: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          establishment_id?: string
+          expense_date?: string
+          id?: string
+          payment_method?: string | null
+          receipt_url?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expenses_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
             referencedColumns: ["id"]
           },
         ]
