@@ -55,18 +55,17 @@
       "parameters": {
         "method": "POST",
         "url": "https://gyagfsjbdaacgmmofqip.supabase.co/rest/v1/rpc/get_establishment_by_instance",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
+        "authentication": "none",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
-              "name": "Content-Type",
-              "value": "application/json"
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5YWdmc2piZGFhY2dtbW9mcWlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4NzIwNjYsImV4cCI6MjA4MDQ0ODA2Nn0.4W0hZwETfoALlpn9_f2NqdKQNJ3DKDRkcs7uC-VbdhE"
             },
             {
-              "name": "Prefer",
-              "value": "return=representation"
+              "name": "Content-Type",
+              "value": "application/json"
             }
           ]
         },
@@ -79,13 +78,7 @@
       "typeVersion": 4.2,
       "position": [240, 128],
       "id": "busca-estabelecimento",
-      "name": "Busca Estabelecimento",
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "SUPABASE_SERVICE_ROLE_CREDENTIAL_ID",
-          "name": "Supabase Service Role"
-        }
-      }
+      "name": "Busca Estabelecimento"
     },
     {
       "parameters": {
