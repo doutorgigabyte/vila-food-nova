@@ -9,7 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Bike, Plus, Phone, Mail, Pencil, Trash2, UserCheck, UserX, Users, Settings, QrCode } from "lucide-react";
+import { Bike, Plus, Phone, Mail, Pencil, Trash2, UserCheck, UserX, Users, Settings, QrCode, Star, BarChart3, AlertTriangle, TrendingUp } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
@@ -26,6 +27,18 @@ interface Driver {
   is_available: boolean;
   pix_key: string | null;
   pix_key_type: string | null;
+  rating_average: number | null;
+  total_deliveries: number | null;
+  complaint_count: number | null;
+}
+
+interface DriverReview {
+  id: string;
+  driver_id: string;
+  rating: number;
+  comment: string | null;
+  selected_tags: any;
+  created_at: string;
 }
 
 const vehicleTypes = [
@@ -299,6 +312,10 @@ const DeliveryDriversManagement = () => {
               </Badge>
             )}
           </TabsTrigger>
+        <TabsTrigger value="metrics" className="flex items-center gap-2">
+            <BarChart3 className="w-4 h-4" />
+            Métricas
+          </TabsTrigger>
           <TabsTrigger value="settings" className="flex items-center gap-2">
             <Settings className="w-4 h-4" />
             Configurações
@@ -511,6 +528,163 @@ const DeliveryDriversManagement = () => {
           {establishmentId && (
             <DriverLinkRequests establishmentId={establishmentId} />
           )}
+        </TabsContent>
+
+        {/* Metrics Tab */}
+        <TabsContent value="metrics">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Driver Ranking */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Star className="w-5 h-5 text-yellow-500" />
+                  Ranking de Entregadores
+                </CardTitle>
+                <CardDescription>
+                  Classificação por avaliação média dos clientes
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {drivers.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-4">Nenhum entregador cadastrado</p>
+                ) : (
+                  <div className="space-y-4">
+                    {[...drivers]
+                      .sort((a, b) => (b.rating_average || 0) - (a.rating_average || 0))
+                      .slice(0, 5)
+                      .map((driver, index) => (
+                        <div key={driver.id} className="flex items-center gap-3">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                            index === 0 ? 'bg-yellow-500/20 text-yellow-600' :
+                            index === 1 ? 'bg-gray-300/30 text-gray-600' :
+                            index === 2 ? 'bg-orange-500/20 text-orange-600' :
+                            'bg-muted text-muted-foreground'
+                          }`}>
+                            {index + 1}º
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium truncate">{driver.name}</p>
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <span className="flex items-center gap-1">
+                                <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
+                                {(driver.rating_average || 0).toFixed(1)}
+                              </span>
+                              <span>•</span>
+                              <span>{driver.total_deliveries || 0} entregas</span>
+                            </div>
+                          </div>
+                          <Progress 
+                            value={(driver.rating_average || 0) * 10} 
+                            className="w-20 h-2"
+                          />
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Delivery Stats */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5 text-green-500" />
+                  Entregas por Entregador
+                </CardTitle>
+                <CardDescription>
+                  Total de entregas realizadas
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {drivers.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-4">Nenhum entregador cadastrado</p>
+                ) : (
+                  <div className="space-y-4">
+                    {[...drivers]
+                      .sort((a, b) => (b.total_deliveries || 0) - (a.total_deliveries || 0))
+                      .slice(0, 5)
+                      .map((driver) => {
+                        const maxDeliveries = Math.max(...drivers.map(d => d.total_deliveries || 0), 1);
+                        const percentage = ((driver.total_deliveries || 0) / maxDeliveries) * 100;
+                        return (
+                          <div key={driver.id} className="space-y-1">
+                            <div className="flex justify-between text-sm">
+                              <span className="font-medium truncate">{driver.name}</span>
+                              <span className="text-muted-foreground">{driver.total_deliveries || 0}</span>
+                            </div>
+                            <Progress value={percentage} className="h-2" />
+                          </div>
+                        );
+                      })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Complaints */}
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <AlertTriangle className="w-5 h-5 text-orange-500" />
+                  Reclamações
+                </CardTitle>
+                <CardDescription>
+                  Entregadores com maior número de reclamações
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {drivers.filter(d => (d.complaint_count || 0) > 0).length === 0 ? (
+                  <div className="text-center py-8">
+                    <UserCheck className="w-12 h-12 mx-auto text-green-500/50 mb-3" />
+                    <p className="text-muted-foreground">Nenhuma reclamação registrada</p>
+                    <p className="text-sm text-muted-foreground">Seus entregadores estão fazendo um ótimo trabalho!</p>
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Entregador</TableHead>
+                        <TableHead>Reclamações</TableHead>
+                        <TableHead>Entregas</TableHead>
+                        <TableHead>Taxa de Reclamação</TableHead>
+                        <TableHead>Avaliação</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {[...drivers]
+                        .filter(d => (d.complaint_count || 0) > 0)
+                        .sort((a, b) => (b.complaint_count || 0) - (a.complaint_count || 0))
+                        .map((driver) => {
+                          const complaintRate = driver.total_deliveries 
+                            ? ((driver.complaint_count || 0) / driver.total_deliveries * 100).toFixed(1)
+                            : '0.0';
+                          return (
+                            <TableRow key={driver.id}>
+                              <TableCell className="font-medium">{driver.name}</TableCell>
+                              <TableCell>
+                                <Badge variant="destructive">{driver.complaint_count || 0}</Badge>
+                              </TableCell>
+                              <TableCell>{driver.total_deliveries || 0}</TableCell>
+                              <TableCell>
+                                <span className={parseFloat(complaintRate) > 5 ? 'text-destructive font-medium' : ''}>
+                                  {complaintRate}%
+                                </span>
+                              </TableCell>
+                              <TableCell>
+                                <span className="flex items-center gap-1">
+                                  <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
+                                  {(driver.rating_average || 0).toFixed(1)}
+                                </span>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         {/* Settings Tab */}
