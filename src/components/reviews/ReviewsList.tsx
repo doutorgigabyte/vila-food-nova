@@ -18,6 +18,7 @@ interface Review {
   service_rating?: number;
   comment?: string;
   photos?: string[];
+  selected_tags?: string[];
   owner_response?: string;
   owner_response_at?: string;
   is_verified_purchase?: boolean;
@@ -57,10 +58,11 @@ export function ReviewsList({ establishmentId, limit }: ReviewsListProps) {
 
       if (error) throw error;
 
-      // Cast photos from Json to string[]
+      // Cast photos and selected_tags from Json to string[]
       const reviewsWithTypedPhotos = (data || []).map(review => ({
         ...review,
-        photos: review.photos as string[] | undefined
+        photos: review.photos as string[] | undefined,
+        selected_tags: review.selected_tags as string[] | undefined
       }));
 
       setReviews(reviewsWithTypedPhotos);
