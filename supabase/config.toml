@@ -134,3 +134,12 @@ verify_jwt = false
 
 [functions.notify-merchant-order]
 verify_jwt = false
+
+[functions.transcribe-audio]
+verify_jwt = false
+
+[functions.analyze-image]
+verify_jwt = false
+
+[functions.register-customer]
+verify_jwt = false
