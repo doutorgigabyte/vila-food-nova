@@ -72,7 +72,7 @@ const AdminDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="min-h-screen bg-background flex overflow-hidden">
       {/* Sidebar */}
       <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-card border-r border-border transform transition-transform duration-200 lg:translate-x-0 ${
         sidebarOpen ? "translate-x-0" : "-translate-x-full"
@@ -144,22 +144,22 @@ const AdminDashboard = () => {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 lg:ml-64">
+      <main className="flex-1 lg:ml-64 overflow-x-hidden">
         {/* Top Bar */}
         <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b border-border">
           <div className="flex items-center justify-between px-4 py-3">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 min-w-0">
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="lg:hidden"
+                className="lg:hidden shrink-0"
                 onClick={() => setSidebarOpen(true)}
               >
                 <Menu className="w-5 h-5" />
               </Button>
-              <h1 className="text-lg font-semibold">Dashboard Administrativo</h1>
+              <h1 className="text-lg font-semibold truncate">Dashboard Administrativo</h1>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               <div className="relative hidden md:block">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input placeholder="Buscar..." className="pl-10 w-64" />
@@ -172,7 +172,7 @@ const AdminDashboard = () => {
           </div>
         </header>
 
-        <div className="p-4 md:p-6 space-y-6">
+        <div className="p-4 md:p-6 space-y-6 overflow-x-auto">
           {/* Stats Cards */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <Card>

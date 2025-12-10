@@ -159,44 +159,44 @@ const AdminSettings = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="min-h-screen bg-background flex overflow-hidden">
       <AdminSidebar 
         isOpen={sidebarOpen} 
         onClose={() => setSidebarOpen(false)}
       />
       
-      <main className="flex-1 lg:ml-64">
+      <main className="flex-1 lg:ml-64 overflow-x-hidden">
         {/* Header */}
         <header className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b border-border px-4 py-3">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 min-w-0">
               <Button
                 variant="ghost"
                 size="icon"
-                className="lg:hidden"
+                className="lg:hidden shrink-0"
                 onClick={() => setSidebarOpen(true)}
               >
                 <Menu className="w-5 h-5" />
               </Button>
-              <div>
+              <div className="min-w-0">
                 <h1 className="text-lg sm:text-xl font-bold flex items-center gap-2">
-                  <Settings className="w-5 h-5" />
-                  <span className="hidden sm:inline">Configurações da Plataforma</span>
+                  <Settings className="w-5 h-5 shrink-0" />
+                  <span className="hidden sm:inline truncate">Configurações da Plataforma</span>
                   <span className="sm:hidden">Configurações</span>
                 </h1>
-                <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">
+                <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block truncate">
                   Gerencie as configurações globais do VilaFood
                 </p>
               </div>
             </div>
-            <Button onClick={handleSave} disabled={saving} className="w-full sm:w-auto">
+            <Button onClick={handleSave} disabled={saving} className="w-full sm:w-auto shrink-0">
               <Save className="w-4 h-4 mr-2" />
               {saving ? "Salvando..." : "Salvar"}
             </Button>
           </div>
         </header>
 
-        <div className="p-6">
+        <div className="p-6 overflow-x-auto">
           <Tabs defaultValue="platform" className="space-y-6">
             <TabsList className="flex flex-wrap h-auto p-1 w-full justify-start gap-1">
               <TabsTrigger value="platform" className="gap-2 text-xs sm:text-sm">
