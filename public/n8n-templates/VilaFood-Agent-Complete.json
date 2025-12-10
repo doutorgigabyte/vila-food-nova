@@ -465,7 +465,7 @@
           },
           "conditions": [
             {
-              "leftValue": "={{ JSON.parse($json.mensagens?.last())?.messageId }}",
+              "leftValue": "={{ JSON.parse($json.mensagens?.slice(-1)[0] || '{}')?.messageId }}",
               "rightValue": "={{ $('Extrai Campos').item.json.message_id }}",
               "operator": {
                 "type": "string",
@@ -673,7 +673,7 @@
     {
       "parameters": {
         "sessionIdType": "customKey",
-        "sessionKey": "={{ $('Merge Conteúdo').item.json.session_key }}",
+        "sessionKey": "=vilafood:memory:{{ $('Extrai Campos').item.json.session_key }}",
         "contextWindowLength": 20
       },
       "type": "@n8n/n8n-nodes-langchain.memoryRedisChat",
@@ -691,14 +691,13 @@
     {
       "parameters": {
         "name": "search_menu",
-        "description": "Busca produtos no cardápio por nome ou categoria",
-        "workflowId": { "__rl": true, "mode": "list", "value": "" },
+        "description": "Busca produtos no cardápio do estabelecimento. Use quando o cliente perguntar sobre produtos, preços ou quiser ver opções disponíveis.",
+        "code": "// Tool: search_menu\n// Input: { query: string }\nconst query = $input.item.json.query?.toLowerCase() || '';\nconst menuJson = JSON.parse($('Extrai Campos').item.json.menu_json || '[]');\n\nif (!query) {\n  return { json: { products: menuJson.slice(0, 10), message: 'Mostrando os 10 primeiros produtos' } };\n}\n\nconst results = menuJson.filter(product => \n  product.name?.toLowerCase().includes(query) || \n  product.description?.toLowerCase().includes(query) ||\n  product.category?.toLowerCase().includes(query)\n);\n\nreturn { \n  json: { \n    products: results.slice(0, 5),\n    found: results.length,\n    message: results.length > 0 \n      ? `Encontrei ${results.length} produto(s) para \"${query}\"` \n      : `Nenhum produto encontrado para \"${query}\"`\n  } \n};",
         "specifyInputSchema": true,
-        "schemaType": "fromJson",
-        "jsonSchemaExample": "{ \"query\": \"pizza calabresa\" }"
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"query\": {\n      \"type\": \"string\",\n      \"description\": \"Termo de busca (nome do produto, categoria ou descrição)\"\n    }\n  },\n  \"required\": [\"query\"]\n}"
       },
-      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
-      "typeVersion": 1.2,
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.1,
       "position": [3080, 920],
       "id": "tool-search-menu",
       "name": "search_menu"
@@ -706,14 +705,13 @@
     {
       "parameters": {
         "name": "send_product_photo",
-        "description": "Envia foto do produto com nome, descrição e preço para o cliente via WhatsApp",
-        "workflowId": { "__rl": true, "mode": "list", "value": "" },
+        "description": "Envia foto do produto para o cliente via WhatsApp com nome, descrição e preço. Use quando o cliente quiser ver a foto de um produto específico.",
+        "code": "// Tool: send_product_photo\n// Input: { product_id: string, product_name: string, product_price: number, image_url: string }\nconst productId = $input.item.json.product_id;\nconst productName = $input.item.json.product_name;\nconst productPrice = $input.item.json.product_price;\nconst imageUrl = $input.item.json.image_url;\n\nconst instanceName = $('Extrai Campos').item.json.instance_name;\nconst remoteJid = $('Extrai Campos').item.json.remote_jid;\nconst evolutionApiUrl = $env.EVOLUTION_API_URL;\nconst evolutionApiKey = $env.EVOLUTION_API_KEY;\n\nif (!imageUrl) {\n  return { json: { success: false, message: 'Produto sem imagem disponível' } };\n}\n\nconst caption = `📦 *${productName}*\\n💰 R$ ${productPrice?.toFixed(2) || '0.00'}\\n\\nDigite o número do produto para adicionar ao carrinho!`;\n\ntry {\n  const response = await fetch(`${evolutionApiUrl}/message/sendMedia/${instanceName}`, {\n    method: 'POST',\n    headers: {\n      'Content-Type': 'application/json',\n      'apikey': evolutionApiKey\n    },\n    body: JSON.stringify({\n      number: remoteJid.replace('@s.whatsapp.net', ''),\n      mediatype: 'image',\n      media: imageUrl,\n      caption: caption\n    })\n  });\n  \n  const result = await response.json();\n  return { json: { success: true, message: `Foto de ${productName} enviada!`, result } };\n} catch (error) {\n  return { json: { success: false, message: `Erro ao enviar foto: ${error.message}` } };\n}",
         "specifyInputSchema": true,
-        "schemaType": "fromJson",
-        "jsonSchemaExample": "{ \"product_id\": \"uuid\", \"product_name\": \"Pizza\", \"product_price\": 45.90, \"image_url\": \"https://...\" }"
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"product_id\": {\n      \"type\": \"string\",\n      \"description\": \"ID do produto\"\n    },\n    \"product_name\": {\n      \"type\": \"string\",\n      \"description\": \"Nome do produto\"\n    },\n    \"product_price\": {\n      \"type\": \"number\",\n      \"description\": \"Preço do produto\"\n    },\n    \"image_url\": {\n      \"type\": \"string\",\n      \"description\": \"URL da imagem do produto\"\n    }\n  },\n  \"required\": [\"product_id\", \"product_name\", \"product_price\", \"image_url\"]\n}"
       },
-      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
-      "typeVersion": 1.2,
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.1,
       "position": [3180, 920],
       "id": "tool-send-product-photo",
       "name": "send_product_photo"
@@ -721,14 +719,13 @@
     {
       "parameters": {
         "name": "add_to_cart",
-        "description": "Adiciona produto ao carrinho do cliente",
-        "workflowId": { "__rl": true, "mode": "list", "value": "" },
+        "description": "Adiciona um produto ao carrinho do cliente. Use quando o cliente confirmar que quer adicionar um item ao pedido.",
+        "code": "// Tool: add_to_cart\n// Input: { product_id: string, product_name: string, quantity: number, unit_price: number, observations?: string }\nconst Redis = require('ioredis');\nconst redis = new Redis($env.REDIS_URL);\n\nconst productId = $input.item.json.product_id;\nconst productName = $input.item.json.product_name;\nconst quantity = parseInt($input.item.json.quantity) || 1;\nconst unitPrice = parseFloat($input.item.json.unit_price) || 0;\nconst observations = $input.item.json.observations || '';\nconst sessionKey = $('Extrai Campos').item.json.session_key;\nconst cartKey = `vilafood:cart:${sessionKey}`;\n\ntry {\n  // Busca carrinho atual\n  let cartData = await redis.get(cartKey);\n  let cart = cartData ? JSON.parse(cartData) : { items: [], total: 0 };\n  \n  // Verifica se produto já existe\n  const existingIndex = cart.items.findIndex(item => item.product_id === productId);\n  \n  if (existingIndex >= 0) {\n    cart.items[existingIndex].quantity += quantity;\n    cart.items[existingIndex].subtotal = cart.items[existingIndex].quantity * unitPrice;\n  } else {\n    cart.items.push({\n      product_id: productId,\n      product_name: productName,\n      quantity: quantity,\n      unit_price: unitPrice,\n      subtotal: quantity * unitPrice,\n      observations: observations\n    });\n  }\n  \n  // Recalcula total\n  cart.total = cart.items.reduce((sum, item) => sum + item.subtotal, 0);\n  cart.updated_at = new Date().toISOString();\n  \n  // Salva com TTL de 2 horas\n  await redis.set(cartKey, JSON.stringify(cart), 'EX', 7200);\n  await redis.quit();\n  \n  return { \n    json: { \n      success: true, \n      message: `✅ ${quantity}x ${productName} adicionado ao carrinho!`,\n      cart_items: cart.items.length,\n      cart_total: cart.total.toFixed(2)\n    } \n  };\n} catch (error) {\n  await redis.quit();\n  return { json: { success: false, message: `Erro ao adicionar: ${error.message}` } };\n}",
         "specifyInputSchema": true,
-        "schemaType": "fromJson",
-        "jsonSchemaExample": "{ \"product_id\": \"uuid\", \"product_name\": \"Pizza\", \"quantity\": 1, \"unit_price\": 45.90 }"
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"product_id\": {\n      \"type\": \"string\",\n      \"description\": \"ID do produto\"\n    },\n    \"product_name\": {\n      \"type\": \"string\",\n      \"description\": \"Nome do produto\"\n    },\n    \"quantity\": {\n      \"type\": \"number\",\n      \"description\": \"Quantidade\"\n    },\n    \"unit_price\": {\n      \"type\": \"number\",\n      \"description\": \"Preço unitário\"\n    },\n    \"observations\": {\n      \"type\": \"string\",\n      \"description\": \"Observações do item (opcional)\"\n    }\n  },\n  \"required\": [\"product_id\", \"product_name\", \"quantity\", \"unit_price\"]\n}"
       },
-      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
-      "typeVersion": 1.2,
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.1,
       "position": [3280, 920],
       "id": "tool-add-to-cart",
       "name": "add_to_cart"
@@ -736,14 +733,13 @@
     {
       "parameters": {
         "name": "create_order_pix",
-        "description": "Cria pedido e gera QR Code PIX para pagamento",
-        "workflowId": { "__rl": true, "mode": "list", "value": "" },
+        "description": "Finaliza o pedido e gera QR Code PIX para pagamento. Use quando o cliente confirmar que quer finalizar o pedido e pagar via PIX.",
+        "code": "// Tool: create_order_pix\n// Input: { delivery_address: string, delivery_type?: string, observations?: string }\nconst Redis = require('ioredis');\nconst redis = new Redis($env.REDIS_URL);\n\nconst deliveryAddress = $input.item.json.delivery_address;\nconst deliveryType = $input.item.json.delivery_type || 'delivery';\nconst observations = $input.item.json.observations || '';\n\nconst sessionKey = $('Extrai Campos').item.json.session_key;\nconst cartKey = `vilafood:cart:${sessionKey}`;\nconst establishmentId = $('Extrai Campos').item.json.establishment_id;\nconst phone = $('Extrai Campos').item.json.phone;\nconst customerName = $('Extrai Campos').item.json.push_name;\nconst mercadoPagoToken = $('Extrai Campos').item.json.mercado_pago_token;\nconst supabaseUrl = $env.SUPABASE_URL;\nconst supabaseKey = $env.SUPABASE_SERVICE_ROLE_KEY;\n\ntry {\n  // Busca carrinho\n  let cartData = await redis.get(cartKey);\n  if (!cartData) {\n    await redis.quit();\n    return { json: { success: false, message: '❌ Carrinho vazio! Adicione produtos primeiro.' } };\n  }\n  \n  const cart = JSON.parse(cartData);\n  if (!cart.items?.length) {\n    await redis.quit();\n    return { json: { success: false, message: '❌ Carrinho vazio!' } };\n  }\n  \n  // Chama Edge Function mercadopago-pix\n  const pixResponse = await fetch(`${supabaseUrl}/functions/v1/mercadopago-pix`, {\n    method: 'POST',\n    headers: {\n      'Content-Type': 'application/json',\n      'Authorization': `Bearer ${supabaseKey}`\n    },\n    body: JSON.stringify({\n      establishment_id: establishmentId,\n      amount: cart.total,\n      customer_name: customerName,\n      customer_phone: phone,\n      items: cart.items,\n      delivery_address: deliveryAddress,\n      delivery_type: deliveryType,\n      observations: observations\n    })\n  });\n  \n  const pixResult = await pixResponse.json();\n  \n  if (pixResult.error) {\n    await redis.quit();\n    return { json: { success: false, message: `❌ Erro no PIX: ${pixResult.error}` } };\n  }\n  \n  // Limpa carrinho após criar pedido\n  await redis.del(cartKey);\n  await redis.quit();\n  \n  return { \n    json: { \n      success: true, \n      message: `✅ Pedido #${pixResult.order_id?.slice(0, 8)} criado!\\n\\n💰 Total: R$ ${cart.total.toFixed(2)}\\n\\n📱 Use o código PIX abaixo para pagar:\\n\\n${pixResult.pix_code}\\n\\nOu escaneie o QR Code que enviarei em seguida.`,\n      order_id: pixResult.order_id,\n      pix_code: pixResult.pix_code,\n      qr_code_base64: pixResult.qr_code_base64,\n      total: cart.total\n    } \n  };\n} catch (error) {\n  await redis.quit();\n  return { json: { success: false, message: `❌ Erro ao criar pedido: ${error.message}` } };\n}",
         "specifyInputSchema": true,
-        "schemaType": "fromJson",
-        "jsonSchemaExample": "{ \"items\": [], \"total\": 45.90, \"delivery_address\": \"Rua X, 123\" }"
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"delivery_address\": {\n      \"type\": \"string\",\n      \"description\": \"Endereço completo de entrega\"\n    },\n    \"delivery_type\": {\n      \"type\": \"string\",\n      \"description\": \"Tipo: delivery, pickup ou table\"\n    },\n    \"observations\": {\n      \"type\": \"string\",\n      \"description\": \"Observações gerais do pedido\"\n    }\n  },\n  \"required\": [\"delivery_address\"]\n}"
       },
-      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
-      "typeVersion": 1.2,
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.1,
       "position": [3380, 920],
       "id": "tool-create-order-pix",
       "name": "create_order_pix"
@@ -751,17 +747,44 @@
     {
       "parameters": {
         "name": "save_customer",
-        "description": "Salva ou atualiza dados do cliente (nome, endereço)",
-        "workflowId": { "__rl": true, "mode": "list", "value": "" },
+        "description": "Salva ou atualiza os dados do cliente (nome, endereço, bairro). Use quando o cliente fornecer seu endereço ou informações de contato.",
+        "code": "// Tool: save_customer\n// Input: { name?: string, address?: string, neighborhood?: string, city?: string, zip_code?: string }\nconst customerName = $input.item.json.name || $('Extrai Campos').item.json.push_name;\nconst address = $input.item.json.address;\nconst neighborhood = $input.item.json.neighborhood;\nconst city = $input.item.json.city;\nconst zipCode = $input.item.json.zip_code;\n\nconst phone = $('Extrai Campos').item.json.phone;\nconst establishmentId = $('Extrai Campos').item.json.establishment_id;\nconst supabaseUrl = $env.SUPABASE_URL;\nconst supabaseKey = $env.SUPABASE_SERVICE_ROLE_KEY;\n\ntry {\n  const addressData = {\n    street: address,\n    neighborhood: neighborhood,\n    city: city,\n    zip_code: zipCode\n  };\n  \n  // Upsert no Supabase\n  const response = await fetch(`${supabaseUrl}/rest/v1/customers?phone=eq.${phone}&establishment_id=eq.${establishmentId}`, {\n    method: 'GET',\n    headers: {\n      'Content-Type': 'application/json',\n      'Authorization': `Bearer ${supabaseKey}`,\n      'apikey': supabaseKey\n    }\n  });\n  \n  const existing = await response.json();\n  \n  let result;\n  if (existing && existing.length > 0) {\n    // Update\n    result = await fetch(`${supabaseUrl}/rest/v1/customers?id=eq.${existing[0].id}`, {\n      method: 'PATCH',\n      headers: {\n        'Content-Type': 'application/json',\n        'Authorization': `Bearer ${supabaseKey}`,\n        'apikey': supabaseKey,\n        'Prefer': 'return=representation'\n      },\n      body: JSON.stringify({\n        name: customerName,\n        default_address: addressData,\n        updated_at: new Date().toISOString()\n      })\n    });\n  } else {\n    // Insert\n    result = await fetch(`${supabaseUrl}/rest/v1/customers`, {\n      method: 'POST',\n      headers: {\n        'Content-Type': 'application/json',\n        'Authorization': `Bearer ${supabaseKey}`,\n        'apikey': supabaseKey,\n        'Prefer': 'return=representation'\n      },\n      body: JSON.stringify({\n        phone: phone,\n        name: customerName,\n        establishment_id: establishmentId,\n        default_address: addressData\n      })\n    });\n  }\n  \n  return { \n    json: { \n      success: true, \n      message: `✅ Dados salvos! ${customerName}, ${address}${neighborhood ? ', ' + neighborhood : ''}` \n    } \n  };\n} catch (error) {\n  return { json: { success: false, message: `Erro ao salvar: ${error.message}` } };\n}",
         "specifyInputSchema": true,
-        "schemaType": "fromJson",
-        "jsonSchemaExample": "{ \"name\": \"João\", \"address\": \"Rua X, 123\", \"neighborhood\": \"Centro\" }"
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"name\": {\n      \"type\": \"string\",\n      \"description\": \"Nome do cliente\"\n    },\n    \"address\": {\n      \"type\": \"string\",\n      \"description\": \"Rua e número\"\n    },\n    \"neighborhood\": {\n      \"type\": \"string\",\n      \"description\": \"Bairro\"\n    },\n    \"city\": {\n      \"type\": \"string\",\n      \"description\": \"Cidade\"\n    },\n    \"zip_code\": {\n      \"type\": \"string\",\n      \"description\": \"CEP\"\n    }\n  },\n  \"required\": [\"address\"]\n}"
       },
-      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
-      "typeVersion": 1.2,
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.1,
       "position": [3480, 920],
       "id": "tool-save-customer",
       "name": "save_customer"
+    },
+    {
+      "parameters": {
+        "name": "view_cart",
+        "description": "Mostra o carrinho atual do cliente. Use quando o cliente quiser ver o que tem no carrinho ou revisar o pedido.",
+        "code": "// Tool: view_cart\nconst Redis = require('ioredis');\nconst redis = new Redis($env.REDIS_URL);\n\nconst sessionKey = $('Extrai Campos').item.json.session_key;\nconst cartKey = `vilafood:cart:${sessionKey}`;\n\ntry {\n  let cartData = await redis.get(cartKey);\n  await redis.quit();\n  \n  if (!cartData) {\n    return { json: { success: true, message: '🛒 Carrinho vazio!', items: [], total: 0 } };\n  }\n  \n  const cart = JSON.parse(cartData);\n  \n  if (!cart.items?.length) {\n    return { json: { success: true, message: '🛒 Carrinho vazio!', items: [], total: 0 } };\n  }\n  \n  let itemsList = cart.items.map((item, idx) => \n    `${idx + 1}. ${item.quantity}x ${item.product_name} - R$ ${item.subtotal.toFixed(2)}`\n  ).join('\\n');\n  \n  return { \n    json: { \n      success: true, \n      message: `🛒 *Seu Carrinho:*\\n\\n${itemsList}\\n\\n💰 *Total: R$ ${cart.total.toFixed(2)}*`,\n      items: cart.items,\n      total: cart.total\n    } \n  };\n} catch (error) {\n  await redis.quit();\n  return { json: { success: false, message: `Erro: ${error.message}` } };\n}",
+        "specifyInputSchema": true,
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {},\n  \"required\": []\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.1,
+      "position": [3580, 920],
+      "id": "tool-view-cart",
+      "name": "view_cart"
+    },
+    {
+      "parameters": {
+        "name": "clear_cart",
+        "description": "Limpa todos os itens do carrinho. Use quando o cliente quiser cancelar ou recomeçar o pedido.",
+        "code": "// Tool: clear_cart\nconst Redis = require('ioredis');\nconst redis = new Redis($env.REDIS_URL);\n\nconst sessionKey = $('Extrai Campos').item.json.session_key;\nconst cartKey = `vilafood:cart:${sessionKey}`;\n\ntry {\n  await redis.del(cartKey);\n  await redis.quit();\n  \n  return { json: { success: true, message: '🗑️ Carrinho limpo! Você pode começar um novo pedido.' } };\n} catch (error) {\n  await redis.quit();\n  return { json: { success: false, message: `Erro: ${error.message}` } };\n}",
+        "specifyInputSchema": true,
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {},\n  \"required\": []\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.1,
+      "position": [3680, 920],
+      "id": "tool-clear-cart",
+      "name": "clear_cart"
     },
     {
       "parameters": {
@@ -914,6 +937,12 @@
       "ai_tool": [[{ "node": "VilaFood AI Agent", "type": "ai_tool", "index": 0 }]]
     },
     "save_customer": {
+      "ai_tool": [[{ "node": "VilaFood AI Agent", "type": "ai_tool", "index": 0 }]]
+    },
+    "view_cart": {
+      "ai_tool": [[{ "node": "VilaFood AI Agent", "type": "ai_tool", "index": 0 }]]
+    },
+    "clear_cart": {
       "ai_tool": [[{ "node": "VilaFood AI Agent", "type": "ai_tool", "index": 0 }]]
     },
     "VilaFood AI Agent": {
