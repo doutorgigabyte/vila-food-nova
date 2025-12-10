@@ -363,18 +363,137 @@ Detectar frases como:
 
 ## Templates N8N Atualizados
 
-Os templates em `/public/n8n-templates/` devem ser atualizados com:
+Os templates estão disponíveis em `/public/n8n-templates/`:
 
-1. **VilaFood-Agent-Complete.json**
-   - Adicionar tool `calculate_delivery`
-   - Adicionar debounce Redis
-   - Adicionar roteamento áudio/imagem
+### 1. VilaFood-Agent-Complete-v2.json ✅ NOVO
 
-2. **VilaFood-Transcribe-Audio.json** (novo)
-   - Subworkflow para transcrição
+Template principal com todas as funcionalidades:
 
-3. **VilaFood-Analyze-Image.json** (novo)
-   - Subworkflow para análise de imagem
+**Funcionalidades incluídas:**
+- ✅ Debounce com Redis (3 segundos)
+- ✅ Split de mensagens longas (~400 chars)
+- ✅ Roteamento por tipo (texto/áudio/imagem)
+- ✅ Transcrição de áudio via Edge Function
+- ✅ Análise de imagem via Edge Function
+- ✅ 6 Tools integradas
 
-4. **VilaFood-Customer-Registration.json** (novo)
-   - Fluxo completo de cadastro por áudio
+**Tools disponíveis:**
+| Tool | Descrição | Edge Function |
+|------|-----------|---------------|
+| `calculate_delivery` | Calcula frete por endereço | `geocode-and-calculate-delivery` |
+| `register_customer` | Cadastra cliente | `register-customer` |
+| `extract_customer_data` | Extrai dados do texto | `extract-customer-data` |
+| `create_order_pix` | Cria pedido com PIX | `whatsapp-checkout` |
+| `search_menu` | Busca produtos | Supabase REST |
+| `send_product_photo` | Envia foto produto | `whatsapp-send-media` |
+
+**Variáveis de ambiente necessárias:**
+```
+SUPABASE_URL=https://gyagfsjbdaacgmmofqip.supabase.co
+SUPABASE_ANON_KEY=eyJhbG...
+SUPABASE_SERVICE_ROLE_KEY=eyJhbG...
+EVOLUTION_API_URL=https://evolution.vilafood.delivery
+EVOLUTION_API_KEY=sua_chave
+```
+
+**Credenciais N8N necessárias:**
+- Redis (para debounce)
+- Google Gemini API (para AI Brain)
+
+### 2. Templates Legados (Compatibilidade)
+
+- `VilaFood-Agent-Complete.json` - Versão anterior sem debounce
+- `VilaFood-AI-Brain.json` - Subworkflow do AI Brain
+- `VilaFood-MercadoPago-PIX.json` - Geração de PIX
+
+---
+
+## Checklist de Configuração N8N
+
+### Pré-requisitos
+- [ ] N8N instalado e acessível
+- [ ] Redis configurado e acessível
+- [ ] Evolution API funcionando
+- [ ] Edge Functions deployadas
+
+### Passos de Configuração
+
+1. **Importar Template**
+   - Acesse N8N → Workflows → Import
+   - Selecione `VilaFood-Agent-Complete-v2.json`
+
+2. **Configurar Credenciais**
+   - Redis: Host, Port, Password
+   - Adicionar variáveis de ambiente
+
+3. **Configurar Webhook Evolution API**
+   ```
+   URL: https://n8n.vilafood.delivery/webhook/vilafood-webhook
+   Events: MESSAGES_UPSERT
+   ```
+
+4. **Testar Fluxo**
+   - Enviar mensagem de teste
+   - Verificar logs do N8N
+   - Confirmar resposta no WhatsApp
+
+---
+
+## Edge Functions Disponíveis
+
+| Função | Endpoint | JWT | Descrição |
+|--------|----------|-----|-----------|
+| `transcribe-audio` | POST | Não | Transcreve áudio para texto |
+| `analyze-image` | POST | Não | Analisa imagens (comprovantes, produtos) |
+| `extract-customer-data` | POST | Não | Extrai dados do cliente de texto |
+| `register-customer` | POST | Não | Cadastra cliente no Supabase |
+| `geocode-and-calculate-delivery` | POST | Não | Geocodifica + calcula frete |
+| `whatsapp-checkout` | POST | Não | Cria pedido via WhatsApp |
+| `whatsapp-send-media` | POST | Não | Envia mídia no WhatsApp |
+
+---
+
+## Fluxo Completo do Agente
+
+```
+Cliente envia mensagem
+       ↓
+[Webhook N8N recebe]
+       ↓
+[Filtra mensagens próprias]
+       ↓
+[Extrai campos (phone, text, type)]
+       ↓
+[Busca estabelecimento por instance_name]
+       ↓
+┌──────┴──────┐
+│  É Áudio?  │
+└──────┬──────┘
+   Sim ↓       Não
+[Transcreve]    ↓
+       ↓    ┌──────┴──────┐
+       ↓    │  É Imagem?  │
+       ↓    └──────┬──────┘
+       ↓       Sim ↓       Não
+       ↓    [Analisa]       ↓
+       ↓        ↓           ↓
+       └────────┴───────────┘
+                ↓
+[Redis Push - Debounce 3s]
+                ↓
+[Redis Get All + Clear]
+                ↓
+[Combina mensagens]
+                ↓
+[AI Brain (Gemini) + Tools]
+                ↓
+[Split mensagens longas]
+                ↓
+[Loop: Envia cada chunk]
+    ↓ (1s delay)
+[Envia WhatsApp]
+                ↓
+[Salva histórico]
+                ↓
+[Respond OK]
+```
