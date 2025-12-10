@@ -1183,6 +1183,7 @@ export type Database = {
       }
       delivery_drivers: {
         Row: {
+          complaint_count: number | null
           created_at: string | null
           email: string | null
           establishment_id: string
@@ -1194,11 +1195,14 @@ export type Database = {
           phone: string
           pix_key: string | null
           pix_key_type: string | null
+          rating_average: number | null
+          total_deliveries: number | null
           updated_at: string | null
           user_id: string | null
           vehicle_type: string | null
         }
         Insert: {
+          complaint_count?: number | null
           created_at?: string | null
           email?: string | null
           establishment_id: string
@@ -1210,11 +1214,14 @@ export type Database = {
           phone: string
           pix_key?: string | null
           pix_key_type?: string | null
+          rating_average?: number | null
+          total_deliveries?: number | null
           updated_at?: string | null
           user_id?: string | null
           vehicle_type?: string | null
         }
         Update: {
+          complaint_count?: number | null
           created_at?: string | null
           email?: string | null
           establishment_id?: string
@@ -1226,6 +1233,8 @@ export type Database = {
           phone?: string
           pix_key?: string | null
           pix_key_type?: string | null
+          rating_average?: number | null
+          total_deliveries?: number | null
           updated_at?: string | null
           user_id?: string | null
           vehicle_type?: string | null
@@ -1569,6 +1578,54 @@ export type Database = {
             columns: ["establishment_id"]
             isOneToOne: false
             referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      driver_reviews: {
+        Row: {
+          comment: string | null
+          created_at: string | null
+          customer_id: string | null
+          driver_id: string | null
+          id: string
+          order_id: string | null
+          rating: number
+          selected_tags: Json | null
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string | null
+          customer_id?: string | null
+          driver_id?: string | null
+          id?: string
+          order_id?: string | null
+          rating: number
+          selected_tags?: Json | null
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string | null
+          customer_id?: string | null
+          driver_id?: string | null
+          id?: string
+          order_id?: string | null
+          rating?: number
+          selected_tags?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_reviews_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_reviews_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
             referencedColumns: ["id"]
           },
         ]
@@ -2824,6 +2881,47 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_reviews: {
+        Row: {
+          comment: string | null
+          created_at: string | null
+          customer_id: string | null
+          id: string
+          order_channel: string | null
+          order_id: string | null
+          rating: number
+          selected_tags: Json | null
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string | null
+          customer_id?: string | null
+          id?: string
+          order_channel?: string | null
+          order_id?: string | null
+          rating: number
+          selected_tags?: Json | null
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string | null
+          customer_id?: string | null
+          id?: string
+          order_channel?: string | null
+          order_id?: string | null
+          rating?: number
+          selected_tags?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_reviews_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       platform_settings: {
         Row: {
           created_at: string
@@ -3182,6 +3280,45 @@ export type Database = {
           },
         ]
       }
+      review_tags: {
+        Row: {
+          category: string
+          created_at: string | null
+          icon: string | null
+          id: string
+          is_active: boolean | null
+          rating_max: number
+          rating_min: number
+          sentiment: string
+          sort_order: number | null
+          tag_text: string
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          rating_max: number
+          rating_min: number
+          sentiment: string
+          sort_order?: number | null
+          tag_text: string
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          rating_max?: number
+          rating_min?: number
+          sentiment?: string
+          sort_order?: number | null
+          tag_text?: string
+        }
+        Relationships: []
+      }
       reviews: {
         Row: {
           comment: string | null
@@ -3198,6 +3335,8 @@ export type Database = {
           owner_response: string | null
           owner_response_at: string | null
           photos: Json | null
+          rating_scale: number | null
+          selected_tags: Json | null
           service_rating: number | null
           updated_at: string | null
           user_id: string | null
@@ -3217,6 +3356,8 @@ export type Database = {
           owner_response?: string | null
           owner_response_at?: string | null
           photos?: Json | null
+          rating_scale?: number | null
+          selected_tags?: Json | null
           service_rating?: number | null
           updated_at?: string | null
           user_id?: string | null
@@ -3236,6 +3377,8 @@ export type Database = {
           owner_response?: string | null
           owner_response_at?: string | null
           photos?: Json | null
+          rating_scale?: number | null
+          selected_tags?: Json | null
           service_rating?: number | null
           updated_at?: string | null
           user_id?: string | null
@@ -3263,6 +3406,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      roadmap_items: {
+        Row: {
+          category: string
+          completion_percentage: number | null
+          created_at: string | null
+          description: string | null
+          estimated_hours: number | null
+          id: string
+          priority: string | null
+          status: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          category: string
+          completion_percentage?: number | null
+          created_at?: string | null
+          description?: string | null
+          estimated_hours?: number | null
+          id?: string
+          priority?: string | null
+          status?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string
+          completion_percentage?: number | null
+          created_at?: string | null
+          description?: string | null
+          estimated_hours?: number | null
+          id?: string
+          priority?: string | null
+          status?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       saved_addresses: {
         Row: {
