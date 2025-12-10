@@ -36,9 +36,12 @@ export interface CreateOrderData {
   observations?: string;
   table_number?: string;
   order_source?: OrderSource;
-  scheduled_for?: string; // ISO date string for scheduled orders
+  scheduled_for?: string;
   whatsapp_tracking_enabled?: boolean;
   customer_phone?: string;
+  // 99Food-style fields
+  cpf?: string;
+  out_of_stock_action?: 'contact_me' | 'cancel_order' | 'cancel_item';
 }
 
 export const useCreateOrder = () => {
@@ -74,6 +77,8 @@ export const useCreateOrder = () => {
         scheduled_for: orderData.scheduled_for || null,
         whatsapp_tracking_enabled: orderData.whatsapp_tracking_enabled ?? false,
         customer_phone: orderData.customer_phone || null,
+        cpf: orderData.cpf || null,
+        out_of_stock_action: orderData.out_of_stock_action || 'contact_me',
         status: 'pending' as const,
       };
       

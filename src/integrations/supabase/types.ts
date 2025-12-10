@@ -1072,6 +1072,7 @@ export type Database = {
       coupons: {
         Row: {
           code: string
+          coupon_type: string | null
           created_at: string | null
           description: string | null
           discount_type: string | null
@@ -1087,6 +1088,7 @@ export type Database = {
         }
         Insert: {
           code: string
+          coupon_type?: string | null
           created_at?: string | null
           description?: string | null
           discount_type?: string | null
@@ -1102,6 +1104,7 @@ export type Database = {
         }
         Update: {
           code?: string
+          coupon_type?: string | null
           created_at?: string | null
           description?: string | null
           discount_type?: string | null
@@ -2496,6 +2499,7 @@ export type Database = {
           cancelled_at: string | null
           change_for: number | null
           commission_debt_created: boolean | null
+          cpf: string | null
           created_at: string | null
           customer_id: string | null
           customer_phone: string | null
@@ -2511,7 +2515,11 @@ export type Database = {
           observations: string | null
           order_number: number
           order_source: string | null
+          out_of_stock_action: string | null
           payment_method: Database["public"]["Enums"]["payment_method"] | null
+          pix_code: string | null
+          pix_expires_at: string | null
+          pix_qr_base64: string | null
           platform_fee: number | null
           review_token: string | null
           review_token_expires_at: string | null
@@ -2528,6 +2536,7 @@ export type Database = {
           cancelled_at?: string | null
           change_for?: number | null
           commission_debt_created?: boolean | null
+          cpf?: string | null
           created_at?: string | null
           customer_id?: string | null
           customer_phone?: string | null
@@ -2543,7 +2552,11 @@ export type Database = {
           observations?: string | null
           order_number?: number
           order_source?: string | null
+          out_of_stock_action?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"] | null
+          pix_code?: string | null
+          pix_expires_at?: string | null
+          pix_qr_base64?: string | null
           platform_fee?: number | null
           review_token?: string | null
           review_token_expires_at?: string | null
@@ -2560,6 +2573,7 @@ export type Database = {
           cancelled_at?: string | null
           change_for?: number | null
           commission_debt_created?: boolean | null
+          cpf?: string | null
           created_at?: string | null
           customer_id?: string | null
           customer_phone?: string | null
@@ -2575,7 +2589,11 @@ export type Database = {
           observations?: string | null
           order_number?: number
           order_source?: string | null
+          out_of_stock_action?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"] | null
+          pix_code?: string | null
+          pix_expires_at?: string | null
+          pix_qr_base64?: string | null
           platform_fee?: number | null
           review_token?: string | null
           review_token_expires_at?: string | null
@@ -4610,6 +4628,7 @@ export type Database = {
         | "new_customer"
         | "table_call"
       order_status:
+        | "awaiting_payment"
         | "pending"
         | "confirmed"
         | "preparing"
@@ -4780,6 +4799,7 @@ export const Constants = {
         "table_call",
       ],
       order_status: [
+        "awaiting_payment",
         "pending",
         "confirmed",
         "preparing",
