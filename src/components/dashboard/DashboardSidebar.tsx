@@ -39,7 +39,6 @@ import {
   ChevronRight,
   MapPin,
   Megaphone,
-  Utensils,
   Headphones,
   type LucideIcon,
 } from "lucide-react";
@@ -49,6 +48,7 @@ import AdminEstablishmentSwitcher from "@/components/admin/AdminEstablishmentSwi
 import NotificationCenter from "@/components/notifications/NotificationCenter";
 import { useState } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import logoHorizontal from "@/assets/logo-horizontal.png";
 
 interface DashboardSidebarProps {
   isOpen: boolean;
@@ -204,7 +204,7 @@ const DashboardSidebar = ({
         {/* Logo / Establishment */}
         <div className="p-4 border-b border-border flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center overflow-hidden">
+            <div className="w-10 h-10 rounded-lg bg-background flex items-center justify-center overflow-hidden">
               {establishment?.logo_url ? (
                 <img 
                   src={establishment.logo_url} 
@@ -212,7 +212,11 @@ const DashboardSidebar = ({
                   className="w-full h-full object-cover" 
                 />
               ) : (
-                <Utensils className="w-5 h-5 text-primary" />
+                <img 
+                  src={logoHorizontal} 
+                  alt="VilaFood" 
+                  className="w-full h-full object-contain p-1" 
+                />
               )}
             </div>
             <div className="flex-1 min-w-0">
