@@ -1334,6 +1334,82 @@ export type Database = {
           },
         ]
       }
+      delivery_queue: {
+        Row: {
+          actual_delivery_at: string | null
+          actual_pickup_at: string | null
+          created_at: string | null
+          delay_notified_at: string | null
+          distance_km: number | null
+          driver_id: string | null
+          establishment_id: string
+          estimated_delivery_at: string | null
+          estimated_duration_minutes: number | null
+          estimated_pickup_at: string | null
+          id: string
+          is_delayed: boolean | null
+          order_id: string
+          queue_position: number
+          updated_at: string | null
+        }
+        Insert: {
+          actual_delivery_at?: string | null
+          actual_pickup_at?: string | null
+          created_at?: string | null
+          delay_notified_at?: string | null
+          distance_km?: number | null
+          driver_id?: string | null
+          establishment_id: string
+          estimated_delivery_at?: string | null
+          estimated_duration_minutes?: number | null
+          estimated_pickup_at?: string | null
+          id?: string
+          is_delayed?: boolean | null
+          order_id: string
+          queue_position?: number
+          updated_at?: string | null
+        }
+        Update: {
+          actual_delivery_at?: string | null
+          actual_pickup_at?: string | null
+          created_at?: string | null
+          delay_notified_at?: string | null
+          distance_km?: number | null
+          driver_id?: string | null
+          establishment_id?: string
+          estimated_delivery_at?: string | null
+          estimated_duration_minutes?: number | null
+          estimated_pickup_at?: string | null
+          id?: string
+          is_delayed?: boolean | null
+          order_id?: string
+          queue_position?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_queue_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_queue_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_queue_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: true
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       delivery_requests: {
         Row: {
           accepted_at: string | null
@@ -1984,6 +2060,7 @@ export type Database = {
           slug: string
           status: Database["public"]["Enums"]["establishment_status"] | null
           system_prompt: string | null
+          tracking_enabled: boolean | null
           turbo_delivery_enabled: boolean | null
           turbo_delivery_fee: number | null
           updated_at: string | null
@@ -2049,6 +2126,7 @@ export type Database = {
           slug: string
           status?: Database["public"]["Enums"]["establishment_status"] | null
           system_prompt?: string | null
+          tracking_enabled?: boolean | null
           turbo_delivery_enabled?: boolean | null
           turbo_delivery_fee?: number | null
           updated_at?: string | null
@@ -2114,6 +2192,7 @@ export type Database = {
           slug?: string
           status?: Database["public"]["Enums"]["establishment_status"] | null
           system_prompt?: string | null
+          tracking_enabled?: boolean | null
           turbo_delivery_enabled?: boolean | null
           turbo_delivery_fee?: number | null
           updated_at?: string | null
@@ -4957,6 +5036,11 @@ export type Database = {
         Args: { p_driver_id: string; p_request_id: string }
         Returns: Json
       }
+      calculate_delivery_queue_position: {
+        Args: { p_driver_id: string; p_establishment_id: string }
+        Returns: undefined
+      }
+      check_delivery_delays: { Args: never; Returns: undefined }
       generate_menu_json: { Args: { est_id: string }; Returns: Json }
       get_establishment_by_instance: {
         Args: { p_instance_name: string }
@@ -5119,6 +5203,9 @@ export type Database = {
         | "delivering"
         | "delivered"
         | "cancelled"
+        | "refunded"
+        | "returned"
+        | "customer_absent"
       payment_method: "cash" | "pix" | "credit_card" | "debit_card" | "online"
     }
     CompositeTypes: {
@@ -5290,6 +5377,9 @@ export const Constants = {
         "delivering",
         "delivered",
         "cancelled",
+        "refunded",
+        "returned",
+        "customer_absent",
       ],
       payment_method: ["cash", "pix", "credit_card", "debit_card", "online"],
     },

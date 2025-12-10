@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
-import { MapPin, Clock, Truck, Package, CheckCircle, Navigation } from 'lucide-react';
+import { MapPin, Clock, Truck, Package, CheckCircle, Navigation, AlertTriangle, XCircle, RotateCcw, UserX, Store } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useDeliveryQueue } from '@/hooks/useDeliveryQueue';
 
 interface DeliveryTrackerProps {
   orderId: string;
@@ -22,11 +23,11 @@ interface DeliveryData {
   estimated_minutes: number | null;
   driver_name?: string;
   is_priority?: boolean;
+  tracking_enabled?: boolean;
 }
 
-interface BatchInfo {
-  total_orders: number;
-  current_position: number;
+interface EstablishmentData {
+  tracking_enabled: boolean;
 }
 
 const statusMessages = {
@@ -66,21 +67,52 @@ const statusMessages = {
     icon: CheckCircle,
     color: 'bg-green-600'
   },
+  cancelled: {
+    label: 'Cancelado',
+    description: 'O pedido foi cancelado',
+    icon: XCircle,
+    color: 'bg-red-500'
+  },
+  returned: {
+    label: 'Devolvido',
+    description: 'O pedido foi devolvido ao estabelecimento',
+    icon: RotateCcw,
+    color: 'bg-amber-500'
+  },
+  customer_absent: {
+    label: 'Cliente Ausente',
+    description: 'O entregador tentou entregar, mas você não estava no local',
+    icon: UserX,
+    color: 'bg-red-400'
+  },
+  refunded: {
+    label: 'Reembolsado',
+    description: 'O valor do pedido foi estornado',
+    icon: RotateCcw,
+    color: 'bg-blue-600'
+  },
+  no_tracking: {
+    label: 'Entrega pela Loja',
+    description: 'Entrega realizada pela loja, sem rastreamento',
+    icon: Store,
+    color: 'bg-muted'
+  },
 };
 
 export const CustomerDeliveryTracker = ({ orderId, deliveryTrackingId }: DeliveryTrackerProps) => {
   const [delivery, setDelivery] = useState<DeliveryData | null>(null);
-  const [batchInfo, setBatchInfo] = useState<BatchInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [eta, setEta] = useState<string | null>(null);
+  const [trackingEnabled, setTrackingEnabled] = useState<boolean>(true);
+  const { queueInfo } = useDeliveryQueue(orderId);
 
   useEffect(() => {
     const fetchDeliveryData = async () => {
       try {
         // Fetch delivery tracking data
         const query = deliveryTrackingId 
-          ? supabase.from('delivery_tracking').select('*, delivery_drivers(name)').eq('id', deliveryTrackingId).single()
-          : supabase.from('delivery_tracking').select('*, delivery_drivers(name)').eq('order_id', orderId).single();
+          ? supabase.from('delivery_tracking').select('*, delivery_drivers(name), establishments(tracking_enabled)').eq('id', deliveryTrackingId).single()
+          : supabase.from('delivery_tracking').select('*, delivery_drivers(name), establishments(tracking_enabled)').eq('order_id', orderId).single();
 
         const { data, error } = await query;
         
@@ -91,13 +123,13 @@ export const CustomerDeliveryTracker = ({ orderId, deliveryTrackingId }: Deliver
         }
 
         if (data) {
+          const estData = data.establishments as unknown as EstablishmentData;
+          setTrackingEnabled(estData?.tracking_enabled ?? true);
+          
           setDelivery({
             ...data,
             driver_name: (data.delivery_drivers as any)?.name,
           });
-
-          // Note: Batch info will be available after delivery_batches table types are generated
-          // For now, we'll skip batch position display
         }
       } catch (err) {
         console.error('Error fetching delivery:', err);
@@ -167,12 +199,31 @@ export const CustomerDeliveryTracker = ({ orderId, deliveryTrackingId }: Deliver
     return null;
   }
 
+  // If tracking is disabled for this establishment, show no_tracking status
+  if (!trackingEnabled) {
+    const noTrackStatus = statusMessages.no_tracking;
+    const NoTrackIcon = noTrackStatus.icon;
+    return (
+      <Card className="overflow-hidden border-2 border-muted">
+        <CardHeader className={`${noTrackStatus.color} text-foreground py-4`}>
+          <CardTitle className="flex items-center gap-3 text-lg">
+            <NoTrackIcon className="w-6 h-6" />
+            <span>{noTrackStatus.label}</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-4">
+          <p className="text-muted-foreground text-center">{noTrackStatus.description}</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   const currentStatus = statusMessages[delivery.status as keyof typeof statusMessages] || statusMessages.assigned;
   const StatusIcon = currentStatus.icon;
   const isDelivering = ['picked_up', 'in_transit', 'arrived'].includes(delivery.status);
 
-  // If order is in a batch and not the current delivery, show "a caminho" message
-  const showWaitingMessage = batchInfo && batchInfo.current_position > 1 && delivery.status !== 'delivered';
+  // If order has queue position > 1, show waiting message
+  const showWaitingMessage = queueInfo && queueInfo.ordersAhead > 0 && delivery.status !== 'delivered';
 
   return (
     <Card className="overflow-hidden border-2 border-primary/20">
@@ -183,6 +234,12 @@ export const CustomerDeliveryTracker = ({ orderId, deliveryTrackingId }: Deliver
           {delivery.is_priority && (
             <Badge variant="secondary" className="ml-auto bg-yellow-400 text-yellow-900">
               ⚡ Turbo
+            </Badge>
+          )}
+          {queueInfo?.isDelayed && (
+            <Badge variant="destructive" className="ml-auto">
+              <AlertTriangle className="w-3 h-3 mr-1" />
+              Atrasado
             </Badge>
           )}
         </CardTitle>
@@ -199,15 +256,15 @@ export const CustomerDeliveryTracker = ({ orderId, deliveryTrackingId }: Deliver
           >
             <p className="text-muted-foreground">{currentStatus.description}</p>
             
-            {showWaitingMessage && (
+            {showWaitingMessage && queueInfo && (
               <div className="mt-4 p-4 bg-amber-50 dark:bg-amber-950/30 rounded-lg border border-amber-200 dark:border-amber-800">
                 <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400 font-medium">
                   <Truck className="w-5 h-5" />
                   <span>Entregador a caminho</span>
                 </div>
                 <p className="text-sm text-amber-600 dark:text-amber-500 mt-2">
-                  O entregador está realizando {batchInfo.current_position - 1} entrega(s) antes da sua. 
-                  Você é o {batchInfo.current_position}º de {batchInfo.total_orders} pedidos nesta rota.
+                  O entregador está realizando {queueInfo.ordersAhead} entrega(s) antes da sua. 
+                  Você é o {queueInfo.position}º de {queueInfo.totalInQueue} pedidos nesta rota.
                 </p>
               </div>
             )}
