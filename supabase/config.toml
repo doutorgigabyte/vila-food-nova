@@ -1,5 +1,8 @@
 project_id = "gyagfsjbdaacgmmofqip"
 
+[functions.geocode-and-calculate-delivery]
+verify_jwt = false
+
 [functions.product-feeds]
 verify_jwt = false
 
