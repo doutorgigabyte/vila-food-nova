@@ -5268,6 +5268,10 @@ export type Database = {
         Returns: undefined
       }
       check_delivery_delays: { Args: never; Returns: undefined }
+      count_public_establishments_by_vila: {
+        Args: { p_vila_id: string }
+        Returns: number
+      }
       generate_menu_json: { Args: { est_id: string }; Returns: Json }
       get_establishment_by_instance: {
         Args: { p_instance_name: string }
@@ -5371,6 +5375,94 @@ export type Database = {
           primary_color: string
           secondary_color: string
           segment_id: string
+          service_area: Json
+          slug: string
+          status: Database["public"]["Enums"]["establishment_status"]
+          updated_at: string
+          vila_id: string
+          whatsapp: string
+          zip_code: string
+        }[]
+      }
+      get_public_establishments_by_segment: {
+        Args: { p_limit?: number; p_segment_id: string }
+        Returns: {
+          accepts_delivery: boolean
+          accepts_pickup: boolean
+          accepts_table: boolean
+          address: string
+          address_number: string
+          avg_delivery_time: number
+          banner_url: string
+          city_id: string
+          created_at: string
+          delivery_base_fee: number
+          delivery_fee_per_km: number
+          description: string
+          email: string
+          id: string
+          is_open: boolean
+          latitude: number
+          logo_url: string
+          longitude: number
+          max_delivery_radius_km: number
+          min_order_value: number
+          name: string
+          neighborhood: string
+          operating_hours: Json
+          phone: string
+          plan_id: string
+          primary_color: string
+          rating_average: number
+          rating_count: number
+          secondary_color: string
+          segment_icon: string
+          segment_id: string
+          segment_name: string
+          service_area: Json
+          slug: string
+          status: Database["public"]["Enums"]["establishment_status"]
+          updated_at: string
+          vila_id: string
+          whatsapp: string
+          zip_code: string
+        }[]
+      }
+      get_public_establishments_filtered: {
+        Args: { p_limit?: number; p_segment_ids?: string[] }
+        Returns: {
+          accepts_delivery: boolean
+          accepts_pickup: boolean
+          accepts_table: boolean
+          address: string
+          address_number: string
+          avg_delivery_time: number
+          banner_url: string
+          city_id: string
+          created_at: string
+          delivery_base_fee: number
+          delivery_fee_per_km: number
+          description: string
+          email: string
+          id: string
+          is_open: boolean
+          latitude: number
+          logo_url: string
+          longitude: number
+          max_delivery_radius_km: number
+          min_order_value: number
+          name: string
+          neighborhood: string
+          operating_hours: Json
+          phone: string
+          plan_id: string
+          primary_color: string
+          rating_average: number
+          rating_count: number
+          secondary_color: string
+          segment_icon: string
+          segment_id: string
+          segment_name: string
           service_area: Json
           slug: string
           status: Database["public"]["Enums"]["establishment_status"]

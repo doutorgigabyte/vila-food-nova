@@ -1,8 +1,12 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { segmentToCategoryMap } from "@/components/marketplace/MainCategoriesGrid";
 import { Establishment } from "@/hooks/useEstablishment";
 
+/**
+ * Hook que busca estabelecimentos por categoria
+ * Usa funções RPC seguras que não expõem tokens de pagamento
+ */
 export const useEstablishmentsByCategory = (
   mainCategory: string | null,
   subcategory: string | null = null,
@@ -15,23 +19,19 @@ export const useEstablishmentsByCategory = (
     const fetchEstablishments = async () => {
       setLoading(true);
       try {
-        // If subcategory is provided, filter directly by segment_id
+        // If subcategory is provided, filter directly by segment_id using secure RPC
         if (subcategory) {
           const { data, error } = await supabase
-            .from("establishments")
-            .select(`
-              *,
-              segments (id, name, icon)
-            `)
-            .eq("status", "active")
-            .eq("segment_id", subcategory)
-            .limit(limit || 100);
+            .rpc('get_public_establishments_by_segment', {
+              p_segment_id: subcategory,
+              p_limit: limit || 100
+            });
 
           if (error) throw error;
 
           const formatted = (data || []).map((est: any) => ({
             ...est,
-            segment: est.segments
+            segment: { id: est.segment_id, name: est.segment_name, icon: est.segment_icon }
           }));
 
           setEstablishments(formatted);
@@ -39,22 +39,19 @@ export const useEstablishmentsByCategory = (
           return;
         }
 
-        // If no main category, fetch all
+        // If no main category, fetch all using secure RPC
         if (!mainCategory) {
           const { data, error } = await supabase
-            .from("establishments")
-            .select(`
-              *,
-              segments (id, name, icon)
-            `)
-            .eq("status", "active")
-            .limit(limit || 100);
+            .rpc('get_public_establishments_filtered', {
+              p_segment_ids: null,
+              p_limit: limit || 100
+            });
 
           if (error) throw error;
 
           const formatted = (data || []).map((est: any) => ({
             ...est,
-            segment: est.segments
+            segment: { id: est.segment_id, name: est.segment_name, icon: est.segment_icon }
           }));
 
           setEstablishments(formatted);
@@ -84,21 +81,18 @@ export const useEstablishmentsByCategory = (
           return;
         }
 
+        // Fetch using secure RPC with segment filter
         const { data, error } = await supabase
-          .from("establishments")
-          .select(`
-            *,
-            segments (id, name, icon)
-          `)
-          .eq("status", "active")
-          .in("segment_id", categorySegmentIds)
-          .limit(limit || 100);
+          .rpc('get_public_establishments_filtered', {
+            p_segment_ids: categorySegmentIds,
+            p_limit: limit || 100
+          });
 
         if (error) throw error;
 
         const formatted = (data || []).map((est: any) => ({
           ...est,
-          segment: est.segments
+          segment: { id: est.segment_id, name: est.segment_name, icon: est.segment_icon }
         }));
 
         setEstablishments(formatted);

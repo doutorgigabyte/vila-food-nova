@@ -4,7 +4,7 @@ import { Establishment } from "@/hooks/useEstablishment";
 
 /**
  * Hook que busca estabelecimentos por categoria principal usando parent_category_id do banco
- * Corrige o problema de filtrar por mapeamento de nomes
+ * Usa funções RPC seguras que não expõem tokens de pagamento
  */
 export const useEstablishmentsByMainCategory = (
   mainCategorySlug: string | null,
@@ -21,17 +21,16 @@ export const useEstablishmentsByMainCategory = (
         // Se subcategoria está selecionada, filtra direto pelo segment_id
         if (subcategoryId) {
           const { data, error } = await supabase
-            .from("establishments")
-            .select(`*, segments (id, name, icon)`)
-            .eq("status", "active")
-            .eq("segment_id", subcategoryId)
-            .limit(limit || 100);
+            .rpc('get_public_establishments_by_segment', { 
+              p_segment_id: subcategoryId,
+              p_limit: limit || 100
+            });
 
           if (error) throw error;
 
           const formatted = (data || []).map((est: any) => ({
             ...est,
-            segment: est.segments
+            segment: { id: est.segment_id, name: est.segment_name, icon: est.segment_icon }
           }));
 
           setEstablishments(formatted);
@@ -42,16 +41,16 @@ export const useEstablishmentsByMainCategory = (
         // Se não há categoria principal, busca todos
         if (!mainCategorySlug) {
           const { data, error } = await supabase
-            .from("establishments")
-            .select(`*, segments (id, name, icon)`)
-            .eq("status", "active")
-            .limit(limit || 100);
+            .rpc('get_public_establishments_filtered', { 
+              p_segment_ids: null,
+              p_limit: limit || 100
+            });
 
           if (error) throw error;
 
           const formatted = (data || []).map((est: any) => ({
             ...est,
-            segment: est.segments
+            segment: { id: est.segment_id, name: est.segment_name, icon: est.segment_icon }
           }));
 
           setEstablishments(formatted);
@@ -86,19 +85,18 @@ export const useEstablishmentsByMainCategory = (
           return;
         }
 
-        // Buscar estabelecimentos com esses segmentos
+        // Buscar estabelecimentos com esses segmentos usando RPC seguro
         const { data, error } = await supabase
-          .from("establishments")
-          .select(`*, segments (id, name, icon)`)
-          .eq("status", "active")
-          .in("segment_id", segmentIds)
-          .limit(limit || 100);
+          .rpc('get_public_establishments_filtered', { 
+            p_segment_ids: segmentIds,
+            p_limit: limit || 100
+          });
 
         if (error) throw error;
 
         const formatted = (data || []).map((est: any) => ({
           ...est,
-          segment: est.segments
+          segment: { id: est.segment_id, name: est.segment_name, icon: est.segment_icon }
         }));
 
         setEstablishments(formatted);
