@@ -99,21 +99,19 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/get_establishment_by_instance",
+        "url": "https://gyagfsjbdaacgmmofqip.supabase.co/rest/v1/rpc/get_establishment_by_instance",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
-              "name": "apikey",
-              "value": "={{ $env.SUPABASE_ANON_KEY }}"
-            },
-            {
-              "name": "Authorization",
-              "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
-            },
-            {
               "name": "Content-Type",
               "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
             }
           ]
         },
@@ -126,7 +124,13 @@
       "typeVersion": 4.2,
       "position": [-600, 0],
       "id": "fetch-establishment",
-      "name": "Busca Config Estabelecimento"
+      "name": "Busca Config Estabelecimento",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "SUPABASE_SERVICE_ROLE_CREDENTIAL_ID",
+          "name": "Supabase Service Role"
+        }
+      }
     },
     {
       "parameters": {
