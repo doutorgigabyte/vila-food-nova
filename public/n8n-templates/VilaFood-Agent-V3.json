@@ -3,47 +3,359 @@
   "nodes": [
     {
       "parameters": {
-        "tableId": "whatsapp_messages",
-        "fieldsUi": {
-          "fieldValues": [
+        "assignments": {
+          "assignments": [
             {
-              "fieldValue": "={{ $('Busca Sessao').item.json.id || null }}"
-            },
-            {
-              "fieldValue": "bot"
-            },
-            {
-              "fieldValue": "={{ $('AI Orchestrator').item.json.output }}"
-            },
-            {
-              "fieldValue": "text"
-            },
-            {
-              "fieldValue": true
-            },
-            {
-              "fieldValue": "orchestrator"
-            },
-            {
-              "fieldValue": "={{ JSON.stringify({ tools_used: $('AI Orchestrator').item.json.toolCalls || [] }) }}"
+              "id": "msg-extract-1",
+              "name": "mensagem",
+              "value": "={{ $('AI Orchestrator').item.json.output || '' }}",
+              "type": "string"
             }
           ]
-        }
+        },
+        "options": {}
       },
-      "type": "n8n-nodes-base.supabase",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [2672, 96],
+      "id": "msg-node-1",
+      "name": "Extrai Mensagem Final"
+    },
+    {
+      "parameters": {
+        "amount": 1
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [2672, 256],
+      "id": "wait-interval-1",
+      "name": "Intervalo Enfileiramento",
+      "webhookId": "queue-interval"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "key": "=vilafood:queue:{{ $('Extrai Campos').item.json.phone }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
-      "position": [
-        2672,
-        416
-      ],
-      "id": "e8f0c6ec-5356-49ee-a947-fa148d496c3a",
-      "name": "Salva Log Resposta",
+      "position": [2672, 416],
+      "id": "redis-get-queue-1",
+      "name": "Busca Fila Mensagens",
       "credentials": {
-        "supabaseApi": {
-          "id": "DJHJ4fGtwZ6iktbx",
-          "name": "Supabase account 2"
+        "redis": {
+          "id": "NFxoyqtcjJBySPii",
+          "name": "Redis account"
         }
       }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "compare-msg-1",
+              "leftValue": "={{ $('Extrai Mensagem Final').item.json.mensagem }}",
+              "rightValue": "={{ $json.propertyName ? $json.propertyName.slice(-1)[0] : '' }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [2672, 576],
+      "id": "if-compare-1",
+      "name": "Compara Fila"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "full-msg-1",
+              "name": "mensagem_completa",
+              "value": "={{ $json.propertyName }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [2880, 496],
+      "id": "set-full-msg-1",
+      "name": "Mensagem Completa"
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "key": "=vilafood:queue:{{ $('Extrai Campos').item.json.phone }}"
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [2880, 656],
+      "id": "redis-delete-queue-1",
+      "name": "Limpa Fila Redis",
+      "credentials": {
+        "redis": {
+          "id": "NFxoyqtcjJBySPii",
+          "name": "Redis account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [2880, 736],
+      "id": "noop-ignore-1",
+      "name": "Ignora (Nao e ultima)"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://gyagfsjbdaacgmmofqip.supabase.co/rest/v1/whatsapp_chats",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5YWdmc2piZGFhY2dtbW9mcWlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4NzIwNjYsImV4cCI6MjA4MDQ0ODA2Nn0.4W0hZwETfoALlpn9_f2NqdKQNJ3DKDRkcs7uC-VbdhE"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5YWdmc2piZGFhY2dtbW9mcWlwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NDg3MjA2NiwiZXhwIjoyMDgwNDQ4MDY2fQ.Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"phone\": \"{{ $('Extrai Campos').item.json.phone }}\",\n  \"establishment_id\": \"{{ $('Extrai Campos').item.json.establishment_id }}\",\n  \"nome_wpp\": \"{{ $('Extrai Campos').item.json.push_name }}\"\n}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [3088, 416],
+      "id": "http-add-chat-1",
+      "name": "Adiciona Chat"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://gyagfsjbdaacgmmofqip.supabase.co/rest/v1/whatsapp_chats?phone=eq.{{ $('Extrai Campos').item.json.phone }}&establishment_id=eq.{{ $('Extrai Campos').item.json.establishment_id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5YWdmc2piZGFhY2dtbW9mcWlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4NzIwNjYsImV4cCI6MjA4MDQ0ODA2Nn0.4W0hZwETfoALlpn9_f2NqdKQNJ3DKDRkcs7uC-VbdhE"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5YWdmc2piZGFhY2dtbW9mcWlwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NDg3MjA2NiwiZXhwIjoyMDgwNDQ4MDY2fQ.Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"updated_at\": \"{{ $now.toISO() }}\"\n}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [3088, 576],
+      "id": "http-update-chat-1",
+      "name": "Atualiza Chat"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://gyagfsjbdaacgmmofqip.supabase.co/rest/v1/whatsapp_chats?phone=eq.{{ $('Extrai Campos').item.json.phone }}&establishment_id=eq.{{ $('Extrai Campos').item.json.establishment_id }}&select=id",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5YWdmc2piZGFhY2dtbW9mcWlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4NzIwNjYsImV4cCI6MjA4MDQ0ODA2Nn0.4W0hZwETfoALlpn9_f2NqdKQNJ3DKDRkcs7uC-VbdhE"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [3088, 256],
+      "id": "http-check-chat-1",
+      "name": "Busca Chat Existente"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "check-chat-exists-1",
+              "leftValue": "={{ $json.length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [3088, 336],
+      "id": "if-chat-exists-1",
+      "name": "Chat Existe?"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://gyagfsjbdaacgmmofqip.supabase.co/rest/v1/whatsapp_chat_messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5YWdmc2piZGFhY2dtbW9mcWlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4NzIwNjYsImV4cCI6MjA4MDQ0ODA2Nn0.4W0hZwETfoALlpn9_f2NqdKQNJ3DKDRkcs7uC-VbdhE"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5YWdmc2piZGFhY2dtbW9mcWlwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NDg3MjA2NiwiZXhwIjoyMDgwNDQ4MDY2fQ.Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"phone\": \"{{ $('Extrai Campos').item.json.phone }}\",\n  \"establishment_id\": \"{{ $('Extrai Campos').item.json.establishment_id }}\",\n  \"user_message\": \"{{ $('Merge Conteudo').item.json.content }}\",\n  \"bot_message\": \"{{ $('AI Orchestrator').item.json.output }}\",\n  \"message_type\": \"{{ $('Extrai Campos').item.json.message_type }}\",\n  \"nome_wpp\": \"{{ $('Extrai Campos').item.json.push_name }}\"\n}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [3296, 496],
+      "id": "http-save-history-1",
+      "name": "Salva Historico"
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "key": "=vilafood:memory:{{ $('Extrai Campos').item.json.session_key }}"
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [3504, 496],
+      "id": "redis-delete-memory-1",
+      "name": "Limpa Memoria Sessao",
+      "credentials": {
+        "redis": {
+          "id": "NFxoyqtcjJBySPii",
+          "name": "Redis account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [3296, 416],
+      "id": "merge-chat-1",
+      "name": "Merge Chat"
+    },
+    {
+      "parameters": {
+        "content": "# Enfileirar Mensagens\nControle de debounce com Redis",
+        "height": 760,
+        "width": 280,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [2608, 32],
+      "typeVersion": 1,
+      "id": "sticky-queue-1",
+      "name": "Sticky Note - Fila"
+    },
+    {
+      "parameters": {
+        "content": "# Histórico Supabase\nPersistência de conversas",
+        "height": 760,
+        "width": 520,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [3024, 32],
+      "typeVersion": 1,
+      "id": "sticky-history-1",
+      "name": "Sticky Note - Historico"
     },
     {
       "parameters": {
@@ -1310,7 +1622,7 @@
       "main": [
         [
           {
-            "node": "Salva Log Resposta",
+            "node": "Extrai Mensagem Final",
             "type": "main",
             "index": 0
           }
@@ -1318,6 +1630,152 @@
         [
           {
             "node": "Batch Mensagens",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extrai Mensagem Final": {
+      "main": [
+        [
+          {
+            "node": "Intervalo Enfileiramento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Intervalo Enfileiramento": {
+      "main": [
+        [
+          {
+            "node": "Busca Fila Mensagens",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca Fila Mensagens": {
+      "main": [
+        [
+          {
+            "node": "Compara Fila",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compara Fila": {
+      "main": [
+        [
+          {
+            "node": "Mensagem Completa",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Ignora (Nao e ultima)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mensagem Completa": {
+      "main": [
+        [
+          {
+            "node": "Limpa Fila Redis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limpa Fila Redis": {
+      "main": [
+        [
+          {
+            "node": "Busca Chat Existente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca Chat Existente": {
+      "main": [
+        [
+          {
+            "node": "Chat Existe?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chat Existe?": {
+      "main": [
+        [
+          {
+            "node": "Adiciona Chat",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Atualiza Chat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Adiciona Chat": {
+      "main": [
+        [
+          {
+            "node": "Merge Chat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Atualiza Chat": {
+      "main": [
+        [
+          {
+            "node": "Merge Chat",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Chat": {
+      "main": [
+        [
+          {
+            "node": "Salva Historico",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Salva Historico": {
+      "main": [
+        [
+          {
+            "node": "Limpa Memoria Sessao",
             "type": "main",
             "index": 0
           }
