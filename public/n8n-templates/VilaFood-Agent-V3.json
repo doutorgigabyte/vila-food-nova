@@ -1,0 +1,726 @@
+{
+  "name": "VilaFood AI Agent v3",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "vilafood-webhook",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [200, 300],
+      "id": "webhook-evolution",
+      "name": "Evolution API Webhook",
+      "webhookId": "vilafood-evolution-webhook"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.body?.data?.key?.fromMe }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "notEquals"
+              }
+            },
+            {
+              "leftValue": "={{ $json.body?.event }}",
+              "rightValue": "messages.upsert",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [420, 300],
+      "id": "filter-self-messages",
+      "name": "Filtra Mensagens Próprias"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://gyagfsjbdaacgmmofqip.supabase.co/rest/v1/rpc/get_establishment_by_instance",
+        "authentication": "none",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5YWdmc2piZGFhY2dtbW9mcWlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4NzIwNjYsImV4cCI6MjA4MDQ0ODA2Nn0.4W0hZwETfoALlpn9_f2NqdKQNJ3DKDRkcs7uC-VbdhE"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"p_instance_name\": \"{{ $json.body.instance }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [640, 300],
+      "id": "get-establishment",
+      "name": "Busca Estabelecimento"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "instance_name",
+              "name": "instance_name",
+              "value": "={{ $('Evolution API Webhook').item.json.body.instance }}",
+              "type": "string"
+            },
+            {
+              "id": "remote_jid",
+              "name": "remote_jid",
+              "value": "={{ $('Evolution API Webhook').item.json.body.data.key.remoteJid }}",
+              "type": "string"
+            },
+            {
+              "id": "phone",
+              "name": "phone",
+              "value": "={{ $('Evolution API Webhook').item.json.body.data.key.remoteJid.replace('@s.whatsapp.net', '') }}",
+              "type": "string"
+            },
+            {
+              "id": "push_name",
+              "name": "push_name",
+              "value": "={{ $('Evolution API Webhook').item.json.body.data.pushName || 'Cliente' }}",
+              "type": "string"
+            },
+            {
+              "id": "message_text",
+              "name": "message_text",
+              "value": "={{ $('Evolution API Webhook').item.json.body.data.message?.conversation || $('Evolution API Webhook').item.json.body.data.message?.extendedTextMessage?.text || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "message_type",
+              "name": "message_type",
+              "value": "={{ $('Evolution API Webhook').item.json.body.data.messageType }}",
+              "type": "string"
+            },
+            {
+              "id": "message_id",
+              "name": "message_id",
+              "value": "={{ $('Evolution API Webhook').item.json.body.data.key.id }}",
+              "type": "string"
+            },
+            {
+              "id": "session_key",
+              "name": "session_key",
+              "value": "={{ $('Evolution API Webhook').item.json.body.instance }}:{{ $('Evolution API Webhook').item.json.body.data.key.remoteJid.replace('@s.whatsapp.net', '') }}",
+              "type": "string"
+            },
+            {
+              "id": "establishment_id",
+              "name": "establishment_id",
+              "value": "={{ $('Busca Estabelecimento').item.json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "establishment_name",
+              "name": "establishment_name",
+              "value": "={{ $('Busca Estabelecimento').item.json.name }}",
+              "type": "string"
+            },
+            {
+              "id": "system_prompt",
+              "name": "system_prompt",
+              "value": "={{ $('Busca Estabelecimento').item.json.system_prompt || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "menu_json",
+              "name": "menu_json",
+              "value": "={{ JSON.stringify($('Busca Estabelecimento').item.json.menu_json || []) }}",
+              "type": "string"
+            },
+            {
+              "id": "evolution_api_token",
+              "name": "evolution_api_token",
+              "value": "={{ $('Busca Estabelecimento').item.json.evolution_api_token || '' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [860, 300],
+      "id": "extract-fields",
+      "name": "Extrai Campos"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://gyagfsjbdaacgmmofqip.supabase.co/functions/v1/whatsapp-cart",
+        "authentication": "none",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5YWdmc2piZGFhY2dtbW9mcWlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4NzIwNjYsImV4cCI6MjA4MDQ0ODA2Nn0.4W0hZwETfoALlpn9_f2NqdKQNJ3DKDRkcs7uC-VbdhE"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"action\": \"get\",\n  \"instance_name\": \"{{ $('Extrai Campos').item.json.instance_name }}\",\n  \"remote_jid\": \"{{ $('Extrai Campos').item.json.remote_jid }}\",\n  \"establishment_id\": \"{{ $('Extrai Campos').item.json.establishment_id }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1080, 300],
+      "id": "get-cart",
+      "name": "Busca Carrinho"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://gyagfsjbdaacgmmofqip.supabase.co/rest/v1/rpc/get_customer_by_phone_and_establishment",
+        "authentication": "none",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5YWdmc2piZGFhY2dtbW9mcWlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4NzIwNjYsImV4cCI6MjA4MDQ0ODA2Nn0.4W0hZwETfoALlpn9_f2NqdKQNJ3DKDRkcs7uC-VbdhE"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"p_phone\": \"{{ $('Extrai Campos').item.json.phone }}\",\n  \"p_establishment_id\": \"{{ $('Extrai Campos').item.json.establishment_id }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1300, 300],
+      "id": "get-customer",
+      "name": "Busca Cliente",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Extrai Campos').item.json.message_text }}",
+        "hasOutputParser": false,
+        "options": {
+          "systemMessage": "=# Você é o assistente virtual da {{ $('Extrai Campos').item.json.establishment_name }}\n\n{{ $('Extrai Campos').item.json.system_prompt }}\n\n## CARDÁPIO DISPONÍVEL:\n{{ $('Extrai Campos').item.json.menu_json }}\n\n## DADOS DO CLIENTE:\n- Nome: {{ $('Extrai Campos').item.json.push_name }}\n- Telefone: {{ $('Extrai Campos').item.json.phone }}\n- Endereço: {{ $('Busca Cliente').item.json?.default_address ? JSON.stringify($('Busca Cliente').item.json.default_address) : 'Não cadastrado' }}\n\n## CARRINHO ATUAL:\n{{ $('Busca Carrinho').item.json?.cart ? JSON.stringify($('Busca Carrinho').item.json.cart) : 'Vazio' }}\nTotal: R$ {{ $('Busca Carrinho').item.json?.total || '0,00' }}\n\n## INSTRUÇÕES:\n1. Seja simpático e prestativo\n2. Use as TOOLS disponíveis para ações específicas\n3. Sempre confirme antes de finalizar pedidos\n4. Ofereça produtos complementares quando apropriado\n5. Para pagamento PIX, use create_order_pix\n\n## FORMATO DE RESPOSTA:\n- Respostas curtas e diretas (max 400 caracteres)\n- Use emojis moderadamente\n- Sempre pergunte se deseja mais algo antes de fechar"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [1520, 300],
+      "id": "ai-agent",
+      "name": "VilaFood AI Agent"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash",
+        "options": {
+          "temperature": 0.7,
+          "maxOutputTokens": 1024
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [1420, 520],
+      "id": "google-gemini-chat",
+      "name": "Google Gemini Chat",
+      "credentials": {
+        "googleGeminiApi": {
+          "id": "google-gemini-credentials",
+          "name": "Google Gemini API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "=vilafood:memory:{{ $('Extrai Campos').item.json.session_key }}",
+        "contextWindowLength": 20
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryRedisChat",
+      "typeVersion": 1.3,
+      "position": [1620, 520],
+      "id": "redis-chat-memory",
+      "name": "Redis Chat Memory",
+      "credentials": {
+        "redis": {
+          "id": "redis-credentials",
+          "name": "Redis"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "search_menu",
+        "description": "Busca produtos no cardápio do estabelecimento por nome, categoria ou descrição. Retorna lista de produtos encontrados com nome, preço e ID.",
+        "method": "POST",
+        "url": "https://gyagfsjbdaacgmmofqip.supabase.co/rest/v1/rpc/search_products",
+        "authentication": "none",
+        "sendHeaders": true,
+        "parametersHeaders": {
+          "values": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5YWdmc2piZGFhY2dtbW9mcWlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4NzIwNjYsImV4cCI6MjA4MDQ0ODA2Nn0.4W0hZwETfoALlpn9_f2NqdKQNJ3DKDRkcs7uC-VbdhE"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"p_establishment_id\": \"{{ $('Extrai Campos').item.json.establishment_id }}\",\n  \"p_search_term\": \"{query}\"\n}",
+        "placeholderDefinitions": {
+          "values": [
+            {
+              "name": "query",
+              "description": "Termo de busca para encontrar produtos no cardápio (ex: pizza, refrigerante, bolo)",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [1320, 640],
+      "id": "tool-search-menu",
+      "name": "search_menu"
+    },
+    {
+      "parameters": {
+        "name": "add_to_cart",
+        "description": "Adiciona um produto ao carrinho do cliente. Use quando o cliente confirmar que quer adicionar um item ao pedido.",
+        "method": "POST",
+        "url": "https://gyagfsjbdaacgmmofqip.supabase.co/functions/v1/whatsapp-cart",
+        "authentication": "none",
+        "sendHeaders": true,
+        "parametersHeaders": {
+          "values": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5YWdmc2piZGFhY2dtbW9mcWlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4NzIwNjYsImV4cCI6MjA4MDQ0ODA2Nn0.4W0hZwETfoALlpn9_f2NqdKQNJ3DKDRkcs7uC-VbdhE"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"action\": \"add\",\n  \"instance_name\": \"{{ $('Extrai Campos').item.json.instance_name }}\",\n  \"remote_jid\": \"{{ $('Extrai Campos').item.json.remote_jid }}\",\n  \"establishment_id\": \"{{ $('Extrai Campos').item.json.establishment_id }}\",\n  \"product_id\": \"{product_id}\",\n  \"product_name\": \"{product_name}\",\n  \"quantity\": {quantity},\n  \"unit_price\": {unit_price},\n  \"observations\": \"{observations}\"\n}",
+        "placeholderDefinitions": {
+          "values": [
+            {
+              "name": "product_id",
+              "description": "UUID do produto (obtido da busca no cardápio)",
+              "type": "string"
+            },
+            {
+              "name": "product_name",
+              "description": "Nome do produto para exibição",
+              "type": "string"
+            },
+            {
+              "name": "quantity",
+              "description": "Quantidade de itens (número inteiro, mínimo 1)",
+              "type": "number"
+            },
+            {
+              "name": "unit_price",
+              "description": "Preço unitário do produto em reais (ex: 25.90)",
+              "type": "number"
+            },
+            {
+              "name": "observations",
+              "description": "Observações do cliente sobre o item (ex: sem cebola, bem passado)",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [1420, 640],
+      "id": "tool-add-cart",
+      "name": "add_to_cart"
+    },
+    {
+      "parameters": {
+        "name": "view_cart",
+        "description": "Exibe o carrinho atual do cliente com todos os itens, quantidades e valores",
+        "method": "POST",
+        "url": "https://gyagfsjbdaacgmmofqip.supabase.co/functions/v1/whatsapp-cart",
+        "authentication": "none",
+        "sendHeaders": true,
+        "parametersHeaders": {
+          "values": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5YWdmc2piZGFhY2dtbW9mcWlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4NzIwNjYsImV4cCI6MjA4MDQ0ODA2Nn0.4W0hZwETfoALlpn9_f2NqdKQNJ3DKDRkcs7uC-VbdhE"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"action\": \"get\",\n  \"instance_name\": \"{{ $('Extrai Campos').item.json.instance_name }}\",\n  \"remote_jid\": \"{{ $('Extrai Campos').item.json.remote_jid }}\",\n  \"establishment_id\": \"{{ $('Extrai Campos').item.json.establishment_id }}\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [1520, 640],
+      "id": "tool-view-cart",
+      "name": "view_cart"
+    },
+    {
+      "parameters": {
+        "name": "clear_cart",
+        "description": "Limpa completamente o carrinho do cliente. Use quando o cliente quiser cancelar ou recomeçar.",
+        "method": "POST",
+        "url": "https://gyagfsjbdaacgmmofqip.supabase.co/functions/v1/whatsapp-cart",
+        "authentication": "none",
+        "sendHeaders": true,
+        "parametersHeaders": {
+          "values": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5YWdmc2piZGFhY2dtbW9mcWlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4NzIwNjYsImV4cCI6MjA4MDQ0ODA2Nn0.4W0hZwETfoALlpn9_f2NqdKQNJ3DKDRkcs7uC-VbdhE"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"action\": \"clear\",\n  \"instance_name\": \"{{ $('Extrai Campos').item.json.instance_name }}\",\n  \"remote_jid\": \"{{ $('Extrai Campos').item.json.remote_jid }}\",\n  \"establishment_id\": \"{{ $('Extrai Campos').item.json.establishment_id }}\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [1620, 640],
+      "id": "tool-clear-cart",
+      "name": "clear_cart"
+    },
+    {
+      "parameters": {
+        "name": "save_customer",
+        "description": "Salva ou atualiza os dados do cliente (nome, endereço). Use quando o cliente fornecer informações pessoais.",
+        "method": "POST",
+        "url": "https://gyagfsjbdaacgmmofqip.supabase.co/functions/v1/whatsapp-cart",
+        "authentication": "none",
+        "sendHeaders": true,
+        "parametersHeaders": {
+          "values": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5YWdmc2piZGFhY2dtbW9mcWlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4NzIwNjYsImV4cCI6MjA4MDQ0ODA2Nn0.4W0hZwETfoALlpn9_f2NqdKQNJ3DKDRkcs7uC-VbdhE"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"action\": \"save_customer\",\n  \"instance_name\": \"{{ $('Extrai Campos').item.json.instance_name }}\",\n  \"remote_jid\": \"{{ $('Extrai Campos').item.json.remote_jid }}\",\n  \"establishment_id\": \"{{ $('Extrai Campos').item.json.establishment_id }}\",\n  \"customer_phone\": \"{{ $('Extrai Campos').item.json.phone }}\",\n  \"name\": \"{name}\",\n  \"address\": \"{address}\",\n  \"neighborhood\": \"{neighborhood}\",\n  \"city\": \"{city}\",\n  \"complement\": \"{complement}\"\n}",
+        "placeholderDefinitions": {
+          "values": [
+            {
+              "name": "name",
+              "description": "Nome completo do cliente",
+              "type": "string"
+            },
+            {
+              "name": "address",
+              "description": "Endereço completo (rua e número)",
+              "type": "string"
+            },
+            {
+              "name": "neighborhood",
+              "description": "Bairro",
+              "type": "string"
+            },
+            {
+              "name": "city",
+              "description": "Cidade",
+              "type": "string"
+            },
+            {
+              "name": "complement",
+              "description": "Complemento (apto, bloco, etc)",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [1720, 640],
+      "id": "tool-save-customer",
+      "name": "save_customer"
+    },
+    {
+      "parameters": {
+        "name": "calculate_delivery_fee",
+        "description": "Calcula a taxa de entrega baseada no endereço do cliente",
+        "method": "POST",
+        "url": "https://gyagfsjbdaacgmmofqip.supabase.co/functions/v1/calculate-delivery",
+        "authentication": "none",
+        "sendHeaders": true,
+        "parametersHeaders": {
+          "values": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5YWdmc2piZGFhY2dtbW9mcWlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4NzIwNjYsImV4cCI6MjA4MDQ0ODA2Nn0.4W0hZwETfoALlpn9_f2NqdKQNJ3DKDRkcs7uC-VbdhE"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"establishment_id\": \"{{ $('Extrai Campos').item.json.establishment_id }}\",\n  \"customer_address\": \"{full_address}\"\n}",
+        "placeholderDefinitions": {
+          "values": [
+            {
+              "name": "full_address",
+              "description": "Endereço completo do cliente para cálculo de distância",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [1320, 760],
+      "id": "tool-delivery-fee",
+      "name": "calculate_delivery_fee"
+    },
+    {
+      "parameters": {
+        "name": "create_order_pix",
+        "description": "Cria o pedido final e gera QR Code PIX para pagamento. Use somente após confirmar todos os dados com o cliente.",
+        "method": "POST",
+        "url": "https://gyagfsjbdaacgmmofqip.supabase.co/functions/v1/whatsapp-checkout",
+        "authentication": "none",
+        "sendHeaders": true,
+        "parametersHeaders": {
+          "values": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5YWdmc2piZGFhY2dtbW9mcWlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4NzIwNjYsImV4cCI6MjA4MDQ0ODA2Nn0.4W0hZwETfoALlpn9_f2NqdKQNJ3DKDRkcs7uC-VbdhE"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"instance_name\": \"{{ $('Extrai Campos').item.json.instance_name }}\",\n  \"remote_jid\": \"{{ $('Extrai Campos').item.json.remote_jid }}\",\n  \"establishment_id\": \"{{ $('Extrai Campos').item.json.establishment_id }}\",\n  \"customer_phone\": \"{{ $('Extrai Campos').item.json.phone }}\",\n  \"customer_name\": \"{customer_name}\",\n  \"delivery_type\": \"{delivery_type}\",\n  \"payment_method\": \"pix\",\n  \"generate_pix\": true,\n  \"delivery_address\": \"{delivery_address}\",\n  \"observations\": \"{observations}\"\n}",
+        "placeholderDefinitions": {
+          "values": [
+            {
+              "name": "customer_name",
+              "description": "Nome do cliente para o pedido",
+              "type": "string"
+            },
+            {
+              "name": "delivery_type",
+              "description": "Tipo de entrega: 'delivery' para entrega ou 'pickup' para retirada",
+              "type": "string"
+            },
+            {
+              "name": "delivery_address",
+              "description": "Endereço completo para entrega (apenas se delivery_type for 'delivery')",
+              "type": "string"
+            },
+            {
+              "name": "observations",
+              "description": "Observações gerais do pedido",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [1420, 760],
+      "id": "tool-create-order",
+      "name": "create_order_pix"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Split long AI response into chunks (max 400 chars)\nconst aiResponse = $input.first().json.output || '';\nconst maxLength = 400;\nconst chunks = [];\n\nif (!aiResponse || aiResponse.trim() === '') {\n  return [{ json: { text: 'Olá! Como posso ajudá-lo hoje? 😊', chunk_index: 0, total_chunks: 1, is_last: true } }];\n}\n\nif (aiResponse.length <= maxLength) {\n  return [{ json: { text: aiResponse, chunk_index: 0, total_chunks: 1, is_last: true } }];\n}\n\n// Split by paragraphs first, then sentences\nconst paragraphs = aiResponse.split(/\\n\\n+/);\nlet currentChunk = '';\n\nfor (const paragraph of paragraphs) {\n  if ((currentChunk + '\\n\\n' + paragraph).length <= maxLength) {\n    currentChunk = currentChunk ? currentChunk + '\\n\\n' + paragraph : paragraph;\n  } else {\n    if (currentChunk) chunks.push(currentChunk.trim());\n    \n    if (paragraph.length > maxLength) {\n      const sentences = paragraph.split(/(?<=[.!?])\\s+/);\n      currentChunk = '';\n      for (const sentence of sentences) {\n        if ((currentChunk + ' ' + sentence).length <= maxLength) {\n          currentChunk = currentChunk ? currentChunk + ' ' + sentence : sentence;\n        } else {\n          if (currentChunk) chunks.push(currentChunk.trim());\n          currentChunk = sentence.length > maxLength ? sentence.substring(0, maxLength) : sentence;\n        }\n      }\n    } else {\n      currentChunk = paragraph;\n    }\n  }\n}\nif (currentChunk) chunks.push(currentChunk.trim());\n\nreturn chunks.map((text, index) => ({\n  json: {\n    text,\n    chunk_index: index,\n    total_chunks: chunks.length,\n    is_last: index === chunks.length - 1\n  }\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1740, 300],
+      "id": "split-response",
+      "name": "Split Mensagens"
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {
+          "reset": false
+        }
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [1960, 300],
+      "id": "loop-chunks",
+      "name": "Loop Chunks"
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send-text",
+        "instanceName": "={{ $('Extrai Campos').item.json.instance_name }}",
+        "remoteJid": "={{ $('Extrai Campos').item.json.remote_jid }}",
+        "text": "={{ $json.text }}"
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [2180, 300],
+      "id": "send-response",
+      "name": "Envia Chunk",
+      "credentials": {
+        "evolutionApi": {
+          "id": "evolution-api-credentials",
+          "name": "Evolution API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 1,
+        "unit": "seconds"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [2400, 300],
+      "id": "chunk-delay",
+      "name": "Wait 1s",
+      "webhookId": "chunk-delay-webhook"
+    }
+  ],
+  "connections": {
+    "Evolution API Webhook": {
+      "main": [[{ "node": "Filtra Mensagens Próprias", "type": "main", "index": 0 }]]
+    },
+    "Filtra Mensagens Próprias": {
+      "main": [[{ "node": "Busca Estabelecimento", "type": "main", "index": 0 }]]
+    },
+    "Busca Estabelecimento": {
+      "main": [[{ "node": "Extrai Campos", "type": "main", "index": 0 }]]
+    },
+    "Extrai Campos": {
+      "main": [[{ "node": "Busca Carrinho", "type": "main", "index": 0 }]]
+    },
+    "Busca Carrinho": {
+      "main": [[{ "node": "Busca Cliente", "type": "main", "index": 0 }]]
+    },
+    "Busca Cliente": {
+      "main": [[{ "node": "VilaFood AI Agent", "type": "main", "index": 0 }]]
+    },
+    "Google Gemini Chat": {
+      "ai_languageModel": [[{ "node": "VilaFood AI Agent", "type": "ai_languageModel", "index": 0 }]]
+    },
+    "Redis Chat Memory": {
+      "ai_memory": [[{ "node": "VilaFood AI Agent", "type": "ai_memory", "index": 0 }]]
+    },
+    "search_menu": {
+      "ai_tool": [[{ "node": "VilaFood AI Agent", "type": "ai_tool", "index": 0 }]]
+    },
+    "add_to_cart": {
+      "ai_tool": [[{ "node": "VilaFood AI Agent", "type": "ai_tool", "index": 0 }]]
+    },
+    "view_cart": {
+      "ai_tool": [[{ "node": "VilaFood AI Agent", "type": "ai_tool", "index": 0 }]]
+    },
+    "clear_cart": {
+      "ai_tool": [[{ "node": "VilaFood AI Agent", "type": "ai_tool", "index": 0 }]]
+    },
+    "save_customer": {
+      "ai_tool": [[{ "node": "VilaFood AI Agent", "type": "ai_tool", "index": 0 }]]
+    },
+    "calculate_delivery_fee": {
+      "ai_tool": [[{ "node": "VilaFood AI Agent", "type": "ai_tool", "index": 0 }]]
+    },
+    "create_order_pix": {
+      "ai_tool": [[{ "node": "VilaFood AI Agent", "type": "ai_tool", "index": 0 }]]
+    },
+    "VilaFood AI Agent": {
+      "main": [[{ "node": "Split Mensagens", "type": "main", "index": 0 }]]
+    },
+    "Split Mensagens": {
+      "main": [[{ "node": "Loop Chunks", "type": "main", "index": 0 }]]
+    },
+    "Loop Chunks": {
+      "main": [
+        [{ "node": "Envia Chunk", "type": "main", "index": 0 }],
+        []
+      ]
+    },
+    "Envia Chunk": {
+      "main": [[{ "node": "Wait 1s", "type": "main", "index": 0 }]]
+    },
+    "Wait 1s": {
+      "main": [[{ "node": "Loop Chunks", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": { "executionOrder": "v1" },
+  "meta": { "templateCredsSetupCompleted": true },
+  "tags": [
+    { "name": "VilaFood" },
+    { "name": "WhatsApp" },
+    { "name": "AI Agent" },
+    { "name": "v3" }
+  ]
+}

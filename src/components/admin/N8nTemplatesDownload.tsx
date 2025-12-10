@@ -29,6 +29,24 @@ interface N8nTemplate {
 
 const templates: N8nTemplate[] = [
   {
+    id: "agent-v3",
+    name: "⭐ Agent V3 (RECOMENDADO)",
+    description: "Versão otimizada com toolHttpRequest - usa Edge Functions do Supabase. Mais estável e testado.",
+    icon: <Bot className="w-6 h-6" />,
+    filename: "VilaFood-Agent-V3.json",
+    features: [
+      "✅ toolHttpRequest (sem erros)",
+      "Edge Functions Supabase",
+      "Carrinho via API",
+      "Pedido PIX via API",
+      "Busca de produtos RPC",
+      "Cálculo de entrega",
+      "Split de mensagens longas",
+      "Memória Redis"
+    ],
+    difficulty: "Intermediário"
+  },
+  {
     id: "master-router",
     name: "Master Router (Multi-Tenant)",
     description: "Roteador principal que recebe webhooks, busca config por lojista e chama o AI Brain",
@@ -68,8 +86,8 @@ const templates: N8nTemplate[] = [
   },
   {
     id: "agent-complete",
-    name: "Agent Completo (All-in-One)",
-    description: "Fluxo único com todas funcionalidades integradas - ideal para setup simplificado",
+    name: "Agent Completo (Legacy)",
+    description: "Versão anterior - pode ter problemas com toolCode. Use V3 para novos projetos.",
     icon: <Bot className="w-6 h-6" />,
     filename: "VilaFood-Agent-Complete.json",
     features: [
