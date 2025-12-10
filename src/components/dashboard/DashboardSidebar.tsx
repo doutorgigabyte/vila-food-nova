@@ -40,6 +40,7 @@ import {
   MapPin,
   Megaphone,
   Headphones,
+  Users,
   type LucideIcon,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
@@ -147,6 +148,7 @@ const getMenuGroups = (baseUrl: string): MenuGroup[] => [
     items: [
       { icon: QrCode, label: "QR Code", href: `${baseUrl}/qrcode` },
       { icon: Plug, label: "Integrações", href: `${baseUrl}/integracoes` },
+      { icon: Users, label: "Equipe", href: `${baseUrl}/equipe`, badge: "Novo" },
       { icon: Settings, label: "Configurações", href: `${baseUrl}/configuracoes` },
     ],
   },

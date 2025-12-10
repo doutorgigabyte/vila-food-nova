@@ -92,9 +92,9 @@ export const UserMenu = () => {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button className="flex items-center gap-2 text-sm hover:opacity-80 transition-opacity">
-          <Avatar className="w-7 h-7">
+          <Avatar className="w-8 h-8 border-2 border-white/30">
             <AvatarImage src={user.user_metadata?.avatar_url} />
-            <AvatarFallback className="text-xs bg-primary/10 text-primary">
+            <AvatarFallback className="text-xs font-bold bg-primary text-primary-foreground">
               {userInitials}
             </AvatarFallback>
           </Avatar>
@@ -107,18 +107,18 @@ export const UserMenu = () => {
       <DropdownMenuContent align="end" className="w-64">
         <DropdownMenuLabel>
           <div className="flex flex-col gap-1">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="font-medium">{userName}</span>
               {!isLoading && (
                 <Badge 
                   variant="secondary" 
-                  className={`text-[10px] px-1.5 py-0 text-white ${roleInfo.color}`}
+                  className={`text-[10px] px-1.5 py-0 text-white whitespace-nowrap shrink-0 ${roleInfo.color}`}
                 >
                   {roleInfo.label}
                 </Badge>
               )}
             </div>
-            <span className="text-xs text-muted-foreground font-normal">{user.email}</span>
+            <span className="text-xs text-muted-foreground font-normal truncate">{user.email}</span>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
