@@ -5,59 +5,60 @@
       "parameters": {
         "httpMethod": "POST",
         "path": "vilafood-webhook",
-        "responseMode": "responseNode"
+        "responseMode": "lastNode"
       },
-      "id": "webhook-trigger",
+      "id": "1",
       "name": "Webhook Trigger",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [0, 0]
+      "position": [0, 300],
+      "webhookId": "vilafood-webhook"
     },
     {
       "parameters": {
         "conditions": {
-          "options": { "caseSensitive": true },
-          "conditions": [
+          "boolean": [
             {
-              "leftValue": "={{ $json.data?.key?.fromMe }}",
-              "rightValue": true,
-              "operator": { "type": "boolean", "operation": "notEquals" }
+              "value1": "={{ $json.data?.key?.fromMe }}",
+              "value2": true,
+              "operation": "notEqual"
             }
           ]
         }
       },
-      "id": "filter-own-messages",
-      "name": "Ignora mensagens próprias",
+      "id": "2",
+      "name": "Ignora mensagens proprias",
       "type": "n8n-nodes-base.if",
-      "typeVersion": 2,
-      "position": [220, 0]
+      "typeVersion": 1,
+      "position": [220, 300]
     },
     {
       "parameters": {
-        "assignments": {
-          "assignments": [
-            { "id": "instance_name", "name": "instance_name", "value": "={{ $json.instance }}", "type": "string" },
-            { "id": "phone", "name": "phone", "value": "={{ $json.data?.key?.remoteJid?.replace('@s.whatsapp.net', '') }}", "type": "string" },
-            { "id": "message_text", "name": "message_text", "value": "={{ $json.data?.message?.conversation || $json.data?.message?.extendedTextMessage?.text || '' }}", "type": "string" },
-            { "id": "message_type", "name": "message_type", "value": "={{ $json.data?.message?.audioMessage ? 'audio' : $json.data?.message?.imageMessage ? 'image' : 'text' }}", "type": "string" },
-            { "id": "audio_url", "name": "audio_url", "value": "={{ $json.data?.message?.audioMessage?.url || '' }}", "type": "string" },
-            { "id": "image_url", "name": "image_url", "value": "={{ $json.data?.message?.imageMessage?.url || '' }}", "type": "string" },
-            { "id": "timestamp", "name": "timestamp", "value": "={{ Date.now() }}", "type": "number" }
+        "values": {
+          "string": [
+            { "name": "instance_name", "value": "={{ $json.instance }}" },
+            { "name": "phone", "value": "={{ $json.data?.key?.remoteJid?.replace('@s.whatsapp.net', '') }}" },
+            { "name": "message_text", "value": "={{ $json.data?.message?.conversation || $json.data?.message?.extendedTextMessage?.text || '' }}" },
+            { "name": "message_type", "value": "={{ $json.data?.message?.audioMessage ? 'audio' : $json.data?.message?.imageMessage ? 'image' : 'text' }}" },
+            { "name": "audio_url", "value": "={{ $json.data?.message?.audioMessage?.url || '' }}" },
+            { "name": "image_url", "value": "={{ $json.data?.message?.imageMessage?.url || '' }}" }
+          ],
+          "number": [
+            { "name": "timestamp", "value": "={{ Date.now() }}" }
           ]
-        }
+        },
+        "options": {}
       },
-      "id": "extract-fields",
+      "id": "3",
       "name": "Extrai Campos",
       "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [440, 0]
+      "typeVersion": 2,
+      "position": [440, 300]
     },
     {
       "parameters": {
         "method": "POST",
         "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/get_establishment_by_instance",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -70,32 +71,32 @@
           "parameters": [
             { "name": "p_instance_name", "value": "={{ $json.instance_name }}" }
           ]
-        }
+        },
+        "options": {}
       },
-      "id": "fetch-establishment",
+      "id": "4",
       "name": "Busca Estabelecimento",
       "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [660, 0]
+      "typeVersion": 4.1,
+      "position": [660, 300]
     },
     {
       "parameters": {
         "conditions": {
-          "options": { "caseSensitive": true },
-          "conditions": [
+          "string": [
             {
-              "leftValue": "={{ $json.message_type }}",
-              "rightValue": "audio",
-              "operator": { "type": "string", "operation": "equals" }
+              "value1": "={{ $json.message_type }}",
+              "value2": "audio",
+              "operation": "equal"
             }
           ]
         }
       },
-      "id": "check-audio",
-      "name": "É Áudio?",
+      "id": "5",
+      "name": "E Audio",
       "type": "n8n-nodes-base.if",
-      "typeVersion": 2,
-      "position": [880, 0]
+      "typeVersion": 1,
+      "position": [880, 300]
     },
     {
       "parameters": {
@@ -109,32 +110,32 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ audio_url: $json.audio_url, mime_type: 'audio/ogg' }) }}"
+        "jsonBody": "={{ JSON.stringify({ audio_url: $('Extrai Campos').item.json.audio_url, mime_type: 'audio/ogg' }) }}",
+        "options": {}
       },
-      "id": "transcribe-audio",
-      "name": "Transcreve Áudio",
+      "id": "6",
+      "name": "Transcreve Audio",
       "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [1100, -100]
+      "typeVersion": 4.1,
+      "position": [1100, 200]
     },
     {
       "parameters": {
         "conditions": {
-          "options": { "caseSensitive": true },
-          "conditions": [
+          "string": [
             {
-              "leftValue": "={{ $json.message_type }}",
-              "rightValue": "image",
-              "operator": { "type": "string", "operation": "equals" }
+              "value1": "={{ $('Extrai Campos').item.json.message_type }}",
+              "value2": "image",
+              "operation": "equal"
             }
           ]
         }
       },
-      "id": "check-image",
-      "name": "É Imagem?",
+      "id": "7",
+      "name": "E Imagem",
       "type": "n8n-nodes-base.if",
-      "typeVersion": 2,
-      "position": [1100, 100]
+      "typeVersion": 1,
+      "position": [1100, 400]
     },
     {
       "parameters": {
@@ -148,209 +149,194 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ image_url: $json.image_url, analysis_type: 'general' }) }}"
+        "jsonBody": "={{ JSON.stringify({ image_url: $('Extrai Campos').item.json.image_url, analysis_type: 'general' }) }}",
+        "options": {}
       },
-      "id": "analyze-image",
+      "id": "8",
       "name": "Analisa Imagem",
       "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [1320, 100]
+      "typeVersion": 4.1,
+      "position": [1320, 400]
     },
     {
       "parameters": {
-        "operation": "push",
-        "list": "vilafood:debounce:{{ $json.instance_name }}:{{ $json.phone }}",
-        "value": "={{ $json.message_text || $json.transcribed_text || $json.image_description }}"
-      },
-      "id": "redis-push",
-      "name": "Redis Push Mensagem",
-      "type": "n8n-nodes-base.redis",
-      "typeVersion": 1,
-      "position": [1540, 0],
-      "credentials": { "redis": { "id": "redis-cred", "name": "Redis" } }
-    },
-    {
-      "parameters": {
-        "amount": 3,
-        "unit": "seconds"
-      },
-      "id": "debounce-wait",
-      "name": "Debounce 3s",
-      "type": "n8n-nodes-base.wait",
-      "typeVersion": 1.1,
-      "position": [1760, 0]
-    },
-    {
-      "parameters": {
-        "operation": "lRange",
-        "list": "vilafood:debounce:{{ $json.instance_name }}:{{ $json.phone }}",
-        "start": 0,
-        "stop": -1
-      },
-      "id": "redis-get",
-      "name": "Redis Get Mensagens",
-      "type": "n8n-nodes-base.redis",
-      "typeVersion": 1,
-      "position": [1980, 0]
-    },
-    {
-      "parameters": {
-        "operation": "delete",
-        "key": "vilafood:debounce:{{ $json.instance_name }}:{{ $json.phone }}"
-      },
-      "id": "redis-clear",
-      "name": "Redis Limpa Lista",
-      "type": "n8n-nodes-base.redis",
-      "typeVersion": 1,
-      "position": [2200, 0]
-    },
-    {
-      "parameters": {
-        "assignments": {
-          "assignments": [
-            { "id": "combined_message", "name": "combined_message", "value": "={{ $json.messages?.join('\\n') || $json.message_text }}", "type": "string" }
+        "values": {
+          "string": [
+            {
+              "name": "final_message",
+              "value": "={{ $('Transcreve Audio').item?.json?.text || $('Analisa Imagem').item?.json?.extracted_data?.description || $('Extrai Campos').item.json.message_text }}"
+            },
+            {
+              "name": "phone",
+              "value": "={{ $('Extrai Campos').item.json.phone }}"
+            },
+            {
+              "name": "instance_name",
+              "value": "={{ $('Extrai Campos').item.json.instance_name }}"
+            }
           ]
+        },
+        "options": {}
+      },
+      "id": "9",
+      "name": "Prepara Mensagem",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [1540, 300]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.final_message }}",
+        "options": {
+          "systemMessage": "Você é o assistente virtual da loja. Seja cordial e objetivo. Responda APENAS sobre produtos e pedidos. Use emojis moderadamente. Preços sempre em R$."
         }
       },
-      "id": "combine-messages",
-      "name": "Combina Mensagens",
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [2420, 0]
+      "id": "10",
+      "name": "AI Brain Gemini",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.6,
+      "position": [1760, 300]
     },
     {
       "parameters": {
-        "model": "google/gemini-2.5-flash",
-        "systemMessage": "Você é o assistente virtual da loja {{ $json.establishment.name }}.\n\nINSTRUÇÕES:\n- Seja cordial e objetivo\n- Responda APENAS sobre produtos e pedidos\n- Use emojis moderadamente\n- Preços sempre em R$\n- Para fazer pedido, use a tool create_order_pix\n- Para calcular frete, use a tool calculate_delivery\n- Para cadastrar cliente, use a tool register_customer\n\nCARDÁPIO:\n{{ $json.establishment.menu_json }}",
-        "temperature": 0.7,
-        "maxTokens": 500
+        "modelName": "models/gemini-2.0-flash",
+        "options": {
+          "temperature": 0.7,
+          "maxOutputTokens": 500
+        }
       },
-      "id": "ai-brain",
-      "name": "AI Brain (Gemini)",
+      "id": "11",
+      "name": "Google Gemini",
       "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
       "typeVersion": 1,
-      "position": [2640, 0]
+      "position": [1760, 520],
+      "credentials": {
+        "googleGeminiApi": {
+          "id": "gemini",
+          "name": "Google Gemini"
+        }
+      }
     },
     {
       "parameters": {
-        "toolDescription": "Calcula o frete de entrega para um endereço do cliente",
+        "name": "calculate_delivery",
+        "description": "Calcula o frete de entrega para um endereço do cliente. Use quando o cliente perguntar sobre frete ou informar endereço.",
         "method": "POST",
         "url": "={{ $env.SUPABASE_URL }}/functions/v1/geocode-and-calculate-delivery",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ establishment_id: $json.establishment.id, customer_address: $fromAI('customer_address') }) }}"
+        "jsonBody": "={\"establishment_id\": \"{{ $('Busca Estabelecimento').item.json.id }}\", \"customer_address\": \"{customer_address}\"}"
       },
-      "id": "tool-calculate-delivery",
-      "name": "Tool: calculate_delivery",
+      "id": "12",
+      "name": "Tool calculate_delivery",
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "typeVersion": 1.1,
-      "position": [2640, 200]
+      "position": [1980, 520]
     },
     {
       "parameters": {
-        "toolDescription": "Cadastra um novo cliente com nome e endereço",
+        "name": "register_customer",
+        "description": "Cadastra um novo cliente com nome e endereço. Use após confirmar dados com o cliente.",
         "method": "POST",
         "url": "={{ $env.SUPABASE_URL }}/functions/v1/register-customer",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ phone: $json.phone, name: $fromAI('customer_name'), establishment_id: $json.establishment.id, address: { street: $fromAI('street'), number: $fromAI('number'), complement: $fromAI('complement'), neighborhood: $fromAI('neighborhood'), city: $json.establishment.city } }) }}"
+        "jsonBody": "={\"phone\": \"{{ $('Extrai Campos').item.json.phone }}\", \"name\": \"{customer_name}\", \"establishment_id\": \"{{ $('Busca Estabelecimento').item.json.id }}\", \"address\": {\"street\": \"{street}\", \"number\": \"{number}\", \"neighborhood\": \"{neighborhood}\"}}"
       },
-      "id": "tool-register-customer",
-      "name": "Tool: register_customer",
+      "id": "13",
+      "name": "Tool register_customer",
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "typeVersion": 1.1,
-      "position": [2640, 350]
+      "position": [1980, 660]
     },
     {
       "parameters": {
-        "toolDescription": "Extrai dados de cadastro do cliente a partir do texto informado",
+        "name": "extract_customer_data",
+        "description": "Extrai dados de cadastro do cliente (nome, endereço) a partir de texto livre. Use quando cliente informar dados de forma não estruturada.",
         "method": "POST",
         "url": "={{ $env.SUPABASE_URL }}/functions/v1/extract-customer-data",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ text: $fromAI('customer_text'), establishment_city: $json.establishment.city, establishment_state: $json.establishment.state }) }}"
+        "jsonBody": "={\"text\": \"{customer_text}\", \"establishment_city\": \"{{ $('Busca Estabelecimento').item.json.city }}\"}"
       },
-      "id": "tool-extract-customer",
-      "name": "Tool: extract_customer_data",
+      "id": "14",
+      "name": "Tool extract_customer",
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "typeVersion": 1.1,
-      "position": [2640, 500]
+      "position": [1980, 800]
     },
     {
       "parameters": {
-        "toolDescription": "Cria um pedido e gera QR Code PIX para pagamento",
+        "name": "create_order_pix",
+        "description": "Cria um pedido e gera QR Code PIX para pagamento. Use quando cliente confirmar que quer finalizar o pedido.",
         "method": "POST",
         "url": "={{ $env.SUPABASE_URL }}/functions/v1/whatsapp-checkout",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ establishment_id: $json.establishment.id, customer_phone: $json.phone, items: $fromAI('items'), payment_method: 'pix' }) }}"
+        "jsonBody": "={\"establishment_id\": \"{{ $('Busca Estabelecimento').item.json.id }}\", \"customer_phone\": \"{{ $('Extrai Campos').item.json.phone }}\", \"items\": {items}, \"payment_method\": \"pix\"}"
       },
-      "id": "tool-create-order",
-      "name": "Tool: create_order_pix",
+      "id": "15",
+      "name": "Tool create_order_pix",
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "typeVersion": 1.1,
-      "position": [2640, 650]
+      "position": [1980, 940]
     },
     {
       "parameters": {
-        "toolDescription": "Busca produtos no cardápio pelo nome ou categoria",
-        "method": "POST",
-        "url": "={{ $env.SUPABASE_URL }}/rest/v1/products",
-        "sendQuery": true,
-        "queryParameters": {
+        "name": "search_menu",
+        "description": "Busca produtos no cardápio pelo nome ou categoria. Use para responder perguntas sobre produtos disponíveis.",
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/products?establishment_id=eq.{{ $('Busca Estabelecimento').item.json.id }}&is_active=eq.true&name=ilike.*{search_term}*&select=id,name,price,promotional_price,description&limit=5",
+        "sendHeaders": true,
+        "headerParameters": {
           "parameters": [
-            { "name": "establishment_id", "value": "eq.{{ $json.establishment.id }}" },
-            { "name": "is_active", "value": "eq.true" },
-            { "name": "name", "value": "ilike.*{{ $fromAI('search_term') }}*" },
-            { "name": "select", "value": "id,name,price,promotional_price,description,image_url" },
-            { "name": "limit", "value": "5" }
+            { "name": "apikey", "value": "={{ $env.SUPABASE_ANON_KEY }}" }
           ]
         }
       },
-      "id": "tool-search-menu",
-      "name": "Tool: search_menu",
+      "id": "16",
+      "name": "Tool search_menu",
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "typeVersion": 1.1,
-      "position": [2640, 800]
+      "position": [1980, 1080]
     },
     {
       "parameters": {
-        "jsCode": "// Split long messages into chunks\nconst response = $input.first().json.response;\nconst MAX_CHARS = 400;\nconst messages = [];\n\nif (response.length <= MAX_CHARS) {\n  return [{ json: { message: response, index: 0, total: 1 } }];\n}\n\nconst paragraphs = response.split('\\n\\n');\nlet currentChunk = '';\n\nfor (const p of paragraphs) {\n  if ((currentChunk + '\\n\\n' + p).length > MAX_CHARS && currentChunk) {\n    messages.push(currentChunk.trim());\n    currentChunk = p;\n  } else {\n    currentChunk = currentChunk ? currentChunk + '\\n\\n' + p : p;\n  }\n}\nif (currentChunk) messages.push(currentChunk.trim());\n\nreturn messages.map((msg, i) => ({ json: { message: msg, index: i, total: messages.length } }));"
+        "jsCode": "const response = $input.first().json.output || $input.first().json.text || '';\nconst MAX_CHARS = 400;\n\nif (!response || response.length <= MAX_CHARS) {\n  return [{ json: { message: response, index: 0, total: 1, phone: $('Extrai Campos').item.json.phone, instance_name: $('Extrai Campos').item.json.instance_name } }];\n}\n\nconst messages = [];\nconst paragraphs = response.split('\\n\\n');\nlet currentChunk = '';\n\nfor (const p of paragraphs) {\n  if ((currentChunk + '\\n\\n' + p).length > MAX_CHARS && currentChunk) {\n    messages.push(currentChunk.trim());\n    currentChunk = p;\n  } else {\n    currentChunk = currentChunk ? currentChunk + '\\n\\n' + p : p;\n  }\n}\nif (currentChunk) messages.push(currentChunk.trim());\n\nreturn messages.map((msg, i) => ({\n  json: {\n    message: msg,\n    index: i,\n    total: messages.length,\n    phone: $('Extrai Campos').item.json.phone,\n    instance_name: $('Extrai Campos').item.json.instance_name\n  }\n}));"
       },
-      "id": "split-messages",
+      "id": "17",
       "name": "Split Mensagens Longas",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [2860, 0]
+      "position": [1980, 300]
     },
     {
       "parameters": {
         "batchSize": 1,
         "options": {}
       },
-      "id": "loop-messages",
+      "id": "18",
       "name": "Loop Mensagens",
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
-      "position": [3080, 0]
+      "position": [2200, 300]
     },
     {
       "parameters": {
         "amount": 1,
         "unit": "seconds"
       },
-      "id": "wait-between",
+      "id": "19",
       "name": "Wait 1s Entre Msgs",
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
-      "position": [3300, 0]
+      "position": [2420, 300]
     },
     {
       "parameters": {
         "method": "POST",
         "url": "={{ $env.EVOLUTION_API_URL }}/message/sendText/{{ $json.instance_name }}",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -360,74 +346,139 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ number: $json.phone, text: $json.message }) }}"
+        "jsonBody": "={{ JSON.stringify({ number: $json.phone, text: $json.message }) }}",
+        "options": {}
       },
-      "id": "send-whatsapp",
+      "id": "20",
       "name": "Envia WhatsApp",
       "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [3520, 0]
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "={{ $env.SUPABASE_URL }}/rest/v1/whatsapp_messages",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
-            { "name": "Content-Type", "value": "application/json" }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ establishment_id: $json.establishment.id, phone: $json.phone, direction: 'outbound', message: $json.message, message_type: 'text' }) }}"
-      },
-      "id": "save-history",
-      "name": "Salva Histórico",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [3740, 0]
+      "typeVersion": 4.1,
+      "position": [2640, 300]
     },
     {
       "parameters": {
         "respondWith": "text",
         "responseBody": "OK"
       },
-      "id": "respond-webhook",
+      "id": "21",
       "name": "Respond OK",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [3960, 0]
+      "position": [2860, 300]
     }
   ],
   "connections": {
-    "Webhook Trigger": { "main": [[{ "node": "Ignora mensagens próprias", "type": "main", "index": 0 }]] },
-    "Ignora mensagens próprias": { "main": [[{ "node": "Extrai Campos", "type": "main", "index": 0 }], [{ "node": "Respond OK", "type": "main", "index": 0 }]] },
-    "Extrai Campos": { "main": [[{ "node": "Busca Estabelecimento", "type": "main", "index": 0 }]] },
-    "Busca Estabelecimento": { "main": [[{ "node": "É Áudio?", "type": "main", "index": 0 }]] },
-    "É Áudio?": { "main": [[{ "node": "Transcreve Áudio", "type": "main", "index": 0 }], [{ "node": "É Imagem?", "type": "main", "index": 0 }]] },
-    "Transcreve Áudio": { "main": [[{ "node": "Redis Push Mensagem", "type": "main", "index": 0 }]] },
-    "É Imagem?": { "main": [[{ "node": "Analisa Imagem", "type": "main", "index": 0 }], [{ "node": "Redis Push Mensagem", "type": "main", "index": 0 }]] },
-    "Analisa Imagem": { "main": [[{ "node": "Redis Push Mensagem", "type": "main", "index": 0 }]] },
-    "Redis Push Mensagem": { "main": [[{ "node": "Debounce 3s", "type": "main", "index": 0 }]] },
-    "Debounce 3s": { "main": [[{ "node": "Redis Get Mensagens", "type": "main", "index": 0 }]] },
-    "Redis Get Mensagens": { "main": [[{ "node": "Redis Limpa Lista", "type": "main", "index": 0 }]] },
-    "Redis Limpa Lista": { "main": [[{ "node": "Combina Mensagens", "type": "main", "index": 0 }]] },
-    "Combina Mensagens": { "main": [[{ "node": "AI Brain (Gemini)", "type": "main", "index": 0 }]] },
-    "AI Brain (Gemini)": { "main": [[{ "node": "Split Mensagens Longas", "type": "main", "index": 0 }]] },
-    "Split Mensagens Longas": { "main": [[{ "node": "Loop Mensagens", "type": "main", "index": 0 }]] },
-    "Loop Mensagens": { "main": [[{ "node": "Wait 1s Entre Msgs", "type": "main", "index": 0 }], [{ "node": "Respond OK", "type": "main", "index": 0 }]] },
-    "Wait 1s Entre Msgs": { "main": [[{ "node": "Envia WhatsApp", "type": "main", "index": 0 }]] },
-    "Envia WhatsApp": { "main": [[{ "node": "Salva Histórico", "type": "main", "index": 0 }]] },
-    "Salva Histórico": { "main": [[{ "node": "Loop Mensagens", "type": "main", "index": 0 }]] }
+    "Webhook Trigger": {
+      "main": [
+        [{ "node": "Ignora mensagens proprias", "type": "main", "index": 0 }]
+      ]
+    },
+    "Ignora mensagens proprias": {
+      "main": [
+        [{ "node": "Extrai Campos", "type": "main", "index": 0 }],
+        []
+      ]
+    },
+    "Extrai Campos": {
+      "main": [
+        [{ "node": "Busca Estabelecimento", "type": "main", "index": 0 }]
+      ]
+    },
+    "Busca Estabelecimento": {
+      "main": [
+        [{ "node": "E Audio", "type": "main", "index": 0 }]
+      ]
+    },
+    "E Audio": {
+      "main": [
+        [{ "node": "Transcreve Audio", "type": "main", "index": 0 }],
+        [{ "node": "E Imagem", "type": "main", "index": 0 }]
+      ]
+    },
+    "Transcreve Audio": {
+      "main": [
+        [{ "node": "Prepara Mensagem", "type": "main", "index": 0 }]
+      ]
+    },
+    "E Imagem": {
+      "main": [
+        [{ "node": "Analisa Imagem", "type": "main", "index": 0 }],
+        [{ "node": "Prepara Mensagem", "type": "main", "index": 0 }]
+      ]
+    },
+    "Analisa Imagem": {
+      "main": [
+        [{ "node": "Prepara Mensagem", "type": "main", "index": 0 }]
+      ]
+    },
+    "Prepara Mensagem": {
+      "main": [
+        [{ "node": "AI Brain Gemini", "type": "main", "index": 0 }]
+      ]
+    },
+    "AI Brain Gemini": {
+      "main": [
+        [{ "node": "Split Mensagens Longas", "type": "main", "index": 0 }]
+      ]
+    },
+    "Google Gemini": {
+      "ai_languageModel": [
+        [{ "node": "AI Brain Gemini", "type": "ai_languageModel", "index": 0 }]
+      ]
+    },
+    "Tool calculate_delivery": {
+      "ai_tool": [
+        [{ "node": "AI Brain Gemini", "type": "ai_tool", "index": 0 }]
+      ]
+    },
+    "Tool register_customer": {
+      "ai_tool": [
+        [{ "node": "AI Brain Gemini", "type": "ai_tool", "index": 0 }]
+      ]
+    },
+    "Tool extract_customer": {
+      "ai_tool": [
+        [{ "node": "AI Brain Gemini", "type": "ai_tool", "index": 0 }]
+      ]
+    },
+    "Tool create_order_pix": {
+      "ai_tool": [
+        [{ "node": "AI Brain Gemini", "type": "ai_tool", "index": 0 }]
+      ]
+    },
+    "Tool search_menu": {
+      "ai_tool": [
+        [{ "node": "AI Brain Gemini", "type": "ai_tool", "index": 0 }]
+      ]
+    },
+    "Split Mensagens Longas": {
+      "main": [
+        [{ "node": "Loop Mensagens", "type": "main", "index": 0 }]
+      ]
+    },
+    "Loop Mensagens": {
+      "main": [
+        [{ "node": "Wait 1s Entre Msgs", "type": "main", "index": 0 }],
+        [{ "node": "Respond OK", "type": "main", "index": 0 }]
+      ]
+    },
+    "Wait 1s Entre Msgs": {
+      "main": [
+        [{ "node": "Envia WhatsApp", "type": "main", "index": 0 }]
+      ]
+    },
+    "Envia WhatsApp": {
+      "main": [
+        [{ "node": "Loop Mensagens", "type": "main", "index": 0 }]
+      ]
+    }
   },
-  "settings": { "executionOrder": "v1" },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
   "staticData": null,
   "meta": {
-    "templateId": "vilafood-agent-v2",
-    "templateCredsSetupCompleted": false
+    "templateId": "vilafood-agent-v2"
   }
 }
