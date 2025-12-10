@@ -112,6 +112,7 @@ const ProductComplementsManagement = () => {
 
     let allComplements: any[] = [];
     
+    // Fetch product complements
     if (productIds.length > 0) {
       const { data: productComplements } = await supabase
         .from('product_complements')
@@ -123,11 +124,12 @@ const ProductComplementsManagement = () => {
       }
     }
 
+    // Fetch kit complements using filter
     if (kitIds.length > 0) {
       const { data: kitComplements } = await supabase
         .from('product_complements')
         .select('*')
-        .in('kit_id', kitIds);
+        .filter('kit_id', 'in', `(${kitIds.join(',')})`);
       
       if (kitComplements) {
         allComplements = [...allComplements, ...kitComplements];
@@ -158,24 +160,18 @@ const ProductComplementsManagement = () => {
       return;
     }
 
-    const insertData: Record<string, any> = {
+    const insertData = {
+      product_id: formData.main_type === 'product' ? formData.product_id : null,
+      kit_id: formData.main_type === 'kit' ? formData.kit_id : null,
       complement_id: formData.complement_id,
       discount_percentage: formData.discount_type === 'percentage' ? formData.discount_percentage : null,
       discount_fixed: formData.discount_type === 'fixed' ? formData.discount_fixed : null,
       is_active: formData.is_active,
     };
 
-    if (formData.main_type === 'product') {
-      insertData.product_id = formData.product_id;
-      insertData.kit_id = null;
-    } else {
-      insertData.kit_id = formData.kit_id;
-      insertData.product_id = null;
-    }
-
     const { error } = await supabase
       .from('product_complements')
-      .insert(insertData);
+      .insert(insertData as any);
 
     if (error) {
       toast.error('Erro ao criar complemento');
