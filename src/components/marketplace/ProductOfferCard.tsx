@@ -2,13 +2,12 @@ import { Link } from "react-router-dom";
 import { Heart, Plus, Clock } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { useFavorites } from "@/hooks/useFavorites";
 import { useCart } from "@/hooks/useCart";
 import { PriceWithDiscount } from "@/components/ui/price";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useState, memo, useCallback, useMemo } from "react";
 
 interface Product {
   id: string;
@@ -31,26 +30,29 @@ interface ProductOfferCardProps {
   className?: string;
 }
 
-const ProductOfferCard = ({ product, variant = "default", className }: ProductOfferCardProps) => {
+const ProductOfferCard = memo(({ product, variant = "default", className }: ProductOfferCardProps) => {
   const { isProductFavorite, toggleFavoriteProduct } = useFavorites();
   const { addToCart } = useCart();
   const isFavorite = isProductFavorite(product.id);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
   
-  const discount = product.promotional_price && product.promotional_price < product.price
-    ? Math.round(((product.price - product.promotional_price) / product.price) * 100)
-    : null;
+  const discount = useMemo(() => 
+    product.promotional_price && product.promotional_price < product.price
+      ? Math.round(((product.price - product.promotional_price) / product.price) * 100)
+      : null,
+    [product.price, product.promotional_price]
+  );
   
   const isAvailable = product.is_active !== false && product.establishment?.is_open !== false;
 
-  const handleFavoriteClick = (e: React.MouseEvent) => {
+  const handleFavoriteClick = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     toggleFavoriteProduct(product.id);
-  };
+  }, [product.id, toggleFavoriteProduct]);
 
-  const handleAddToCart = (e: React.MouseEvent) => {
+  const handleAddToCart = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     
@@ -82,7 +84,7 @@ const ProductOfferCard = ({ product, variant = "default", className }: ProductOf
     
     addToCart(cartProduct, establishmentInfo);
     toast.success(`${product.name} adicionado ao carrinho`);
-  };
+  }, [product, addToCart]);
 
   // When used in a grid, cards should fill the grid cell (no fixed width)
   const isGridContext = !className?.includes('scroll-card') && variant === 'large';
@@ -287,6 +289,8 @@ const ProductOfferCard = ({ product, variant = "default", className }: ProductOf
       </Card>
     </Link>
   );
-};
+});
+
+ProductOfferCard.displayName = "ProductOfferCard";
 
 export default ProductOfferCard;

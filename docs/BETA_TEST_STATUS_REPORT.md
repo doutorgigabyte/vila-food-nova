@@ -9,9 +9,9 @@
 
 | Status | Quantidade | % |
 |--------|-----------|---|
-| ✅ Implementado | 78 | 85% |
-| 🔄 Em Progresso | 8 | 9% |
-| ❌ Pendente | 6 | 6% |
+| ✅ Implementado | 84 | 91% |
+| 🔄 Em Progresso | 4 | 4% |
+| ❌ Pendente | 4 | 4% |
 
 ---
 
@@ -258,10 +258,11 @@
 | Debug PIX QR Code no checkout | 14 | CRÍTICA | 🔄 Em Debug |
 | Debug erro cartão ao criar pedido | 14 | CRÍTICA | 🔄 Em Debug |
 | Opção idioma | 6 | BAIXA | ❌ Pendente |
-| Virtualization de listas | Performance | ALTA | ❌ Pendente |
-| Memoização componentes | Performance | ALTA | ❌ Pendente |
-| Code splitting por feature | Performance | ALTA | ❌ Pendente |
-| PagSeguro PIX/Checkout | Futuro | ALTA | ❌ Pendente |
+| Virtualization de listas | Performance | ALTA | ✅ useInfiniteScroll implementado |
+| Memoização componentes | Performance | ALTA | ✅ memo + useCallback em cards |
+| Code splitting por feature | Performance | ALTA | ✅ React.lazy em rotas |
+| Upload de imagens S3 | Infraestrutura | ALTA | ✅ Auditoria completa |
+| PagSeguro PIX/Checkout | Futuro | ALTA | ❌ Pendente homologação |
 | Seleção de Gateway no Checkout | Futuro | ALTA | ❌ Pendente |
 
 ---
@@ -290,10 +291,11 @@
    - Verificar logs do Edge Function mercadopago-pix
    - Testar checkout como anon e authenticated
 
-2. **🟡 Performance**
-   - Implementar virtualization (react-window)
-   - Aplicar memoização em componentes pesados
-   - Code splitting por feature
+2. **✅ Performance (CONCLUÍDO)**
+   - useInfiniteScroll para listas longas
+   - memo + useCallback + useMemo em cards
+   - React.lazy + Suspense em rotas
+   - EstablishmentCard, ProductOfferCard, ProductCard memoizados
 
 3. **🟡 Gateway Selection**
    - Implementar seleção de gateway no checkout
