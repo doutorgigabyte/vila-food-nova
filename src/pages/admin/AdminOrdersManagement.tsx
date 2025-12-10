@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import AdminLayout from '@/components/admin/AdminLayout';
-import { ShoppingCart, Search, Eye, Clock, CheckCircle, XCircle, Truck, ChefHat, Package } from 'lucide-react';
+import { ShoppingCart, Search, Eye, Clock, CheckCircle, XCircle, Truck, ChefHat, Package, RotateCcw, UserX, CreditCard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -15,6 +15,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 const statusConfig: Record<string, { label: string; color: string; icon: any }> = {
+  awaiting_payment: { label: 'Aguardando Pgto', color: 'bg-amber-500', icon: CreditCard },
   pending: { label: 'Pendente', color: 'bg-yellow-500', icon: Clock },
   confirmed: { label: 'Confirmado', color: 'bg-blue-500', icon: CheckCircle },
   preparing: { label: 'Preparando', color: 'bg-orange-500', icon: ChefHat },
@@ -22,6 +23,9 @@ const statusConfig: Record<string, { label: string; color: string; icon: any }> 
   delivering: { label: 'Em Entrega', color: 'bg-purple-500', icon: Truck },
   delivered: { label: 'Entregue', color: 'bg-green-700', icon: CheckCircle },
   cancelled: { label: 'Cancelado', color: 'bg-red-500', icon: XCircle },
+  refunded: { label: 'Reembolsado', color: 'bg-blue-600', icon: RotateCcw },
+  returned: { label: 'Devolvido', color: 'bg-amber-600', icon: RotateCcw },
+  customer_absent: { label: 'Cliente Ausente', color: 'bg-red-400', icon: UserX },
 };
 
 const AdminOrdersManagement = () => {
