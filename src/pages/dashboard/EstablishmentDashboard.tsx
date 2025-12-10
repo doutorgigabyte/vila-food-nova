@@ -171,22 +171,22 @@ const EstablishmentDashboard = () => {
       />
 
       {/* Main Content */}
-      <main className="flex-1 lg:ml-64">
+      <main className="flex-1 lg:ml-64 overflow-x-hidden">
         {/* Top Bar */}
         <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b border-border">
           <div className="flex items-center justify-between px-4 py-3">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 min-w-0">
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="lg:hidden"
+                className="lg:hidden shrink-0"
                 onClick={() => setSidebarOpen(true)}
               >
                 <Menu className="w-5 h-5" />
               </Button>
-              <h1 className="text-lg font-semibold">Dashboard</h1>
+              <h1 className="text-lg font-semibold truncate">Dashboard</h1>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               <Button variant="ghost" size="icon" onClick={refetch}>
                 <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
               </Button>
@@ -205,7 +205,7 @@ const EstablishmentDashboard = () => {
           </div>
         </header>
 
-        <div className="p-4 md:p-6 space-y-6">
+        <div className="p-4 md:p-6 space-y-6 overflow-x-auto">
           {/* Stats Cards */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <Card>

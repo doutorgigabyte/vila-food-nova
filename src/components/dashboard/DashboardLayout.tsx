@@ -26,7 +26,7 @@ const DashboardLayout = ({
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-muted/30 flex w-full">
+    <div className="min-h-screen bg-muted/30 flex w-full overflow-hidden">
       <DashboardSidebar 
         isOpen={sidebarOpen} 
         onClose={() => setSidebarOpen(false)}
@@ -35,22 +35,22 @@ const DashboardLayout = ({
         establishment={establishment}
       />
 
-      <main className="flex-1 lg:ml-64">
+      <main className="flex-1 lg:ml-64 overflow-x-hidden">
         {/* Header */}
         <header className="sticky top-0 z-40 bg-background border-b border-border">
           <div className="flex items-center justify-between px-4 md:px-6 py-4">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 min-w-0">
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="lg:hidden"
+                className="lg:hidden shrink-0"
                 onClick={() => setSidebarOpen(true)}
               >
                 <Menu className="w-5 h-5" />
               </Button>
-              <h1 className="text-xl font-semibold">{title}</h1>
+              <h1 className="text-xl font-semibold truncate">{title}</h1>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               <Button variant="ghost" size="icon" className="relative">
                 <Bell className="w-5 h-5" />
                 <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-primary rounded-full" />
@@ -60,7 +60,7 @@ const DashboardLayout = ({
         </header>
 
         {/* Content */}
-        <div className="p-4 md:p-6 space-y-6">
+        <div className="p-4 md:p-6 space-y-6 overflow-x-auto">
           {children}
         </div>
       </main>

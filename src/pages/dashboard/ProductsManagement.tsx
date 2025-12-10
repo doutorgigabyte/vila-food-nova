@@ -142,28 +142,28 @@ const ProductsManagement = () => {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background">
+      <div className="min-h-screen flex w-full bg-background overflow-hidden">
         <DashboardSidebar 
           isOpen={sidebarOpen} 
           onClose={() => setSidebarOpen(false)}
           establishment={establishment}
         />
 
-        <div className="flex-1 lg:ml-64">
+        <div className="flex-1 lg:ml-64 overflow-x-hidden">
           <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b border-border">
             <div className="flex items-center justify-between px-4 py-3">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 min-w-0">
                 <Button 
                   variant="ghost" 
                   size="icon" 
-                  className="lg:hidden"
+                  className="lg:hidden shrink-0"
                   onClick={() => setSidebarOpen(true)}
                 >
                   <Menu className="w-5 h-5" />
                 </Button>
-                <h1 className="text-lg font-semibold">Produtos</h1>
+                <h1 className="text-lg font-semibold truncate">Produtos</h1>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 shrink-0">
                 <Button variant="outline" onClick={handleOpenImport} size="sm" className="hidden sm:flex">
                   <Upload className="w-4 h-4 mr-2" />
                   Importar
@@ -182,7 +182,7 @@ const ProductsManagement = () => {
             </div>
           </header>
 
-          <div className="p-4 md:p-6 space-y-6">
+          <div className="p-4 md:p-6 space-y-6 overflow-x-auto">
             {/* Search */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />

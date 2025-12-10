@@ -201,38 +201,38 @@ const DatabaseManagement = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="min-h-screen bg-background flex overflow-hidden">
       <AdminSidebar 
         isOpen={sidebarOpen} 
         onClose={() => setSidebarOpen(false)}
       />
       
-      <main className="flex-1 lg:ml-64">
+      <main className="flex-1 lg:ml-64 overflow-x-hidden">
         {/* Header */}
         <header className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b border-border px-4 py-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 min-w-0">
               <Button
                 variant="ghost"
                 size="icon"
-                className="lg:hidden"
+                className="lg:hidden shrink-0"
                 onClick={() => setSidebarOpen(true)}
               >
                 <Menu className="w-5 h-5" />
               </Button>
-              <div>
+              <div className="min-w-0">
                 <h1 className="text-xl font-bold flex items-center gap-2">
-                  <Database className="w-5 h-5" />
-                  Gestão do Banco de Dados
+                  <Database className="w-5 h-5 shrink-0" />
+                  <span className="truncate">Gestão do Banco de Dados</span>
                 </h1>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground truncate">
                   Limpe dados de teste para adicionar lojas reais
                 </p>
               </div>
             </div>
-            <Button onClick={loadStats} variant="outline" disabled={loading}>
+            <Button onClick={loadStats} variant="outline" disabled={loading} className="shrink-0">
               <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-              Atualizar
+              <span className="hidden sm:inline">Atualizar</span>
             </Button>
           </div>
         </header>

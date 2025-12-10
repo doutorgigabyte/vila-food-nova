@@ -243,32 +243,35 @@ const OrdersManagement = () => {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background">
+      <div className="min-h-screen flex w-full bg-background overflow-hidden">
         <DashboardSidebar 
           isOpen={sidebarOpen} 
           onClose={() => setSidebarOpen(false)}
           establishment={establishment}
         />
 
-        <div className="flex-1 lg:ml-64">
+        <div className="flex-1 lg:ml-64 overflow-x-hidden">
           {/* Header */}
           <header className="sticky top-0 z-40 bg-card border-b border-border">
             <div className="flex items-center justify-between px-4 py-3">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 min-w-0">
                 <Button 
                   variant="ghost" 
                   size="icon" 
-                  className="lg:hidden"
+                  className="lg:hidden shrink-0"
                   onClick={() => setSidebarOpen(true)}
                 >
                   <Menu className="w-5 h-5" />
                 </Button>
-                <h1 className="text-lg font-semibold">Gestão de Pedidos</h1>
+                <h1 className="text-lg font-semibold truncate">Gestão de Pedidos</h1>
               </div>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={fetchOrders}>
+              <div className="flex items-center gap-2 shrink-0">
+                <Button variant="outline" size="sm" onClick={fetchOrders} className="hidden sm:inline-flex">
                   <RefreshCw className="w-4 h-4 mr-2" />
-                  Atualizar
+                  <span className="hidden md:inline">Atualizar</span>
+                </Button>
+                <Button variant="outline" size="icon" onClick={fetchOrders} className="sm:hidden">
+                  <RefreshCw className="w-4 h-4" />
                 </Button>
                 <Button variant="ghost" size="icon" className="relative">
                   <Bell className="w-5 h-5" />
