@@ -1,0 +1,269 @@
+{
+  "name": "VilaFood - Mercado Pago PIX Generator v2",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            { "name": "phone" },
+            { "name": "instance_name" },
+            { "name": "order_id" },
+            { "name": "description" },
+            { "name": "value" },
+            { "name": "customer_name" },
+            { "name": "customer_email" }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [200, 400],
+      "id": "start-trigger",
+      "name": "Start"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/get_establishment_by_instance",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \"p_instance_name\": \"{{ $json.instance_name }}\" }"
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [420, 400],
+      "id": "get-establishment",
+      "name": "Get Establishment"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "loose", "version": 2 },
+          "conditions": [
+            {
+              "leftValue": "={{ $json[0]?.mercado_pago_token }}",
+              "rightValue": "",
+              "operator": { "type": "string", "operation": "notEmpty", "singleValue": true }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [640, 400],
+      "id": "check-mp-token",
+      "name": "Has MP Token?"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "1", "name": "establishment_id", "value": "={{ $('Get Establishment').item.json[0].id }}", "type": "string" },
+            { "id": "2", "name": "establishment_name", "value": "={{ $('Get Establishment').item.json[0].name }}", "type": "string" },
+            { "id": "3", "name": "mercado_pago_token", "value": "={{ $('Get Establishment').item.json[0].mercado_pago_token }}", "type": "string" },
+            { "id": "4", "name": "pix_key", "value": "={{ $('Get Establishment').item.json[0].pix_key }}", "type": "string" },
+            { "id": "5", "name": "phone", "value": "={{ $('Start').item.json.phone }}", "type": "string" },
+            { "id": "6", "name": "order_id", "value": "={{ $('Start').item.json.order_id }}", "type": "string" },
+            { "id": "7", "name": "description", "value": "={{ $('Start').item.json.description }}", "type": "string" },
+            { "id": "8", "name": "value", "value": "={{ Number($('Start').item.json.value.toString().replace(',', '.')) }}", "type": "number" },
+            { "id": "9", "name": "customer_name", "value": "={{ $('Start').item.json.customer_name }}", "type": "string" },
+            { "id": "10", "name": "customer_email", "value": "={{ $('Start').item.json.customer_email || 'cliente@vilafood.delivery' }}", "type": "string" },
+            { "id": "11", "name": "first_name", "value": "={{ $('Start').item.json.customer_name?.split(' ')[0] || 'Cliente' }}", "type": "string" },
+            { "id": "12", "name": "last_name", "value": "={{ $('Start').item.json.customer_name?.split(' ').slice(1).join(' ') || 'VilaFood' }}", "type": "string" },
+            { "id": "13", "name": "idempotency_key", "value": "={{ $now.format('x') + '-' + $('Start').item.json.order_id }}", "type": "string" },
+            { "id": "14", "name": "expiration", "value": "={{ $now.plus(30, 'minutes').toISO() }}", "type": "string" }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [860, 300],
+      "id": "config-payment",
+      "name": "Config Payment"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.mercadopago.com/v1/payments",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{ $json.mercado_pago_token }}" },
+            { "name": "X-Idempotency-Key", "value": "={{ $json.idempotency_key }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"transaction_amount\": {{ $json.value }},\n  \"payment_method_id\": \"pix\",\n  \"date_of_expiration\": \"{{ $json.expiration }}\",\n  \"external_reference\": \"{{ $json.order_id }}\",\n  \"description\": \"{{ $json.description.replace(/\"/g, '').replace(/\\n/g, ' ').slice(0, 200) }}\",\n  \"payer\": {\n    \"email\": \"{{ $json.customer_email }}\",\n    \"first_name\": \"{{ $json.first_name }}\",\n    \"last_name\": \"{{ $json.last_name }}\"\n  },\n  \"metadata\": {\n    \"order_id\": \"{{ $json.order_id }}\",\n    \"establishment_id\": \"{{ $json.establishment_id }}\",\n    \"phone\": \"{{ $json.phone }}\"\n  }\n}"
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1100, 300],
+      "id": "create-pix-payment",
+      "name": "Create PIX Payment",
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "loose", "version": 2 },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.point_of_interaction?.transaction_data?.qr_code }}",
+              "rightValue": "",
+              "operator": { "type": "string", "operation": "notEmpty", "singleValue": true }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [1320, 300],
+      "id": "check-pix-success",
+      "name": "PIX Created?"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "1", "name": "success", "value": true, "type": "boolean" },
+            { "id": "2", "name": "payment_id", "value": "={{ $('Create PIX Payment').item.json.id }}", "type": "string" },
+            { "id": "3", "name": "status", "value": "={{ $('Create PIX Payment').item.json.status }}", "type": "string" },
+            { "id": "4", "name": "qr_code", "value": "={{ $('Create PIX Payment').item.json.point_of_interaction.transaction_data.qr_code }}", "type": "string" },
+            { "id": "5", "name": "qr_code_base64", "value": "={{ $('Create PIX Payment').item.json.point_of_interaction.transaction_data.qr_code_base64 }}", "type": "string" },
+            { "id": "6", "name": "ticket_url", "value": "={{ $('Create PIX Payment').item.json.point_of_interaction.transaction_data.ticket_url }}", "type": "string" },
+            { "id": "7", "name": "expiration_date", "value": "={{ $('Create PIX Payment').item.json.date_of_expiration }}", "type": "string" },
+            { "id": "8", "name": "order_id", "value": "={{ $('Config Payment').item.json.order_id }}", "type": "string" },
+            { "id": "9", "name": "value", "value": "={{ $('Config Payment').item.json.value }}", "type": "number" },
+            { "id": "10", "name": "establishment_id", "value": "={{ $('Config Payment').item.json.establishment_id }}", "type": "string" }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1540, 200],
+      "id": "format-success",
+      "name": "Format Success"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "1", "name": "success", "value": false, "type": "boolean" },
+            { "id": "2", "name": "error", "value": "={{ $('Create PIX Payment').item.json.message || $('Create PIX Payment').item.json.error || 'Erro ao gerar PIX' }}", "type": "string" },
+            { "id": "3", "name": "error_code", "value": "={{ $('Create PIX Payment').item.json.status || 'unknown' }}", "type": "string" }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1540, 400],
+      "id": "format-error-pix",
+      "name": "Format Error PIX"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "1", "name": "success", "value": false, "type": "boolean" },
+            { "id": "2", "name": "error", "value": "Estabelecimento não possui Mercado Pago configurado", "type": "string" },
+            { "id": "3", "name": "use_static_pix", "value": true, "type": "boolean" },
+            { "id": "4", "name": "pix_key", "value": "={{ $('Get Establishment').item.json[0]?.pix_key || '' }}", "type": "string" }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [860, 500],
+      "id": "no-mp-token",
+      "name": "No MP Token"
+    },
+    {
+      "parameters": {
+        "numberInputs": 3
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [1760, 400],
+      "id": "merge-results",
+      "name": "Merge Results"
+    },
+    {
+      "parameters": {
+        "jsCode": "const result = $('Merge Results').all()[0]?.json || {};\n\nif (result.success && result.qr_code) {\n  return {\n    success: true,\n    payment_id: result.payment_id,\n    status: result.status,\n    pix_code: result.qr_code,\n    qr_code_base64: result.qr_code_base64,\n    ticket_url: result.ticket_url,\n    expiration_date: result.expiration_date,\n    order_id: result.order_id,\n    value: result.value,\n    message: `✅ PIX gerado com sucesso!\\n\\n💰 Valor: R$ ${result.value.toFixed(2).replace('.', ',')}\\n\\n📋 Código PIX (copia e cola):\\n${result.qr_code}\\n\\n⏰ Expira em 30 minutos`\n  };\n} else if (result.use_static_pix && result.pix_key) {\n  return {\n    success: true,\n    static_pix: true,\n    pix_key: result.pix_key,\n    message: `💰 Para pagar, faça um PIX para:\\n\\n🔑 Chave PIX: ${result.pix_key}\\n\\nApós o pagamento, envie o comprovante aqui.`\n  };\n} else {\n  return {\n    success: false,\n    error: result.error || 'Erro desconhecido',\n    message: `❌ Não foi possível gerar o PIX.\\n\\nMotivo: ${result.error || 'Erro desconhecido'}\\n\\nTente novamente ou escolha outra forma de pagamento.`\n  };\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1980, 400],
+      "id": "final-response",
+      "name": "Final Response"
+    }
+  ],
+  "connections": {
+    "Start": {
+      "main": [[{ "node": "Get Establishment", "type": "main", "index": 0 }]]
+    },
+    "Get Establishment": {
+      "main": [[{ "node": "Has MP Token?", "type": "main", "index": 0 }]]
+    },
+    "Has MP Token?": {
+      "main": [
+        [{ "node": "Config Payment", "type": "main", "index": 0 }],
+        [{ "node": "No MP Token", "type": "main", "index": 0 }]
+      ]
+    },
+    "Config Payment": {
+      "main": [[{ "node": "Create PIX Payment", "type": "main", "index": 0 }]]
+    },
+    "Create PIX Payment": {
+      "main": [[{ "node": "PIX Created?", "type": "main", "index": 0 }]]
+    },
+    "PIX Created?": {
+      "main": [
+        [{ "node": "Format Success", "type": "main", "index": 0 }],
+        [{ "node": "Format Error PIX", "type": "main", "index": 0 }]
+      ]
+    },
+    "Format Success": {
+      "main": [[{ "node": "Merge Results", "type": "main", "index": 0 }]]
+    },
+    "Format Error PIX": {
+      "main": [[{ "node": "Merge Results", "type": "main", "index": 1 }]]
+    },
+    "No MP Token": {
+      "main": [[{ "node": "Merge Results", "type": "main", "index": 2 }]]
+    },
+    "Merge Results": {
+      "main": [[{ "node": "Final Response", "type": "main", "index": 0 }]]
+    }
+  },
+  "pinData": {
+    "Start": [
+      {
+        "phone": "558684612465",
+        "instance_name": "doces-e-tortas-test",
+        "order_id": "order-123-abc",
+        "description": "01 Pizza Grande Calabresa, 01 Coca-Cola 2L",
+        "value": "65,50",
+        "customer_name": "João Silva",
+        "customer_email": "joao@email.com"
+      }
+    ]
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true
+  }
+}
