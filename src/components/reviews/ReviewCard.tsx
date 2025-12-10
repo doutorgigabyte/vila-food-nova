@@ -14,6 +14,7 @@ interface ReviewCardProps {
     service_rating?: number;
     comment?: string;
     photos?: string[];
+    selected_tags?: string[];
     owner_response?: string;
     owner_response_at?: string;
     is_verified_purchase?: boolean;
@@ -70,6 +71,17 @@ export function ReviewCard({ review }: ReviewCardProps) {
               {review.service_rating && (
                 <span>Atendimento: {review.service_rating}★</span>
               )}
+            </div>
+          )}
+
+          {/* Selected Tags */}
+          {review.selected_tags && review.selected_tags.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {(review.selected_tags as string[]).map((tag, idx) => (
+                <Badge key={idx} variant="secondary" className="text-xs">
+                  {tag}
+                </Badge>
+              ))}
             </div>
           )}
 

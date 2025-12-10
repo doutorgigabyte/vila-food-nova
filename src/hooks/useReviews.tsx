@@ -14,6 +14,8 @@ export interface Review {
   service_rating?: number;
   comment?: string;
   photos?: string[];
+  selected_tags?: string[];
+  rating_scale?: number;
   owner_response?: string;
   owner_response_at?: string;
   is_visible: boolean;
@@ -57,6 +59,7 @@ export function useReviews(establishmentId?: string) {
       const typedReviews = (data || []).map(r => ({
         ...r,
         photos: r.photos as string[] | undefined,
+        selected_tags: r.selected_tags as string[] | undefined,
       }));
 
       setReviews(typedReviews);

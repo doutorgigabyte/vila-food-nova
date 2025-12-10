@@ -108,6 +108,7 @@ const DataMigration = lazy(() => import("./pages/admin/DataMigration"));
 const ExternalDataMigration = lazy(() => import("./pages/admin/ExternalDataMigration"));
 const DiagnosticoSistema = lazy(() => import("./pages/admin/DiagnosticoSistema"));
 const ImplementationRoadmap = lazy(() => import("./pages/admin/ImplementationRoadmap"));
+const DevelopmentRoadmap = lazy(() => import("./pages/admin/DevelopmentRoadmap"));
 const SystemHealthCheck = lazy(() => import("./pages/admin/SystemHealthCheck"));
 const ImageFillManager = lazy(() => import("./pages/admin/ImageFillManager"));
 const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
@@ -307,6 +308,7 @@ const AppRoutes = () => {
               <Route path="/admin/diagnostico" element={<ProtectedAdminRoute><DiagnosticoSistema /></ProtectedAdminRoute>} />
               <Route path="/admin/health" element={<ProtectedAdminRoute><SystemHealthCheck /></ProtectedAdminRoute>} />
               <Route path="/admin/progresso" element={<ProtectedAdminRoute><ImplementationRoadmap /></ProtectedAdminRoute>} />
+              <Route path="/admin/roadmap" element={<ProtectedAdminRoute><DevelopmentRoadmap /></ProtectedAdminRoute>} />
               <Route path="/admin/preencher-imagens" element={<ProtectedAdminRoute><ImageFillManager /></ProtectedAdminRoute>} />
               <Route path="/admin/configuracoes" element={<ProtectedAdminRoute><AdminSettings /></ProtectedAdminRoute>} />
               <Route path="/admin/banco-dados" element={<ProtectedAdminRoute><DatabaseManagement /></ProtectedAdminRoute>} />
