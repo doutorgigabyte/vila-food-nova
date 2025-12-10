@@ -143,3 +143,6 @@ verify_jwt = false
 
 [functions.register-customer]
 verify_jwt = false
+
+[functions.extract-customer-data]
+verify_jwt = false

@@ -10,7 +10,7 @@ interface AnalyzeImageRequest {
   image_base64?: string;
   analysis_type: 'payment_proof' | 'general' | 'address' | 'product';
   establishment_id?: string;
-  menu_context?: string; // JSON string of menu for product matching
+  menu_context?: string;
 }
 
 serve(async (req) => {
@@ -37,7 +37,6 @@ serve(async (req) => {
 
     let imageData: string;
 
-    // If URL provided, fetch and convert to base64
     if (image_url) {
       console.log('Fetching image from URL:', image_url);
       const imageResponse = await fetch(image_url);
@@ -51,9 +50,9 @@ serve(async (req) => {
       imageData = image_base64!;
     }
 
-    const geminiApiKey = Deno.env.get('GOOGLE_API_KEY');
-    if (!geminiApiKey) {
-      throw new Error('GOOGLE_API_KEY not configured');
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    if (!LOVABLE_API_KEY) {
+      throw new Error('LOVABLE_API_KEY not configured');
     }
 
     // Build prompt based on analysis type
@@ -74,10 +73,7 @@ Extraia as seguintes informações em JSON:
   "bank": "nome do banco" ou null,
   "confidence": número de 0 a 1 indicando confiança na extração
 }
-
-Se não for um comprovante de pagamento, retorne:
-{"type": "not_payment", "confidence": 0}
-
+Se não for um comprovante de pagamento, retorne: {"type": "not_payment", "confidence": 0}
 IMPORTANTE: Retorne APENAS o JSON, sem explicações.`;
         break;
 
@@ -97,16 +93,13 @@ Extraia em JSON:
   "full_address": "endereço completo formatado",
   "confidence": número de 0 a 1
 }
-
 Se não encontrar endereço: {"found": false, "confidence": 0}
-
 IMPORTANTE: Retorne APENAS o JSON.`;
         break;
 
       case 'product':
         prompt = `Analise esta imagem de produto/comida.
 ${menu_context ? `Cardápio disponível: ${menu_context}` : ''}
-
 Identifique o produto e retorne em JSON:
 {
   "identified": true/false,
@@ -117,11 +110,10 @@ Identifique o produto e retorne em JSON:
   "menu_match_name": "nome exato do produto no cardápio" ou null,
   "confidence": número de 0 a 1
 }
-
 IMPORTANTE: Retorne APENAS o JSON.`;
         break;
 
-      default: // general
+      default:
         prompt = `Analise esta imagem e descreva o que você vê.
 Retorne em JSON:
 {
@@ -131,58 +123,65 @@ Retorne em JSON:
   "category": "categoria geral (foto, documento, comprovante, produto, etc)",
   "confidence": número de 0 a 1
 }
-
 IMPORTANTE: Retorne APENAS o JSON.`;
     }
 
-    const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{
-            parts: [
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-2.5-flash',
+        messages: [
+          {
+            role: 'user',
+            content: [
               {
-                inlineData: {
-                  mimeType: 'image/jpeg',
-                  data: imageData
+                type: 'image_url',
+                image_url: {
+                  url: `data:image/jpeg;base64,${imageData}`
                 }
               },
-              { text: prompt }
+              { type: 'text', text: prompt }
             ]
-          }],
-          generationConfig: {
-            temperature: 0.1,
-            maxOutputTokens: 1000
           }
-        })
-      }
-    );
+        ]
+      })
+    });
 
-    if (!geminiResponse.ok) {
-      const errorText = await geminiResponse.text();
-      console.error('Gemini API error:', errorText);
-      throw new Error(`Gemini API error: ${geminiResponse.status}`);
+    if (!response.ok) {
+      if (response.status === 429) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Rate limit excedido.' }),
+          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      if (response.status === 402) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Créditos insuficientes.' }),
+          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      const errorText = await response.text();
+      console.error('Lovable AI error:', errorText);
+      throw new Error(`AI Gateway error: ${response.status}`);
     }
 
-    const geminiData = await geminiResponse.json();
-    const responseText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const data = await response.json();
+    const responseText = data.choices?.[0]?.message?.content || '';
 
-    console.log('Gemini raw response:', responseText);
+    console.log('AI raw response:', responseText);
 
     // Parse JSON from response
     let extractedData;
     try {
-      // Remove markdown code blocks if present
       const cleanJson = responseText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
       extractedData = JSON.parse(cleanJson);
-    } catch (parseError) {
-      console.error('Failed to parse Gemini response as JSON:', parseError);
-      extractedData = {
-        raw_text: responseText,
-        parse_error: true
-      };
+    } catch {
+      console.error('Failed to parse response as JSON');
+      extractedData = { raw_text: responseText, parse_error: true };
     }
 
     return new Response(
