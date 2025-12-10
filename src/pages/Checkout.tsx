@@ -46,10 +46,14 @@ import { DeliveryOptionsCards } from "@/components/checkout/DeliveryOptionsCards
 import { CheckoutSummary } from "@/components/checkout/CheckoutSummary";
 import { CouponInput } from "@/components/checkout/CouponInput";
 import { GatewaySelector, GatewayProvider } from "@/components/checkout/GatewaySelector";
+import { OrderSendingStep, createChecklistItems } from "@/components/checkout/OrderSendingStep";
+import { OutOfStockOptions, OutOfStockAction } from "@/components/checkout/OutOfStockOptions";
+import { CpfInput } from "@/components/checkout/CpfInput";
+import { PixPaymentTimer } from "@/components/checkout/PixPaymentTimer";
 import { trackInitiateCheckout, trackPurchase } from "@/lib/analytics";
 import { supabase } from "@/integrations/supabase/client";
 
-type CheckoutStep = "cart" | "delivery" | "payment" | "processing" | "success";
+type CheckoutStep = "cart" | "delivery" | "payment" | "sending" | "processing" | "success";
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -113,6 +117,10 @@ const Checkout = () => {
   // Payment
   const [change, setChange] = useState("");
   const [observations, setObservations] = useState("");
+  
+  // New 99Food-style fields
+  const [cpf, setCpf] = useState("");
+  const [outOfStockAction, setOutOfStockAction] = useState<OutOfStockAction>("contact_me");
   
   // WhatsApp tracking
   const [whatsappTracking, setWhatsappTracking] = useState(true);
@@ -389,6 +397,18 @@ const Checkout = () => {
   };
 
   const handleSubmitPayment = async () => {
+    // Validate required fields
+    if (whatsappTracking && !customerPhone) {
+      toast.error("Informe seu WhatsApp para acompanhar o pedido");
+      return;
+    }
+    
+    // Go to sending step (99Food style)
+    setStep("sending");
+  };
+
+  // Called when OrderSendingStep completes - actually creates the order
+  const handleSendingComplete = async () => {
     setIsLoading(true);
     
     try {
@@ -403,6 +423,10 @@ const Checkout = () => {
         'cash': 'cash',
         'card': 'credit_card',
       };
+
+      // Determine initial status based on payment method
+      // PIX/Card: awaiting_payment, Cash: pending
+      const initialStatus = paymentMethod === 'cash' ? 'pending' : 'awaiting_payment';
 
       // For card payments via Checkout Pro, create order and redirect
       if (paymentMethod === 'card' && !isMultiStore) {
@@ -770,7 +794,8 @@ const Checkout = () => {
     cart: "Confirmar carrinho",
     delivery: "Entrega",
     payment: "Pagamento",
-    processing: "Processando",
+    sending: "Enviando pedido",
+    processing: "Aguardando pagamento",
     success: "Sucesso"
   };
 
