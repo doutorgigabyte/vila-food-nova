@@ -1,0 +1,1744 @@
+{
+  "name": "VilaFood AI Agent v3",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "vilafood-webhook",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -1472,
+        336
+      ],
+      "id": "f8f101a2-506d-4d3a-9982-df2093258c86",
+      "name": "Evolution API Webhook",
+      "webhookId": "vilafood-evolution-webhook"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.body?.data?.key?.fromMe }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "notEquals"
+              }
+            },
+            {
+              "leftValue": "={{ $json.body?.event }}",
+              "rightValue": "messages.upsert",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1264,
+        336
+      ],
+      "id": "9ee8501e-cbe6-42a5-9c97-c6dd705b3e3b",
+      "name": "Filter Self Messages"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://gyagfsjbdaacgmmofqip.supabase.co/rest/v1/rpc/get_establishment_by_instance",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5YWdmc2piZGFhY2dtbW9mcWlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4NzIwNjYsImV4cCI6MjA4MDQ0ODA2Nn0.4W0hZwETfoALlpn9_f2NqdKQNJ3DKDRkcs7uC-VbdhE"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"p_instance_name\": \"{{ $json.body.instance }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1040,
+        320
+      ],
+      "id": "885fe5ac-ac9d-4edd-9235-c5bbbbdb31ad",
+      "name": "Busca Estabelecimento"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "instance_name",
+              "name": "instance_name",
+              "value": "={{ $('Evolution API Webhook').item.json.body.instance }}",
+              "type": "string"
+            },
+            {
+              "id": "remote_jid",
+              "name": "remote_jid",
+              "value": "={{ $('Evolution API Webhook').item.json.body.data.key.remoteJid }}",
+              "type": "string"
+            },
+            {
+              "id": "phone",
+              "name": "phone",
+              "value": "={{ $('Evolution API Webhook').item.json.body.data.key.remoteJid.replace('@s.whatsapp.net', '') }}",
+              "type": "string"
+            },
+            {
+              "id": "push_name",
+              "name": "push_name",
+              "value": "={{ $('Evolution API Webhook').item.json.body.data.pushName || 'Cliente' }}",
+              "type": "string"
+            },
+            {
+              "id": "message_text",
+              "name": "message_text",
+              "value": "={{ $('Evolution API Webhook').item.json.body.data.message?.conversation || $('Evolution API Webhook').item.json.body.data.message?.extendedTextMessage?.text || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "message_type",
+              "name": "message_type",
+              "value": "={{ $('Evolution API Webhook').item.json.body.data.messageType }}",
+              "type": "string"
+            },
+            {
+              "id": "message_id",
+              "name": "message_id",
+              "value": "={{ $('Evolution API Webhook').item.json.body.data.key.id }}",
+              "type": "string"
+            },
+            {
+              "id": "session_key",
+              "name": "session_key",
+              "value": "={{ $('Evolution API Webhook').item.json.body.instance }}:{{ $('Evolution API Webhook').item.json.body.data.key.remoteJid.replace('@s.whatsapp.net', '') }}",
+              "type": "string"
+            },
+            {
+              "id": "establishment_id",
+              "name": "establishment_id",
+              "value": "={{ $('Busca Estabelecimento').item.json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "establishment_name",
+              "name": "establishment_name",
+              "value": "={{ $('Busca Estabelecimento').item.json.name }}",
+              "type": "string"
+            },
+            {
+              "id": "system_prompt",
+              "name": "system_prompt",
+              "value": "={{ $('Busca Estabelecimento').item.json.system_prompt || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "menu_json",
+              "name": "menu_json",
+              "value": "={{ JSON.stringify($('Busca Estabelecimento').item.json.menu_json || []) }}",
+              "type": "string"
+            },
+            {
+              "id": "mercado_pago_token",
+              "name": "mercado_pago_token",
+              "value": "={{ $('Busca Estabelecimento').item.json.mercado_pago_token || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "pix_key",
+              "name": "pix_key",
+              "value": "={{ $('Busca Estabelecimento').item.json.pix_key || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "evolution_api_token",
+              "name": "evolution_api_token",
+              "value": "={{ $('Busca Estabelecimento').item.json.evolution_api_token || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "whatsapp",
+              "name": "whatsapp",
+              "value": "={{ $('Busca Estabelecimento').item.json.whatsapp || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "address",
+              "name": "address",
+              "value": "={{ $('Busca Estabelecimento').item.json.address || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "min_order_value",
+              "name": "min_order_value",
+              "value": "={{ $('Busca Estabelecimento').item.json.min_order_value || 0 }}",
+              "type": "number"
+            },
+            {
+              "id": "delivery_base_fee",
+              "name": "delivery_base_fee",
+              "value": "={{ $('Busca Estabelecimento').item.json.delivery_base_fee || 0 }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -816,
+        320
+      ],
+      "id": "8c3b32fa-b20d-4981-b8db-c9f2331846e4",
+      "name": "Extrai Campos"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.message_type }}",
+                    "rightValue": "imageMessage",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "imagem"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.message_type }}",
+                    "rightValue": "conversation",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "texto"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.message_type }}",
+                    "rightValue": "audioMessage",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "audio"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.message_type }}",
+                    "rightValue": "extendedTextMessage",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "texto"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -624,
+        288
+      ],
+      "id": "c8c00fbc-e92d-4b20-b750-f575afd135a9",
+      "name": "Tipo de Mensagem"
+    },
+    {
+      "parameters": {
+        "resource": "chat-api",
+        "operation": "get-media-base64",
+        "instanceName": "={{ $('Extrai Campos').item.json.instance_name }}",
+        "messageId": "={{ $('Extrai Campos').item.json.message_id }}",
+        "convertToMp4": true
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        -416,
+        112
+      ],
+      "id": "608c2c41-b44d-4230-a41b-95e5803cf511",
+      "name": "Busca Imagem Base64",
+      "credentials": {
+        "evolutionApi": {
+          "id": "aolR7A86n48wLzbu",
+          "name": "Evolution account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "toBinary",
+        "sourceProperty": "data.base64",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        -192,
+        112
+      ],
+      "id": "6380d634-6963-4f98-8c6a-cef140b6918f",
+      "name": "Converte Imagem"
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "text": "Analise esta imagem enviada por um cliente. Se for um comprovante de pagamento (PIX, transferência, etc), extraia: valor, data/hora, tipo de transação. Se for foto de produto ou cardápio, descreva o que vê. Se não conseguir identificar, descreva a imagem normalmente.",
+        "inputType": "binary",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        48,
+        112
+      ],
+      "id": "c707ab46-d897-402b-bd09-4bf7555ad0b9",
+      "name": "Analisa Imagem Gemini",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "BQk8jM5RcfqFe81n",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "chat-api",
+        "operation": "get-media-base64",
+        "instanceName": "={{ $('Extrai Campos').item.json.instance_name }}",
+        "messageId": "={{ $('Extrai Campos').item.json.message_id }}",
+        "convertToMp4": true
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        -416,
+        512
+      ],
+      "id": "7b9466b4-c52d-4c17-8345-ddaab7c79211",
+      "name": "Busca Audio Base64",
+      "credentials": {
+        "evolutionApi": {
+          "id": "aolR7A86n48wLzbu",
+          "name": "Evolution account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "toBinary",
+        "sourceProperty": "data.base64",
+        "options": {
+          "fileName": "audio.mp3",
+          "mimeType": "audio/mpeg"
+        }
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        -192,
+        512
+      ],
+      "id": "3c1fd069-eb50-4c6e-9854-3bcd733b171b",
+      "name": "Converte Audio"
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "inputType": "binary",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        48,
+        512
+      ],
+      "id": "9003002f-ff66-4427-85bf-7ee8f6473d85",
+      "name": "Transcreve Audio Gemini",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "BQk8jM5RcfqFe81n",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "push",
+        "list": "=vilafood:debounce:{{ $('Extrai Campos').item.json.session_key }}",
+        "messageData": "={{ JSON.stringify({ messageId: $('Extrai Campos').item.json.message_id, mensagem: $('Extrai Campos').item.json.message_text }) }}",
+        "tail": true
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        -416,
+        320
+      ],
+      "id": "b26f10fc-8d3b-416e-aec5-8de1d760bda3",
+      "name": "Redis Push Texto",
+      "credentials": {
+        "redis": {
+          "id": "33pA7zq69HHHChaW",
+          "name": "Redis account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 3
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -192,
+        320
+      ],
+      "id": "47f05798-20b0-4732-8ff8-0d376e0afa3b",
+      "name": "Debounce 3s",
+      "webhookId": "debounce-wait-webhook"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "propertyName": "mensagens",
+        "key": "=vilafood:debounce:{{ $('Extrai Campos').item.json.session_key }}",
+        "keyType": "list",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        48,
+        320
+      ],
+      "id": "73300a77-f9b2-433d-af6e-63a2a68b0ef8",
+      "name": "Redis Get Mensagens",
+      "credentials": {
+        "redis": {
+          "id": "33pA7zq69HHHChaW",
+          "name": "Redis account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ JSON.parse($json.mensagens?.slice(-1)[0] || '{}')?.messageId }}",
+              "rightValue": "={{ $('Extrai Campos').item.json.message_id }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        272,
+        320
+      ],
+      "id": "193a7247-f5d7-4d27-8356-50d25254acd6",
+      "name": "E Ultima Mensagem"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "content",
+              "name": "content",
+              "value": "={{ $json.mensagens ? $json.mensagens.map(m => JSON.parse(m).mensagem).join(' ') : $('Extrai Campos').item.json.message_text }}",
+              "type": "string"
+            },
+            {
+              "id": "session_key",
+              "name": "session_key",
+              "value": "={{ $('Extrai Campos').item.json.session_key }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        512,
+        224
+      ],
+      "id": "f6ce146e-6268-4910-9a6d-e547a649bd5e",
+      "name": "Combina Mensagens Texto"
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "key": "=vilafood:debounce:{{ $('Extrai Campos').item.json.session_key }}"
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        736,
+        224
+      ],
+      "id": "36b68f9d-f0e6-478e-9711-9e9c9d728a7c",
+      "name": "Redis Clear Debounce",
+      "credentials": {
+        "redis": {
+          "id": "33pA7zq69HHHChaW",
+          "name": "Redis account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "content",
+              "name": "content",
+              "value": "=[IMAGEM ANALISADA] {{ $json.content || $json.text }}",
+              "type": "string"
+            },
+            {
+              "id": "session_key",
+              "name": "session_key",
+              "value": "={{ $('Extrai Campos').item.json.session_key }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        272,
+        112
+      ],
+      "id": "688a78ef-98ef-4e90-b255-59f06004d810",
+      "name": "Formata Resultado Imagem"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "content",
+              "name": "content",
+              "value": "=[AUDIO TRANSCRITO] {{ $json.content.parts[0].text }}",
+              "type": "string"
+            },
+            {
+              "id": "session_key",
+              "name": "session_key",
+              "value": "={{ $('Extrai Campos').item.json.session_key }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        272,
+        512
+      ],
+      "id": "6c8dced3-df65-40dd-92be-fd68db044d31",
+      "name": "Formata Resultado Audio"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        960,
+        352
+      ],
+      "id": "32b71843-690d-487a-b1dd-c364e3288da6",
+      "name": "Merge Conteudo"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "propertyName": "cart_data",
+        "key": "=vilafood:cart:{{ $json.session_key }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        1184,
+        352
+      ],
+      "id": "46209666-bfb9-47c2-8ea9-fb1d97fb36dc",
+      "name": "Busca Carrinho Redis",
+      "credentials": {
+        "redis": {
+          "id": "33pA7zq69HHHChaW",
+          "name": "Redis account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://gyagfsjbdaacgmmofqip.supabase.co/rest/v1/rpc/get_customer_by_phone_and_establishment",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5YWdmc2piZGFhY2dtbW9mcWlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4NzIwNjYsImV4cCI6MjA4MDQ0ODA2Nn0.4W0hZwETfoALlpn9_f2NqdKQNJ3DKDRkcs7uC-VbdhE"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \"p_phone\": \"{{ $('Extrai Campos').item.json.phone }}\", \"p_establishment_id\": \"{{ $('Busca Estabelecimento').item.json.id }}\" }",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1408,
+        352
+      ],
+      "id": "e0311dc4-e0e3-4a19-bf12-76bef8db6bfb",
+      "name": "Busca Cliente",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Merge Conteudo').item.json.content }}",
+        "options": {
+          "systemMessage": "=# VILAFOOD AI ORCHESTRATOR - {{ $('Extrai Campos').item.json.establishment_name }}\n\nVocê é o assistente virtual inteligente do {{ $('Extrai Campos').item.json.establishment_name }}.\n\n{{ $('Extrai Campos').item.json.system_prompt }}\n\n## CONTEXTO ATUAL:\n\n### Dados do Cliente:\n- Nome: {{ $('Extrai Campos').item.json.push_name }}\n- Telefone: {{ $('Extrai Campos').item.json.phone }}\n- Endereço Cadastrado: {{ $('Busca Cliente').item.json.default_address ? JSON.stringify($('Busca Cliente').item.json.default_address) : 'Não cadastrado' }}\n\n### Carrinho Atual:\n{{ $('Busca Carrinho Redis').item.json.cart_data || 'Vazio' }}\n\n### Dados do Estabelecimento:\n- Nome: {{ $('Extrai Campos').item.json.establishment_name }}\n- Endereço: {{ $('Extrai Campos').item.json.address }}\n- Pedido Mínimo: R$ {{ $('Extrai Campos').item.json.min_order_value }}\n- Taxa Base Entrega: R$ {{ $('Extrai Campos').item.json.delivery_base_fee }}\n\n## CARDÁPIO DISPONÍVEL:\n{{ $('Extrai Campos').item.json.menu_json }}\n\n## FERRAMENTAS DISPONÍVEIS:\n\nUse as ferramentas para executar ações:\n- **search_products**: Buscar produtos no cardápio\n- **send_product_photo**: Enviar foto de produto\n- **add_to_cart**: Adicionar item ao carrinho\n- **view_cart**: Ver carrinho atual\n- **clear_cart**: Limpar carrinho\n- **save_customer**: Salvar dados do cliente\n- **create_order_pix**: Finalizar pedido com PIX\n- **calculate_delivery**: Calcular taxa de entrega\n\n## REGRAS:\n1. Seja simpático, prestativo e objetivo\n2. Use as FERRAMENTAS para ações específicas\n3. Sempre confirme antes de finalizar pedidos\n4. Sugira produtos complementares quando apropriado\n5. Se receber [AUDIO TRANSCRITO], responda normalmente\n6. Se receber [IMAGEM ANALISADA], use o contexto\n7. Respostas curtas e diretas (máximo 400 caracteres)\n8. Use emojis moderadamente 🍕\n9. Sempre pergunte se deseja mais algo antes de fechar"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        1600,
+        352
+      ],
+      "id": "fb887592-cbc8-4c21-9cf3-e0f64513937d",
+      "name": "AI Orchestrator"
+    },
+    {
+      "parameters": {
+        "options": {
+          "maxOutputTokens": 1024,
+          "temperature": 0.7
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1536,
+        592
+      ],
+      "id": "2bba3630-430e-4da7-bc80-f6c8ee58f0c6",
+      "name": "Google Gemini LLM",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "BQk8jM5RcfqFe81n",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "=vilafood:memory:{{ $('Extrai Campos').item.json.session_key }}",
+        "contextWindowLength": 20
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryRedisChat",
+      "typeVersion": 1.3,
+      "position": [
+        1696,
+        592
+      ],
+      "id": "3b4bad0f-64d0-4339-9e61-f1f6c12770bc",
+      "name": "Redis Chat Memory",
+      "credentials": {
+        "redis": {
+          "id": "33pA7zq69HHHChaW",
+          "name": "Redis account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const output = $input.item.json.output || '';\nconst maxLength = 400;\n\nif (output.length <= maxLength) {\n  return [{ json: { chunk: output, index: 0, total: 1, isLast: true } }];\n}\n\nconst paragraphs = output.split('\\n\\n');\nconst chunks = [];\nlet currentChunk = '';\n\nfor (const para of paragraphs) {\n  if ((currentChunk + '\\n\\n' + para).length <= maxLength) {\n    currentChunk = currentChunk ? currentChunk + '\\n\\n' + para : para;\n  } else {\n    if (currentChunk) chunks.push(currentChunk);\n    \n    if (para.length <= maxLength) {\n      currentChunk = para;\n    } else {\n      const sentences = para.match(/[^.!?]+[.!?]+/g) || [para];\n      for (const sentence of sentences) {\n        if ((currentChunk + ' ' + sentence).length <= maxLength) {\n          currentChunk = currentChunk ? currentChunk + ' ' + sentence : sentence;\n        } else {\n          if (currentChunk) chunks.push(currentChunk);\n          currentChunk = sentence.substring(0, maxLength);\n        }\n      }\n    }\n  }\n}\n\nif (currentChunk) chunks.push(currentChunk);\n\nreturn chunks.map((chunk, i) => ({\n  json: {\n    chunk: chunk,\n    index: i,\n    total: chunks.length,\n    isLast: i === chunks.length - 1\n  }\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1888,
+        352
+      ],
+      "id": "0e12cff8-d9b1-4d55-9543-6ce38a8833df",
+      "name": "Split Mensagens"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        2080,
+        352
+      ],
+      "id": "3f7c0ad4-febc-4aa7-b1e6-53c8f07a8948",
+      "name": "Batch Mensagens"
+    },
+    {
+      "parameters": {
+        "amount": 1
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2304,
+        352
+      ],
+      "id": "0c7644ac-ba86-4894-a597-9d8d8ba8c476",
+      "name": "Wait 1s",
+      "webhookId": "wait-between-messages"
+    },
+    {
+      "parameters": {
+        "resource": "messages-api",
+        "instanceName": "={{ $('Extrai Campos').item.json.instance_name }}",
+        "remoteJid": "={{ $('Extrai Campos').item.json.remote_jid }}",
+        "messageText": "={{ $json.chunk }}",
+        "options_message": {}
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        2528,
+        352
+      ],
+      "id": "7efeb4f2-a28c-4591-aa21-0067490dd31f",
+      "name": "Envia Chunk",
+      "credentials": {
+        "evolutionApi": {
+          "id": "aolR7A86n48wLzbu",
+          "name": "Evolution account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.isLast }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2752,
+        352
+      ],
+      "id": "a1f760df-a705-49a4-9e41-735cd7173499",
+      "name": "E Ultima?"
+    },
+    {
+      "parameters": {
+        "tableId": "whatsapp_messages",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldValue": "={{ $('Busca Sessao').item.json.id || null }}"
+            },
+            {
+              "fieldValue": "bot"
+            },
+            {
+              "fieldValue": "={{ $('AI Orchestrator').item.json.output }}"
+            },
+            {
+              "fieldValue": "text"
+            },
+            {
+              "fieldValue": true
+            },
+            {
+              "fieldValue": "orchestrator"
+            },
+            {
+              "fieldValue": "={{ JSON.stringify({ tools_used: $('AI Orchestrator').item.json.toolCalls || [] }) }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2976,
+        256
+      ],
+      "id": "2ac2182d-b891-4fb8-85c8-561243778924",
+      "name": "Salva Log Resposta",
+      "credentials": {
+        "supabaseApi": {
+          "id": "DJHJ4fGtwZ6iktbx",
+          "name": "Supabase account 2"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        512,
+        416
+      ],
+      "id": "c3920486-091a-4c8c-8645-ef2d00d448b1",
+      "name": "Nao e ultima (ignora)"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://gyagfsjbdaacgmmofqip.supabase.co/rest/v1/rpc/search_products",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5YWdmc2piZGFhY2dtbW9mcWlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4NzIwNjYsImV4cCI6MjA4MDQ0ODA2Nn0.4W0hZwETfoALlpn9_f2NqdKQNJ3DKDRkcs7uC-VbdhE"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"p_establishment_id\": \"{{ $('Extrai Campos').item.json.establishment_id }}\",\n  \"p_search_term\": \"{query}\"\n}",
+        "placeholderDefinitions": {
+          "values": [
+            {
+              "name": "query",
+              "description": "Termo de busca para encontrar produtos no cardápio (ex: pizza, refrigerante, bolo)",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [
+        1856,
+        592
+      ],
+      "id": "913bcac0-a92f-4774-a68e-cbbd99db674d",
+      "name": "search_menu"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://gyagfsjbdaacgmmofqip.supabase.co/functions/v1/calculate-delivery",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5YWdmc2piZGFhY2dtbW9mcWlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4NzIwNjYsImV4cCI6MjA4MDQ0ODA2Nn0.4W0hZwETfoALlpn9_f2NqdKQNJ3DKDRkcs7uC-VbdhE"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"establishment_id\": \"{{ $('Extrai Campos').item.json.establishment_id }}\",\n  \"customer_address\": \"{full_address}\"\n}",
+        "placeholderDefinitions": {
+          "values": [
+            {
+              "name": "full_address",
+              "description": "Endereço completo do cliente para cálculo de distância",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [
+        1856,
+        768
+      ],
+      "id": "f109ac9d-3a59-4aff-addc-2617fc3f0ca6",
+      "name": "calculate_delivery_fee"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://gyagfsjbdaacgmmofqip.supabase.co/functions/v1/whatsapp-cart",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5YWdmc2piZGFhY2dtbW9mcWlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4NzIwNjYsImV4cCI6MjA4MDQ0ODA2Nn0.4W0hZwETfoALlpn9_f2NqdKQNJ3DKDRkcs7uC-VbdhE"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"action\": \"add\",\n  \"instance_name\": \"{{ $('Extrai Campos').item.json.instance_name }}\",\n  \"remote_jid\": \"{{ $('Extrai Campos').item.json.remote_jid }}\",\n  \"establishment_id\": \"{{ $('Extrai Campos').item.json.establishment_id }}\",\n  \"product_id\": \"{product_id}\",\n  \"product_name\": \"{product_name}\",\n  \"quantity\": {quantity},\n  \"unit_price\": {unit_price},\n  \"observations\": \"{observations}\"\n}",
+        "placeholderDefinitions": {
+          "values": [
+            {
+              "name": "product_id",
+              "description": "UUID do produto (obtido da busca no cardápio)",
+              "type": "string"
+            },
+            {
+              "name": "product_name",
+              "description": "Nome do produto para exibição",
+              "type": "string"
+            },
+            {
+              "name": "quantity",
+              "description": "Quantidade de itens (número inteiro, mínimo 1)",
+              "type": "number"
+            },
+            {
+              "name": "unit_price",
+              "description": "Preço unitário do produto em reais (ex: 25.90)",
+              "type": "number"
+            },
+            {
+              "name": "observations",
+              "description": "Observações do cliente sobre o item (ex: sem cebola, bem passado)",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [
+        2000,
+        592
+      ],
+      "id": "c7d1534b-6888-40a0-a089-c0ee07601aa9",
+      "name": "add_to_cart1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://gyagfsjbdaacgmmofqip.supabase.co/functions/v1/whatsapp-cart",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5YWdmc2piZGFhY2dtbW9mcWlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4NzIwNjYsImV4cCI6MjA4MDQ0ODA2Nn0.4W0hZwETfoALlpn9_f2NqdKQNJ3DKDRkcs7uC-VbdhE"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"action\": \"get\",\n  \"instance_name\": \"{{ $('Extrai Campos').item.json.instance_name }}\",\n  \"remote_jid\": \"{{ $('Extrai Campos').item.json.remote_jid }}\",\n  \"establishment_id\": \"{{ $('Extrai Campos').item.json.establishment_id }}\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [
+        2144,
+        592
+      ],
+      "id": "7a8f67b1-2ecc-4877-8f0a-0c2899e6cd71",
+      "name": "view_cart1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://gyagfsjbdaacgmmofqip.supabase.co/functions/v1/whatsapp-cart",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5YWdmc2piZGFhY2dtbW9mcWlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4NzIwNjYsImV4cCI6MjA4MDQ0ODA2Nn0.4W0hZwETfoALlpn9_f2NqdKQNJ3DKDRkcs7uC-VbdhE"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"action\": \"clear\",\n  \"instance_name\": \"{{ $('Extrai Campos').item.json.instance_name }}\",\n  \"remote_jid\": \"{{ $('Extrai Campos').item.json.remote_jid }}\",\n  \"establishment_id\": \"{{ $('Extrai Campos').item.json.establishment_id }}\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [
+        2288,
+        592
+      ],
+      "id": "3b63630a-ccfa-44e9-88fd-a74d9fe078f2",
+      "name": "clear_cart1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://gyagfsjbdaacgmmofqip.supabase.co/functions/v1/whatsapp-cart",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5YWdmc2piZGFhY2dtbW9mcWlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4NzIwNjYsImV4cCI6MjA4MDQ0ODA2Nn0.4W0hZwETfoALlpn9_f2NqdKQNJ3DKDRkcs7uC-VbdhE"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"action\": \"save_customer\",\n  \"instance_name\": \"{{ $('Extrai Campos').item.json.instance_name }}\",\n  \"remote_jid\": \"{{ $('Extrai Campos').item.json.remote_jid }}\",\n  \"establishment_id\": \"{{ $('Extrai Campos').item.json.establishment_id }}\",\n  \"customer_phone\": \"{{ $('Extrai Campos').item.json.phone }}\",\n  \"name\": \"{name}\",\n  \"address\": \"{address}\",\n  \"neighborhood\": \"{neighborhood}\",\n  \"city\": \"{city}\",\n  \"complement\": \"{complement}\"\n}",
+        "placeholderDefinitions": {
+          "values": [
+            {
+              "name": "name",
+              "description": "Nome completo do cliente",
+              "type": "string"
+            },
+            {
+              "name": "address",
+              "description": "Endereço completo (rua e número)",
+              "type": "string"
+            },
+            {
+              "name": "neighborhood",
+              "description": "Bairro",
+              "type": "string"
+            },
+            {
+              "name": "city",
+              "description": "Cidade",
+              "type": "string"
+            },
+            {
+              "name": "complement",
+              "description": "Complemento (apto, bloco, etc)",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [
+        2288,
+        768
+      ],
+      "id": "f74eb0d4-d5dc-4bb6-bc9a-8c36a796123d",
+      "name": "save_customer1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://gyagfsjbdaacgmmofqip.supabase.co/functions/v1/whatsapp-checkout",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5YWdmc2piZGFhY2dtbW9mcWlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4NzIwNjYsImV4cCI6MjA4MDQ0ODA2Nn0.4W0hZwETfoALlpn9_f2NqdKQNJ3DKDRkcs7uC-VbdhE"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"instance_name\": \"{{ $('Extrai Campos').item.json.instance_name }}\",\n  \"remote_jid\": \"{{ $('Extrai Campos').item.json.remote_jid }}\",\n  \"establishment_id\": \"{{ $('Extrai Campos').item.json.establishment_id }}\",\n  \"customer_phone\": \"{{ $('Extrai Campos').item.json.phone }}\",\n  \"customer_name\": \"{customer_name}\",\n  \"delivery_type\": \"{delivery_type}\",\n  \"payment_method\": \"pix\",\n  \"generate_pix\": true,\n  \"delivery_address\": \"{delivery_address}\",\n  \"observations\": \"{observations}\"\n}",
+        "placeholderDefinitions": {
+          "values": [
+            {
+              "name": "customer_name",
+              "description": "Nome do cliente para o pedido",
+              "type": "string"
+            },
+            {
+              "name": "delivery_type",
+              "description": "Tipo de entrega: 'delivery' para entrega ou 'pickup' para retirada",
+              "type": "string"
+            },
+            {
+              "name": "delivery_address",
+              "description": "Endereço completo para entrega (apenas se delivery_type for 'delivery')",
+              "type": "string"
+            },
+            {
+              "name": "observations",
+              "description": "Observações gerais do pedido",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [
+        2080,
+        768
+      ],
+      "id": "8f85965e-9ced-41c1-b83c-7c8b5d335b04",
+      "name": "create_order_pix1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Evolution API Webhook": {
+      "main": [
+        [
+          {
+            "node": "Filter Self Messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Self Messages": {
+      "main": [
+        [
+          {
+            "node": "Busca Estabelecimento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca Estabelecimento": {
+      "main": [
+        [
+          {
+            "node": "Extrai Campos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extrai Campos": {
+      "main": [
+        [
+          {
+            "node": "Tipo de Mensagem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tipo de Mensagem": {
+      "main": [
+        [
+          {
+            "node": "Busca Imagem Base64",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Redis Push Texto",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Busca Audio Base64",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Redis Push Texto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca Imagem Base64": {
+      "main": [
+        [
+          {
+            "node": "Converte Imagem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Converte Imagem": {
+      "main": [
+        [
+          {
+            "node": "Analisa Imagem Gemini",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analisa Imagem Gemini": {
+      "main": [
+        [
+          {
+            "node": "Formata Resultado Imagem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca Audio Base64": {
+      "main": [
+        [
+          {
+            "node": "Converte Audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Converte Audio": {
+      "main": [
+        [
+          {
+            "node": "Transcreve Audio Gemini",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcreve Audio Gemini": {
+      "main": [
+        [
+          {
+            "node": "Formata Resultado Audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Redis Push Texto": {
+      "main": [
+        [
+          {
+            "node": "Debounce 3s",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Debounce 3s": {
+      "main": [
+        [
+          {
+            "node": "Redis Get Mensagens",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Redis Get Mensagens": {
+      "main": [
+        [
+          {
+            "node": "E Ultima Mensagem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "E Ultima Mensagem": {
+      "main": [
+        [
+          {
+            "node": "Combina Mensagens Texto",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Nao e ultima (ignora)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combina Mensagens Texto": {
+      "main": [
+        [
+          {
+            "node": "Redis Clear Debounce",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Redis Clear Debounce": {
+      "main": [
+        [
+          {
+            "node": "Merge Conteudo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formata Resultado Imagem": {
+      "main": [
+        [
+          {
+            "node": "Merge Conteudo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formata Resultado Audio": {
+      "main": [
+        [
+          {
+            "node": "Merge Conteudo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Conteudo": {
+      "main": [
+        [
+          {
+            "node": "Busca Carrinho Redis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini LLM": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Orchestrator",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Redis Chat Memory": {
+      "ai_memory": [
+        []
+      ]
+    },
+    "AI Orchestrator": {
+      "main": [
+        [
+          {
+            "node": "Split Mensagens",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Mensagens": {
+      "main": [
+        [
+          {
+            "node": "Batch Mensagens",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Batch Mensagens": {
+      "main": [
+        [
+          {
+            "node": "Wait 1s",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Envia Chunk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 1s": {
+      "main": [
+        [
+          {
+            "node": "Envia Chunk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Envia Chunk": {
+      "main": [
+        [
+          {
+            "node": "E Ultima?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "E Ultima?": {
+      "main": [
+        [
+          {
+            "node": "Salva Log Resposta",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Batch Mensagens",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca Carrinho Redis": {
+      "main": [
+        [
+          {
+            "node": "Busca Cliente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca Cliente": {
+      "main": [
+        [
+          {
+            "node": "AI Orchestrator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "search_menu": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Orchestrator",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "calculate_delivery_fee": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Orchestrator",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "add_to_cart1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Orchestrator",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "view_cart1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Orchestrator",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "clear_cart1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Orchestrator",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "save_customer1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Orchestrator",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "create_order_pix1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Orchestrator",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "6a050557-28bb-467c-ae7f-8f93f77f656b",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "4a54bbbe319553c26066b13bf0db11255ccfa016b8c09a06d29bc13ba1a455a6"
+  },
+  "id": "65IOpyWDliLrAJn0",
+  "tags": [
+    {
+      "createdAt": "2025-12-01T22:06:34.480Z",
+      "updatedAt": "2025-12-01T22:06:34.480Z",
+      "id": "3MSmU7zQ65NWCQyd",
+      "name": "WhatsApp"
+    },
+    {
+      "createdAt": "2025-12-09T23:21:35.730Z",
+      "updatedAt": "2025-12-09T23:21:35.730Z",
+      "id": "D9Q8v9BHtTZPQv5l",
+      "name": "AI Agent"
+    },
+    {
+      "createdAt": "2025-12-09T23:21:35.718Z",
+      "updatedAt": "2025-12-09T23:21:35.718Z",
+      "id": "Gi7JgP50E8og9UvZ",
+      "name": "Image"
+    },
+    {
+      "createdAt": "2025-12-01T22:06:34.464Z",
+      "updatedAt": "2025-12-01T22:06:34.464Z",
+      "id": "LrTCJu3IqxbwnJtG",
+      "name": "VilaFood"
+    },
+    {
+      "createdAt": "2025-12-09T23:21:35.740Z",
+      "updatedAt": "2025-12-09T23:21:35.740Z",
+      "id": "PDvnzTbgQpCpu6C0",
+      "name": "Audio"
+    },
+    {
+      "name": "v3",
+      "id": "oCaE63dNJwvFGI3Q",
+      "createdAt": "2025-12-10T22:02:39.541Z",
+      "updatedAt": "2025-12-10T22:02:39.541Z"
+    }
+  ]
+}

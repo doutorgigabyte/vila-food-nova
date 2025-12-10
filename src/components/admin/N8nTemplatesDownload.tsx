@@ -29,13 +29,14 @@ interface N8nTemplate {
 
 const templates: N8nTemplate[] = [
   {
-    id: "agent-v3",
-    name: "⭐ Agent V3 (RECOMENDADO)",
-    description: "Versão otimizada com toolHttpRequest - usa Edge Functions do Supabase. Mais estável e testado.",
+    id: "agent-v3-fixed",
+    name: "🔥 Agent V3 CORRIGIDO (USE ESTE!)",
+    description: "Versão com headers de autenticação FIXOS - resolve erro 401. Todas as tools funcionam corretamente.",
     icon: <Bot className="w-6 h-6" />,
-    filename: "VilaFood-Agent-V3.json",
+    filename: "VilaFood-Agent-V3-Fixed.json",
     features: [
-      "✅ toolHttpRequest (sem erros)",
+      "✅ Headers auth HARDCODED",
+      "✅ Sem erro 401",
       "Edge Functions Supabase",
       "Carrinho via API",
       "Pedido PIX via API",
@@ -43,6 +44,20 @@ const templates: N8nTemplate[] = [
       "Cálculo de entrega",
       "Split de mensagens longas",
       "Memória Redis"
+    ],
+    difficulty: "Intermediário"
+  },
+  {
+    id: "agent-v3",
+    name: "Agent V3 (Original)",
+    description: "Versão original - pode ter erro 401 nas tools. Use o V3 CORRIGIDO acima.",
+    icon: <Bot className="w-6 h-6" />,
+    filename: "VilaFood-Agent-V3.json",
+    features: [
+      "⚠️ Headers sem valor fixo",
+      "Edge Functions Supabase",
+      "Carrinho via API",
+      "Pedido PIX via API"
     ],
     difficulty: "Intermediário"
   },
