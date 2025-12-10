@@ -4915,6 +4915,7 @@ export type Database = {
       }
       whatsapp_chats: {
         Row: {
+          ai_status: string | null
           created_at: string | null
           establishment_id: string | null
           id: string
@@ -4923,6 +4924,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          ai_status?: string | null
           created_at?: string | null
           establishment_id?: string | null
           id?: string
@@ -4931,6 +4933,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          ai_status?: string | null
           created_at?: string | null
           establishment_id?: string | null
           id?: string
