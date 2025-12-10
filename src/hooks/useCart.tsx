@@ -137,16 +137,12 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       const newVilaId = establishmentInfo.vila_id;
       
       if (!currentVilaId || !newVilaId || currentVilaId !== newVilaId) {
-        // Different vila or no vila - show confirmation dialog
-        const confirmed = window.confirm(
-          "Você tem itens de outro estabelecimento no carrinho. Deseja esvaziar o carrinho e adicionar este produto?"
+        // Different vila or no vila - show toast notification instead of browser dialog
+        toast.error(
+          "Você tem itens de outro estabelecimento no carrinho. Esvazie o carrinho primeiro para adicionar produtos de outro local.",
+          { duration: 5000 }
         );
-        
-        if (confirmed) {
-          clearCart();
-        } else {
-          return false;
-        }
+        return false;
       } else {
         // Same vila - allow multi-establishment cart
         toast.info(
