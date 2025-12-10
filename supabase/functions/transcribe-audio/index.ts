@@ -44,52 +44,66 @@ serve(async (req) => {
       audioData = audio_base64!;
     }
 
-    // Use Google Gemini for transcription
-    const geminiApiKey = Deno.env.get('GOOGLE_API_KEY');
-    if (!geminiApiKey) {
-      throw new Error('GOOGLE_API_KEY not configured');
+    // Use Lovable AI Gateway
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    if (!LOVABLE_API_KEY) {
+      throw new Error('LOVABLE_API_KEY not configured');
     }
 
-    const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{
-            parts: [
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-2.5-flash',
+        messages: [
+          {
+            role: 'user',
+            content: [
               {
-                inlineData: {
-                  mimeType: mime_type,
-                  data: audioData
+                type: 'audio',
+                audio: {
+                  data: audioData,
+                  format: mime_type.replace('audio/', '')
                 }
               },
               {
+                type: 'text',
                 text: `Transcreva este áudio em português brasileiro. 
 Retorne APENAS o texto transcrito, sem adicionar comentários, formatação ou explicações.
 Se o áudio estiver vazio ou inaudível, retorne "AUDIO_INAUDIVEL".
 Se houver ruído mas conseguir entender partes, transcreva o que conseguir.`
               }
             ]
-          }],
-          generationConfig: {
-            temperature: 0.1,
-            maxOutputTokens: 1000
           }
-        })
-      }
-    );
+        ]
+      })
+    });
 
-    if (!geminiResponse.ok) {
-      const errorText = await geminiResponse.text();
-      console.error('Gemini API error:', errorText);
-      throw new Error(`Gemini API error: ${geminiResponse.status}`);
+    if (!response.ok) {
+      if (response.status === 429) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Rate limit excedido, tente novamente em instantes.' }),
+          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      if (response.status === 402) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Créditos insuficientes.' }),
+          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      const errorText = await response.text();
+      console.error('Lovable AI error:', errorText);
+      throw new Error(`AI Gateway error: ${response.status}`);
     }
 
-    const geminiData = await geminiResponse.json();
-    console.log('Gemini response:', JSON.stringify(geminiData).substring(0, 500));
+    const data = await response.json();
+    const transcribedText = data.choices?.[0]?.message?.content || '';
 
-    const transcribedText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    console.log('Transcribed text:', transcribedText);
 
     if (!transcribedText || transcribedText === 'AUDIO_INAUDIVEL') {
       return new Response(
@@ -101,8 +115,6 @@ Se houver ruído mas conseguir entender partes, transcreva o que conseguir.`
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-
-    console.log('Transcribed text:', transcribedText);
 
     return new Response(
       JSON.stringify({
