@@ -109,25 +109,25 @@ export const StoreAccountTab = ({ establishmentSlug }: StoreAccountTabProps) => 
       <Card>
         <CardContent className="p-4">
           <div className="flex items-center gap-4">
-            <Avatar className="w-16 h-16">
+            <Avatar className="w-16 h-16 border-2 border-primary/20">
               <AvatarImage src={user.user_metadata?.avatar_url} />
-              <AvatarFallback className="text-lg bg-primary/10 text-primary">
+              <AvatarFallback className="text-lg font-bold bg-primary text-primary-foreground">
                 {userInitials}
               </AvatarFallback>
             </Avatar>
-            <div className="flex-1">
-              <div className="flex items-center gap-2">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h2 className="font-semibold text-lg">{userName}</h2>
                 {!isLoading && (
                   <Badge 
                     variant="secondary" 
-                    className={`text-[10px] px-1.5 py-0 text-white ${roleInfo.color}`}
+                    className={`text-[10px] px-1.5 py-0 text-white whitespace-nowrap shrink-0 ${roleInfo.color}`}
                   >
                     {roleInfo.label}
                   </Badge>
                 )}
               </div>
-              <p className="text-sm text-muted-foreground">{user.email}</p>
+              <p className="text-sm text-muted-foreground truncate">{user.email}</p>
             </div>
           </div>
         </CardContent>
