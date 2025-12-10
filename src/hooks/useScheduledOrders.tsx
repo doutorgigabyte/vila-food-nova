@@ -59,7 +59,7 @@ export const useScheduledOrders = () => {
         delivery_address: orderData.delivery_address as unknown as Json || null,
         notes: orderData.notes || null,
         recurrence: orderData.recurrence as unknown as Json || null,
-        status: 'scheduled' as const,
+        status: 'pending' as const,
       };
 
       console.log('[useScheduledOrders] Creating scheduled order:', {
