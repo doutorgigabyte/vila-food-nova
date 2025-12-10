@@ -53,28 +53,35 @@
     },
     {
       "parameters": {
-        "operation": "get",
-        "tableId": "establishments",
-        "filters": {
-          "conditions": [
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/get_establishment_by_instance",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
             {
-              "keyName": "whatsapp_instance_name",
-              "keyValue": "={{ $json.body.instance }}"
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_ANON_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
             }
           ]
-        }
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"p_instance_name\": \"{{ $json.body.instance }}\"\n}",
+        "options": {}
       },
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
       "position": [640, 600],
       "id": "get-establishment",
-      "name": "Busca Estabelecimento",
-      "credentials": {
-        "supabaseApi": {
-          "id": "supabase-credentials",
-          "name": "Supabase VilaFood"
-        }
-      }
+      "name": "Busca Estabelecimento"
     },
     {
       "parameters": {
