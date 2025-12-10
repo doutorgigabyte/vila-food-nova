@@ -82,6 +82,7 @@ const ProductKitsManagement = lazy(() => import("./pages/dashboard/ProductKitsMa
 const ProductComplementsManagement = lazy(() => import("./pages/dashboard/ProductComplementsManagement"));
 const CommissionDebtManagement = lazy(() => import("./pages/dashboard/CommissionDebtManagement"));
 const SupportManagement = lazy(() => import("./pages/dashboard/SupportManagement"));
+const UpgradePage = lazy(() => import("./pages/dashboard/UpgradePage"));
 
 // Checkout callback pages
 const CheckoutResult = lazy(() => import("./pages/checkout/CheckoutResult"));
@@ -256,6 +257,7 @@ const AppRoutes = () => {
               <Route path="/painel/:slug/avaliacoes" element={<ReviewsManagement />} />
               <Route path="/painel/:slug/comissoes" element={<CommissionDebtManagement />} />
               <Route path="/painel/:slug/suporte" element={<SupportManagement />} />
+              <Route path="/painel/:slug/upgrade" element={<UpgradePage />} />
               {/* Routes without slug for establishment owners */}
               <Route path="/painel/produtos" element={<ProductsManagement />} />
               <Route path="/painel/categorias" element={<CategoriesManagement />} />
@@ -289,6 +291,7 @@ const AppRoutes = () => {
               <Route path="/painel/complementos" element={<ProductComplementsManagement />} />
               <Route path="/painel/avaliacoes" element={<ReviewsManagement />} />
               <Route path="/painel/suporte" element={<SupportManagement />} />
+              <Route path="/painel/upgrade" element={<UpgradePage />} />
               <Route path="/dashboard/mercadopago/callback" element={<MercadoPagoCallback />} />
               {/* Admin routes */}
               <Route path="/admin" element={<ProtectedAdminRoute><AdminDashboard /></ProtectedAdminRoute>} />
