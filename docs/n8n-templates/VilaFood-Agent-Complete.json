@@ -680,6 +680,40 @@
     },
     {
       "parameters": {
+        "jsCode": "// Split long AI response into chunks (max 400 chars)\nconst aiResponse = $input.first().json.output || '';\nconst maxLength = 400;\nconst chunks = [];\n\nif (aiResponse.length <= maxLength) {\n  chunks.push(aiResponse);\n} else {\n  // Split by sentences first, then by words if needed\n  const sentences = aiResponse.split(/(?<=[.!?])\\s+/);\n  let currentChunk = '';\n  \n  for (const sentence of sentences) {\n    if ((currentChunk + ' ' + sentence).length <= maxLength) {\n      currentChunk = currentChunk ? currentChunk + ' ' + sentence : sentence;\n    } else {\n      if (currentChunk) chunks.push(currentChunk.trim());\n      \n      if (sentence.length > maxLength) {\n        const words = sentence.split(' ');\n        currentChunk = '';\n        for (const word of words) {\n          if ((currentChunk + ' ' + word).length <= maxLength) {\n            currentChunk = currentChunk ? currentChunk + ' ' + word : word;\n          } else {\n            if (currentChunk) chunks.push(currentChunk.trim());\n            currentChunk = word;\n          }\n        }\n      } else {\n        currentChunk = sentence;\n      }\n    }\n  }\n  if (currentChunk) chunks.push(currentChunk.trim());\n}\n\nreturn chunks.map((text, index) => ({\n  text,\n  chunk_index: index,\n  total_chunks: chunks.length,\n  delay_ms: index * 1000\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1200, 0],
+      "id": "split-response",
+      "name": "Split Long Messages"
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {
+          "reset": false
+        }
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [1440, 0],
+      "id": "loop-chunks",
+      "name": "Send Chunks Loop"
+    },
+    {
+      "parameters": {
+        "amount": 1,
+        "unit": "seconds"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [1680, 100],
+      "id": "chunk-delay",
+      "name": "Wait Between Chunks"
+    },
+    {
+      "parameters": {
         "method": "POST",
         "url": "={{ $('Get Establishment Config').item.json.server_url }}/message/sendText/{{ $('Extract Message Fields').item.json.instance_name }}",
         "sendHeaders": true,
@@ -697,12 +731,12 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"number\": \"{{ $('Extract Message Fields').item.json.remote_jid }}\",\n  \"text\": \"{{ $('VilaFood AI Agent').item.json.output }}\"\n}",
+        "jsonBody": "={\n  \"number\": \"{{ $('Extract Message Fields').item.json.remote_jid }}\",\n  \"text\": \"{{ $json.text }}\"\n}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1440, 0],
+      "position": [1680, 0],
       "id": "send-response",
       "name": "Send Response via Evolution API"
     },
@@ -730,38 +764,43 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1680, 0],
+      "position": [1920, 0],
       "id": "log-response",
       "name": "Log AI Response"
     },
     {
       "parameters": {
-        "operation": "get",
-        "tableId": "whatsapp_messages",
-        "filters": {
-          "conditions": [
+        "method": "POST",
+        "url": "={{ $credentials.supabase.url }}/rest/v1/rpc/get_chat_history",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
             {
-              "keyName": "session_key",
-              "keyValue": "={{ $('Extract Message Fields').item.json.session_key }}"
+              "name": "apikey",
+              "value": "={{ $credentials.supabase.serviceRoleKey }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
             }
           ]
         },
-        "returnAll": false,
-        "limit": 20,
-        "additionalOptions": {
-          "orderByColumn": "created_at",
-          "orderByDirection": "desc"
-        }
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"p_session_key\": \"{{ $('Extract Message Fields').item.json.session_key }}\",\n  \"p_limit\": 20\n}",
+        "options": {}
       },
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
       "position": [720, -200],
       "id": "get-chat-history",
-      "name": "Get Chat History",
+      "name": "HTTP Get Chat History",
       "credentials": {
-        "supabaseApi": {
-          "id": "supabase-api",
-          "name": "Supabase API"
+        "httpHeaderAuth": {
+          "id": "supabase-service-role",
+          "name": "Supabase Service Role"
         }
       }
     }
@@ -996,7 +1035,36 @@
       "main": [
         [
           {
+            "node": "Split Long Messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Long Messages": {
+      "main": [
+        [
+          {
+            "node": "Send Chunks Loop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Chunks Loop": {
+      "main": [
+        [
+          {
             "node": "Send Response via Evolution API",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log AI Response",
             "type": "main",
             "index": 0
           }
@@ -1007,7 +1075,18 @@
       "main": [
         [
           {
-            "node": "Log AI Response",
+            "node": "Wait Between Chunks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait Between Chunks": {
+      "main": [
+        [
+          {
+            "node": "Send Chunks Loop",
             "type": "main",
             "index": 0
           }
