@@ -1671,6 +1671,54 @@ export type Database = {
           },
         ]
       }
+      establishment_addons: {
+        Row: {
+          activated_at: string | null
+          addon_id: string
+          created_at: string | null
+          establishment_id: string
+          expires_at: string | null
+          id: string
+          is_active: boolean | null
+          quantity: number | null
+        }
+        Insert: {
+          activated_at?: string | null
+          addon_id: string
+          created_at?: string | null
+          establishment_id: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          quantity?: number | null
+        }
+        Update: {
+          activated_at?: string | null
+          addon_id?: string
+          created_at?: string | null
+          establishment_id?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          quantity?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "establishment_addons_addon_id_fkey"
+            columns: ["addon_id"]
+            isOneToOne: false
+            referencedRelation: "plan_addons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "establishment_addons_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       establishment_commission_debt: {
         Row: {
           created_at: string
@@ -2898,21 +2946,62 @@ export type Database = {
         }
         Relationships: []
       }
+      plan_addons: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          price_monthly: number
+          slug: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          price_monthly?: number
+          slug: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          price_monthly?: number
+          slug?: string
+        }
+        Relationships: []
+      }
       plans: {
         Row: {
           ai_unlimited: boolean | null
           billing_period: string | null
+          chatbot_basic: boolean | null
           created_at: string | null
           description: string | null
           features: Json | null
           id: string
           is_active: boolean | null
+          is_popular: boolean | null
+          marketplace_enabled: boolean | null
+          marketplace_highlight: boolean | null
+          marketplace_priority: number | null
           max_orders: number | null
           max_products: number | null
+          max_stores: number | null
+          max_users: number | null
           max_videos: number | null
           max_whatsapp_messages: number | null
           name: string
           price: number
+          price_monthly: number | null
+          price_yearly: number | null
+          slug: string | null
+          sort_order: number | null
           updated_at: string | null
           whatsapp_ai_agent: boolean | null
           whatsapp_chatbot: boolean | null
@@ -2920,17 +3009,28 @@ export type Database = {
         Insert: {
           ai_unlimited?: boolean | null
           billing_period?: string | null
+          chatbot_basic?: boolean | null
           created_at?: string | null
           description?: string | null
           features?: Json | null
           id?: string
           is_active?: boolean | null
+          is_popular?: boolean | null
+          marketplace_enabled?: boolean | null
+          marketplace_highlight?: boolean | null
+          marketplace_priority?: number | null
           max_orders?: number | null
           max_products?: number | null
+          max_stores?: number | null
+          max_users?: number | null
           max_videos?: number | null
           max_whatsapp_messages?: number | null
           name: string
           price?: number
+          price_monthly?: number | null
+          price_yearly?: number | null
+          slug?: string | null
+          sort_order?: number | null
           updated_at?: string | null
           whatsapp_ai_agent?: boolean | null
           whatsapp_chatbot?: boolean | null
@@ -2938,17 +3038,28 @@ export type Database = {
         Update: {
           ai_unlimited?: boolean | null
           billing_period?: string | null
+          chatbot_basic?: boolean | null
           created_at?: string | null
           description?: string | null
           features?: Json | null
           id?: string
           is_active?: boolean | null
+          is_popular?: boolean | null
+          marketplace_enabled?: boolean | null
+          marketplace_highlight?: boolean | null
+          marketplace_priority?: number | null
           max_orders?: number | null
           max_products?: number | null
+          max_stores?: number | null
+          max_users?: number | null
           max_videos?: number | null
           max_whatsapp_messages?: number | null
           name?: string
           price?: number
+          price_monthly?: number | null
+          price_yearly?: number | null
+          slug?: string | null
+          sort_order?: number | null
           updated_at?: string | null
           whatsapp_ai_agent?: boolean | null
           whatsapp_chatbot?: boolean | null
