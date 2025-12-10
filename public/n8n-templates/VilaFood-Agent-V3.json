@@ -359,6 +359,316 @@
     },
     {
       "parameters": {
+        "content": "# Sistema de Pausar IA\nQuando humano assume o atendimento",
+        "height": 480,
+        "width": 600,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [-200, 0],
+      "typeVersion": 1,
+      "id": "sticky-pause-ia-1",
+      "name": "Sticky Note - Pausar IA"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.data.key.fromMe }}",
+                    "rightValue": true,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "outcoming"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.data.key.fromMe }}",
+                    "rightValue": false,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "incoming"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [-128, 80],
+      "id": "switch-in-out-1",
+      "name": "ROTA Entrando ou Saindo"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "string",
+                      "operation": "notContains"
+                    },
+                    "leftValue": "={{ $json.body.data.message.conversation || $json.body.data.message.extendedTextMessage?.text || '' }}",
+                    "rightValue": "Atendimento finalizado"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Pausar IA"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "leftValue": "={{ $json.body.data.message.conversation || $json.body.data.message.extendedTextMessage?.text || '' }}",
+                    "rightValue": "Atendimento finalizado"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Reativar IA"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [64, 48],
+      "id": "switch-pause-reactivate-1",
+      "name": "Pausar ou Reativar"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://gyagfsjbdaacgmmofqip.supabase.co/rest/v1/whatsapp_chats?phone=eq.{{ $json.body.data.key.remoteJid.replace('@s.whatsapp.net', '') }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5YWdmc2piZGFhY2dtbW9mcWlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4NzIwNjYsImV4cCI6MjA4MDQ0ODA2Nn0.4W0hZwETfoALlpn9_f2NqdKQNJ3DKDRkcs7uC-VbdhE"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"ai_status\": \"paused\",\n  \"updated_at\": \"{{ $now.toISO() }}\"\n}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [256, 32],
+      "id": "http-pause-ia-1",
+      "name": "Pausar IA"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://gyagfsjbdaacgmmofqip.supabase.co/rest/v1/whatsapp_chats?phone=eq.{{ $json.body.data.key.remoteJid.replace('@s.whatsapp.net', '') }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5YWdmc2piZGFhY2dtbW9mcWlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4NzIwNjYsImV4cCI6MjA4MDQ0ODA2Nn0.4W0hZwETfoALlpn9_f2NqdKQNJ3DKDRkcs7uC-VbdhE"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"ai_status\": \"active\",\n  \"updated_at\": \"{{ $now.toISO() }}\"\n}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [256, 176],
+      "id": "http-reactivate-ia-1",
+      "name": "Reativar IA"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://gyagfsjbdaacgmmofqip.supabase.co/rest/v1/whatsapp_chats?phone=eq.{{ $json.body.data.key.remoteJid.replace('@s.whatsapp.net', '') }}&select=ai_status",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5YWdmc2piZGFhY2dtbW9mcWlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4NzIwNjYsImV4cCI6MjA4MDQ0ODA2Nn0.4W0hZwETfoALlpn9_f2NqdKQNJ3DKDRkcs7uC-VbdhE"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [64, 240],
+      "id": "http-check-ai-status-1",
+      "name": "Verifica Status IA"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json[0]?.ai_status || 'active' }}",
+                    "rightValue": "paused",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notEquals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "IA Ativa"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json[0]?.ai_status }}",
+                    "rightValue": "paused",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "IA Pausada"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [256, 240],
+      "id": "switch-ia-status-1",
+      "name": "Rota Status IA"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [448, 80],
+      "id": "noop-humano-atendeu-1",
+      "name": "Humano Atendeu (Fim)"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [448, 320],
+      "id": "noop-ia-pausada-1",
+      "name": "IA Pausada (Fim)"
+    },
+    {
+      "parameters": {
         "conditions": {
           "options": {
             "caseSensitive": true,
@@ -2129,7 +2439,94 @@
       "main": [
         [
           {
+            "node": "ROTA Entrando ou Saindo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ROTA Entrando ou Saindo": {
+      "main": [
+        [
+          {
+            "node": "Pausar ou Reativar",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Verifica Status IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pausar ou Reativar": {
+      "main": [
+        [
+          {
+            "node": "Pausar IA",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reativar IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pausar IA": {
+      "main": [
+        [
+          {
+            "node": "Humano Atendeu (Fim)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reativar IA": {
+      "main": [
+        [
+          {
+            "node": "Humano Atendeu (Fim)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verifica Status IA": {
+      "main": [
+        [
+          {
+            "node": "Rota Status IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rota Status IA": {
+      "main": [
+        [
+          {
             "node": "Filter Self Messages",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "IA Pausada (Fim)",
             "type": "main",
             "index": 0
           }
