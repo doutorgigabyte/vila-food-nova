@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import AdminLayout from '@/components/admin/AdminLayout';
+import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -185,7 +185,7 @@ const ProductComplementsManagement = () => {
   };
 
   return (
-    <AdminLayout title="Produtos Complementares">
+    <DashboardLayout title="Produtos Complementares" establishment={establishment}>
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <p className="text-muted-foreground">
@@ -373,7 +373,7 @@ const ProductComplementsManagement = () => {
           </CardContent>
         </Card>
       </div>
-    </AdminLayout>
+    </DashboardLayout>
   );
 };
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,15 +9,19 @@ import { useAuth } from "@/hooks/useAuth";
 import { useAdminAccess } from "@/contexts/AdminAccessContext";
 import { toast } from "sonner";
 import ServiceAreaMap from "@/components/maps/ServiceAreaMap";
-import { ArrowLeft, MapPin, Loader2, Save, Navigation } from "lucide-react";
+import DashboardLayout from "@/components/dashboard/DashboardLayout";
+import { MapPin, Loader2, Save, Navigation } from "lucide-react";
 
 const ServiceAreaManagement = () => {
   const { user } = useAuth();
+  const { slug } = useParams();
   const { accessingEstablishmentId } = useAdminAccess();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [establishment, setEstablishment] = useState<{
     id: string;
+    name: string;
+    slug: string;
     latitude: number | null;
     longitude: number | null;
     address: string | null;
@@ -35,18 +39,20 @@ const ServiceAreaManagement = () => {
   const [feePerKm, setFeePerKm] = useState("1.5");
 
   useEffect(() => {
-    if (user || accessingEstablishmentId) fetchEstablishment();
-  }, [user, accessingEstablishmentId]);
+    if (user || accessingEstablishmentId || slug) fetchEstablishment();
+  }, [user, accessingEstablishmentId, slug]);
 
   const fetchEstablishment = async () => {
     setLoading(true);
     let query = supabase
       .from("establishments")
-      .select("id, latitude, longitude, address, max_delivery_radius_km, delivery_base_fee, delivery_fee_per_km");
+      .select("id, name, slug, latitude, longitude, address, max_delivery_radius_km, delivery_base_fee, delivery_fee_per_km");
     
-    // Priority: Admin context > owner_id
+    // Priority: Admin context > slug > owner_id
     if (accessingEstablishmentId) {
       query = query.eq("id", accessingEstablishmentId);
+    } else if (slug) {
+      query = query.eq("slug", slug);
     } else {
       query = query.eq("owner_id", user?.id);
     }
@@ -139,25 +145,24 @@ const ServiceAreaManagement = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-      </div>
+      <DashboardLayout title="Área de Atendimento" establishment={establishment}>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+        </div>
+      </DashboardLayout>
     );
   }
 
   if (!establishment) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <Card className="max-w-md w-full">
+      <DashboardLayout title="Área de Atendimento" establishment={null}>
+        <Card className="max-w-md mx-auto">
           <CardContent className="py-12 text-center">
             <MapPin className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-            <p className="text-muted-foreground mb-4">Nenhum estabelecimento encontrado</p>
-            <Button asChild>
-              <Link to="/cadastro">Cadastrar Estabelecimento</Link>
-            </Button>
+            <p className="text-muted-foreground">Nenhum estabelecimento encontrado</p>
           </CardContent>
         </Card>
-      </div>
+      </DashboardLayout>
     );
   }
 
@@ -167,21 +172,8 @@ const ServiceAreaManagement = () => {
     : { lat: -8.7614, lng: -35.1087 }; // Default to Tamandaré
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b border-border">
-        <div className="flex items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-3">
-            <Link to="/painel">
-              <Button variant="ghost" size="icon">
-                <ArrowLeft className="w-5 h-5" />
-              </Button>
-            </Link>
-            <h1 className="text-lg font-semibold">Área de Atendimento</h1>
-          </div>
-        </div>
-      </header>
-
-      <div className="p-4 md:p-6 space-y-6">
+    <DashboardLayout title="Área de Atendimento" establishment={establishment}>
+      <div className="space-y-6">
         {/* Location Configuration */}
         <Card>
           <CardHeader>
@@ -298,7 +290,7 @@ const ServiceAreaManagement = () => {
           </Card>
         )}
       </div>
-    </div>
+    </DashboardLayout>
   );
 };
 

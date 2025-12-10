@@ -18,7 +18,7 @@ import {
   RefreshCw, QrCode, Check, Sparkles, MessageCircle, Send,
   CheckCircle2, XCircle, AlertCircle
 } from "lucide-react";
-import AdminLayout from "@/components/admin/AdminLayout";
+import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { HumanTakeoverPanel } from "@/components/whatsapp/HumanTakeoverPanel";
 
 interface WhatsAppInstance {
@@ -81,6 +81,7 @@ const WhatsAppManagement = () => {
   const [aiEnabled, setAiEnabled] = useState(false);
   const [keywordsEnabled, setKeywordsEnabled] = useState(true);
   const [pollingActive, setPollingActive] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState("");
 
   useEffect(() => {
     if (user || accessingEstablishmentId) fetchEstablishment();
@@ -267,6 +268,7 @@ const WhatsAppManagement = () => {
       setWelcomeMessage(data.welcome_message || "");
       setAiEnabled(data.ai_enabled || false);
       setKeywordsEnabled(data.keywords_enabled ?? true);
+      setAiPrompt((data as any).ai_prompt || "");
     }
     setLoading(false);
   };
@@ -490,6 +492,7 @@ const WhatsAppManagement = () => {
             ai_enabled: aiEnabled,
             keywords_enabled: keywordsEnabled,
             whatsapp_level: aiEnabled ? 2 : 1,
+            ai_prompt: aiPrompt || null,
           })
           .eq("id", instance.id);
       }
@@ -562,16 +565,16 @@ const WhatsAppManagement = () => {
 
   if (loading) {
     return (
-      <AdminLayout title="WhatsApp">
+      <DashboardLayout title="WhatsApp" establishment={establishment}>
         <div className="flex items-center justify-center min-h-[400px]">
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </div>
-      </AdminLayout>
+      </DashboardLayout>
     );
   }
 
   return (
-    <AdminLayout title="WhatsApp">
+    <DashboardLayout title="WhatsApp" establishment={establishment}>
       <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center gap-3">
@@ -818,20 +821,37 @@ const WhatsAppManagement = () => {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     {aiEnabled ? (
-                      <div className="p-4 bg-purple-500/10 rounded-lg">
-                        <div className="flex items-start gap-3">
-                          <Bot className="w-8 h-8 text-purple-500 mt-1" />
-                          <div>
-                            <h4 className="font-medium text-purple-700 dark:text-purple-300">
-                              Agente IA Ativado
-                            </h4>
-                            <p className="text-sm text-muted-foreground mt-1">
-                              A IA irá responder clientes automaticamente, recomendar produtos, 
-                              gerenciar pedidos e processar pagamentos via PIX.
-                            </p>
+                      <>
+                        <div className="p-4 bg-purple-500/10 rounded-lg">
+                          <div className="flex items-start gap-3">
+                            <Bot className="w-8 h-8 text-purple-500 mt-1" />
+                            <div>
+                              <h4 className="font-medium text-purple-700 dark:text-purple-300">
+                                Agente IA Ativado
+                              </h4>
+                              <p className="text-sm text-muted-foreground mt-1">
+                                A IA irá responder clientes automaticamente, recomendar produtos, 
+                                gerenciar pedidos e processar pagamentos via PIX.
+                              </p>
+                            </div>
                           </div>
                         </div>
-                      </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="ai-prompt">Prompt do Agente IA (System Prompt)</Label>
+                          <Textarea
+                            id="ai-prompt"
+                            value={aiPrompt}
+                            onChange={(e) => setAiPrompt(e.target.value)}
+                            placeholder={`Você é um atendente virtual de ${establishment?.name || 'nossa loja'}. Seja cordial e prestativo. Responda perguntas sobre produtos, horário de funcionamento e faça pedidos. Sempre confirme os detalhes do pedido antes de finalizar.`}
+                            rows={6}
+                            className="font-mono text-sm"
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Este prompt define a personalidade e instruções do agente IA. Use variáveis como {"{NOME}"} para o nome da loja.
+                          </p>
+                        </div>
+                      </>
                     ) : (
                       <div className="p-4 bg-muted rounded-lg text-center">
                         <Bot className="w-12 h-12 text-muted-foreground mx-auto mb-2" />
@@ -875,7 +895,7 @@ const WhatsAppManagement = () => {
           </Card>
         )}
       </div>
-    </AdminLayout>
+    </DashboardLayout>
   );
 };
 
