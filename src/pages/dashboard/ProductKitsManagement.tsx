@@ -463,6 +463,8 @@ const ProductKitsManagement = () => {
                 bucket="products"
                 currentImage={formData.image_url}
                 onUpload={(url) => setFormData(prev => ({ ...prev, image_url: url }))}
+                onRemove={() => setFormData(prev => ({ ...prev, image_url: "" }))}
+                establishmentId={establishmentId || undefined}
               />
             </div>
 
