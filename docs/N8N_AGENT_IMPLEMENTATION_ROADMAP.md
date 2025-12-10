@@ -8,10 +8,10 @@ Este documento detalha o roadmap de implementação das melhorias identificadas 
 |----------------|------------|--------|-------------|
 | Debounce com Redis | Alta | 🔄 Pendente | Agrupar mensagens sequenciais |
 | Split de Mensagens Longas | Alta | 🔄 Pendente | Evitar rate limit WhatsApp |
-| Transcrição de Áudio | Alta | 🔄 Pendente | Edge Function + Gemini |
-| Análise de Imagem/OCR | Alta | 🔄 Pendente | Comprovantes de pagamento |
+| Transcrição de Áudio | Alta | ✅ Implementado | Edge Function criada |
+| Análise de Imagem/OCR | Alta | ✅ Implementado | Comprovantes de pagamento |
 | Geocodificação + Cálculo Frete | Alta | ✅ Implementado | Edge Function criada |
-| Cadastro Automático Cliente | Média | 🔄 Pendente | Fluxo conversacional |
+| Cadastro Automático Cliente | Média | ✅ Implementado | Edge Function criada |
 | Human Takeover | Média | ⚠️ Parcial | Painel existe, integrar N8N |
 
 ---
