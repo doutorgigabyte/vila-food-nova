@@ -1926,6 +1926,44 @@ export type Database = {
           },
         ]
       }
+      establishment_roles: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          establishment_id: string
+          id: string
+          is_active: boolean | null
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          establishment_id: string
+          id?: string
+          is_active?: boolean | null
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          establishment_id?: string
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "establishment_roles_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       establishment_users: {
         Row: {
           created_at: string | null
@@ -3831,6 +3869,35 @@ export type Database = {
         }
         Relationships: []
       }
+      role_permissions: {
+        Row: {
+          created_at: string | null
+          id: string
+          permission_key: string
+          role_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          permission_key: string
+          role_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          permission_key?: string
+          role_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "role_permissions_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "establishment_roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       saved_addresses: {
         Row: {
           city: string
@@ -4413,6 +4480,45 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      user_establishment_roles: {
+        Row: {
+          created_at: string | null
+          establishment_id: string
+          id: string
+          role_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          establishment_id: string
+          id?: string
+          role_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          establishment_id?: string
+          id?: string
+          role_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_establishment_roles_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_establishment_roles_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "establishment_roles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
@@ -5273,6 +5379,14 @@ export type Database = {
           whatsapp: string
           zip_code: string
         }[]
+      }
+      has_establishment_permission: {
+        Args: {
+          p_establishment_id: string
+          p_permission: string
+          p_user_id: string
+        }
+        Returns: boolean
       }
       has_role: {
         Args: {
