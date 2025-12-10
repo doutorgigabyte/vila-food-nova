@@ -6,16 +6,18 @@ Este documento detalha o roadmap de implementação das melhorias identificadas 
 
 | Funcionalidade | Prioridade | Status | Observações |
 |----------------|------------|--------|-------------|
-| Debounce com Redis | Alta | ✅ Implementado | Template v2 com Redis Push/Wait/Get/Clear |
-| Split de Mensagens Longas | Alta | ✅ Implementado | Loop com delay 1s entre chunks |
-| Transcrição de Áudio | Alta | ✅ Implementado | Lovable AI Gateway |
-| Análise de Imagem/OCR | Alta | ✅ Implementado | Lovable AI Gateway |
-| Geocodificação + Cálculo Frete | Alta | ✅ Implementado | Edge Function criada |
-| Extração de Dados Cliente | Alta | ✅ Implementado | Lovable AI Gateway |
-| Cadastro Automático Cliente | Média | ✅ Implementado | Edge Function criada |
-| Human Takeover | Média | ⚠️ Parcial | Painel existe, integrar N8N |
+| Debounce com Redis | Alta | ✅ Implementado | Template com Redis Push/Wait/Get/Clear (3s) |
+| Split de Mensagens Longas | Alta | ✅ Implementado | Loop com delay 1s entre chunks (400 chars) |
+| Transcrição de Áudio | Alta | ✅ Implementado | Google Gemini via N8N |
+| Análise de Imagem/OCR | Alta | ✅ Implementado | Google Gemini via N8N |
+| Geocodificação + Cálculo Frete | Alta | ✅ Implementado | Edge Function `geocode-and-calculate-delivery` |
+| Extração de Dados Cliente | Alta | ✅ Implementado | Google Gemini via AI Agent |
+| Cadastro Automático Cliente | Média | ✅ Implementado | Edge Function `register-customer` |
+| Human Takeover | Média | ✅ Implementado | HumanTakeoverPanel + check em N8N |
 | Redis Chat Memory | Alta | ✅ Implementado | Memória por sessão phone+instance |
-| 7 Tools AI Agent | Alta | ✅ Implementado | search_menu, send_photo, cart, order |
+| 11 Tools AI Agent | Alta | ✅ Implementado | Todas tools via HTTP Request |
+| search_products RPC | Alta | ✅ Implementado | Função RPC no Supabase |
+| get_establishment_by_instance RPC | Alta | ✅ Implementado | Função RPC no Supabase |
 
 ---
 
@@ -367,46 +369,44 @@ Detectar frases como:
 
 Os templates estão disponíveis em `/public/n8n-templates/`:
 
-### 1. VilaFood-Agent-Complete-v2.json ✅ NOVO
+### 1. VilaFood-Agent-Complete.json ✅ ATUALIZADO
 
-Template principal com todas as funcionalidades:
+Template principal ALL-IN-ONE com todas as funcionalidades:
 
 **Funcionalidades incluídas:**
 - ✅ Debounce com Redis (3 segundos)
 - ✅ Split de mensagens longas (~400 chars)
 - ✅ Roteamento por tipo (texto/áudio/imagem)
-- ✅ Transcrição de áudio via Edge Function
-- ✅ Análise de imagem via Edge Function
-- ✅ 6 Tools integradas
+- ✅ Transcrição de áudio via Google Gemini
+- ✅ Análise de imagem via Google Gemini
+- ✅ 11 Tools integradas via HTTP Request
+- ✅ Redis Chat Memory por sessão
+- ✅ Human Takeover check
 
 **Tools disponíveis:**
-| Tool | Descrição | Edge Function |
-|------|-----------|---------------|
-| `calculate_delivery` | Calcula frete por endereço | `geocode-and-calculate-delivery` |
-| `register_customer` | Cadastra cliente | `register-customer` |
-| `extract_customer_data` | Extrai dados do texto | `extract-customer-data` |
-| `create_order_pix` | Cria pedido com PIX | `whatsapp-checkout` |
-| `search_menu` | Busca produtos | Supabase REST |
-| `send_product_photo` | Envia foto produto | `whatsapp-send-media` |
-
-**Variáveis de ambiente necessárias:**
-```
-SUPABASE_URL=https://gyagfsjbdaacgmmofqip.supabase.co
-SUPABASE_ANON_KEY=eyJhbG...
-SUPABASE_SERVICE_ROLE_KEY=eyJhbG...
-EVOLUTION_API_URL=https://evolution.vilafood.delivery
-EVOLUTION_API_KEY=sua_chave
-```
+| Tool | Descrição | Endpoint |
+|------|-----------|----------|
+| `search_menu` | Busca produtos no cardápio | RPC `search_products` |
+| `send_product_photo` | Envia foto de produto | Evolution API |
+| `add_to_cart` | Adiciona item ao carrinho | Edge Function `whatsapp-cart` |
+| `view_cart` | Visualiza carrinho | Edge Function `whatsapp-cart` |
+| `update_cart_item` | Atualiza item do carrinho | Edge Function `whatsapp-cart` |
+| `clear_cart` | Limpa carrinho | Edge Function `whatsapp-cart` |
+| `save_customer` | Salva dados do cliente | Edge Function `register-customer` |
+| `calculate_delivery_fee` | Calcula frete | Edge Function `geocode-and-calculate-delivery` |
+| `create_order_pix` | Cria pedido com PIX | Edge Function `whatsapp-checkout` |
+| `send_pix_qrcode` | Envia QR Code PIX | Evolution API |
+| `human_takeover` | Transfere para humano | Supabase `whatsapp_sessions` |
 
 **Credenciais N8N necessárias:**
-- Redis (para debounce)
-- Google Gemini API (para AI Brain)
+1. **Supabase Service Role** (HTTP Header Auth)
+   - Header Name: `apikey`
+   - Header Value: `{{SUPABASE_SERVICE_ROLE_KEY}}`
+   - Authorization: `Bearer {{SUPABASE_SERVICE_ROLE_KEY}}`
+2. **Redis Account** (Redis URL)
+3. **Google Gemini** (API Key)
 
-### 2. Templates Legados (Compatibilidade)
-
-- `VilaFood-Agent-Complete.json` - Versão anterior sem debounce
-- `VilaFood-AI-Brain.json` - Subworkflow do AI Brain
-- `VilaFood-MercadoPago-PIX.json` - Geração de PIX
+**Localização:** `docs/n8n-templates/VilaFood-Agent-Complete.json`
 
 ---
 

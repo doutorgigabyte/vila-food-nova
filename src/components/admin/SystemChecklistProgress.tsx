@@ -183,6 +183,32 @@ const SystemChecklistProgress = () => {
         { id: 'w11', label: 'Opt-out para contatos', status: 'passed' },
         { id: 'w12', label: 'Relatório de entregas de campanhas', status: 'passed' },
       ]
+    },
+    {
+      id: 'n8n_agent',
+      name: 'Agente IA N8N (WhatsApp)',
+      icon: <Megaphone className="w-5 h-5" />,
+      description: 'Chatbot inteligente para atendimento via WhatsApp',
+      items: [
+        { id: 'n1', label: 'Template N8N all-in-one com 11 tools', status: 'passed' },
+        { id: 'n2', label: 'Debounce Redis (3s) para agrupar mensagens', status: 'passed' },
+        { id: 'n3', label: 'Split de mensagens longas (400 chars + 1s delay)', status: 'passed' },
+        { id: 'n4', label: 'Transcrição de áudio (Google Gemini)', status: 'passed' },
+        { id: 'n5', label: 'Análise de imagem (Google Gemini)', status: 'passed' },
+        { id: 'n6', label: 'Redis Chat Memory por sessão (phone+instance)', status: 'passed' },
+        { id: 'n7', label: 'Tool: search_menu (busca no cardápio)', status: 'passed' },
+        { id: 'n8', label: 'Tool: send_product_photo (envia foto)', status: 'passed' },
+        { id: 'n9', label: 'Tool: add_to_cart / view_cart / clear_cart', status: 'passed' },
+        { id: 'n10', label: 'Tool: save_customer (cadastro automático)', status: 'passed' },
+        { id: 'n11', label: 'Tool: calculate_delivery_fee (frete)', status: 'passed' },
+        { id: 'n12', label: 'Tool: create_order_pix (finaliza pedido)', status: 'passed' },
+        { id: 'n13', label: 'Tool: send_pix_qrcode (envia QR)', status: 'passed' },
+        { id: 'n14', label: 'Human Takeover (transfere para humano)', status: 'passed' },
+        { id: 'n15', label: 'RPC: get_establishment_by_instance', status: 'passed' },
+        { id: 'n16', label: 'RPC: search_products', status: 'passed' },
+        { id: 'n17', label: 'Webhook Evolution API configurado', status: 'passed' },
+        { id: 'n18', label: 'Painel HumanTakeoverPanel funcional', status: 'passed' },
+      ]
     }
   ]);
 
