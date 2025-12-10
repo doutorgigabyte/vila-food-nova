@@ -4457,6 +4457,34 @@ export type Database = {
         Returns: Json
       }
       generate_menu_json: { Args: { est_id: string }; Returns: Json }
+      get_establishment_by_instance: {
+        Args: { p_instance_name: string }
+        Returns: {
+          accepts_delivery: boolean
+          accepts_pickup: boolean
+          address: string
+          ai_enabled: boolean
+          banner_url: string
+          city_id: string
+          delivery_base_fee: number
+          description: string
+          id: string
+          instance_ai_prompt: string
+          instance_name: string
+          is_open: boolean
+          latitude: number
+          logo_url: string
+          longitude: number
+          menu_json: Json
+          min_order_value: number
+          name: string
+          neighborhood: string
+          phone: string
+          slug: string
+          system_prompt: string
+          whatsapp: string
+        }[]
+      }
       get_public_establishment_by_slug: {
         Args: { p_slug: string }
         Returns: {
