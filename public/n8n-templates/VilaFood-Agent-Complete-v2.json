@@ -911,31 +911,31 @@
           "fieldValues": [
             {
               "fieldName": "session_id",
-              "fieldValue": "={{ $('Extrai Campos').item.json.session_key }}"
+              "fieldValue": "={{ $('Busca Sessao').item.json.id || null }}"
             },
             {
-              "fieldName": "establishment_id",
-              "fieldValue": "={{ $('Extrai Campos').item.json.establishment_id }}"
-            },
-            {
-              "fieldName": "phone",
-              "fieldValue": "={{ $('Extrai Campos').item.json.phone }}"
-            },
-            {
-              "fieldName": "direction",
-              "fieldValue": "outbound"
-            },
-            {
-              "fieldName": "message_type",
-              "fieldValue": "text"
+              "fieldName": "sender",
+              "fieldValue": "bot"
             },
             {
               "fieldName": "content",
               "fieldValue": "={{ $('AI Orchestrator').item.json.output }}"
             },
             {
-              "fieldName": "metadata",
-              "fieldValue": "={{ JSON.stringify({ agent: 'orchestrator', tools_used: $('AI Orchestrator').item.json.toolCalls || [] }) }}"
+              "fieldName": "message_type",
+              "fieldValue": "text"
+            },
+            {
+              "fieldName": "is_from_bot",
+              "fieldValue": true
+            },
+            {
+              "fieldName": "agent_type",
+              "fieldValue": "orchestrator"
+            },
+            {
+              "fieldName": "processed_content",
+              "fieldValue": "={{ JSON.stringify({ tools_used: $('AI Orchestrator').item.json.toolCalls || [] }) }}"
             }
           ]
         }

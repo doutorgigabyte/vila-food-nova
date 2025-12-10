@@ -812,13 +812,12 @@
         "tableId": "whatsapp_messages",
         "fieldsToSend": {
           "fieldValues": [
-            { "fieldName": "establishment_id", "fieldValue": "={{ $('Extrai Campos').item.json.establishment_id }}" },
-            { "fieldName": "instance_name", "fieldValue": "={{ $('Extrai Campos').item.json.instance_name }}" },
-            { "fieldName": "phone", "fieldValue": "={{ $('Extrai Campos').item.json.phone }}" },
-            { "fieldName": "direction", "fieldValue": "outgoing" },
-            { "fieldName": "message_type", "fieldValue": "text" },
+            { "fieldName": "session_id", "fieldValue": "={{ $('Busca Sessao').item.json.id || null }}" },
+            { "fieldName": "sender", "fieldValue": "bot" },
             { "fieldName": "content", "fieldValue": "={{ $('VilaFood AI Agent').item.json.output }}" },
-            { "fieldName": "is_from_ai", "fieldValue": true }
+            { "fieldName": "message_type", "fieldValue": "text" },
+            { "fieldName": "is_from_bot", "fieldValue": true },
+            { "fieldName": "agent_type", "fieldValue": "ai_agent" }
           ]
         }
       },
