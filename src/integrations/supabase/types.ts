@@ -5395,6 +5395,19 @@ export type Database = {
         }
         Returns: boolean
       }
+      search_products: {
+        Args: { p_establishment_id: string; p_search_term: string }
+        Returns: {
+          category_name: string
+          description: string
+          id: string
+          image_url: string
+          is_available: boolean
+          name: string
+          price: number
+          promotional_price: number
+        }[]
+      }
     }
     Enums: {
       app_role:
