@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, memo, useMemo, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Package, Wrench, Download, Leaf, Clock } from "lucide-react";
@@ -10,24 +10,29 @@ interface ProductCardProps {
   onClick: () => void;
 }
 
-export const ProductCard = ({ product, onClick }: ProductCardProps) => {
+export const ProductCard = memo(({ product, onClick }: ProductCardProps) => {
   const [imageError, setImageError] = useState(false);
   
-  // Safe discount calculation
-  const hasPromo = Boolean(
-    product.promotional_price && 
-    product.promotional_price > 0 && 
-    product.promotional_price < product.price
-  );
-  const displayPrice = hasPromo ? product.promotional_price! : product.price;
-  const discount = hasPromo 
-    ? Math.round(((product.price - product.promotional_price!) / product.price) * 100) 
-    : 0;
+  // Memoized discount calculation
+  const { hasPromo, displayPrice, discount } = useMemo(() => {
+    const promo = Boolean(
+      product.promotional_price && 
+      product.promotional_price > 0 && 
+      product.promotional_price < product.price
+    );
+    return {
+      hasPromo: promo,
+      displayPrice: promo ? product.promotional_price! : product.price,
+      discount: promo 
+        ? Math.round(((product.price - product.promotional_price!) / product.price) * 100) 
+        : 0
+    };
+  }, [product.price, product.promotional_price]);
 
   const showImage = product.image_url && !imageError;
 
-  // Get product category badge
-  const getCategoryBadge = () => {
+  // Memoized category badge
+  const categoryBadge = useMemo(() => {
     const productCategory = (product as any).product_category;
     const productType = (product as any).product_type;
     
@@ -56,9 +61,8 @@ export const ProductCard = ({ product, onClick }: ProductCardProps) => {
       );
     }
     return null;
-  };
+  }, [product]);
 
-  const categoryBadge = getCategoryBadge();
   const serviceDuration = (product as any).service_duration;
 
   return (
@@ -124,4 +128,6 @@ export const ProductCard = ({ product, onClick }: ProductCardProps) => {
       </CardContent>
     </Card>
   );
-};
+});
+
+ProductCard.displayName = "ProductCard";
