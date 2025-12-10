@@ -1,6 +1,6 @@
 import AdminLayout from '@/components/admin/AdminLayout';
 import SupportInbox from '@/components/support/SupportInbox';
-import { useUserEstablishment } from '@/hooks/useUserEstablishment';
+import { useUserEstablishment } from '@/hooks/useDashboardData';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
 import { MessageCircle } from 'lucide-react';
