@@ -88,7 +88,31 @@ export function ScheduledOrderModal({
 
   // Get available times for selected date
   const availableTimes = useMemo(() => {
-    if (!selectedDate || !operatingHours) return [];
+    if (!selectedDate) return [];
+
+    // If no operating hours configured, provide default times (8:00 - 22:00)
+    if (!operatingHours) {
+      const times: string[] = [];
+      const now = new Date();
+      const isToday = selectedDate.toDateString() === now.toDateString();
+      
+      for (let h = 8; h <= 22; h++) {
+        for (let m = 0; m < 60; m += 30) {
+          const timeStr = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+          
+          if (isToday) {
+            const slotTime = setMinutes(setHours(selectedDate, h), m);
+            const minTime = new Date(now.getTime() + 30 * 60000);
+            if (isAfter(slotTime, minTime)) {
+              times.push(timeStr);
+            }
+          } else {
+            times.push(timeStr);
+          }
+        }
+      }
+      return times;
+    }
 
     const dayKey = dayMapping[selectedDate.getDay()];
     const dayHours = operatingHours[dayKey];
@@ -176,9 +200,13 @@ export function ScheduledOrderModal({
 
   // Disable dates where store is closed
   const isDateDisabled = (date: Date) => {
-    if (!operatingHours) return true;
+    // Past dates are always disabled
     if (isBefore(date, startOfToday())) return true;
+    // Dates more than 30 days in the future are disabled
     if (isAfter(date, addDays(startOfToday(), 30))) return true;
+    
+    // If no operating hours configured, allow all future dates
+    if (!operatingHours) return false;
 
     const dayKey = dayMapping[date.getDay()];
     const dayHours = operatingHours[dayKey];
