@@ -62,48 +62,58 @@ serve(async (req) => {
       );
     }
 
-    if (!establishmentId || establishmentId === 'general') {
-      return new Response(
-        JSON.stringify({ error: 'ID do estabelecimento é obrigatório' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // SECURITY: Verify user owns the establishment
+    // SECURITY: Create admin client for authorization checks
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    const { data: establishment, error: estError } = await supabaseAdmin
-      .from('establishments')
-      .select('owner_id')
-      .eq('id', establishmentId)
+    // Check if user is super_admin (can upload without establishmentId)
+    const { data: userRole } = await supabaseAdmin
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .eq('role', 'super_admin')
       .single();
 
-    if (estError || !establishment) {
-      return new Response(
-        JSON.stringify({ error: 'Estabelecimento não encontrado' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    const isSuperAdmin = !!userRole;
 
-    if (establishment.owner_id !== user.id) {
-      // Check if user is super_admin
-      const { data: userRole } = await supabaseAdmin
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .eq('role', 'super_admin')
+    // If not super_admin, establishmentId is required
+    if (!establishmentId || establishmentId === 'general') {
+      if (!isSuperAdmin) {
+        return new Response(
+          JSON.stringify({ error: 'ID do estabelecimento é obrigatório' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      // Super admin uploading without establishment - use 'system' folder
+    } else {
+      // Verify establishment exists and user has access
+      const { data: establishment, error: estError } = await supabaseAdmin
+        .from('establishments')
+        .select('owner_id')
+        .eq('id', establishmentId)
         .single();
 
-      if (!userRole) {
+      if (estError || !establishment) {
+        return new Response(
+          JSON.stringify({ error: 'Estabelecimento não encontrado' }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      if (establishment.owner_id !== user.id && !isSuperAdmin) {
         return new Response(
           JSON.stringify({ error: 'Você não tem permissão para fazer upload neste estabelecimento' }),
           { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
     }
+
+    // Use establishmentId or 'system' for super_admin without establishment
+    const uploadEstablishmentId = establishmentId && establishmentId !== 'general' 
+      ? establishmentId 
+      : 'system';
 
     // SECURITY: Validate file size based on type
     const isVideo = ALLOWED_VIDEO_CONTENT_TYPES.includes(file.type);
@@ -161,7 +171,7 @@ serve(async (req) => {
     const now = new Date();
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, '0');
-    const key = `_uploads/${type}/${establishmentId}/${year}/${month}/${fileName}`;
+    const key = `_uploads/${type}/${uploadEstablishmentId}/${year}/${month}/${fileName}`;
 
     console.log(`Uploading to S3: ${key}`);
 
