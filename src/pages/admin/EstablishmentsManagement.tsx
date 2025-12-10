@@ -759,6 +759,7 @@ const EstablishmentsManagement = () => {
                   currentImage={formData.logo_url}
                   onUpload={(url) => setFormData(prev => ({ ...prev, logo_url: url }))}
                   bucket="establishments"
+                  establishmentId={editingEstablishment?.id}
                 />
                 <Button
                   type="button"
@@ -791,6 +792,7 @@ const EstablishmentsManagement = () => {
                   onUpload={(url) => setFormData(prev => ({ ...prev, banner_url: url }))}
                   bucket="establishments"
                   aspectRatio="banner"
+                  establishmentId={editingEstablishment?.id}
                 />
                 <Button
                   type="button"

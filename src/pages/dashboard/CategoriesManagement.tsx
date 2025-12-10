@@ -312,6 +312,7 @@ const CategoriesManagement = () => {
                 onUpload={(url) => setForm({ ...form, image_url: url })}
                 onRemove={() => setForm({ ...form, image_url: "" })}
                 aspectRatio="banner"
+                establishmentId={establishmentId || undefined}
               />
             )}
 

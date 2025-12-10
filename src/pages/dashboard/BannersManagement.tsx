@@ -213,6 +213,7 @@ const BannersManagement = () => {
               onUpload={(url) => setForm({ ...form, image_url: url })}
               onRemove={() => setForm({ ...form, image_url: "" })}
               aspectRatio="banner"
+              establishmentId={establishmentId || undefined}
             />
             <div className="space-y-2">
               <Label htmlFor="title">Título</Label>
