@@ -55,12 +55,16 @@ const ProductKitsManagement = () => {
   const [formData, setFormData] = useState({
     name: "",
     description: "",
-    kit_price: 0,
     image_url: "",
     is_active: true,
   });
   const [selectedItems, setSelectedItems] = useState<KitItem[]>([]);
   const [productSearch, setProductSearch] = useState("");
+  
+  // Discount state
+  const [applyDiscount, setApplyDiscount] = useState(false);
+  const [discountType, setDiscountType] = useState<"percentage" | "fixed">("percentage");
+  const [discountValue, setDiscountValue] = useState(0);
 
   useEffect(() => {
     fetchEstablishmentAndData();
@@ -137,13 +141,24 @@ const ProductKitsManagement = () => {
     }, 0);
   };
 
+  // Calculate final kit price based on discount
+  const calculateKitPrice = () => {
+    const originalPrice = calculateOriginalPrice();
+    if (!applyDiscount || discountValue <= 0) return originalPrice;
+    
+    if (discountType === "percentage") {
+      return originalPrice - (originalPrice * discountValue / 100);
+    } else {
+      return Math.max(0, originalPrice - discountValue);
+    }
+  };
+
   const handleOpenDialog = (kit?: ProductKit) => {
     if (kit) {
       setEditingKit(kit);
       setFormData({
         name: kit.name,
         description: kit.description || "",
-        kit_price: kit.kit_price,
         image_url: kit.image_url || "",
         is_active: kit.is_active,
       });
@@ -155,16 +170,36 @@ const ProductKitsManagement = () => {
           is_replaceable: item.is_replaceable,
         })) || []
       );
+      // Calculate if there was a discount
+      if (kit.original_price && kit.kit_price < kit.original_price) {
+        setApplyDiscount(true);
+        const discountAmount = kit.original_price - kit.kit_price;
+        const discountPercent = (discountAmount / kit.original_price) * 100;
+        // Check if it's a round percentage
+        if (Math.abs(discountPercent - Math.round(discountPercent)) < 0.01) {
+          setDiscountType("percentage");
+          setDiscountValue(Math.round(discountPercent));
+        } else {
+          setDiscountType("fixed");
+          setDiscountValue(discountAmount);
+        }
+      } else {
+        setApplyDiscount(false);
+        setDiscountType("percentage");
+        setDiscountValue(0);
+      }
     } else {
       setEditingKit(null);
       setFormData({
         name: "",
         description: "",
-        kit_price: 0,
         image_url: "",
         is_active: true,
       });
       setSelectedItems([]);
+      setApplyDiscount(false);
+      setDiscountType("percentage");
+      setDiscountValue(0);
     }
     setDialogOpen(true);
   };
@@ -177,11 +212,12 @@ const ProductKitsManagement = () => {
 
     try {
       const originalPrice = calculateOriginalPrice();
+      const kitPrice = calculateKitPrice();
       const kitData = {
         establishment_id: establishmentId,
         name: formData.name,
         description: formData.description || null,
-        kit_price: formData.kit_price,
+        kit_price: kitPrice,
         original_price: originalPrice,
         image_url: formData.image_url || null,
         is_active: formData.is_active,
@@ -283,9 +319,11 @@ const ProductKitsManagement = () => {
     p.name.toLowerCase().includes(productSearch.toLowerCase())
   );
 
-  const savings = calculateOriginalPrice() - formData.kit_price;
-  const savingsPercent = calculateOriginalPrice() > 0 
-    ? Math.round((savings / calculateOriginalPrice()) * 100) 
+  const originalPrice = calculateOriginalPrice();
+  const kitPrice = calculateKitPrice();
+  const savings = originalPrice - kitPrice;
+  const savingsPercent = originalPrice > 0 
+    ? Math.round((savings / originalPrice) * 100) 
     : 0;
 
   return (
@@ -427,24 +465,13 @@ const ProductKitsManagement = () => {
 
           <div className="space-y-4">
             {/* Basic Info */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Nome do Kit *</Label>
-                <Input
-                  value={formData.name}
-                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                  placeholder="Ex: Combo Família"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Preço do Kit *</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={formData.kit_price}
-                  onChange={(e) => setFormData(prev => ({ ...prev, kit_price: parseFloat(e.target.value) || 0 }))}
-                />
-              </div>
+            <div className="space-y-2">
+              <Label>Nome do Kit *</Label>
+              <Input
+                value={formData.name}
+                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="Ex: Combo Família"
+              />
             </div>
 
             <div className="space-y-2">
@@ -547,23 +574,84 @@ const ProductKitsManagement = () => {
                 })}
               </div>
 
-              {/* Summary */}
+              {/* Summary & Discount */}
               {selectedItems.length > 0 && (
-                <div className="p-3 bg-muted rounded-lg space-y-1">
-                  <div className="flex justify-between text-sm">
-                    <span>Valor original:</span>
-                    <span>R$ {calculateOriginalPrice().toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm font-medium">
-                    <span>Preço do kit:</span>
-                    <span className="text-primary">R$ {formData.kit_price.toFixed(2)}</span>
-                  </div>
-                  {savings > 0 && (
-                    <div className="flex justify-between text-sm text-green-600">
-                      <span>Economia:</span>
-                      <span>R$ {savings.toFixed(2)} ({savingsPercent}%)</span>
+                <div className="space-y-4">
+                  {/* Price Summary */}
+                  <div className="p-3 bg-muted rounded-lg space-y-1">
+                    <div className="flex justify-between text-sm">
+                      <span>Valor total dos produtos:</span>
+                      <span className="font-medium">R$ {originalPrice.toFixed(2)}</span>
                     </div>
-                  )}
+                  </div>
+
+                  {/* Discount Toggle */}
+                  <div className="space-y-3 p-4 border rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Percent className="h-4 w-4 text-muted-foreground" />
+                        <Label className="font-medium">Aplicar desconto?</Label>
+                      </div>
+                      <Switch
+                        checked={applyDiscount}
+                        onCheckedChange={setApplyDiscount}
+                      />
+                    </div>
+
+                    {applyDiscount && (
+                      <div className="space-y-3 pt-2 border-t">
+                        <div className="flex gap-2">
+                          <Button
+                            type="button"
+                            variant={discountType === "percentage" ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setDiscountType("percentage")}
+                            className="flex-1"
+                          >
+                            <Percent className="h-3 w-3 mr-1" />
+                            Porcentagem
+                          </Button>
+                          <Button
+                            type="button"
+                            variant={discountType === "fixed" ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setDiscountType("fixed")}
+                            className="flex-1"
+                          >
+                            R$ Valor Fixo
+                          </Button>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>
+                            {discountType === "percentage" ? "Desconto (%)" : "Desconto (R$)"}
+                          </Label>
+                          <Input
+                            type="number"
+                            step={discountType === "percentage" ? "1" : "0.01"}
+                            min="0"
+                            max={discountType === "percentage" ? "100" : originalPrice}
+                            value={discountValue}
+                            onChange={(e) => setDiscountValue(parseFloat(e.target.value) || 0)}
+                            placeholder={discountType === "percentage" ? "Ex: 10" : "Ex: 5.00"}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Final Price */}
+                  <div className="p-3 bg-primary/10 rounded-lg space-y-1">
+                    <div className="flex justify-between text-sm font-medium">
+                      <span>Preço final do kit:</span>
+                      <span className="text-lg text-primary font-bold">R$ {kitPrice.toFixed(2)}</span>
+                    </div>
+                    {applyDiscount && savings > 0 && (
+                      <div className="flex justify-between text-sm text-green-600">
+                        <span>Economia para o cliente:</span>
+                        <span>R$ {savings.toFixed(2)} ({savingsPercent}%)</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
