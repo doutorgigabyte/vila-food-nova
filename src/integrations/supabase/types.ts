@@ -5273,6 +5273,21 @@ export type Database = {
         Returns: number
       }
       generate_menu_json: { Args: { est_id: string }; Returns: Json }
+      get_customer_by_phone_and_establishment: {
+        Args: { p_establishment_id: string; p_phone: string }
+        Returns: {
+          addresses: Json
+          created_at: string
+          default_address: Json
+          email: string
+          establishment_id: string
+          id: string
+          name: string
+          phone: string
+          updated_at: string
+          user_id: string
+        }[]
+      }
       get_establishment_by_instance: {
         Args: { p_instance_name: string }
         Returns: {

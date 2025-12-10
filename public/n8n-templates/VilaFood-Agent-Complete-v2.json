@@ -636,40 +636,39 @@
     },
     {
       "parameters": {
-        "operation": "get",
-        "tableId": "customers",
-        "filters": {
-          "conditions": [
+        "method": "POST",
+        "url": "https://gyagfsjbdaacgmmofqip.supabase.co/rest/v1/rpc/get_customer_by_phone_and_establishment",
+        "authentication": "none",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
             {
-              "keyName": "phone",
-              "keyValue": "={{ $('Extrai Campos').item.json.phone }}"
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5YWdmc2piZGFhY2dtbW9mcWlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4NzIwNjYsImV4cCI6MjA4MDQ0ODA2Nn0.4W0hZwETfoALlpn9_f2NqdKQNJ3DKDRkcs7uC-VbdhE"
             },
             {
-              "keyName": "establishment_id",
-              "keyValue": "={{ $('Extrai Campos').item.json.establishment_id }}"
+              "name": "Content-Type",
+              "value": "application/json"
             }
           ]
-        }
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \"p_phone\": \"{{ $('Extrai Campos').item.json.phone }}\", \"p_establishment_id\": \"{{ $('Busca Estabelecimento').item.json.id }}\" }"
       },
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
       "position": [2672, 160],
       "id": "busca-cliente-supabase",
-      "name": "Busca Cliente Supabase",
-      "alwaysOutputData": true,
-      "credentials": {
-        "supabaseApi": {
-          "id": "SUPABASE_CREDENTIAL_ID",
-          "name": "Supabase VilaFood"
-        }
-      }
+      "name": "Busca Cliente",
+      "alwaysOutputData": true
     },
     {
       "parameters": {
         "promptType": "define",
         "text": "={{ $('Merge Conteudo').item.json.content }}",
         "options": {
-          "systemMessage": "=# VILAFOOD AI ORCHESTRATOR - {{ $('Extrai Campos').item.json.establishment_name }}\n\nVocê é o assistente virtual inteligente do {{ $('Extrai Campos').item.json.establishment_name }}.\n\n{{ $('Extrai Campos').item.json.system_prompt }}\n\n## CONTEXTO ATUAL:\n\n### Dados do Cliente:\n- Nome: {{ $('Extrai Campos').item.json.push_name }}\n- Telefone: {{ $('Extrai Campos').item.json.phone }}\n- Endereço Cadastrado: {{ $('Busca Cliente Supabase').item.json.default_address ? JSON.stringify($('Busca Cliente Supabase').item.json.default_address) : 'Não cadastrado' }}\n\n### Carrinho Atual:\n{{ $('Busca Carrinho Redis').item.json.cart_data || 'Vazio' }}\n\n### Dados do Estabelecimento:\n- Nome: {{ $('Extrai Campos').item.json.establishment_name }}\n- Endereço: {{ $('Extrai Campos').item.json.address }}\n- Pedido Mínimo: R$ {{ $('Extrai Campos').item.json.min_order_value }}\n- Taxa Base Entrega: R$ {{ $('Extrai Campos').item.json.delivery_base_fee }}\n\n## CARDÁPIO DISPONÍVEL:\n{{ $('Extrai Campos').item.json.menu_json }}\n\n## FERRAMENTAS DISPONÍVEIS:\n\nUse as ferramentas para executar ações:\n- **search_products**: Buscar produtos no cardápio\n- **send_product_photo**: Enviar foto de produto\n- **add_to_cart**: Adicionar item ao carrinho\n- **view_cart**: Ver carrinho atual\n- **clear_cart**: Limpar carrinho\n- **save_customer**: Salvar dados do cliente\n- **create_order_pix**: Finalizar pedido com PIX\n- **calculate_delivery**: Calcular taxa de entrega\n\n## REGRAS:\n1. Seja simpático, prestativo e objetivo\n2. Use as FERRAMENTAS para ações específicas\n3. Sempre confirme antes de finalizar pedidos\n4. Sugira produtos complementares quando apropriado\n5. Se receber [AUDIO TRANSCRITO], responda normalmente\n6. Se receber [IMAGEM ANALISADA], use o contexto\n7. Respostas curtas e diretas (máximo 400 caracteres)\n8. Use emojis moderadamente 🍕\n9. Sempre pergunte se deseja mais algo antes de fechar"
+          "systemMessage": "=# VILAFOOD AI ORCHESTRATOR - {{ $('Extrai Campos').item.json.establishment_name }}\n\nVocê é o assistente virtual inteligente do {{ $('Extrai Campos').item.json.establishment_name }}.\n\n{{ $('Extrai Campos').item.json.system_prompt }}\n\n## CONTEXTO ATUAL:\n\n### Dados do Cliente:\n- Nome: {{ $('Extrai Campos').item.json.push_name }}\n- Telefone: {{ $('Extrai Campos').item.json.phone }}\n- Endereço Cadastrado: {{ $('Busca Cliente').item.json.default_address ? JSON.stringify($('Busca Cliente').item.json.default_address) : 'Não cadastrado' }}\n\n### Carrinho Atual:\n{{ $('Busca Carrinho Redis').item.json.cart_data || 'Vazio' }}\n\n### Dados do Estabelecimento:\n- Nome: {{ $('Extrai Campos').item.json.establishment_name }}\n- Endereço: {{ $('Extrai Campos').item.json.address }}\n- Pedido Mínimo: R$ {{ $('Extrai Campos').item.json.min_order_value }}\n- Taxa Base Entrega: R$ {{ $('Extrai Campos').item.json.delivery_base_fee }}\n\n## CARDÁPIO DISPONÍVEL:\n{{ $('Extrai Campos').item.json.menu_json }}\n\n## FERRAMENTAS DISPONÍVEIS:\n\nUse as ferramentas para executar ações:\n- **search_products**: Buscar produtos no cardápio\n- **send_product_photo**: Enviar foto de produto\n- **add_to_cart**: Adicionar item ao carrinho\n- **view_cart**: Ver carrinho atual\n- **clear_cart**: Limpar carrinho\n- **save_customer**: Salvar dados do cliente\n- **create_order_pix**: Finalizar pedido com PIX\n- **calculate_delivery**: Calcular taxa de entrega\n\n## REGRAS:\n1. Seja simpático, prestativo e objetivo\n2. Use as FERRAMENTAS para ações específicas\n3. Sempre confirme antes de finalizar pedidos\n4. Sugira produtos complementares quando apropriado\n5. Se receber [AUDIO TRANSCRITO], responda normalmente\n6. Se receber [IMAGEM ANALISADA], use o contexto\n7. Respostas curtas e diretas (máximo 400 caracteres)\n8. Use emojis moderadamente 🍕\n9. Sempre pergunte se deseja mais algo antes de fechar"
         }
       },
       "type": "@n8n/n8n-nodes-langchain.agent",

@@ -611,33 +611,32 @@
     },
     {
       "parameters": {
-        "operation": "get",
-        "tableId": "customers",
-        "filters": {
-          "conditions": [
+        "method": "POST",
+        "url": "https://gyagfsjbdaacgmmofqip.supabase.co/rest/v1/rpc/get_customer_by_phone_and_establishment",
+        "authentication": "none",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
             {
-              "keyName": "phone",
-              "keyValue": "={{ $('Extrai Campos').item.json.phone }}"
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5YWdmc2piZGFhY2dtbW9mcWlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4NzIwNjYsImV4cCI6MjA4MDQ0ODA2Nn0.4W0hZwETfoALlpn9_f2NqdKQNJ3DKDRkcs7uC-VbdhE"
             },
             {
-              "keyName": "establishment_id",
-              "keyValue": "={{ $('Extrai Campos').item.json.establishment_id }}"
+              "name": "Content-Type",
+              "value": "application/json"
             }
           ]
-        }
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \"p_phone\": \"{{ $('Extrai Campos').item.json.phone }}\", \"p_establishment_id\": \"{{ $('Busca Estabelecimento').item.json.id }}\" }"
       },
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
       "position": [3060, 600],
       "id": "get-customer",
       "name": "Busca Cliente",
-      "alwaysOutputData": true,
-      "credentials": {
-        "supabaseApi": {
-          "id": "supabase-credentials",
-          "name": "Supabase VilaFood"
-        }
-      }
+      "alwaysOutputData": true
     },
     {
       "parameters": {
