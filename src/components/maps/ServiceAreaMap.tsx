@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import GoogleMap from './GoogleMap';
@@ -16,13 +17,14 @@ import {
   Save, 
   Plus,
   Navigation,
-  Loader2
+  Loader2,
+  Building2
 } from 'lucide-react';
 
 interface DeliveryZone {
   id?: string;
   name: string;
-  type: 'polygon' | 'radius' | 'neighborhood';
+  type: 'polygon' | 'radius' | 'neighborhood' | 'city';
   coordinates: { lat: number; lng: number }[];
   radius_km?: number;
   neighborhoods: string[];
@@ -31,6 +33,12 @@ interface DeliveryZone {
   min_time: number;
   max_time: number;
   is_active: boolean;
+}
+
+interface City {
+  id: string;
+  name: string;
+  slug: string | null;
 }
 
 interface ServiceAreaMapProps {
@@ -49,7 +57,12 @@ const ServiceAreaMap = ({
   const [isDrawing, setIsDrawing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<'polygon' | 'radius'>('polygon');
+  const [activeTab, setActiveTab] = useState<'polygon' | 'radius' | 'city'>('polygon');
+
+  // Cities list
+  const [cities, setCities] = useState<City[]>([]);
+  const [selectedCityId, setSelectedCityId] = useState('');
+  const [loadingCities, setLoadingCities] = useState(false);
 
   // Form state for new/edit zone
   const [zoneName, setZoneName] = useState('');
@@ -61,7 +74,22 @@ const ServiceAreaMap = ({
 
   useEffect(() => {
     fetchZones();
+    fetchCities();
   }, [establishmentId]);
+
+  const fetchCities = async () => {
+    setLoadingCities(true);
+    const { data, error } = await supabase
+      .from('cities')
+      .select('id, name, slug')
+      .eq('is_active', true)
+      .order('name');
+
+    if (!error && data) {
+      setCities(data);
+    }
+    setLoadingCities(false);
+  };
 
   const fetchZones = async () => {
     setLoading(true);
@@ -96,6 +124,15 @@ const ServiceAreaMap = ({
     setZoneCoords(coords);
   };
 
+  // Generate city polygon approximation (20km radius circle around establishment)
+  const generateCityPolygon = async (cityId: string): Promise<{ lat: number; lng: number }[]> => {
+    const city = cities.find(c => c.id === cityId);
+    if (!city) return [];
+    
+    // Use establishment location as center, 20km radius for city coverage
+    return getRadiusPolygon(establishmentLocation, 20);
+  };
+
   const handleSaveZone = async () => {
     if (!zoneName) {
       toast.error('Nome da zona é obrigatório');
@@ -107,14 +144,26 @@ const ServiceAreaMap = ({
       return;
     }
 
+    if (activeTab === 'city' && !selectedCityId) {
+      toast.error('Selecione uma cidade');
+      return;
+    }
+
     setSaving(true);
+
+    let coordinates = zoneCoords;
+    
+    // For city type, generate a large radius polygon
+    if (activeTab === 'city') {
+      coordinates = await generateCityPolygon(selectedCityId);
+    }
 
     const zoneData = {
       establishment_id: establishmentId,
       name: zoneName,
       type: activeTab,
-      coordinates: activeTab === 'polygon' ? zoneCoords : [],
-      radius_km: activeTab === 'radius' ? parseFloat(zoneRadius) : null,
+      coordinates: activeTab === 'radius' ? [] : coordinates,
+      radius_km: activeTab === 'radius' ? parseFloat(zoneRadius) : activeTab === 'city' ? 20 : null,
       fee: parseFloat(zoneFee) || 0,
       min_time: parseInt(zoneMinTime) || 20,
       max_time: parseInt(zoneMaxTime) || 45,
@@ -184,7 +233,19 @@ const ServiceAreaMap = ({
     setZoneMaxTime('45');
     setZoneCoords([]);
     setZoneRadius('5');
+    setSelectedCityId('');
     setIsDrawing(false);
+  };
+
+  const handleCityChange = (cityId: string) => {
+    setSelectedCityId(cityId);
+    const city = cities.find(c => c.id === cityId);
+    if (city) {
+      setZoneName(city.name);
+      // Generate 20km radius around establishment for city coverage
+      const cityPolygon = getRadiusPolygon(establishmentLocation, 20);
+      setZoneCoords(cityPolygon);
+    }
   };
 
   // Generate radius polygon for display
@@ -274,8 +335,8 @@ const ServiceAreaMap = ({
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'polygon' | 'radius')}>
-                <TabsList className="grid w-full grid-cols-2">
+              <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'polygon' | 'radius' | 'city')}>
+                <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="polygon" className="gap-1">
                     <Pencil className="w-3 h-3" />
                     Polígono
@@ -283,6 +344,10 @@ const ServiceAreaMap = ({
                   <TabsTrigger value="radius" className="gap-1">
                     <Circle className="w-3 h-3" />
                     Raio
+                  </TabsTrigger>
+                  <TabsTrigger value="city" className="gap-1">
+                    <Building2 className="w-3 h-3" />
+                    Cidade
                   </TabsTrigger>
                 </TabsList>
 
@@ -308,6 +373,27 @@ const ServiceAreaMap = ({
                         {zoneCoords.length} pontos
                       </Badge>
                     )}
+                  </p>
+                </TabsContent>
+
+                <TabsContent value="city" className="mt-4 space-y-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="city">Selecione a cidade</Label>
+                    <Select value={selectedCityId} onValueChange={handleCityChange}>
+                      <SelectTrigger>
+                        <SelectValue placeholder={loadingCities ? "Carregando..." : "Selecione uma cidade"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {cities.map((city) => (
+                          <SelectItem key={city.id} value={city.id}>
+                            {city.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Ao selecionar uma cidade, será criada uma área de atendimento de 20km de raio.
                   </p>
                 </TabsContent>
               </Tabs>
@@ -403,6 +489,8 @@ const ServiceAreaMap = ({
                       <div className="flex items-center gap-2">
                         {zone.type === 'radius' ? (
                           <Circle className="w-4 h-4 text-primary" />
+                        ) : zone.type === 'city' ? (
+                          <Building2 className="w-4 h-4 text-primary" />
                         ) : (
                           <MapPin className="w-4 h-4 text-primary" />
                         )}
