@@ -88,8 +88,17 @@ serve(async (req) => {
       throw new Error('Evolution API credentials not configured');
     }
 
-    // Determinar nome da instância a usar na API
-    const instanceName = instance?.instance_name || 'vilafood';
+    // Verificar se encontrou uma instância válida
+    if (!instance?.instance_name) {
+      console.error(`No WhatsApp instance found for type=${instanceType}, establishmentId=${establishmentId}`);
+      // Retornar sucesso silencioso para não bloquear operações
+      return new Response(
+        JSON.stringify({ success: false, error: 'No WhatsApp instance configured', skipped: true }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const instanceName = instance.instance_name;
 
     // Formatar número de telefone (remover caracteres não numéricos e adicionar código do país)
     let formattedPhone = phone.replace(/\D/g, '');
