@@ -6,14 +6,16 @@ Este documento detalha o roadmap de implementação das melhorias identificadas 
 
 | Funcionalidade | Prioridade | Status | Observações |
 |----------------|------------|--------|-------------|
-| Debounce com Redis | Alta | 🔄 Pendente | Agrupar mensagens sequenciais |
-| Split de Mensagens Longas | Alta | 🔄 Pendente | Evitar rate limit WhatsApp |
+| Debounce com Redis | Alta | ✅ Implementado | Template v2 com Redis Push/Wait/Get/Clear |
+| Split de Mensagens Longas | Alta | ✅ Implementado | Loop com delay 1s entre chunks |
 | Transcrição de Áudio | Alta | ✅ Implementado | Lovable AI Gateway |
 | Análise de Imagem/OCR | Alta | ✅ Implementado | Lovable AI Gateway |
 | Geocodificação + Cálculo Frete | Alta | ✅ Implementado | Edge Function criada |
 | Extração de Dados Cliente | Alta | ✅ Implementado | Lovable AI Gateway |
 | Cadastro Automático Cliente | Média | ✅ Implementado | Edge Function criada |
 | Human Takeover | Média | ⚠️ Parcial | Painel existe, integrar N8N |
+| Redis Chat Memory | Alta | ✅ Implementado | Memória por sessão phone+instance |
+| 7 Tools AI Agent | Alta | ✅ Implementado | search_menu, send_photo, cart, order |
 
 ---
 
