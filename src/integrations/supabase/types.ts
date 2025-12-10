@@ -4468,6 +4468,7 @@ export type Database = {
           city_id: string
           delivery_base_fee: number
           description: string
+          evolution_api_key: string
           id: string
           instance_ai_prompt: string
           instance_name: string
@@ -4476,10 +4477,12 @@ export type Database = {
           logo_url: string
           longitude: number
           menu_json: Json
+          mercado_pago_token: string
           min_order_value: number
           name: string
           neighborhood: string
           phone: string
+          pix_key: string
           slug: string
           system_prompt: string
           whatsapp: string
