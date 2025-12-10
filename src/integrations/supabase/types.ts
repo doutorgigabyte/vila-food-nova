@@ -2032,6 +2032,9 @@ export type Database = {
           menu_json: Json | null
           menu_json_updated_at: string | null
           mercado_pago_token: string | null
+          meta_description: string | null
+          meta_image: string | null
+          meta_title: string | null
           min_order_value: number | null
           mp_public_key: string | null
           mp_refresh_token: string | null
@@ -2098,6 +2101,9 @@ export type Database = {
           menu_json?: Json | null
           menu_json_updated_at?: string | null
           mercado_pago_token?: string | null
+          meta_description?: string | null
+          meta_image?: string | null
+          meta_title?: string | null
           min_order_value?: number | null
           mp_public_key?: string | null
           mp_refresh_token?: string | null
@@ -2164,6 +2170,9 @@ export type Database = {
           menu_json?: Json | null
           menu_json_updated_at?: string | null
           mercado_pago_token?: string | null
+          meta_description?: string | null
+          meta_image?: string | null
+          meta_title?: string | null
           min_order_value?: number | null
           mp_public_key?: string | null
           mp_refresh_token?: string | null
