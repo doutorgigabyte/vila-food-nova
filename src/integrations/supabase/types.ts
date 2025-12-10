@@ -4872,6 +4872,82 @@ export type Database = {
           },
         ]
       }
+      whatsapp_chat_messages: {
+        Row: {
+          bot_message: string | null
+          created_at: string | null
+          establishment_id: string | null
+          id: string
+          message_type: string | null
+          nome_wpp: string | null
+          phone: string
+          user_message: string | null
+        }
+        Insert: {
+          bot_message?: string | null
+          created_at?: string | null
+          establishment_id?: string | null
+          id?: string
+          message_type?: string | null
+          nome_wpp?: string | null
+          phone: string
+          user_message?: string | null
+        }
+        Update: {
+          bot_message?: string | null
+          created_at?: string | null
+          establishment_id?: string | null
+          id?: string
+          message_type?: string | null
+          nome_wpp?: string | null
+          phone?: string
+          user_message?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_chat_messages_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_chats: {
+        Row: {
+          created_at: string | null
+          establishment_id: string | null
+          id: string
+          nome_wpp: string | null
+          phone: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          establishment_id?: string | null
+          id?: string
+          nome_wpp?: string | null
+          phone: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          establishment_id?: string | null
+          id?: string
+          nome_wpp?: string | null
+          phone?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_chats_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       whatsapp_conversations: {
         Row: {
           created_at: string | null
