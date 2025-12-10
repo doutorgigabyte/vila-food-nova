@@ -3,16 +3,47 @@
   "nodes": [
     {
       "parameters": {
-        "httpMethod": "POST",
-        "path": "vilafood-webhook",
-        "options": {}
+        "tableId": "whatsapp_messages",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldValue": "={{ $('Busca Sessao').item.json.id || null }}"
+            },
+            {
+              "fieldValue": "bot"
+            },
+            {
+              "fieldValue": "={{ $('AI Orchestrator').item.json.output }}"
+            },
+            {
+              "fieldValue": "text"
+            },
+            {
+              "fieldValue": true
+            },
+            {
+              "fieldValue": "orchestrator"
+            },
+            {
+              "fieldValue": "={{ JSON.stringify({ tools_used: $('AI Orchestrator').item.json.toolCalls || [] }) }}"
+            }
+          ]
+        }
       },
-      "type": "n8n-nodes-base.webhook",
-      "typeVersion": 2,
-      "position": [200, 300],
-      "id": "webhook-evolution",
-      "name": "Evolution API Webhook",
-      "webhookId": "vilafood-evolution-webhook"
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2672,
+        416
+      ],
+      "id": "e8f0c6ec-5356-49ee-a947-fa148d496c3a",
+      "name": "Salva Log Resposta",
+      "credentials": {
+        "supabaseApi": {
+          "id": "DJHJ4fGtwZ6iktbx",
+          "name": "Supabase account 2"
+        }
+      }
     },
     {
       "parameters": {
@@ -20,23 +51,15 @@
           "options": {
             "caseSensitive": true,
             "leftValue": "",
-            "typeValidation": "loose",
+            "typeValidation": "strict",
             "version": 2
           },
           "conditions": [
             {
-              "leftValue": "={{ $json.body?.data?.key?.fromMe }}",
+              "leftValue": "={{ $('Split Mensagens').item.json.isLast }}",
               "rightValue": true,
               "operator": {
                 "type": "boolean",
-                "operation": "notEquals"
-              }
-            },
-            {
-              "leftValue": "={{ $json.body?.event }}",
-              "rightValue": "messages.upsert",
-              "operator": {
-                "type": "string",
                 "operation": "equals"
               }
             }
@@ -47,15 +70,148 @@
       },
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [420, 300],
-      "id": "filter-self-messages",
-      "name": "Filtra Mensagens Próprias"
+      "position": [
+        2448,
+        432
+      ],
+      "id": "7055e907-85af-4634-8924-301930e7e412",
+      "name": "E Ultima?"
+    },
+    {
+      "parameters": {
+        "amount": 1
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2288,
+        432
+      ],
+      "id": "b67c5f17-dfc8-4b66-847e-e3b001a01f6f",
+      "name": "Wait 1s",
+      "webhookId": "wait-between-messages"
+    },
+    {
+      "parameters": {
+        "resource": "messages-api",
+        "instanceName": "={{ $('Extrai Campos').item.json.instance_name }}",
+        "remoteJid": "={{ $('Extrai Campos').item.json.remote_jid }}",
+        "messageText": "={{ $json.chunk }}",
+        "options_message": {}
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        2144,
+        432
+      ],
+      "id": "9e5b9946-ce7c-4568-b53a-d027ad6cb915",
+      "name": "Envia Chunk",
+      "credentials": {
+        "evolutionApi": {
+          "id": "aolR7A86n48wLzbu",
+          "name": "Evolution account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1952,
+        416
+      ],
+      "id": "f3abe494-b110-46df-b677-d373349bb971",
+      "name": "Batch Mensagens"
+    },
+    {
+      "parameters": {
+        "jsCode": "const output = $input.item.json.output || '';\nconst maxLength = 400;\n\nif (output.length <= maxLength) {\n  return [{ json: { chunk: output, index: 0, total: 1, isLast: true } }];\n}\n\nconst paragraphs = output.split('\\n\\n');\nconst chunks = [];\nlet currentChunk = '';\n\nfor (const para of paragraphs) {\n  if ((currentChunk + '\\n\\n' + para).length <= maxLength) {\n    currentChunk = currentChunk ? currentChunk + '\\n\\n' + para : para;\n  } else {\n    if (currentChunk) chunks.push(currentChunk);\n    \n    if (para.length <= maxLength) {\n      currentChunk = para;\n    } else {\n      const sentences = para.match(/[^.!?]+[.!?]+/g) || [para];\n      for (const sentence of sentences) {\n        if ((currentChunk + ' ' + sentence).length <= maxLength) {\n          currentChunk = currentChunk ? currentChunk + ' ' + sentence : sentence;\n        } else {\n          if (currentChunk) chunks.push(currentChunk);\n          currentChunk = sentence.substring(0, maxLength);\n        }\n      }\n    }\n  }\n}\n\nif (currentChunk) chunks.push(currentChunk);\n\nreturn chunks.map((chunk, i) => ({\n  json: {\n    chunk: chunk,\n    index: i,\n    total: chunks.length,\n    isLast: i === chunks.length - 1\n  }\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1744,
+        416
+      ],
+      "id": "7bf3a75f-2620-4d1e-a65e-7410f9dc4597",
+      "name": "Split Mensagens"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatDeepSeek",
+      "typeVersion": 1,
+      "position": [
+        1328,
+        656
+      ],
+      "id": "a6dfbdc3-ca2d-45f5-b695-276cf11c3112",
+      "name": "DeepSeek Chat Model",
+      "credentials": {
+        "deepSeekApi": {
+          "id": "gSMqqBgvNyv1JIyt",
+          "name": "DeepSeek account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        528,
+        400
+      ],
+      "id": "5f5dad76-9c38-4edb-b34e-0a0e942c19f9",
+      "name": "Nao e ultima (ignora)"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "=vilafood:memory:{{ $('Extrai Campos').item.json.session_key }}",
+        "contextWindowLength": 20
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryRedisChat",
+      "typeVersion": 1.3,
+      "position": [
+        1488,
+        656
+      ],
+      "id": "57b4712d-d2a8-4769-ba0e-42d2fcd4d34b",
+      "name": "Redis Chat Memory",
+      "credentials": {
+        "redis": {
+          "id": "33pA7zq69HHHChaW",
+          "name": "Redis account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Merge Conteudo').item.json.content }}",
+        "options": {
+          "systemMessage": "=# ASSISTENTE VIRTUAL - {{ $('Extrai Campos').item.json.establishment_name }}\n\n{{ $('Extrai Campos').item.json.system_prompt }}\n\n## CLIENTE:\n- Nome: {{ $('Extrai Campos').item.json.push_name }}\n- Telefone: {{ $('Extrai Campos').item.json.phone }}\n- Endereço: {{ $('Busca Cliente').item.json?.default_address ? JSON.stringify($('Busca Cliente').item.json.default_address) : 'Não cadastrado' }}\n\n## CARRINHO ATUAL:\n{{ $('Busca Carrinho Redis').item.json.cart_data || 'Vazio' }}\n\n## REGRAS OBRIGATÓRIAS DE USO DAS FERRAMENTAS:\n\n**SEMPRE USE AS FERRAMENTAS - NUNCA RESPONDA SOBRE PRODUTOS SEM USAR SEARCH_MENU:**\n\n1. **search_menu** - OBRIGATÓRIO quando:\n   - Cliente perguntar sobre produtos, preços ou cardápio\n   - Cliente mencionar qualquer alimento ou bebida\n   - Cliente disser 'quero', 'tem', 'qual o preço'\n   - SEMPRE busque antes de responder sobre produtos!\n\n2. **send_product_photo** - OBRIGATÓRIO após search_menu:\n   - Use para enviar a FOTO de cada produto encontrado\n   - image_url = campo image_url do produto retornado\n   - caption = Nome do produto + preço (ex: 'Bolo de Chocolate - R$ 45,90')\n\n3. **add_to_cart** - Use quando cliente CONFIRMAR que quer um produto\n\n4. **view_cart** - Use quando cliente perguntar 'o que tenho no carrinho' ou quiser ver o pedido\n\n5. **clear_cart** - Use para cancelar/recomeçar pedido\n\n6. **save_customer** - Use quando cliente fornecer endereço\n\n7. **calculate_delivery_fee** - Use para calcular taxa de entrega\n\n8. **create_order_pix** - Use APENAS após confirmar tudo com cliente\n\n## FLUXO CORRETO:\n1. Saudação → Pergunte o que deseja\n2. Cliente pede algo → USE search_menu\n3. Para CADA produto encontrado → USE send_product_photo\n4. Mostre opções → Pergunte quantidade\n5. Cliente confirma → USE add_to_cart\n6. Pergunte se quer mais → Repita ou finalize\n7. Finalização → USE create_order_pix\n\n## FORMATO:\n- Respostas curtas (max 400 chars)\n- Emojis moderados 🍕\n- Sempre pergunte se deseja mais algo"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        1392,
+        416
+      ],
+      "id": "3d009c7d-653b-4963-81fb-9c4556b5dc55",
+      "name": "AI Orchestrator"
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "https://gyagfsjbdaacgmmofqip.supabase.co/rest/v1/rpc/get_establishment_by_instance",
-        "authentication": "none",
+        "url": "https://gyagfsjbdaacgmmofqip.supabase.co/rest/v1/rpc/get_customer_by_phone_and_establishment",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -71,14 +227,493 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"p_instance_name\": \"{{ $json.body.instance }}\"\n}",
+        "jsonBody": "={ \"p_phone\": \"{{ $('Extrai Campos').item.json.phone }}\", \"p_establishment_id\": \"{{ $('Busca Estabelecimento').item.json.id }}\" }",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [640, 300],
-      "id": "get-establishment",
-      "name": "Busca Estabelecimento"
+      "position": [
+        1200,
+        416
+      ],
+      "id": "5d28171d-6c23-4ea4-b4c4-f568666b54b4",
+      "name": "Busca Cliente",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "propertyName": "cart_data",
+        "key": "=vilafood:cart:{{ $json.session_key }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        976,
+        416
+      ],
+      "id": "34fd1f30-0920-4c49-8521-6e2ae3d120eb",
+      "name": "Busca Carrinho Redis",
+      "credentials": {
+        "redis": {
+          "id": "33pA7zq69HHHChaW",
+          "name": "Redis account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        752,
+        416
+      ],
+      "id": "aabf6f39-82f8-417e-aa81-e5ce0d78983b",
+      "name": "Merge Conteudo"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "content",
+              "name": "content",
+              "value": "=[AUDIO TRANSCRITO] {{ $json.content.parts[0].text }}",
+              "type": "string"
+            },
+            {
+              "id": "session_key",
+              "name": "session_key",
+              "value": "={{ $('Extrai Campos').item.json.session_key }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        288,
+        496
+      ],
+      "id": "2f6d3620-db91-4991-95a9-250a366c51f9",
+      "name": "Formata Resultado Audio"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "content",
+              "name": "content",
+              "value": "=[IMAGEM ANALISADA] {{ $json.content || $json.text }}",
+              "type": "string"
+            },
+            {
+              "id": "session_key",
+              "name": "session_key",
+              "value": "={{ $('Extrai Campos').item.json.session_key }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        288,
+        96
+      ],
+      "id": "4677381a-74f0-4ad8-8a98-8119a55c9127",
+      "name": "Formata Resultado Imagem"
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "key": "=vilafood:debounce:{{ $('Extrai Campos').item.json.session_key }}"
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        752,
+        208
+      ],
+      "id": "61a654eb-cd21-4a7f-80cc-36fc1ad5989e",
+      "name": "Redis Clear Debounce",
+      "credentials": {
+        "redis": {
+          "id": "33pA7zq69HHHChaW",
+          "name": "Redis account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "content",
+              "name": "content",
+              "value": "={{ $json.mensagens ? $json.mensagens.map(m => JSON.parse(m).mensagem).join(' ') : $('Extrai Campos').item.json.message_text }}",
+              "type": "string"
+            },
+            {
+              "id": "session_key",
+              "name": "session_key",
+              "value": "={{ $('Extrai Campos').item.json.session_key }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        528,
+        208
+      ],
+      "id": "7412d6d6-55cf-4e81-ac62-935e0e00781e",
+      "name": "Combina Mensagens Texto"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ JSON.parse($json.mensagens?.slice(-1)[0] || '{}')?.messageId }}",
+              "rightValue": "={{ $('Extrai Campos').item.json.message_id }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        288,
+        304
+      ],
+      "id": "5aec9a51-ef57-4274-bb54-13a8d08dfe53",
+      "name": "E Ultima Mensagem"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "propertyName": "mensagens",
+        "key": "=vilafood:debounce:{{ $('Extrai Campos').item.json.session_key }}",
+        "keyType": "list",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        64,
+        304
+      ],
+      "id": "20b78286-5dee-4d26-8c89-6117e1fc40df",
+      "name": "Redis Get Mensagens",
+      "credentials": {
+        "redis": {
+          "id": "33pA7zq69HHHChaW",
+          "name": "Redis account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 3
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -192,
+        304
+      ],
+      "id": "debb1de6-b3d5-4dba-857a-93187106384d",
+      "name": "Debounce 3s",
+      "webhookId": "debounce-wait-webhook"
+    },
+    {
+      "parameters": {
+        "operation": "push",
+        "list": "=vilafood:debounce:{{ $('Extrai Campos').item.json.session_key }}",
+        "messageData": "={{ JSON.stringify({ messageId: $('Extrai Campos').item.json.message_id, mensagem: $('Extrai Campos').item.json.message_text }) }}",
+        "tail": true
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        -416,
+        304
+      ],
+      "id": "76dc9d27-8ecd-4c26-9479-5ae8a371cc1e",
+      "name": "Redis Push Texto",
+      "credentials": {
+        "redis": {
+          "id": "33pA7zq69HHHChaW",
+          "name": "Redis account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "inputType": "binary",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        64,
+        496
+      ],
+      "id": "af0535a0-01e6-4aef-ae2c-7347ada0f675",
+      "name": "Transcreve Audio Gemini",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "BQk8jM5RcfqFe81n",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "toBinary",
+        "sourceProperty": "data.base64",
+        "options": {
+          "fileName": "audio.mp3",
+          "mimeType": "audio/mpeg"
+        }
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        -192,
+        496
+      ],
+      "id": "94c415ab-b8cc-4259-b24a-afbed700e18d",
+      "name": "Converte Audio"
+    },
+    {
+      "parameters": {
+        "resource": "chat-api",
+        "operation": "get-media-base64",
+        "instanceName": "={{ $('Extrai Campos').item.json.instance_name }}",
+        "messageId": "={{ $('Extrai Campos').item.json.message_id }}",
+        "convertToMp4": true
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        -416,
+        496
+      ],
+      "id": "e2a5eeb5-1336-4683-96f7-ed2bc758ece6",
+      "name": "Busca Audio Base64",
+      "credentials": {
+        "evolutionApi": {
+          "id": "aolR7A86n48wLzbu",
+          "name": "Evolution account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "text": "Analise esta imagem enviada por um cliente. Se for um comprovante de pagamento (PIX, transferência, etc), extraia: valor, data/hora, tipo de transação. Se for foto de produto ou cardápio, descreva o que vê. Se não conseguir identificar, descreva a imagem normalmente.",
+        "inputType": "binary",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        64,
+        96
+      ],
+      "id": "534bc383-1903-4076-b2c2-1cd87f63e55f",
+      "name": "Analisa Imagem Gemini",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "BQk8jM5RcfqFe81n",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "toBinary",
+        "sourceProperty": "data.base64",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        -192,
+        96
+      ],
+      "id": "f3532494-eba8-470e-9c4e-e12601bcd80a",
+      "name": "Converte Imagem"
+    },
+    {
+      "parameters": {
+        "resource": "chat-api",
+        "operation": "get-media-base64",
+        "instanceName": "={{ $('Extrai Campos').item.json.instance_name }}",
+        "messageId": "={{ $('Extrai Campos').item.json.message_id }}",
+        "convertToMp4": true
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        -416,
+        96
+      ],
+      "id": "9a061c00-0dcd-47d8-967b-4c60fefb76b3",
+      "name": "Busca Imagem Base64",
+      "credentials": {
+        "evolutionApi": {
+          "id": "aolR7A86n48wLzbu",
+          "name": "Evolution account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.message_type }}",
+                    "rightValue": "imageMessage",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "imagem"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.message_type }}",
+                    "rightValue": "conversation",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "texto"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.message_type }}",
+                    "rightValue": "audioMessage",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "audio"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.message_type }}",
+                    "rightValue": "extendedTextMessage",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "texto"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -624,
+        272
+      ],
+      "id": "fd0fb14f-6fab-4952-8881-8ef3f6eb6b5b",
+      "name": "Tipo de Mensagem"
     },
     {
       "parameters": {
@@ -157,10 +792,46 @@
               "type": "string"
             },
             {
+              "id": "mercado_pago_token",
+              "name": "mercado_pago_token",
+              "value": "={{ $('Busca Estabelecimento').item.json.mercado_pago_token || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "pix_key",
+              "name": "pix_key",
+              "value": "={{ $('Busca Estabelecimento').item.json.pix_key || '' }}",
+              "type": "string"
+            },
+            {
               "id": "evolution_api_token",
               "name": "evolution_api_token",
               "value": "={{ $('Busca Estabelecimento').item.json.evolution_api_token || '' }}",
               "type": "string"
+            },
+            {
+              "id": "whatsapp",
+              "name": "whatsapp",
+              "value": "={{ $('Busca Estabelecimento').item.json.whatsapp || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "address",
+              "name": "address",
+              "value": "={{ $('Busca Estabelecimento').item.json.address || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "min_order_value",
+              "name": "min_order_value",
+              "value": "={{ $('Busca Estabelecimento').item.json.min_order_value || 0 }}",
+              "type": "number"
+            },
+            {
+              "id": "delivery_base_fee",
+              "name": "delivery_base_fee",
+              "value": "={{ $('Busca Estabelecimento').item.json.delivery_base_fee || 0 }}",
+              "type": "number"
             }
           ]
         },
@@ -168,15 +839,17 @@
       },
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [860, 300],
-      "id": "extract-fields",
+      "position": [
+        -816,
+        304
+      ],
+      "id": "1e5ecfeb-a5df-437f-98c2-b09d6a3df70a",
       "name": "Extrai Campos"
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "https://gyagfsjbdaacgmmofqip.supabase.co/functions/v1/whatsapp-cart",
-        "authentication": "none",
+        "url": "https://gyagfsjbdaacgmmofqip.supabase.co/rest/v1/rpc/get_establishment_by_instance",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -192,117 +865,90 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"action\": \"get\",\n  \"instance_name\": \"{{ $('Extrai Campos').item.json.instance_name }}\",\n  \"remote_jid\": \"{{ $('Extrai Campos').item.json.remote_jid }}\",\n  \"establishment_id\": \"{{ $('Extrai Campos').item.json.establishment_id }}\"\n}",
+        "jsonBody": "={\n  \"p_instance_name\": \"{{ $json.body.instance }}\"\n}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1080, 300],
-      "id": "get-cart",
-      "name": "Busca Carrinho"
+      "position": [
+        -1040,
+        304
+      ],
+      "id": "1d7b44f7-cb55-4b8c-8c99-88c410499218",
+      "name": "Busca Estabelecimento"
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "https://gyagfsjbdaacgmmofqip.supabase.co/rest/v1/rpc/get_customer_by_phone_and_establishment",
-        "authentication": "none",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
             {
-              "name": "apikey",
-              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5YWdmc2piZGFhY2dtbW9mcWlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4NzIwNjYsImV4cCI6MjA4MDQ0ODA2Nn0.4W0hZwETfoALlpn9_f2NqdKQNJ3DKDRkcs7uC-VbdhE"
+              "leftValue": "={{ $json.body?.data?.key?.fromMe }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "notEquals"
+              }
             },
             {
-              "name": "Content-Type",
-              "value": "application/json"
+              "leftValue": "={{ $json.body?.event }}",
+              "rightValue": "messages.upsert",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
             }
-          ]
+          ],
+          "combinator": "and"
         },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={\n  \"p_phone\": \"{{ $('Extrai Campos').item.json.phone }}\",\n  \"p_establishment_id\": \"{{ $('Extrai Campos').item.json.establishment_id }}\"\n}",
         "options": {}
       },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [1300, 300],
-      "id": "get-customer",
-      "name": "Busca Cliente",
-      "alwaysOutputData": true
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1264,
+        320
+      ],
+      "id": "989d1cfc-89c4-4195-8b9b-44b7f93dbb01",
+      "name": "Filter Self Messages"
     },
     {
       "parameters": {
-        "promptType": "define",
-        "text": "={{ $('Extrai Campos').item.json.message_text }}",
-        "hasOutputParser": false,
-        "options": {
-          "systemMessage": "=# ASSISTENTE VIRTUAL - {{ $('Extrai Campos').item.json.establishment_name }}\n\n{{ $('Extrai Campos').item.json.system_prompt }}\n\n## CLIENTE:\n- Nome: {{ $('Extrai Campos').item.json.push_name }}\n- Telefone: {{ $('Extrai Campos').item.json.phone }}\n- Endereço: {{ $('Busca Cliente').item.json?.default_address ? JSON.stringify($('Busca Cliente').item.json.default_address) : 'Não cadastrado' }}\n\n## CARRINHO ATUAL:\n{{ $('Busca Carrinho').item.json?.cart ? JSON.stringify($('Busca Carrinho').item.json.cart) : 'Vazio' }}\n\n## REGRAS OBRIGATÓRIAS DE USO DAS FERRAMENTAS:\n\n**SEMPRE USE AS FERRAMENTAS - NUNCA RESPONDA SOBRE PRODUTOS SEM USÁ-LAS:**\n\n1. **search_menu** - OBRIGATÓRIO quando:\n   - Cliente perguntar sobre produtos, preços ou cardápio\n   - Cliente mencionar qualquer alimento ou bebida\n   - Cliente disser 'quero', 'tem', 'qual o preço'\n   - SEMPRE busque antes de responder sobre produtos!\n\n2. **send_product_photo** - OBRIGATÓRIO após search_menu:\n   - Envie a foto de CADA produto encontrado\n   - Use a image_url retornada pelo search_menu\n   - caption = nome do produto + preço\n\n3. **add_to_cart** - Use quando cliente CONFIRMAR que quer um produto\n\n4. **view_cart** - Use quando cliente perguntar 'o que tenho no carrinho'\n\n5. **clear_cart** - Use para cancelar/recomeçar pedido\n\n6. **save_customer** - Use quando cliente fornecer endereço\n\n7. **calculate_delivery_fee** - Use para calcular taxa de entrega\n\n8. **create_order_pix** - Use APENAS após confirmar tudo com cliente\n\n## FLUXO CORRETO:\n1. Saudação → Pergunte o que deseja\n2. Cliente pede algo → USE search_menu\n3. Para cada produto → USE send_product_photo com image_url\n4. Mostre opções → Pergunte quantidade\n5. Cliente confirma → USE add_to_cart\n6. Pergunte se quer mais → Repita ou finalize\n7. Finalização → USE create_order_pix\n\n## FORMATO:\n- Respostas curtas (max 400 chars)\n- Emojis moderados 🍕\n- Sempre pergunte se deseja mais algo"
-        }
+        "httpMethod": "POST",
+        "path": "vilafood-webhook",
+        "options": {}
       },
-      "type": "@n8n/n8n-nodes-langchain.agent",
-      "typeVersion": 1.7,
-      "position": [1520, 300],
-      "id": "ai-agent",
-      "name": "VilaFood AI Agent"
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -1472,
+        320
+      ],
+      "id": "7d2d2694-4f5d-4912-bbbf-363b8a6eb742",
+      "name": "Evolution API Webhook",
+      "webhookId": "vilafood-evolution-webhook"
     },
     {
       "parameters": {
-        "modelName": "models/gemini-2.5-flash",
-        "options": {
-          "temperature": 0.7,
-          "maxOutputTokens": 1024
-        }
-      },
-      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
-      "typeVersion": 1,
-      "position": [1420, 520],
-      "id": "google-gemini-chat",
-      "name": "Google Gemini Chat",
-      "credentials": {
-        "googleGeminiApi": {
-          "id": "google-gemini-credentials",
-          "name": "Google Gemini API"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "sessionIdType": "customKey",
-        "sessionKey": "=vilafood:memory:{{ $('Extrai Campos').item.json.session_key }}",
-        "contextWindowLength": 20
-      },
-      "type": "@n8n/n8n-nodes-langchain.memoryRedisChat",
-      "typeVersion": 1.3,
-      "position": [1620, 520],
-      "id": "redis-chat-memory",
-      "name": "Redis Chat Memory",
-      "credentials": {
-        "redis": {
-          "id": "redis-credentials",
-          "name": "Redis"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "name": "search_menu",
-        "description": "Busca produtos no cardápio do estabelecimento por nome, categoria ou descrição. Retorna lista de produtos encontrados com nome, preço e ID.",
         "method": "POST",
         "url": "https://gyagfsjbdaacgmmofqip.supabase.co/rest/v1/rpc/search_products",
-        "authentication": "none",
         "sendHeaders": true,
         "parametersHeaders": {
           "values": [
             {
               "name": "apikey",
-              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5YWdmc2piZGFhY2dtbW9mcWlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4NzIwNjYsImV4cCI6MjA4MDQ0ODA2Nn0.4W0hZwETfoALlpn9_f2NqdKQNJ3DKDRkcs7uC-VbdhE",
-              "valueProvider": "fieldValue"
+              "valueProvider": "fieldValue",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5YWdmc2piZGFhY2dtbW9mcWlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4NzIwNjYsImV4cCI6MjA4MDQ0ODA2Nn0.4W0hZwETfoALlpn9_f2NqdKQNJ3DKDRkcs7uC-VbdhE"
             },
             {
               "name": "Content-Type",
-              "value": "application/json",
-              "valueProvider": "fieldValue"
+              "valueProvider": "fieldValue",
+              "value": "application/json"
             }
           ]
         },
@@ -321,75 +967,29 @@
       },
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "typeVersion": 1.1,
-      "position": [1320, 640],
-      "id": "tool-search-menu",
+      "position": [
+        1712,
+        800
+      ],
+      "id": "fb9324f1-bbe6-4f32-b36e-fc351a5248ea",
       "name": "search_menu"
     },
     {
       "parameters": {
-        "name": "send_product_photo",
-        "description": "Envia a foto de um produto para o cliente no WhatsApp. Use após apresentar um produto para mostrar a imagem. Retorna confirmação de envio.",
-        "method": "POST",
-        "url": "https://gyagfsjbdaacgmmofqip.supabase.co/functions/v1/whatsapp-send-media",
-        "authentication": "none",
-        "sendHeaders": true,
-        "parametersHeaders": {
-          "values": [
-            {
-              "name": "apikey",
-              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5YWdmc2piZGFhY2dtbW9mcWlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4NzIwNjYsImV4cCI6MjA4MDQ0ODA2Nn0.4W0hZwETfoALlpn9_f2NqdKQNJ3DKDRkcs7uC-VbdhE",
-              "valueProvider": "fieldValue"
-            },
-            {
-              "name": "Content-Type",
-              "value": "application/json",
-              "valueProvider": "fieldValue"
-            }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={\n  \"instance_name\": \"{{ $('Extrai Campos').item.json.instance_name }}\",\n  \"remote_jid\": \"{{ $('Extrai Campos').item.json.remote_jid }}\",\n  \"media_url\": \"{image_url}\",\n  \"media_type\": \"image\",\n  \"caption\": \"{caption}\"\n}",
-        "placeholderDefinitions": {
-          "values": [
-            {
-              "name": "image_url",
-              "description": "URL da imagem do produto (CloudFront ou URL pública)",
-              "type": "string"
-            },
-            {
-              "name": "caption",
-              "description": "Legenda da imagem (nome do produto e preço)",
-              "type": "string"
-            }
-          ]
-        }
-      },
-      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
-      "typeVersion": 1.1,
-      "position": [1220, 640],
-      "id": "tool-send-photo",
-      "name": "send_product_photo"
-    },
-    {
-      "parameters": {
-        "name": "add_to_cart",
-        "description": "Adiciona um produto ao carrinho do cliente. Use quando o cliente confirmar que quer adicionar um item ao pedido.",
         "method": "POST",
         "url": "https://gyagfsjbdaacgmmofqip.supabase.co/functions/v1/whatsapp-cart",
-        "authentication": "none",
         "sendHeaders": true,
         "parametersHeaders": {
           "values": [
             {
               "name": "apikey",
-              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5YWdmc2piZGFhY2dtbW9mcWlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4NzIwNjYsImV4cCI6MjA4MDQ0ODA2Nn0.4W0hZwETfoALlpn9_f2NqdKQNJ3DKDRkcs7uC-VbdhE",
-              "valueProvider": "fieldValue"
+              "valueProvider": "fieldValue",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5YWdmc2piZGFhY2dtbW9mcWlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4NzIwNjYsImV4cCI6MjA4MDQ0ODA2Nn0.4W0hZwETfoALlpn9_f2NqdKQNJ3DKDRkcs7uC-VbdhE"
             },
             {
               "name": "Content-Type",
-              "value": "application/json",
-              "valueProvider": "fieldValue"
+              "valueProvider": "fieldValue",
+              "value": "application/json"
             }
           ]
         },
@@ -428,29 +1028,29 @@
       },
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "typeVersion": 1.1,
-      "position": [1420, 640],
-      "id": "tool-add-cart",
+      "position": [
+        1712,
+        656
+      ],
+      "id": "3523a901-23d5-41ed-8cb0-c990c227d565",
       "name": "add_to_cart"
     },
     {
       "parameters": {
-        "name": "view_cart",
-        "description": "Exibe o carrinho atual do cliente com todos os itens, quantidades e valores",
         "method": "POST",
         "url": "https://gyagfsjbdaacgmmofqip.supabase.co/functions/v1/whatsapp-cart",
-        "authentication": "none",
         "sendHeaders": true,
         "parametersHeaders": {
           "values": [
             {
               "name": "apikey",
-              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5YWdmc2piZGFhY2dtbW9mcWlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4NzIwNjYsImV4cCI6MjA4MDQ0ODA2Nn0.4W0hZwETfoALlpn9_f2NqdKQNJ3DKDRkcs7uC-VbdhE",
-              "valueProvider": "fieldValue"
+              "valueProvider": "fieldValue",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5YWdmc2piZGFhY2dtbW9mcWlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4NzIwNjYsImV4cCI6MjA4MDQ0ODA2Nn0.4W0hZwETfoALlpn9_f2NqdKQNJ3DKDRkcs7uC-VbdhE"
             },
             {
               "name": "Content-Type",
-              "value": "application/json",
-              "valueProvider": "fieldValue"
+              "valueProvider": "fieldValue",
+              "value": "application/json"
             }
           ]
         },
@@ -460,29 +1060,29 @@
       },
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "typeVersion": 1.1,
-      "position": [1520, 640],
-      "id": "tool-view-cart",
+      "position": [
+        1856,
+        656
+      ],
+      "id": "0bcaeb2e-14f5-4bbe-b226-37d853095989",
       "name": "view_cart"
     },
     {
       "parameters": {
-        "name": "clear_cart",
-        "description": "Limpa completamente o carrinho do cliente. Use quando o cliente quiser cancelar ou recomeçar.",
         "method": "POST",
         "url": "https://gyagfsjbdaacgmmofqip.supabase.co/functions/v1/whatsapp-cart",
-        "authentication": "none",
         "sendHeaders": true,
         "parametersHeaders": {
           "values": [
             {
               "name": "apikey",
-              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5YWdmc2piZGFhY2dtbW9mcWlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4NzIwNjYsImV4cCI6MjA4MDQ0ODA2Nn0.4W0hZwETfoALlpn9_f2NqdKQNJ3DKDRkcs7uC-VbdhE",
-              "valueProvider": "fieldValue"
+              "valueProvider": "fieldValue",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5YWdmc2piZGFhY2dtbW9mcWlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4NzIwNjYsImV4cCI6MjA4MDQ0ODA2Nn0.4W0hZwETfoALlpn9_f2NqdKQNJ3DKDRkcs7uC-VbdhE"
             },
             {
               "name": "Content-Type",
-              "value": "application/json",
-              "valueProvider": "fieldValue"
+              "valueProvider": "fieldValue",
+              "value": "application/json"
             }
           ]
         },
@@ -492,29 +1092,29 @@
       },
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "typeVersion": 1.1,
-      "position": [1620, 640],
-      "id": "tool-clear-cart",
+      "position": [
+        2000,
+        656
+      ],
+      "id": "3593f27d-3095-43fb-bfa6-d32c06c99e8e",
       "name": "clear_cart"
     },
     {
       "parameters": {
-        "name": "save_customer",
-        "description": "Salva ou atualiza os dados do cliente (nome, endereço). Use quando o cliente fornecer informações pessoais.",
         "method": "POST",
         "url": "https://gyagfsjbdaacgmmofqip.supabase.co/functions/v1/whatsapp-cart",
-        "authentication": "none",
         "sendHeaders": true,
         "parametersHeaders": {
           "values": [
             {
               "name": "apikey",
-              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5YWdmc2piZGFhY2dtbW9mcWlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4NzIwNjYsImV4cCI6MjA4MDQ0ODA2Nn0.4W0hZwETfoALlpn9_f2NqdKQNJ3DKDRkcs7uC-VbdhE",
-              "valueProvider": "fieldValue"
+              "valueProvider": "fieldValue",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5YWdmc2piZGFhY2dtbW9mcWlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4NzIwNjYsImV4cCI6MjA4MDQ0ODA2Nn0.4W0hZwETfoALlpn9_f2NqdKQNJ3DKDRkcs7uC-VbdhE"
             },
             {
               "name": "Content-Type",
-              "value": "application/json",
-              "valueProvider": "fieldValue"
+              "valueProvider": "fieldValue",
+              "value": "application/json"
             }
           ]
         },
@@ -553,29 +1153,29 @@
       },
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "typeVersion": 1.1,
-      "position": [1720, 640],
-      "id": "tool-save-customer",
+      "position": [
+        2144,
+        656
+      ],
+      "id": "1e2ddd70-800f-40f4-a2d6-78845a587b92",
       "name": "save_customer"
     },
     {
       "parameters": {
-        "name": "calculate_delivery_fee",
-        "description": "Calcula a taxa de entrega baseada no endereço do cliente",
         "method": "POST",
         "url": "https://gyagfsjbdaacgmmofqip.supabase.co/functions/v1/calculate-delivery",
-        "authentication": "none",
         "sendHeaders": true,
         "parametersHeaders": {
           "values": [
             {
               "name": "apikey",
-              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5YWdmc2piZGFhY2dtbW9mcWlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4NzIwNjYsImV4cCI6MjA4MDQ0ODA2Nn0.4W0hZwETfoALlpn9_f2NqdKQNJ3DKDRkcs7uC-VbdhE",
-              "valueProvider": "fieldValue"
+              "valueProvider": "fieldValue",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5YWdmc2piZGFhY2dtbW9mcWlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4NzIwNjYsImV4cCI6MjA4MDQ0ODA2Nn0.4W0hZwETfoALlpn9_f2NqdKQNJ3DKDRkcs7uC-VbdhE"
             },
             {
               "name": "Content-Type",
-              "value": "application/json",
-              "valueProvider": "fieldValue"
+              "valueProvider": "fieldValue",
+              "value": "application/json"
             }
           ]
         },
@@ -594,29 +1194,29 @@
       },
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "typeVersion": 1.1,
-      "position": [1320, 760],
-      "id": "tool-delivery-fee",
+      "position": [
+        1920,
+        800
+      ],
+      "id": "c6000c02-8b57-4a32-a322-fa1f9731922c",
       "name": "calculate_delivery_fee"
     },
     {
       "parameters": {
-        "name": "create_order_pix",
-        "description": "Cria o pedido final e gera QR Code PIX para pagamento. Use somente após confirmar todos os dados com o cliente.",
         "method": "POST",
         "url": "https://gyagfsjbdaacgmmofqip.supabase.co/functions/v1/whatsapp-checkout",
-        "authentication": "none",
         "sendHeaders": true,
         "parametersHeaders": {
           "values": [
             {
               "name": "apikey",
-              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5YWdmc2piZGFhY2dtbW9mcWlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4NzIwNjYsImV4cCI6MjA4MDQ0ODA2Nn0.4W0hZwETfoALlpn9_f2NqdKQNJ3DKDRkcs7uC-VbdhE",
-              "valueProvider": "fieldValue"
+              "valueProvider": "fieldValue",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5YWdmc2piZGFhY2dtbW9mcWlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4NzIwNjYsImV4cCI6MjA4MDQ0ODA2Nn0.4W0hZwETfoALlpn9_f2NqdKQNJ3DKDRkcs7uC-VbdhE"
             },
             {
               "name": "Content-Type",
-              "value": "application/json",
-              "valueProvider": "fieldValue"
+              "valueProvider": "fieldValue",
+              "value": "application/json"
             }
           ]
         },
@@ -650,213 +1250,575 @@
       },
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "typeVersion": 1.1,
-      "position": [1420, 760],
-      "id": "tool-create-order",
+      "position": [
+        2144,
+        800
+      ],
+      "id": "5c036543-e941-4a1f-b02d-88861957b6dd",
       "name": "create_order_pix"
     },
     {
       "parameters": {
-        "jsCode": "// Split long AI response into chunks (max 400 chars)\nconst aiResponse = $input.first().json.output || '';\nconst maxLength = 400;\nconst chunks = [];\n\nif (!aiResponse || aiResponse.trim() === '') {\n  return [{ json: { text: 'Olá! Como posso ajudá-lo hoje? 😊', chunk_index: 0, total_chunks: 1, is_last: true } }];\n}\n\nif (aiResponse.length <= maxLength) {\n  return [{ json: { text: aiResponse, chunk_index: 0, total_chunks: 1, is_last: true } }];\n}\n\n// Split by paragraphs first, then sentences\nconst paragraphs = aiResponse.split(/\\n\\n+/);\nlet currentChunk = '';\n\nfor (const paragraph of paragraphs) {\n  if ((currentChunk + '\\n\\n' + paragraph).length <= maxLength) {\n    currentChunk = currentChunk ? currentChunk + '\\n\\n' + paragraph : paragraph;\n  } else {\n    if (currentChunk) chunks.push(currentChunk.trim());\n    \n    if (paragraph.length > maxLength) {\n      const sentences = paragraph.split(/(?<=[.!?])\\s+/);\n      currentChunk = '';\n      for (const sentence of sentences) {\n        if ((currentChunk + ' ' + sentence).length <= maxLength) {\n          currentChunk = currentChunk ? currentChunk + ' ' + sentence : sentence;\n        } else {\n          if (currentChunk) chunks.push(currentChunk.trim());\n          currentChunk = sentence.length > maxLength ? sentence.substring(0, maxLength) : sentence;\n        }\n      }\n    } else {\n      currentChunk = paragraph;\n    }\n  }\n}\nif (currentChunk) chunks.push(currentChunk.trim());\n\nreturn chunks.map((text, index) => ({\n  json: {\n    text,\n    chunk_index: index,\n    total_chunks: chunks.length,\n    is_last: index === chunks.length - 1\n  }\n}));"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [1740, 300],
-      "id": "split-response",
-      "name": "Split Mensagens"
-    },
-    {
-      "parameters": {
-        "batchSize": 1,
-        "options": {
-          "reset": false
-        }
-      },
-      "type": "n8n-nodes-base.splitInBatches",
-      "typeVersion": 3,
-      "position": [1960, 300],
-      "id": "loop-chunks",
-      "name": "Loop Chunks"
-    },
-    {
-      "parameters": {
-        "resource": "message",
-        "operation": "send-text",
-        "instanceName": "={{ $('Extrai Campos').item.json.instance_name }}",
-        "remoteJid": "={{ $('Extrai Campos').item.json.remote_jid }}",
-        "text": "={{ $json.text }}"
-      },
-      "type": "n8n-nodes-evolution-api.evolutionApi",
-      "typeVersion": 1,
-      "position": [2180, 300],
-      "id": "send-response",
-      "name": "Envia Chunk",
-      "credentials": {
-        "evolutionApi": {
-          "id": "evolution-api-credentials",
-          "name": "Evolution API"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict",
-            "version": 2
-          },
-          "conditions": [
+        "method": "POST",
+        "url": "https://gyagfsjbdaacgmmofqip.supabase.co/functions/v1/whatsapp-send-media",
+        "sendHeaders": true,
+        "parametersHeaders": {
+          "values": [
             {
-              "leftValue": "={{ $('Loop Chunks').item.json.is_last }}",
-              "rightValue": true,
-              "operator": {
-                "type": "boolean",
-                "operation": "equals"
-              }
+              "name": "apikey",
+              "valueProvider": "fieldValue",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5YWdmc2piZGFhY2dtbW9mcWlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4NzIwNjYsImV4cCI6MjA4MDQ0ODA2Nn0.4W0hZwETfoALlpn9_f2NqdKQNJ3DKDRkcs7uC-VbdhE"
+            },
+            {
+              "name": "Content-Type",
+              "valueProvider": "fieldValue",
+              "value": "application/json"
             }
-          ],
-          "combinator": "and"
+          ]
         },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [2400, 300],
-      "id": "check-last-chunk",
-      "name": "É Última?"
-    },
-    {
-      "parameters": {
-        "amount": 1,
-        "unit": "seconds"
-      },
-      "type": "n8n-nodes-base.wait",
-      "typeVersion": 1.1,
-      "position": [2620, 420],
-      "id": "chunk-delay",
-      "name": "Wait 1s",
-      "webhookId": "chunk-delay-webhook"
-    },
-    {
-      "parameters": {
-        "resource": "insert",
-        "operation": "insert",
-        "schema": {
-          "__rl": true,
-          "mode": "list",
-          "value": "public"
-        },
-        "table": {
-          "__rl": true,
-          "mode": "list",
-          "value": "whatsapp_messages"
-        },
-        "columns": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "session_id": "={{ $('Extrai Campos').item.json.session_key }}",
-            "role": "bot",
-            "content": "={{ $('VilaFood AI Agent').item.json.output }}",
-            "establishment_id": "={{ $('Extrai Campos').item.json.establishment_id }}",
-            "phone": "={{ $('Extrai Campos').item.json.phone }}"
-          }
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
-      "position": [2620, 180],
-      "id": "save-bot-message",
-      "name": "Salva Log Resposta",
-      "credentials": {
-        "supabaseApi": {
-          "id": "supabase-credentials",
-          "name": "Supabase"
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"instance_name\": \"{{ $('Extrai Campos').item.json.instance_name }}\",\n  \"remote_jid\": \"{{ $('Extrai Campos').item.json.remote_jid }}\",\n  \"media_url\": \"{image_url}\",\n  \"media_type\": \"image\",\n  \"caption\": \"{caption}\"\n}",
+        "placeholderDefinitions": {
+          "values": [
+            {
+              "name": "image_url",
+              "description": "URL da imagem do produto (CloudFront ou URL pública). Use o campo image_url retornado pelo search_menu.",
+              "type": "string"
+            },
+            {
+              "name": "caption",
+              "description": "Legenda da imagem (nome do produto + preço)",
+              "type": "string"
+            }
+          ]
         }
-      }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [
+        1856,
+        800
+      ],
+      "id": "tool-send-product-photo",
+      "name": "send_product_photo"
     }
   ],
+  "pinData": {},
   "connections": {
-    "Evolution API Webhook": {
-      "main": [[{ "node": "Filtra Mensagens Próprias", "type": "main", "index": 0 }]]
-    },
-    "Filtra Mensagens Próprias": {
-      "main": [[{ "node": "Busca Estabelecimento", "type": "main", "index": 0 }]]
-    },
-    "Busca Estabelecimento": {
-      "main": [[{ "node": "Extrai Campos", "type": "main", "index": 0 }]]
-    },
-    "Extrai Campos": {
-      "main": [[{ "node": "Busca Carrinho", "type": "main", "index": 0 }]]
-    },
-    "Busca Carrinho": {
-      "main": [[{ "node": "Busca Cliente", "type": "main", "index": 0 }]]
-    },
-    "Busca Cliente": {
-      "main": [[{ "node": "VilaFood AI Agent", "type": "main", "index": 0 }]]
-    },
-    "Google Gemini Chat": {
-      "ai_languageModel": [[{ "node": "VilaFood AI Agent", "type": "ai_languageModel", "index": 0 }]]
-    },
-    "Redis Chat Memory": {
-      "ai_memory": [[{ "node": "VilaFood AI Agent", "type": "ai_memory", "index": 0 }]]
-    },
-    "search_menu": {
-      "ai_tool": [[{ "node": "VilaFood AI Agent", "type": "ai_tool", "index": 0 }]]
-    },
-    "send_product_photo": {
-      "ai_tool": [[{ "node": "VilaFood AI Agent", "type": "ai_tool", "index": 0 }]]
-    },
-    "add_to_cart": {
-      "ai_tool": [[{ "node": "VilaFood AI Agent", "type": "ai_tool", "index": 0 }]]
-    },
-    "view_cart": {
-      "ai_tool": [[{ "node": "VilaFood AI Agent", "type": "ai_tool", "index": 0 }]]
-    },
-    "clear_cart": {
-      "ai_tool": [[{ "node": "VilaFood AI Agent", "type": "ai_tool", "index": 0 }]]
-    },
-    "save_customer": {
-      "ai_tool": [[{ "node": "VilaFood AI Agent", "type": "ai_tool", "index": 0 }]]
-    },
-    "calculate_delivery_fee": {
-      "ai_tool": [[{ "node": "VilaFood AI Agent", "type": "ai_tool", "index": 0 }]]
-    },
-    "create_order_pix": {
-      "ai_tool": [[{ "node": "VilaFood AI Agent", "type": "ai_tool", "index": 0 }]]
-    },
-    "VilaFood AI Agent": {
-      "main": [[{ "node": "Split Mensagens", "type": "main", "index": 0 }]]
-    },
-    "Split Mensagens": {
-      "main": [[{ "node": "Loop Chunks", "type": "main", "index": 0 }]]
-    },
-    "Loop Chunks": {
+    "E Ultima?": {
       "main": [
-        [{ "node": "Envia Chunk", "type": "main", "index": 0 }],
-        []
-      ]
-    },
-    "Envia Chunk": {
-      "main": [[{ "node": "É Última?", "type": "main", "index": 0 }]]
-    },
-    "É Última?": {
-      "main": [
-        [{ "node": "Salva Log Resposta", "type": "main", "index": 0 }],
-        [{ "node": "Wait 1s", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Salva Log Resposta",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Batch Mensagens",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Wait 1s": {
-      "main": [[{ "node": "Loop Chunks", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "E Ultima?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Envia Chunk": {
+      "main": [
+        [
+          {
+            "node": "E Ultima?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Batch Mensagens": {
+      "main": [
+        [
+          {
+            "node": "Wait 1s",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Envia Chunk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Mensagens": {
+      "main": [
+        [
+          {
+            "node": "Batch Mensagens",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DeepSeek Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Orchestrator",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Redis Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Orchestrator",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Orchestrator": {
+      "main": [
+        [
+          {
+            "node": "Split Mensagens",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca Cliente": {
+      "main": [
+        [
+          {
+            "node": "AI Orchestrator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca Carrinho Redis": {
+      "main": [
+        [
+          {
+            "node": "Busca Cliente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Conteudo": {
+      "main": [
+        [
+          {
+            "node": "Busca Carrinho Redis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formata Resultado Audio": {
+      "main": [
+        [
+          {
+            "node": "Merge Conteudo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formata Resultado Imagem": {
+      "main": [
+        [
+          {
+            "node": "Merge Conteudo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Redis Clear Debounce": {
+      "main": [
+        [
+          {
+            "node": "Merge Conteudo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combina Mensagens Texto": {
+      "main": [
+        [
+          {
+            "node": "Redis Clear Debounce",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "E Ultima Mensagem": {
+      "main": [
+        [
+          {
+            "node": "Combina Mensagens Texto",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Nao e ultima (ignora)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Redis Get Mensagens": {
+      "main": [
+        [
+          {
+            "node": "E Ultima Mensagem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Debounce 3s": {
+      "main": [
+        [
+          {
+            "node": "Redis Get Mensagens",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Redis Push Texto": {
+      "main": [
+        [
+          {
+            "node": "Debounce 3s",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcreve Audio Gemini": {
+      "main": [
+        [
+          {
+            "node": "Formata Resultado Audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Converte Audio": {
+      "main": [
+        [
+          {
+            "node": "Transcreve Audio Gemini",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca Audio Base64": {
+      "main": [
+        [
+          {
+            "node": "Converte Audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analisa Imagem Gemini": {
+      "main": [
+        [
+          {
+            "node": "Formata Resultado Imagem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Converte Imagem": {
+      "main": [
+        [
+          {
+            "node": "Analisa Imagem Gemini",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca Imagem Base64": {
+      "main": [
+        [
+          {
+            "node": "Converte Imagem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tipo de Mensagem": {
+      "main": [
+        [
+          {
+            "node": "Busca Imagem Base64",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Redis Push Texto",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Busca Audio Base64",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Redis Push Texto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extrai Campos": {
+      "main": [
+        [
+          {
+            "node": "Tipo de Mensagem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca Estabelecimento": {
+      "main": [
+        [
+          {
+            "node": "Extrai Campos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Self Messages": {
+      "main": [
+        [
+          {
+            "node": "Busca Estabelecimento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Evolution API Webhook": {
+      "main": [
+        [
+          {
+            "node": "Filter Self Messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "search_menu": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Orchestrator",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "add_to_cart": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Orchestrator",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "view_cart": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Orchestrator",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "clear_cart": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Orchestrator",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "save_customer": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Orchestrator",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "calculate_delivery_fee": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Orchestrator",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "create_order_pix": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Orchestrator",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "send_product_photo": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Orchestrator",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
-  "settings": { "executionOrder": "v1" },
-  "meta": { "templateCredsSetupCompleted": true },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "6a050557-28bb-467c-ae7f-8f93f77f656b",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "4a54bbbe319553c26066b13bf0db11255ccfa016b8c09a06d29bc13ba1a455a6"
+  },
+  "id": "65IOpyWDliLrAJn0",
   "tags": [
-    { "name": "VilaFood" },
-    { "name": "WhatsApp" },
-    { "name": "AI Agent" },
-    { "name": "v3-fixed" }
+    {
+      "createdAt": "2025-12-01T22:06:34.480Z",
+      "updatedAt": "2025-12-01T22:06:34.480Z",
+      "id": "3MSmU7zQ65NWCQyd",
+      "name": "WhatsApp"
+    },
+    {
+      "createdAt": "2025-12-09T23:21:35.730Z",
+      "updatedAt": "2025-12-09T23:21:35.730Z",
+      "id": "D9Q8v9BHtTZPQv5l",
+      "name": "AI Agent"
+    },
+    {
+      "createdAt": "2025-12-09T23:21:35.718Z",
+      "updatedAt": "2025-12-09T23:21:35.718Z",
+      "id": "Gi7JgP50E8og9UvZ",
+      "name": "Image"
+    },
+    {
+      "createdAt": "2025-12-01T22:06:34.464Z",
+      "updatedAt": "2025-12-01T22:06:34.464Z",
+      "id": "LrTCJu3IqxbwnJtG",
+      "name": "VilaFood"
+    },
+    {
+      "createdAt": "2025-12-09T23:21:35.740Z",
+      "updatedAt": "2025-12-09T23:21:35.740Z",
+      "id": "PDvnzTbgQpCpu6C0",
+      "name": "Audio"
+    },
+    {
+      "name": "v3",
+      "id": "oCaE63dNJwvFGI3Q",
+      "createdAt": "2025-12-10T22:02:39.541Z",
+      "updatedAt": "2025-12-10T22:02:39.541Z"
+    },
+    {
+      "name": "v3-fixed",
+      "id": "fciyCp0JaVG3z3ea",
+      "createdAt": "2025-12-10T22:48:56.593Z",
+      "updatedAt": "2025-12-10T22:48:56.593Z"
+    }
   ]
 }
