@@ -85,6 +85,7 @@ const SupportManagement = lazy(() => import("./pages/dashboard/SupportManagement
 const UpgradePage = lazy(() => import("./pages/dashboard/UpgradePage"));
 const TeamManagement = lazy(() => import("./pages/dashboard/TeamManagement"));
 const TVSlideManagement = lazy(() => import("./pages/dashboard/TVSlideManagement"));
+const TVSlidePlayer = lazy(() => import("./pages/display/TVSlidePlayer"));
 
 // Checkout callback pages
 const CheckoutResult = lazy(() => import("./pages/checkout/CheckoutResult"));
@@ -342,6 +343,8 @@ const AppRoutes = () => {
               <Route path="/afiliado/configuracoes" element={<AffiliateSettings />} />
               {/* Driver app */}
               <Route path="/entregador" element={<DriverApp />} />
+              {/* Public display routes */}
+              <Route path="/display/tv/:token" element={<TVSlidePlayer />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
         </Routes>

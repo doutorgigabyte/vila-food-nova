@@ -16,6 +16,9 @@ interface TVSlide {
   secondary_images?: string[];
   media_type?: string;
   duration_seconds?: number;
+  image_scale?: number;
+  image_position_x?: number;
+  image_position_y?: number;
   product?: {
     id: string;
     name: string;
