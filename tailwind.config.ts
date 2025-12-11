@@ -115,6 +115,16 @@ export default {
           "0%, 100%": { transform: "rotate(0deg)" },
           "50%": { transform: "rotate(25deg)" },
         },
+        "pacman": {
+          "0%, 100%": { 
+            clipPath: "polygon(100% 50%, 50% 0%, 0% 0%, 0% 100%, 50% 100%)",
+            background: "conic-gradient(hsl(var(--destructive)) 0deg, hsl(var(--destructive)) 30deg, transparent 30deg, transparent 330deg, hsl(var(--destructive)) 330deg)"
+          },
+          "50%": { 
+            clipPath: "polygon(100% 50%, 50% 35%, 0% 0%, 0% 100%, 50% 65%)",
+            background: "conic-gradient(hsl(var(--destructive)) 0deg, hsl(var(--destructive)) 5deg, transparent 5deg, transparent 355deg, hsl(var(--destructive)) 355deg)"
+          },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -127,6 +137,7 @@ export default {
         "coin-slide": "coin-slide 2.4s ease-in-out infinite",
         "chomp-top": "chomp-top 0.3s ease-in-out infinite",
         "chomp-bottom": "chomp-bottom 0.3s ease-in-out infinite",
+        "pacman": "pacman 0.4s ease-in-out infinite",
       },
       backgroundImage: {
         "gradient-primary": "var(--gradient-primary)",

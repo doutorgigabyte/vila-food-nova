@@ -5,59 +5,47 @@
 
 const CoinEaterAnimation = () => {
   return (
-    <div className="relative inline-flex items-center h-10 md:h-12 ml-1 overflow-visible">
+    <div className="relative inline-flex items-center justify-center w-16 h-10 md:w-20 md:h-12 ml-1">
       {/* Coins coming from the right (lower z-index - will be "eaten") */}
-      <div className="absolute -right-2 md:-right-4 flex items-center z-10">
-        {/* Coin 1 */}
+      <div className="absolute right-0 top-1/2 -translate-y-1/2 z-10">
         <span 
-          className="absolute animate-coin-slide text-xl md:text-2xl"
+          className="absolute animate-coin-slide text-lg md:text-xl"
           style={{ animationDelay: '0s' }}
         >
-          💰
+          🪙
         </span>
-        {/* Coin 2 - delayed */}
         <span 
-          className="absolute animate-coin-slide text-xl md:text-2xl"
+          className="absolute animate-coin-slide text-lg md:text-xl"
           style={{ animationDelay: '0.8s' }}
         >
-          💰
+          🪙
         </span>
-        {/* Coin 3 - more delayed */}
         <span 
-          className="absolute animate-coin-slide text-xl md:text-2xl"
+          className="absolute animate-coin-slide text-lg md:text-xl"
           style={{ animationDelay: '1.6s' }}
         >
-          💰
+          🪙
         </span>
       </div>
       
-      {/* Pac-Man SVG with animated mouth (higher z-index - eats the coins) */}
+      {/* Pac-Man using conic-gradient - guaranteed to work */}
       <div className="relative z-20">
-        <svg 
-          viewBox="0 0 100 100" 
-          className="w-10 h-10 md:w-12 md:h-12"
-        >
-          {/* Pac-Man body - semi-circle with animated mouth */}
-          <g className="origin-center" style={{ transform: 'scaleX(-1) translateX(-100%)' }}>
-            {/* Top jaw */}
-            <path
-              d="M50 50 L95 50 A45 45 0 0 0 50 5 Z"
-              fill="hsl(var(--destructive))"
-              className="animate-chomp-top origin-center"
-              style={{ transformOrigin: '50px 50px' }}
-            />
-            {/* Bottom jaw */}
-            <path
-              d="M50 50 L95 50 A45 45 0 0 1 50 95 Z"
-              fill="hsl(var(--destructive))"
-              className="animate-chomp-bottom origin-center"
-              style={{ transformOrigin: '50px 50px' }}
-            />
-            {/* Eye */}
-            <circle cx="55" cy="25" r="6" fill="white" />
-            <circle cx="57" cy="23" r="3" fill="hsl(220, 20%, 15%)" />
-          </g>
-        </svg>
+        <div 
+          className="w-10 h-10 md:w-12 md:h-12 rounded-full animate-pacman"
+          style={{
+            background: `conic-gradient(
+              hsl(var(--destructive)) 0deg,
+              hsl(var(--destructive)) 30deg,
+              transparent 30deg,
+              transparent 330deg,
+              hsl(var(--destructive)) 330deg
+            )`
+          }}
+        />
+        {/* Eye */}
+        <div className="absolute top-1.5 md:top-2 left-1/2 w-2 h-2 md:w-2.5 md:h-2.5 bg-white rounded-full">
+          <div className="absolute top-0.5 right-0 w-1 h-1 bg-[hsl(220,20%,15%)] rounded-full" />
+        </div>
       </div>
     </div>
   );
