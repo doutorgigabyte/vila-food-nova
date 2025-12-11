@@ -5581,6 +5581,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_establishment_manager: {
+        Args: { p_establishment_id: string; p_user_id: string }
+        Returns: boolean
+      }
       search_products: {
         Args: { p_establishment_id: string; p_search_term: string }
         Returns: {
@@ -5593,6 +5597,10 @@ export type Database = {
           price: number
           promotional_price: number
         }[]
+      }
+      user_has_establishment_access: {
+        Args: { p_establishment_id: string; p_user_id: string }
+        Returns: boolean
       }
     }
     Enums: {
