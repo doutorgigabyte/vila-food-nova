@@ -16,13 +16,13 @@ const CoinEaterAnimation = () => {
       {/* Pac-Man */}
       <g id="pacman">
         <circle cx="200" cy="200" r="40" fill="#ea0000"/>
-        <path d="M 200,200 L 240,180 A 40,40 0 0,0 240,220 Z" fill="#1a1a1a">
+        <path d="M 200,200 L 240,160 A 40,40 0 0,0 240,240 Z" fill="#1a1a1a">
           <animate 
             attributeName="d" 
             dur="0.3s" 
             repeatCount="indefinite"
             values="M 200,200 L 240,200 A 40,40 0 0,0 240,200 Z;
-                    M 200,200 L 235,170 A 40,40 0 0,0 235,230 Z;
+                    M 200,200 L 240,160 A 40,40 0 0,0 240,240 Z;
                     M 200,200 L 240,200 A 40,40 0 0,0 240,200 Z" 
           />
         </path>
