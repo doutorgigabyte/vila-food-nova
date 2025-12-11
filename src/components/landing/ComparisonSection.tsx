@@ -1,10 +1,9 @@
-import { motion } from "framer-motion";
-import { Check, X, Trophy, Percent, Globe, Bot, Palette, CreditCard, TrendingUp } from "lucide-react";
+import { Check, X, Trophy, Percent, Globe, Bot, Palette, CreditCard, TrendingUp, TrendingDown } from "lucide-react";
 
 const features = [
   { 
     name: "Taxa por pedido", 
-    vilafood: "0%", 
+    vilafood: "5% marketplace", 
     ifood: "12-27%", 
     rappi: "15-25%",
     icon: Percent,
@@ -66,7 +65,7 @@ const ComparisonSection = () => {
       );
     }
     return (
-      <span className={`text-xs md:text-sm font-semibold ${isVilaFood ? 'text-green-400' : 'text-muted-foreground'}`}>
+      <span className={`text-xs md:text-sm font-semibold ${isVilaFood ? 'text-green-400' : 'text-destructive'}`}>
         {value}
       </span>
     );
@@ -80,38 +79,59 @@ const ComparisonSection = () => {
 
       <div className="container mx-auto px-4 relative z-10">
         {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-10 md:mb-16"
-        >
+        <div className="text-center mb-10 md:mb-16">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-full bg-primary/10 border border-primary/20 mb-4 md:mb-6">
             <Trophy className="h-3 w-3 md:h-4 md:w-4 text-primary" />
-            <span className="text-xs md:text-sm font-medium text-primary">Comparativo</span>
+            <span className="text-xs md:text-sm font-medium text-primary">Comparativo de Custos</span>
           </div>
           <h2 className="text-2xl md:text-4xl lg:text-5xl font-bold text-foreground mb-3 md:mb-4">
-            Por que escolher o{" "}
-            <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              VilaFood
+            Economize até{" "}
+            <span className="bg-gradient-to-r from-green-500 to-emerald-500 bg-clip-text text-transparent">
+              R$ 6.000/mês
             </span>
-            ?
           </h2>
           <p className="text-sm md:text-lg text-muted-foreground max-w-2xl mx-auto px-4">
-            Compare e veja como somos diferentes das grandes plataformas. 
-            Mais recursos, menos taxas, controle total.
+            Mesmo serviço, fração do custo. Invista a economia em tráfego local e cresça mais.
           </p>
-        </motion.div>
+        </div>
+
+        {/* Savings Example Card */}
+        <div className="max-w-3xl mx-auto mb-10 md:mb-16">
+          <div className="rounded-2xl bg-gradient-to-br from-primary/10 via-accent/5 to-primary/10 border border-primary/20 p-6 md:p-8">
+            <h3 className="text-lg md:text-xl font-bold text-foreground text-center mb-6">
+              Se você vende <span className="text-primary">R$ 30.000/mês</span> no iFood:
+            </h3>
+            
+            <div className="grid md:grid-cols-3 gap-4 md:gap-6">
+              {/* iFood */}
+              <div className="p-4 md:p-6 rounded-xl bg-destructive/10 border border-destructive/20 text-center">
+                <p className="text-sm text-muted-foreground mb-2">iFood Entrega leva:</p>
+                <p className="text-2xl md:text-3xl font-bold text-destructive">R$ 7.860</p>
+                <p className="text-xs text-destructive/70 mt-1">23% + 3.2% + R$130</p>
+              </div>
+              
+              {/* VilaFood */}
+              <div className="p-4 md:p-6 rounded-xl bg-green-500/10 border border-green-500/20 text-center">
+                <p className="text-sm text-muted-foreground mb-2">VilaFood leva:</p>
+                <p className="text-2xl md:text-3xl font-bold text-green-500">R$ 1.667</p>
+                <p className="text-xs text-green-500/70 mt-1">5% + R$1/pedido</p>
+              </div>
+              
+              {/* Savings */}
+              <div className="p-4 md:p-6 rounded-xl bg-accent/20 border border-accent/30 text-center">
+                <p className="text-sm text-muted-foreground mb-2">Você economiza:</p>
+                <div className="flex items-center justify-center gap-2">
+                  <TrendingDown className="h-6 w-6 text-green-500" />
+                  <p className="text-2xl md:text-3xl font-bold text-foreground">R$ 6.193</p>
+                </div>
+                <p className="text-xs text-primary mt-1">R$ 74.316/ano</p>
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* Comparison Table */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          className="max-w-4xl mx-auto"
-        >
+        <div className="max-w-4xl mx-auto">
           <div className="rounded-2xl bg-card/50 backdrop-blur-xl border border-border/50 overflow-hidden">
             {/* Table Header */}
             <div className="grid grid-cols-4 gap-2 md:gap-4 p-3 md:p-6 bg-muted/30 border-b border-border/50">
@@ -134,13 +154,9 @@ const ComparisonSection = () => {
 
             {/* Table Body - Scrollable on mobile */}
             <div className="divide-y divide-border/30 max-h-[400px] md:max-h-none overflow-y-auto md:overflow-visible">
-              {features.map((feature, index) => (
-                <motion.div
+              {features.map((feature) => (
+                <div
                   key={feature.name}
-                  initial={{ opacity: 0, x: -20 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.3, delay: 0.1 * index }}
                   className={`grid grid-cols-4 gap-2 md:gap-4 p-3 md:p-6 items-center hover:bg-muted/20 transition-colors ${feature.highlight ? 'bg-primary/5' : ''}`}
                 >
                   <div className="flex items-center gap-2 md:gap-3">
@@ -152,7 +168,7 @@ const ComparisonSection = () => {
                   <div className="text-center">{renderValue(feature.vilafood, true)}</div>
                   <div className="text-center">{renderValue(feature.ifood)}</div>
                   <div className="text-center">{renderValue(feature.rappi)}</div>
-                </motion.div>
+                </div>
               ))}
             </div>
 
@@ -160,29 +176,23 @@ const ComparisonSection = () => {
             <div className="p-3 md:p-6 bg-gradient-to-r from-primary/10 to-accent/10 border-t border-border/50">
               <div className="flex flex-col sm:flex-row items-center justify-between gap-3 md:gap-4">
                 <p className="text-xs md:text-sm text-muted-foreground text-center sm:text-left">
-                  💡 Com o VilaFood você tem <strong className="text-foreground">controle total</strong> do seu negócio
+                  💡 Invista a economia em <strong className="text-foreground">tráfego local</strong> e cresça mais
                 </p>
                 <div className="flex items-center gap-1.5 md:gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-full bg-green-500/20 text-green-400 text-xs md:text-sm font-medium whitespace-nowrap">
                   <Check className="h-3 w-3 md:h-4 md:w-4" />
-                  Sem taxas abusivas
+                  Economia garantida
                 </div>
               </div>
             </div>
           </div>
-        </motion.div>
+        </div>
 
         {/* Bottom CTA */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5, delay: 0.5 }}
-          className="mt-8 md:mt-12 text-center"
-        >
+        <div className="mt-8 md:mt-12 text-center">
           <p className="text-sm md:text-base text-muted-foreground">
-            Chega de pagar taxas altas. <span className="text-primary font-semibold">Comece grátis hoje!</span>
+            Chega de enriquecer plataformas. <span className="text-primary font-semibold">Cresça no seu bairro!</span>
           </p>
-        </motion.div>
+        </div>
       </div>
     </section>
   );
