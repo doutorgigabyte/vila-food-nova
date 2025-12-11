@@ -16,7 +16,7 @@ const CoinEaterAnimation = () => {
       {/* Pac-Man */}
       <g id="pacman">
         <circle cx="200" cy="200" r="40" fill="#ff0000"/>
-        <path d="M 200,200 L 200,160 A 40,40 0 1,1 200,240 Z" fill="#000">
+        <path d="M 200,200 L 200,160 A 40,40 0 1,1 200,240 Z" fill="transparent">
           <animate 
             attributeName="d" 
             dur="0.3s" 
@@ -26,7 +26,6 @@ const CoinEaterAnimation = () => {
                     M 200,200 L 200,160 A 40,40 0 1,1 200,240 Z" 
           />
         </path>
-        <circle cx="195" cy="185" r="4" fill="#000"/>
       </g>
       
       {/* Moedas com cifrão */}
