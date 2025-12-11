@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import Navbar from "@/components/landing/Navbar";
 import HeroSection from "@/components/landing/HeroSection";
 import IFoodCalculator from "@/components/landing/IFoodCalculator";
@@ -22,6 +22,11 @@ const SectionSkeleton = () => (
 );
 
 const Conheca = () => {
+  // Scroll to top on mount
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   return (
     <main className="min-h-screen bg-background">
       <Navbar />
