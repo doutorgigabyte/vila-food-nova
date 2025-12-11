@@ -64,7 +64,7 @@ interface PlaylistSettings {
 // COMPONENTES AUXILIARES
 // =====================
 
-// Logo fixa com moldura circular - PREENCHENDO 100% da moldura
+// Logo fixa com moldura circular - CENTRALIZADA HORIZONTALMENTE
 function FixedLogo({ logoUrl, name, variant = 'light' }: { logoUrl: string | null; name: string; variant?: 'light' | 'dark' }) {
   if (!logoUrl) return null;
   
@@ -73,7 +73,7 @@ function FixedLogo({ logoUrl, name, variant = 'light' }: { logoUrl: string | nul
       initial={{ opacity: 0, scale: 0.8 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ delay: 0.1 }}
-      className="absolute top-10 left-10 z-30"
+      className="absolute top-10 left-1/2 -translate-x-1/2 z-30"
     >
       <div 
         className={`w-28 h-28 rounded-full overflow-hidden border-4 shadow-2xl ${

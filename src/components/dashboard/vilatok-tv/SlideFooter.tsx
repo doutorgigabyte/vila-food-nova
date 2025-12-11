@@ -76,14 +76,11 @@ export function SlideFooter({
   const bgStyles = {
     default: { backgroundColor: primaryColor },
     dark: { backgroundColor: '#1a1a1a' },
-    transparent: { backgroundColor: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)' }
+    transparent: { backgroundColor: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)' }
   };
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.4 }}
+    <div 
       className="h-24 flex items-center justify-between px-12"
       style={bgStyles[variant]}
     >
@@ -148,7 +145,7 @@ export function SlideFooter({
           <img src={qrCodeUrl} alt="QR Code Menu" className="w-16 h-16" />
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 }
 
