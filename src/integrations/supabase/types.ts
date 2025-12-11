@@ -4066,6 +4066,47 @@ export type Database = {
         }
         Relationships: []
       }
+      public_display_tokens: {
+        Row: {
+          created_at: string | null
+          display_type: string
+          establishment_id: string
+          expires_at: string | null
+          id: string
+          is_active: boolean | null
+          name: string | null
+          token: string
+        }
+        Insert: {
+          created_at?: string | null
+          display_type?: string
+          establishment_id: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string | null
+          token: string
+        }
+        Update: {
+          created_at?: string | null
+          display_type?: string
+          establishment_id?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string | null
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "public_display_tokens_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       qr_codes: {
         Row: {
           created_at: string | null
