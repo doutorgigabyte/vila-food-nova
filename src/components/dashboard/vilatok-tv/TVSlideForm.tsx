@@ -200,9 +200,9 @@ export function TVSlideForm({
       </div>
 
       {/* Form Section */}
-      <div className="lg:w-1/2">
-        <ScrollArea className="max-h-[calc(90vh-150px)] pr-4">
-          <div className="space-y-6 pt-1">
+      <div className="lg:w-1/2 flex flex-col max-h-[80vh]">
+        <ScrollArea className="flex-1 pr-4">
+          <div className="space-y-6 pt-1 pb-4">
             {/* Creation Mode Tabs */}
             <Tabs value={creationMode} onValueChange={(v) => setCreationMode(v as 'custom' | 'product')}>
               <TabsList className="grid w-full grid-cols-2">
@@ -434,9 +434,12 @@ export function TVSlideForm({
               </div>
             )}
 
-            <Button onClick={onSubmit} className="w-full" disabled={!formData.image_url}>
-              {isEditing ? 'Salvar Alterações' : 'Criar Slide'}
-            </Button>
+            {/* Spacer before button */}
+            <div className="pt-2">
+              <Button onClick={onSubmit} className="w-full" size="lg" disabled={!formData.image_url}>
+                {isEditing ? 'Salvar Alterações' : 'Criar Slide'}
+              </Button>
+            </div>
           </div>
         </ScrollArea>
       </div>
