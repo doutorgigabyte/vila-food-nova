@@ -1,5 +1,11 @@
 import { cn } from "@/lib/utils";
 import { Check } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export interface TemplateOption {
   value: string;
@@ -230,40 +236,49 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 
 export function TemplatePreviewSelector({ templates, value, onValueChange }: TemplatePreviewSelectorProps) {
   return (
-    <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-      {templates.map((template) => (
-        <button
-          key={template.value}
-          type="button"
-          onClick={() => onValueChange(template.value)}
-          className={cn(
-            "relative group p-2 rounded-xl border-2 transition-all duration-200 text-left",
-            value === template.value
-              ? "border-primary bg-primary/5 shadow-md"
-              : "border-border hover:border-primary/50 hover:bg-muted/50"
-          )}
-        >
-          {/* Preview */}
-          <div className="aspect-video w-full rounded-lg overflow-hidden mb-2">
-            {template.preview}
-          </div>
-          
-          {/* Label */}
-          <p className={cn(
-            "text-xs font-medium truncate",
-            value === template.value ? "text-primary" : "text-foreground"
-          )}>
-            {template.label}
-          </p>
-          
-          {/* Selected indicator */}
-          {value === template.value && (
-            <div className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-primary rounded-full flex items-center justify-center shadow-md">
-              <Check className="w-3 h-3 text-primary-foreground" />
-            </div>
-          )}
-        </button>
-      ))}
-    </div>
+    <TooltipProvider delayDuration={300}>
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+        {templates.map((template) => (
+          <Tooltip key={template.value}>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={() => onValueChange(template.value)}
+                className={cn(
+                  "relative group p-2 rounded-xl border-2 transition-all duration-200 text-left hover:scale-[1.02]",
+                  value === template.value
+                    ? "border-primary bg-primary/5 shadow-lg ring-2 ring-primary/20"
+                    : "border-border hover:border-primary/50 hover:bg-muted/50 hover:shadow-md"
+                )}
+              >
+                {/* Preview */}
+                <div className="aspect-video w-full rounded-lg overflow-hidden mb-2 ring-1 ring-border/50">
+                  {template.preview}
+                </div>
+                
+                {/* Label */}
+                <p className={cn(
+                  "text-xs font-medium truncate",
+                  value === template.value ? "text-primary" : "text-foreground"
+                )}>
+                  {template.label}
+                </p>
+                
+                {/* Selected indicator */}
+                {value === template.value && (
+                  <div className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-primary rounded-full flex items-center justify-center shadow-md animate-scale-in">
+                    <Check className="w-3 h-3 text-primary-foreground" />
+                  </div>
+                )}
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="max-w-[200px]">
+              <p className="font-medium">{template.label}</p>
+              <p className="text-xs text-muted-foreground">{template.description}</p>
+            </TooltipContent>
+          </Tooltip>
+        ))}
+      </div>
+    </TooltipProvider>
   );
 }
