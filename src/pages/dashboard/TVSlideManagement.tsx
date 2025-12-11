@@ -42,6 +42,9 @@ interface TVSlide {
   badge_text?: string | null;
   media_type?: string;
   duration_seconds?: number;
+  image_scale?: number;
+  image_position_x?: number;
+  image_position_y?: number;
   product?: {
     id: string;
     name: string;
@@ -66,6 +69,7 @@ export default function TVSlideManagement() {
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingSlide, setEditingSlide] = useState<TVSlide | null>(null);
+  const [publicToken, setPublicToken] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     title: '',
     subtitle: '',
@@ -74,7 +78,10 @@ export default function TVSlideManagement() {
     template_type: 'product_showcase',
     badge_text: '',
     media_type: 'image' as 'image' | 'video',
-    duration_seconds: 10
+    duration_seconds: 10,
+    image_scale: 1,
+    image_position_x: 0,
+    image_position_y: 0
   });
 
   const sensors = useSensors(
@@ -86,6 +93,7 @@ export default function TVSlideManagement() {
     if (establishmentId) {
       fetchSlides();
       fetchProducts();
+      fetchPublicToken();
     }
   }, [establishmentId]);
 
@@ -115,6 +123,20 @@ export default function TVSlideManagement() {
     setProducts(data || []);
   };
 
+  const fetchPublicToken = async () => {
+    const { data } = await (supabase
+      .from("public_display_tokens" as any)
+      .select("token")
+      .eq("establishment_id", establishmentId)
+      .eq("display_type", "tv_slides")
+      .eq("is_active", true)
+      .maybeSingle() as any);
+    
+    if (data?.token) {
+      setPublicToken(data.token);
+    }
+  };
+
   const handleSubmit = async () => {
     if (!formData.image_url) {
       toast.error("Adicione uma imagem ou vídeo");
@@ -131,6 +153,9 @@ export default function TVSlideManagement() {
         badge_text: formData.badge_text || null,
         media_type: formData.media_type,
         duration_seconds: formData.duration_seconds,
+        image_scale: formData.image_scale,
+        image_position_x: formData.image_position_x,
+        image_position_y: formData.image_position_y,
         sort_order: editingSlide ? editingSlide.sort_order : slides.length
       };
       
@@ -158,7 +183,10 @@ export default function TVSlideManagement() {
       template_type: 'product_showcase',
       badge_text: '',
       media_type: 'image',
-      duration_seconds: 10
+      duration_seconds: 10,
+      image_scale: 1,
+      image_position_x: 0,
+      image_position_y: 0
     });
     setEditingSlide(null);
   };
@@ -173,7 +201,10 @@ export default function TVSlideManagement() {
       template_type: slide.template_type,
       badge_text: slide.badge_text || '',
       media_type: (slide.media_type as 'image' | 'video') || 'image',
-      duration_seconds: slide.duration_seconds || 10
+      duration_seconds: slide.duration_seconds || 10,
+      image_scale: slide.image_scale || 1,
+      image_position_x: slide.image_position_x || 0,
+      image_position_y: slide.image_position_y || 0
     });
     setIsDialogOpen(true);
   };
@@ -200,7 +231,6 @@ export default function TVSlideManagement() {
       const newSlides = arrayMove(slides, oldIndex, newIndex);
       setSlides(newSlides);
       
-      // Update sort_order in database
       try {
         const updates = newSlides.map((slide, index) => ({
           id: slide.id,
@@ -216,7 +246,7 @@ export default function TVSlideManagement() {
         toast.success("Ordem atualizada!");
       } catch (error) {
         toast.error("Erro ao atualizar ordem");
-        fetchSlides(); // Revert on error
+        fetchSlides();
       }
     }
   };
@@ -226,8 +256,10 @@ export default function TVSlideManagement() {
   };
 
   const getPublicDisplayUrl = () => {
-    // This would be fetched from public_display_tokens table
-    return `/display/tv/${establishmentId}`;
+    if (publicToken) {
+      return `/display/tv/${publicToken}`;
+    }
+    return null;
   };
 
   if (estLoading) {
@@ -237,6 +269,8 @@ export default function TVSlideManagement() {
       </div>
     );
   }
+
+  const displayUrl = getPublicDisplayUrl();
 
   return (
     <DashboardLayout title="VilaTok TV" establishment={establishment}>
@@ -260,12 +294,19 @@ export default function TVSlideManagement() {
               )}
             </CardTitle>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" asChild>
-                <a href={getPublicDisplayUrl()} target="_blank" rel="noopener noreferrer">
+              {displayUrl ? (
+                <Button variant="outline" size="sm" asChild>
+                  <a href={displayUrl} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="w-4 h-4 mr-2" />
+                    Testar Visualização
+                  </a>
+                </Button>
+              ) : (
+                <Button variant="outline" size="sm" disabled>
                   <ExternalLink className="w-4 h-4 mr-2" />
-                  Testar Visualização
-                </a>
-              </Button>
+                  Gere um token primeiro
+                </Button>
+              )}
               <Button onClick={() => { resetForm(); setIsDialogOpen(true); }}>
                 <Plus className="w-4 h-4 mr-2" />
                 Novo Slide
@@ -320,7 +361,7 @@ export default function TVSlideManagement() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) resetForm(); }}>
-        <DialogContent className="max-w-2xl max-h-[90vh]">
+        <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingSlide ? 'Editar Slide' : 'Novo Slide'}</DialogTitle>
           </DialogHeader>
@@ -330,6 +371,11 @@ export default function TVSlideManagement() {
               setFormData={setFormData}
               products={products}
               establishmentId={establishmentId}
+              establishment={{
+                primary_color: establishment?.primary_color || undefined,
+                logo_url: establishment?.logo_url || undefined,
+                name: establishment?.name || undefined
+              }}
               onSubmit={handleSubmit}
               isEditing={!!editingSlide}
             />

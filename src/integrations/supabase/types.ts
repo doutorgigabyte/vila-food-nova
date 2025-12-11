@@ -4897,6 +4897,9 @@ export type Database = {
           duration_seconds: number | null
           establishment_id: string
           id: string
+          image_position_x: number | null
+          image_position_y: number | null
+          image_scale: number | null
           image_url: string
           is_active: boolean | null
           media_type: string | null
@@ -4914,6 +4917,9 @@ export type Database = {
           duration_seconds?: number | null
           establishment_id: string
           id?: string
+          image_position_x?: number | null
+          image_position_y?: number | null
+          image_scale?: number | null
           image_url: string
           is_active?: boolean | null
           media_type?: string | null
@@ -4931,6 +4937,9 @@ export type Database = {
           duration_seconds?: number | null
           establishment_id?: string
           id?: string
+          image_position_x?: number | null
+          image_position_y?: number | null
+          image_scale?: number | null
           image_url?: string
           is_active?: boolean | null
           media_type?: string | null
