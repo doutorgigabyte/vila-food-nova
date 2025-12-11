@@ -4849,14 +4849,57 @@ export type Database = {
         }
         Relationships: []
       }
+      tv_playlist_settings: {
+        Row: {
+          created_at: string | null
+          default_duration: number | null
+          establishment_id: string
+          id: string
+          is_active: boolean | null
+          playback_mode: string | null
+          transition_type: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          default_duration?: number | null
+          establishment_id: string
+          id?: string
+          is_active?: boolean | null
+          playback_mode?: string | null
+          transition_type?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          default_duration?: number | null
+          establishment_id?: string
+          id?: string
+          is_active?: boolean | null
+          playback_mode?: string | null
+          transition_type?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tv_playlist_settings_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: true
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tv_slides: {
         Row: {
           badge_text: string | null
           created_at: string | null
+          duration_seconds: number | null
           establishment_id: string
           id: string
           image_url: string
           is_active: boolean | null
+          media_type: string | null
           product_id: string | null
           secondary_images: Json | null
           sort_order: number | null
@@ -4868,10 +4911,12 @@ export type Database = {
         Insert: {
           badge_text?: string | null
           created_at?: string | null
+          duration_seconds?: number | null
           establishment_id: string
           id?: string
           image_url: string
           is_active?: boolean | null
+          media_type?: string | null
           product_id?: string | null
           secondary_images?: Json | null
           sort_order?: number | null
@@ -4883,10 +4928,12 @@ export type Database = {
         Update: {
           badge_text?: string | null
           created_at?: string | null
+          duration_seconds?: number | null
           establishment_id?: string
           id?: string
           image_url?: string
           is_active?: boolean | null
+          media_type?: string | null
           product_id?: string | null
           secondary_images?: Json | null
           sort_order?: number | null
