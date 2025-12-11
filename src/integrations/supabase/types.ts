@@ -2262,10 +2262,13 @@ export type Database = {
           driver_payment_mode: string | null
           email: string | null
           evolution_api_token: string | null
+          facebook_url: string | null
           gemini_api_key: string | null
           id: string
+          instagram_url: string | null
           is_open: boolean | null
           latitude: number | null
+          linkedin_url: string | null
           logo_url: string | null
           longitude: number | null
           max_batch_orders: number | null
@@ -2304,13 +2307,17 @@ export type Database = {
           slug: string
           status: Database["public"]["Enums"]["establishment_status"] | null
           system_prompt: string | null
+          tiktok_url: string | null
           tracking_enabled: boolean | null
           turbo_delivery_enabled: boolean | null
           turbo_delivery_fee: number | null
+          twitter_url: string | null
           updated_at: string | null
           vila_id: string | null
+          website_url: string | null
           whatsapp: string | null
           whatsapp_instance_name: string | null
+          youtube_url: string | null
           zip_code: string | null
         }
         Insert: {
@@ -2331,10 +2338,13 @@ export type Database = {
           driver_payment_mode?: string | null
           email?: string | null
           evolution_api_token?: string | null
+          facebook_url?: string | null
           gemini_api_key?: string | null
           id?: string
+          instagram_url?: string | null
           is_open?: boolean | null
           latitude?: number | null
+          linkedin_url?: string | null
           logo_url?: string | null
           longitude?: number | null
           max_batch_orders?: number | null
@@ -2373,13 +2383,17 @@ export type Database = {
           slug: string
           status?: Database["public"]["Enums"]["establishment_status"] | null
           system_prompt?: string | null
+          tiktok_url?: string | null
           tracking_enabled?: boolean | null
           turbo_delivery_enabled?: boolean | null
           turbo_delivery_fee?: number | null
+          twitter_url?: string | null
           updated_at?: string | null
           vila_id?: string | null
+          website_url?: string | null
           whatsapp?: string | null
           whatsapp_instance_name?: string | null
+          youtube_url?: string | null
           zip_code?: string | null
         }
         Update: {
@@ -2400,10 +2414,13 @@ export type Database = {
           driver_payment_mode?: string | null
           email?: string | null
           evolution_api_token?: string | null
+          facebook_url?: string | null
           gemini_api_key?: string | null
           id?: string
+          instagram_url?: string | null
           is_open?: boolean | null
           latitude?: number | null
+          linkedin_url?: string | null
           logo_url?: string | null
           longitude?: number | null
           max_batch_orders?: number | null
@@ -2442,13 +2459,17 @@ export type Database = {
           slug?: string
           status?: Database["public"]["Enums"]["establishment_status"] | null
           system_prompt?: string | null
+          tiktok_url?: string | null
           tracking_enabled?: boolean | null
           turbo_delivery_enabled?: boolean | null
           turbo_delivery_fee?: number | null
+          twitter_url?: string | null
           updated_at?: string | null
           vila_id?: string | null
+          website_url?: string | null
           whatsapp?: string | null
           whatsapp_instance_name?: string | null
+          youtube_url?: string | null
           zip_code?: string | null
         }
         Relationships: [
