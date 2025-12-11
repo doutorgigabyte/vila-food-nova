@@ -1227,6 +1227,7 @@ export type Database = {
           last_location_lng: number | null
           name: string
           phone: string | null
+          referred_by_affiliate_id: string | null
           updated_at: string | null
           user_id: string | null
         }
@@ -1242,6 +1243,7 @@ export type Database = {
           last_location_lng?: number | null
           name: string
           phone?: string | null
+          referred_by_affiliate_id?: string | null
           updated_at?: string | null
           user_id?: string | null
         }
@@ -1257,6 +1259,7 @@ export type Database = {
           last_location_lng?: number | null
           name?: string
           phone?: string | null
+          referred_by_affiliate_id?: string | null
           updated_at?: string | null
           user_id?: string | null
         }
@@ -1266,6 +1269,13 @@ export type Database = {
             columns: ["establishment_id"]
             isOneToOne: false
             referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customers_referred_by_affiliate_id_fkey"
+            columns: ["referred_by_affiliate_id"]
+            isOneToOne: false
+            referencedRelation: "affiliates"
             referencedColumns: ["id"]
           },
         ]
