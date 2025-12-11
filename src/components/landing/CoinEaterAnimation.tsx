@@ -5,7 +5,7 @@
 
 const CoinEaterAnimation = () => {
   return (
-    <svg viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg" className="w-32 h-16 md:w-40 md:h-20 inline-block ml-2">
+    <svg viewBox="150 150 700 100" xmlns="http://www.w3.org/2000/svg" className="w-44 h-8 md:w-56 md:h-10 inline-block ml-2">
       <defs>
         <radialGradient id="coinGradient">
           <stop offset="0%" style={{ stopColor: '#ffd700', stopOpacity: 1 }} />
@@ -15,15 +15,15 @@ const CoinEaterAnimation = () => {
       
       {/* Pac-Man */}
       <g id="pacman">
-        <circle cx="200" cy="200" r="40" fill="#ff0000"/>
-        <path d="M 200,200 L 200,160 A 40,40 0 1,1 200,240 Z" fill="transparent">
+        <circle cx="200" cy="200" r="40" fill="#ea0000"/>
+        <path d="M 200,200 L 240,180 A 40,40 0 0,0 240,220 Z" fill="#1a1a1a">
           <animate 
             attributeName="d" 
             dur="0.3s" 
             repeatCount="indefinite"
-            values="M 200,200 L 200,160 A 40,40 0 1,1 200,240 Z;
-                    M 200,200 L 230,180 A 40,40 0 1,1 230,220 Z;
-                    M 200,200 L 200,160 A 40,40 0 1,1 200,240 Z" 
+            values="M 200,200 L 240,200 A 40,40 0 0,0 240,200 Z;
+                    M 200,200 L 235,170 A 40,40 0 0,0 235,230 Z;
+                    M 200,200 L 240,200 A 40,40 0 0,0 240,200 Z" 
           />
         </path>
       </g>
