@@ -209,7 +209,7 @@ const MarketplaceHeader = ({ searchTerm, onSearchChange, onSearchClick }: Market
                       className="text-lg font-medium py-2 border-b border-border"
                       onClick={() => setMobileMenuOpen(false)}
                     >
-                      Vilas Gastronômicas
+                      Vilas
                     </Link>
                     <Link 
                       to="/?view=restaurants" 

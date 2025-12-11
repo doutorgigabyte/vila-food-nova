@@ -6,6 +6,7 @@ import IFoodCalculator from "@/components/landing/IFoodCalculator";
 // Lazy load sections below the fold for performance
 const TrustBadgesSection = lazy(() => import("@/components/landing/TrustBadgesSection"));
 const AllFeaturesSection = lazy(() => import("@/components/landing/AllFeaturesSection"));
+const VilasConceptSection = lazy(() => import("@/components/landing/VilasConceptSection"));
 const ComparisonSection = lazy(() => import("@/components/landing/ComparisonSection"));
 const HowItWorksSection = lazy(() => import("@/components/landing/HowItWorksSection"));
 const PricingSection = lazy(() => import("@/components/landing/PricingSection"));
@@ -39,6 +40,10 @@ const Conheca = () => {
       
       <Suspense fallback={<SectionSkeleton />}>
         <AllFeaturesSection />
+      </Suspense>
+      
+      <Suspense fallback={<SectionSkeleton />}>
+        <VilasConceptSection />
       </Suspense>
       
       <Suspense fallback={<SectionSkeleton />}>
