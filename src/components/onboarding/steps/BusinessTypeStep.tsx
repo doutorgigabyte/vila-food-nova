@@ -90,10 +90,10 @@ export const BusinessTypeStep = ({ data, updateData, onNext }: BusinessTypeStepP
   };
 
   const getIcon = (category: MainCategory) => {
-    const IconComponent = category.icon 
-      ? iconMap[category.icon] 
-      : defaultIcons[category.slug] || Utensils;
-    return IconComponent;
+    if (category.icon && iconMap[category.icon]) {
+      return iconMap[category.icon];
+    }
+    return defaultIcons[category.slug] || Utensils;
   };
 
   if (loading) {
