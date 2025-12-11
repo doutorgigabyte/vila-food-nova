@@ -46,6 +46,8 @@ import { DeliveryOptionsCards } from "@/components/checkout/DeliveryOptionsCards
 import { CheckoutSummary } from "@/components/checkout/CheckoutSummary";
 import { CouponInput } from "@/components/checkout/CouponInput";
 import { GatewaySelector, GatewayProvider } from "@/components/checkout/GatewaySelector";
+import { VilaCartSummary } from "@/components/checkout/VilaCartSummary";
+import { VilaPaymentSelector, PaymentMethodType, StorePayment } from "@/components/checkout/VilaPaymentSelector";
 import { OrderSendingStep, createChecklistItems } from "@/components/checkout/OrderSendingStep";
 import { OutOfStockOptions, OutOfStockAction } from "@/components/checkout/OutOfStockOptions";
 import { CpfInput } from "@/components/checkout/CpfInput";
@@ -89,6 +91,9 @@ const Checkout = () => {
   
   // Coupon
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discountValue: number; discountType: string } | null>(null);
+  
+  // Vila multi-store payments
+  const [vilaPayments, setVilaPayments] = useState<StorePayment[]>([]);
   
   // Address form
   const [addressData, setAddressData] = useState<{
@@ -1004,16 +1009,30 @@ const Checkout = () => {
         {/* Payment Step */}
         {step === "payment" && (
           <div className="space-y-6 animate-fade-up">
-            {/* 1. Products Summary - TOP */}
-            <CheckoutSummary
-              itemsCount={totalItems}
-              subtotal={subtotal}
-              deliveryFee={deliveryFee}
-              platformFee={platformFee}
-              discount={discount}
-              couponCode={appliedCoupon?.code}
-              total={total}
-            />
+            {/* Vila Multi-Store Summary - Mercado Livre style */}
+            {isMultiStore ? (
+              <VilaCartSummary
+                itemsByEstablishment={Object.fromEntries(
+                  uniqueEstablishments.map(estId => [estId, getEstablishmentItems(estId)])
+                )}
+                establishments={Object.fromEntries(
+                  uniqueEstablishments.map(estId => [estId, establishments.get(estId)!])
+                )}
+                getEstablishmentSubtotal={getEstablishmentSubtotal}
+                totalAmount={total}
+              />
+            ) : (
+              /* 1. Products Summary - Single store */
+              <CheckoutSummary
+                itemsCount={totalItems}
+                subtotal={subtotal}
+                deliveryFee={deliveryFee}
+                platformFee={platformFee}
+                discount={discount}
+                couponCode={appliedCoupon?.code}
+                total={total}
+              />
+            )}
 
             {/* 2. Observations */}
             <Card>
@@ -1047,80 +1066,87 @@ const Checkout = () => {
               />
             )}
 
-            {/* 4. Payment Method */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Forma de pagamento</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {/* Gateway Selector - only shows if multiple gateways available */}
-                {firstEstablishment && (
-                  <div className="mb-4">
-                    <GatewaySelector
-                      establishmentId={firstEstablishment.id}
-                      selectedGateway={selectedGateway}
-                      onGatewayChange={setSelectedGateway}
-                    />
-                  </div>
+            {/* 4. Payment Method - Vila style for multi-store */}
+            {isMultiStore ? (
+              <VilaPaymentSelector
+                establishmentIds={uniqueEstablishments}
+                establishments={Object.fromEntries(
+                  uniqueEstablishments.map(estId => [estId, establishments.get(estId)!])
                 )}
-
-                <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod}>
-                  <div className="flex items-center space-x-3 p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors cursor-pointer">
-                    <RadioGroupItem value="pix" id="pix" />
-                    <Label htmlFor="pix" className="flex items-center gap-3 cursor-pointer flex-1">
-                      <QrCode className="w-5 h-5 text-primary" />
-                      <div>
-                        <p className="font-medium">PIX</p>
-                        <p className="text-sm text-muted-foreground">Pagamento instantâneo</p>
-                      </div>
-                    </Label>
-                  </div>
-                  
-                  {!isMultiStore && (
-                    <>
-                      <div className="flex items-center space-x-3 p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors cursor-pointer mt-2">
-                        <RadioGroupItem value="card" id="card" />
-                        <Label htmlFor="card" className="flex items-center gap-3 cursor-pointer flex-1">
-                          <CreditCard className="w-5 h-5 text-primary" />
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <p className="font-medium">Cartão de Crédito/Débito</p>
-                              <Badge variant="secondary" className="text-xs">Checkout Seguro</Badge>
-                            </div>
-                            <p className="text-sm text-muted-foreground">
-                              {selectedGateway === 'pagseguro' ? 'Via PagBank' : 'Via Mercado Pago'}
-                            </p>
-                          </div>
-                        </Label>
-                      </div>
-                    </>
+                deliveryType={deliveryType === 'pickup' ? 'pickup' : 'delivery'}
+                onPaymentChange={setVilaPayments}
+              />
+            ) : (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Forma de pagamento</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {/* Gateway Selector - only shows if multiple gateways available */}
+                  {firstEstablishment && (
+                    <div className="mb-4">
+                      <GatewaySelector
+                        establishmentId={firstEstablishment.id}
+                        selectedGateway={selectedGateway}
+                        onGatewayChange={setSelectedGateway}
+                      />
+                    </div>
                   )}
-                  
-                  <div className="flex items-center space-x-3 p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors cursor-pointer mt-2">
-                    <RadioGroupItem value="cash" id="cash" />
-                    <Label htmlFor="cash" className="flex items-center gap-3 cursor-pointer flex-1">
-                      <Banknote className="w-5 h-5 text-primary" />
-                      <div>
-                        <p className="font-medium">Dinheiro</p>
-                        <p className="text-sm text-muted-foreground">Na entrega/retirada</p>
-                      </div>
-                    </Label>
-                  </div>
-                </RadioGroup>
 
-                {paymentMethod === "cash" && (
-                  <div className="mt-4 space-y-2">
-                    <Label htmlFor="change">Troco para quanto?</Label>
-                    <Input
-                      id="change"
-                      placeholder="Ex: 100.00"
-                      value={change}
-                      onChange={(e) => setChange(e.target.value)}
-                    />
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                  <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod}>
+                    <div className="flex items-center space-x-3 p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors cursor-pointer">
+                      <RadioGroupItem value="pix" id="pix" />
+                      <Label htmlFor="pix" className="flex items-center gap-3 cursor-pointer flex-1">
+                        <QrCode className="w-5 h-5 text-primary" />
+                        <div>
+                          <p className="font-medium">PIX</p>
+                          <p className="text-sm text-muted-foreground">Pagamento instantâneo</p>
+                        </div>
+                      </Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-3 p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors cursor-pointer mt-2">
+                      <RadioGroupItem value="card" id="card" />
+                      <Label htmlFor="card" className="flex items-center gap-3 cursor-pointer flex-1">
+                        <CreditCard className="w-5 h-5 text-primary" />
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium">Cartão de Crédito/Débito</p>
+                            <Badge variant="secondary" className="text-xs">Checkout Seguro</Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            {selectedGateway === 'pagseguro' ? 'Via PagBank' : 'Via Mercado Pago'}
+                          </p>
+                        </div>
+                      </Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-3 p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors cursor-pointer mt-2">
+                      <RadioGroupItem value="cash" id="cash" />
+                      <Label htmlFor="cash" className="flex items-center gap-3 cursor-pointer flex-1">
+                        <Banknote className="w-5 h-5 text-primary" />
+                        <div>
+                          <p className="font-medium">Dinheiro</p>
+                          <p className="text-sm text-muted-foreground">Na entrega/retirada</p>
+                        </div>
+                      </Label>
+                    </div>
+                  </RadioGroup>
+
+                  {paymentMethod === "cash" && (
+                    <div className="mt-4 space-y-2">
+                      <Label htmlFor="change">Troco para quanto?</Label>
+                      <Input
+                        id="change"
+                        placeholder="Ex: 100.00"
+                        value={change}
+                        onChange={(e) => setChange(e.target.value)}
+                      />
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
 
             {/* 5. WhatsApp Tracking */}
             <Card>
