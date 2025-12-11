@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Bike, Package, Calculator, TrendingDown, Sparkles, RotateCcw } from "lucide-react";
 import { Link } from "react-router-dom";
-
+import CoinEaterAnimation from "./CoinEaterAnimation";
 type Step = 1 | 2 | 3 | 4;
 type DeliveryType = "own" | "ifood" | null;
 
@@ -147,9 +147,12 @@ const IFoodCalculator = () => {
             <span className="text-xs md:text-sm font-medium text-destructive">Calculadora de Perdas</span>
           </div>
           <h2 className="text-2xl md:text-4xl lg:text-5xl font-bold text-white mb-3 md:mb-4">
-            Quanto o iFood está{" "}
-            <span className="text-destructive">mordendo</span>
-            {" "}do seu faturamento?
+            <span className="block">Quanto o iFood está</span>
+            <span className="flex items-center justify-center gap-1">
+              <span className="text-destructive">mordendo</span>
+              <CoinEaterAnimation />
+            </span>
+            <span className="block">do seu faturamento?</span>
           </h2>
           <p className="text-sm md:text-lg text-white/60 max-w-2xl mx-auto">
             Descubra em segundos quanto você está perdendo em taxas e comissões
