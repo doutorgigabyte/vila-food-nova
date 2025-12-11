@@ -437,6 +437,29 @@ async function processAffiliateCommission(
       .update({ total_earnings: commissionAmount })
       .eq('id', affiliate.id);
 
+    // Enviar notificação WhatsApp para o afiliado
+    const { data: affiliateProfile } = await supabase
+      .from('profiles')
+      .select('phone, full_name')
+      .eq('id', (referral.affiliates as { user_id: string }).user_id)
+      .single();
+
+    if (affiliateProfile?.phone) {
+      try {
+        await supabase.functions.invoke('whatsapp-notification', {
+          body: {
+            phone: affiliateProfile.phone,
+            message: `💰 *Nova Comissão Recebida!*\n\nOlá ${affiliateProfile.full_name || 'Parceiro'}!\n\nVocê acabou de receber uma comissão de *R$ ${commissionAmount.toFixed(2)}* pela assinatura de um estabelecimento que você indicou.\n\n📊 Acesse seu painel de afiliado para mais detalhes.\n\nObrigado pela parceria!`,
+            type: 'affiliate_payout',
+            instanceType: 'system',
+          },
+        });
+        console.log('Affiliate notification sent to:', affiliateProfile.phone);
+      } catch (notifError) {
+        console.error('Failed to send affiliate notification:', notifError);
+      }
+    }
+
     console.log('Affiliate commission processed:', {
       affiliate_id: affiliate.id,
       amount: commissionAmount,
