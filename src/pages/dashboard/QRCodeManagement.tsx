@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -21,6 +21,7 @@ interface QRCodeEntry {
 
 const QRCodeManagement = () => {
   const { user } = useAuth();
+  const { slug } = useParams<{ slug: string }>();
   const [qrcodes, setQrcodes] = useState<QRCodeEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -35,19 +36,21 @@ const QRCodeManagement = () => {
   });
 
   useEffect(() => {
-    if (user) fetchEstablishment();
-  }, [user]);
+    if (user && slug) fetchEstablishment();
+  }, [user, slug]);
 
   useEffect(() => {
     if (establishmentId) fetchQRCodes();
   }, [establishmentId]);
 
   const fetchEstablishment = async () => {
+    // First try to get establishment by slug from URL
     const { data } = await supabase
       .from("establishments")
       .select("id, slug")
-      .eq("owner_id", user?.id)
+      .eq("slug", slug)
       .maybeSingle();
+    
     if (data) {
       setEstablishmentId(data.id);
       setEstablishmentSlug(data.slug);
@@ -158,7 +161,7 @@ const QRCodeManagement = () => {
       <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b border-border">
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-3">
-            <Link to="/painel">
+            <Link to={`/painel/${slug}`}>
               <Button variant="ghost" size="icon">
                 <ArrowLeft className="w-5 h-5" />
               </Button>
