@@ -24,7 +24,7 @@ const corsHeaders = {
 
 // Platform Access Token (from secrets)
 const PLATFORM_ACCESS_TOKEN = Deno.env.get('MERCADOPAGO_ACCESS_TOKEN');
-const PLATFORM_FEE_PERCENT = 5; // 5% platform fee (only on PRODUCTS, not delivery)
+const PLATFORM_FEE_PERCENT = 0; // 5% platform fee DISABLED - set to 5 to reactivate (only on PRODUCTS, not delivery)
 const PLATFORM_SERVICE_FEE = 0; // Service fee DISABLED - subscription-only model
 
 interface PixRequest {
