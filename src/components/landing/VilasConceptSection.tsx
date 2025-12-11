@@ -158,35 +158,58 @@ const VilasConceptSection = () => {
                     </motion.div>
                   </div>
 
-                  {/* Single Order Result */}
+                  {/* Single Order Result - Checkout Style */}
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     transition={{ delay: 1.2 }}
-                    className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-xl p-4 shadow-md"
+                    className="bg-card border border-border rounded-xl p-4 shadow-md"
                   >
                     <div className="flex items-center gap-3 mb-3">
-                      <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center shadow-lg">
-                        <Check className="w-5 h-5 text-white" />
+                      <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center shadow-lg">
+                        <ShoppingBag className="w-5 h-5 text-primary-foreground" />
                       </div>
                       <div>
-                        <p className="font-semibold text-sm text-green-800 dark:text-green-200">Pedido Único</p>
-                        <p className="text-xs text-green-600 dark:text-green-400">3 lojas • 1 pagamento • 1 retirada</p>
+                        <p className="font-semibold text-sm">Resumo de valores</p>
+                        <p className="text-xs text-muted-foreground">3 lojas • 1 pagamento</p>
                       </div>
                     </div>
-                    <div className="flex items-center justify-between text-sm border-t border-green-200 dark:border-green-800 pt-3">
-                      <div className="flex items-center gap-2">
-                        {STORES_DATA.slice(0, 3).map((store, idx) => (
-                          <img
-                            key={idx}
-                            src={store.product}
-                            alt="Produto"
-                            className="w-8 h-8 rounded-md object-cover border border-green-300"
-                          />
-                        ))}
+                    
+                    {/* Breakdown estilo iFood */}
+                    <div className="space-y-2 text-sm border-t border-border pt-3">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Subtotal</span>
+                        <span>R$ 105,90</span>
                       </div>
-                      <span className="text-green-700 dark:text-green-300 font-bold text-lg">R$ 105,90</span>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Taxa de entrega</span>
+                        <span className="text-green-600">Grátis</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-muted-foreground flex items-center gap-1">
+                          Taxa de serviço
+                          <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded">?</span>
+                        </span>
+                        <span>R$ 0,99</span>
+                      </div>
+                      <div className="flex justify-between font-bold pt-2 border-t border-border">
+                        <span>Total</span>
+                        <span className="text-primary text-lg">R$ 106,89</span>
+                      </div>
+                    </div>
+
+                    {/* Products */}
+                    <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border">
+                      {STORES_DATA.slice(0, 3).map((store, idx) => (
+                        <img
+                          key={idx}
+                          src={store.product}
+                          alt="Produto"
+                          className="w-8 h-8 rounded-md object-cover border border-border"
+                        />
+                      ))}
+                      <span className="text-xs text-muted-foreground ml-auto">Retirada na Vila</span>
                     </div>
                   </motion.div>
                 </motion.div>
@@ -296,7 +319,31 @@ const VilasConceptSection = () => {
             </div>
           </div>
 
-          <p className="text-center text-sm text-muted-foreground mt-8 max-w-xl mx-auto">
+          {/* Fee explanation cards */}
+          <div className="grid md:grid-cols-2 gap-4 mt-8 max-w-2xl mx-auto">
+            <div className="bg-muted/50 rounded-lg p-4">
+              <p className="text-sm font-medium text-foreground mb-2 flex items-center gap-2">
+                <Users className="w-4 h-4 text-primary" />
+                Cliente paga
+              </p>
+              <p className="text-xs text-muted-foreground">
+                <strong>Taxa de serviço de R$ 0,99</strong> por pedido — inclui licenciamento da plataforma, 
+                custos operacionais, desenvolvimento, suporte e segurança.
+              </p>
+            </div>
+            <div className="bg-muted/50 rounded-lg p-4">
+              <p className="text-sm font-medium text-foreground mb-2 flex items-center gap-2">
+                <Store className="w-4 h-4 text-primary" />
+                Lojista paga
+              </p>
+              <p className="text-xs text-muted-foreground">
+                <strong>5% de comissão</strong> sobre o valor dos produtos — deduzido automaticamente 
+                no repasse. Taxa de entrega fica 100% com a loja.
+              </p>
+            </div>
+          </div>
+
+          <p className="text-center text-sm text-muted-foreground mt-6 max-w-xl mx-auto">
             O valor é processado e distribuído automaticamente para cada estabelecimento 
             conforme o valor dos produtos pedidos, garantindo transparência e praticidade.
           </p>
