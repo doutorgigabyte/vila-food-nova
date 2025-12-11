@@ -745,6 +745,51 @@ export type Database = {
           },
         ]
       }
+      birthday_greetings: {
+        Row: {
+          coupon_code: string | null
+          customer_id: string
+          establishment_id: string
+          id: string
+          message: string | null
+          sent_at: string | null
+          year: number
+        }
+        Insert: {
+          coupon_code?: string | null
+          customer_id: string
+          establishment_id: string
+          id?: string
+          message?: string | null
+          sent_at?: string | null
+          year: number
+        }
+        Update: {
+          coupon_code?: string | null
+          customer_id?: string
+          establishment_id?: string
+          id?: string
+          message?: string | null
+          sent_at?: string | null
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "birthday_greetings_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "birthday_greetings_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       broadcast_campaigns: {
         Row: {
           completed_at: string | null
@@ -1172,6 +1217,7 @@ export type Database = {
       customers: {
         Row: {
           addresses: Json | null
+          birth_date: string | null
           created_at: string | null
           default_address: Json | null
           email: string | null
@@ -1186,6 +1232,7 @@ export type Database = {
         }
         Insert: {
           addresses?: Json | null
+          birth_date?: string | null
           created_at?: string | null
           default_address?: Json | null
           email?: string | null
@@ -1200,6 +1247,7 @@ export type Database = {
         }
         Update: {
           addresses?: Json | null
+          birth_date?: string | null
           created_at?: string | null
           default_address?: Json | null
           email?: string | null
@@ -1697,6 +1745,89 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "disbursement_reports_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dre_categories: {
+        Row: {
+          created_at: string | null
+          establishment_id: string
+          group_name: string
+          id: string
+          is_active: boolean | null
+          name: string
+          sort_order: number | null
+          type: string
+        }
+        Insert: {
+          created_at?: string | null
+          establishment_id: string
+          group_name: string
+          id?: string
+          is_active?: boolean | null
+          name: string
+          sort_order?: number | null
+          type: string
+        }
+        Update: {
+          created_at?: string | null
+          establishment_id?: string
+          group_name?: string
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          sort_order?: number | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dre_categories_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dre_category_mappings: {
+        Row: {
+          created_at: string | null
+          dre_category_id: string | null
+          establishment_id: string
+          id: string
+          source_category: string
+          source_table: string
+        }
+        Insert: {
+          created_at?: string | null
+          dre_category_id?: string | null
+          establishment_id: string
+          id?: string
+          source_category: string
+          source_table: string
+        }
+        Update: {
+          created_at?: string | null
+          dre_category_id?: string | null
+          establishment_id?: string
+          id?: string
+          source_category?: string
+          source_table?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dre_category_mappings_dre_category_id_fkey"
+            columns: ["dre_category_id"]
+            isOneToOne: false
+            referencedRelation: "dre_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dre_category_mappings_establishment_id_fkey"
             columns: ["establishment_id"]
             isOneToOne: false
             referencedRelation: "establishments"
@@ -2627,6 +2758,263 @@ export type Database = {
           },
         ]
       }
+      loyalty_balances: {
+        Row: {
+          customer_id: string
+          establishment_id: string
+          id: string
+          points_balance: number | null
+          tier: string | null
+          total_earned: number | null
+          total_redeemed: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          customer_id: string
+          establishment_id: string
+          id?: string
+          points_balance?: number | null
+          tier?: string | null
+          total_earned?: number | null
+          total_redeemed?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          customer_id?: string
+          establishment_id?: string
+          id?: string
+          points_balance?: number | null
+          tier?: string | null
+          total_earned?: number | null
+          total_redeemed?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loyalty_balances_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loyalty_balances_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      loyalty_programs: {
+        Row: {
+          created_at: string | null
+          establishment_id: string
+          expiration_days: number | null
+          id: string
+          is_active: boolean | null
+          min_redemption: number | null
+          name: string
+          points_per_real: number | null
+          points_value: number | null
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          establishment_id: string
+          expiration_days?: number | null
+          id?: string
+          is_active?: boolean | null
+          min_redemption?: number | null
+          name?: string
+          points_per_real?: number | null
+          points_value?: number | null
+          type?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          establishment_id?: string
+          expiration_days?: number | null
+          id?: string
+          is_active?: boolean | null
+          min_redemption?: number | null
+          name?: string
+          points_per_real?: number | null
+          points_value?: number | null
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loyalty_programs_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: true
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      loyalty_rewards: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          establishment_id: string
+          id: string
+          is_active: boolean | null
+          name: string
+          points_cost: number
+          product_id: string | null
+          reward_type: string
+          reward_value: number | null
+          stock: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          establishment_id: string
+          id?: string
+          is_active?: boolean | null
+          name: string
+          points_cost: number
+          product_id?: string | null
+          reward_type: string
+          reward_value?: number | null
+          stock?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          establishment_id?: string
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          points_cost?: number
+          product_id?: string | null
+          reward_type?: string
+          reward_value?: number | null
+          stock?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loyalty_rewards_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loyalty_rewards_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      loyalty_tiers: {
+        Row: {
+          benefits: Json | null
+          color: string | null
+          created_at: string | null
+          establishment_id: string
+          id: string
+          min_points: number
+          multiplier: number | null
+          name: string
+          sort_order: number | null
+        }
+        Insert: {
+          benefits?: Json | null
+          color?: string | null
+          created_at?: string | null
+          establishment_id: string
+          id?: string
+          min_points: number
+          multiplier?: number | null
+          name: string
+          sort_order?: number | null
+        }
+        Update: {
+          benefits?: Json | null
+          color?: string | null
+          created_at?: string | null
+          establishment_id?: string
+          id?: string
+          min_points?: number
+          multiplier?: number | null
+          name?: string
+          sort_order?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loyalty_tiers_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      loyalty_transactions: {
+        Row: {
+          balance_after: number
+          created_at: string | null
+          customer_id: string
+          description: string | null
+          establishment_id: string
+          id: string
+          order_id: string | null
+          points: number
+          type: string
+        }
+        Insert: {
+          balance_after: number
+          created_at?: string | null
+          customer_id: string
+          description?: string | null
+          establishment_id: string
+          id?: string
+          order_id?: string | null
+          points: number
+          type: string
+        }
+        Update: {
+          balance_after?: number
+          created_at?: string | null
+          customer_id?: string
+          description?: string | null
+          establishment_id?: string
+          id?: string
+          order_id?: string | null
+          points?: number
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loyalty_transactions_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loyalty_transactions_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loyalty_transactions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       main_categories: {
         Row: {
           bg_color: string | null
@@ -3513,6 +3901,7 @@ export type Database = {
           booking_advance_days: number | null
           category_id: string | null
           cost_price: number | null
+          cost_price_updated_at: string | null
           created_at: string | null
           description: string | null
           digital_delivery_url: string | null
@@ -3551,6 +3940,7 @@ export type Database = {
           booking_advance_days?: number | null
           category_id?: string | null
           cost_price?: number | null
+          cost_price_updated_at?: string | null
           created_at?: string | null
           description?: string | null
           digital_delivery_url?: string | null
@@ -3589,6 +3979,7 @@ export type Database = {
           booking_advance_days?: number | null
           category_id?: string | null
           cost_price?: number | null
+          cost_price_updated_at?: string | null
           created_at?: string | null
           description?: string | null
           digital_delivery_url?: string | null
