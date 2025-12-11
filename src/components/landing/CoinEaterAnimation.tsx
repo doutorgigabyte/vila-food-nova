@@ -28,25 +28,14 @@ const CoinEaterAnimation = () => {
         </svg>
       </div>
       
-      {/* Pac-Man SVG with animated mouth */}
+      {/* Pac-Man with CSS clip-path animation */}
       <div className="relative z-20">
-        <svg viewBox="0 0 100 100" className="w-10 h-10 md:w-12 md:h-12">
-          {/* Body */}
-          <circle cx="50" cy="50" r="40" fill="hsl(var(--destructive))" />
-          {/* Animated mouth (black pie slice) */}
-          <path fill="hsl(var(--background))">
-            <animate
-              attributeName="d"
-              dur="0.3s"
-              repeatCount="indefinite"
-              values="M 50,50 L 50,10 A 40,40 0 0,1 50,90 Z;
-                      M 50,50 L 85,35 A 40,40 0 0,1 85,65 Z;
-                      M 50,50 L 50,10 A 40,40 0 0,1 50,90 Z"
-            />
-          </path>
+        <div 
+          className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-destructive animate-pacman-chomp"
+        >
           {/* Eye */}
-          <circle cx="55" cy="30" r="5" fill="hsl(var(--background))" />
-        </svg>
+          <div className="absolute top-2 left-1/2 w-2 h-2 bg-background rounded-full" />
+        </div>
       </div>
     </div>
   );
