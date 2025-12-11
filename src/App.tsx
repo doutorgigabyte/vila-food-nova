@@ -84,6 +84,7 @@ const CommissionDebtManagement = lazy(() => import("./pages/dashboard/Commission
 const SupportManagement = lazy(() => import("./pages/dashboard/SupportManagement"));
 const UpgradePage = lazy(() => import("./pages/dashboard/UpgradePage"));
 const TeamManagement = lazy(() => import("./pages/dashboard/TeamManagement"));
+const TVSlideManagement = lazy(() => import("./pages/dashboard/TVSlideManagement"));
 
 // Checkout callback pages
 const CheckoutResult = lazy(() => import("./pages/checkout/CheckoutResult"));
@@ -263,6 +264,7 @@ const AppRoutes = () => {
               <Route path="/painel/:slug/suporte" element={<SupportManagement />} />
               <Route path="/painel/:slug/upgrade" element={<UpgradePage />} />
               <Route path="/painel/:slug/equipe" element={<TeamManagement />} />
+              <Route path="/painel/:slug/vilatok-tv" element={<TVSlideManagement />} />
               {/* Routes without slug for establishment owners */}
               <Route path="/painel/produtos" element={<ProductsManagement />} />
               <Route path="/painel/categorias" element={<CategoriesManagement />} />
