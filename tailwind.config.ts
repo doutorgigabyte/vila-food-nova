@@ -102,10 +102,10 @@ export default {
           "100%": { opacity: "1", transform: "translateY(0)" },
         },
         "coin-slide": {
-          "0%": { transform: "translateX(60px)", opacity: "1" },
-          "60%": { transform: "translateX(10px)", opacity: "1" },
-          "80%": { transform: "translateX(0)", opacity: "0.6" },
-          "100%": { transform: "translateX(-20px)", opacity: "0" },
+          "0%": { transform: "translateX(0)", opacity: "1" },
+          "70%": { transform: "translateX(-30px)", opacity: "1" },
+          "85%": { transform: "translateX(-40px)", opacity: "0.5" },
+          "100%": { transform: "translateX(-50px)", opacity: "0" },
         },
         "chomp-top": {
           "0%, 100%": { transform: "rotate(0deg)" },
@@ -117,10 +117,10 @@ export default {
         },
         "pacman-chomp": {
           "0%, 100%": { 
-            clipPath: "polygon(100% 50%, 100% 0%, 0% 0%, 0% 100%, 100% 100%)"
+            clipPath: "polygon(100% 50%, 75% 0%, 0% 0%, 0% 100%, 75% 100%)"
           },
           "50%": { 
-            clipPath: "polygon(100% 50%, 100% 25%, 0% 0%, 0% 100%, 100% 75%)"
+            clipPath: "polygon(100% 50%, 100% 35%, 0% 0%, 0% 100%, 100% 65%)"
           },
         },
       },
