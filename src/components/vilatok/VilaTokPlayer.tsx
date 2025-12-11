@@ -2,16 +2,20 @@ import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Play, Pause, Volume2, VolumeX } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getImageUrl } from '@/lib/s3';
+import { VilaTokPullToProfile } from './VilaTokPullToProfile';
 
 const STORY_DURATION = 15000;
 const PROGRESS_INTERVAL = 50;
 const LONG_PRESS_DELAY = 300;
+const PULL_THRESHOLD = 120; // pixels to trigger profile open
 
 interface VilaTokPlayerProps {
   videoUrl: string;
   thumbnailUrl?: string | null;
   musicUrl?: string | null;
   isActive: boolean;
+  isLastVideo?: boolean;
+  establishmentSlug?: string;
   onViewCountIncrement?: () => void;
   onVideoEnd?: () => void;
   onAutoAdvance?: () => void;
@@ -32,6 +36,8 @@ export function VilaTokPlayer({
   thumbnailUrl,
   musicUrl,
   isActive,
+  isLastVideo = false,
+  establishmentSlug,
   onViewCountIncrement,
   onAutoAdvance,
   onProgressUpdate,
@@ -52,6 +58,8 @@ export function VilaTokPlayer({
   const [showPlayIcon, setShowPlayIcon] = useState(false);
   const [hasCountedView, setHasCountedView] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  const [pullProgress, setPullProgress] = useState(0);
+  const [isPulling, setIsPulling] = useState(false);
 
   const isImage = useMemo(() => isImageUrl(videoUrl), [videoUrl]);
 
@@ -215,10 +223,32 @@ export function VilaTokPlayer({
     const deltaY = clientY - touchStartRef.current.y;
     const deltaTime = Date.now() - touchStartRef.current.time;
 
-    if (deltaX < -80 && Math.abs(deltaY) < 50 && deltaTime < 500) {
+    // Handle pull to profile on last video
+    if (isLastVideo && deltaX < -30 && Math.abs(deltaY) < 50) {
+      const progress = Math.min(100, (Math.abs(deltaX) / PULL_THRESHOLD) * 100);
+      setPullProgress(progress);
+      setIsPulling(true);
+      
+      if (Math.abs(deltaX) >= PULL_THRESHOLD) {
+        setPullProgress(0);
+        setIsPulling(false);
+        onSwipeToProfile?.();
+        touchStartRef.current = null;
+        return;
+      }
+    }
+
+    // Regular swipe to profile (quick gesture)
+    if (deltaX < -80 && Math.abs(deltaY) < 50 && deltaTime < 500 && !isLastVideo) {
       onSwipeToProfile?.();
       touchStartRef.current = null;
       return;
+    }
+
+    // Reset pull progress if not pulling
+    if (isPulling && (deltaX >= -30 || Math.abs(deltaY) >= 50)) {
+      setPullProgress(0);
+      setIsPulling(false);
     }
 
     if (Math.abs(deltaX) < 30 && Math.abs(deltaY) < 30 && deltaTime < LONG_PRESS_DELAY) {
@@ -247,8 +277,12 @@ export function VilaTokPlayer({
       }
     }
 
+    // Reset pull state
+    setPullProgress(0);
+    setIsPulling(false);
+    
     touchStartRef.current = null;
-  }, [isPaused, isPlaying, isImage, musicUrl, onTapLeft, onTapRight, onSwipeToProfile, startProgress, clearProgress]);
+  }, [isPaused, isPlaying, isImage, musicUrl, onTapLeft, onTapRight, onSwipeToProfile, startProgress, clearProgress, isLastVideo, isPulling]);
 
   const toggleMute = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
@@ -323,6 +357,13 @@ export function VilaTokPlayer({
         <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-black/60 to-transparent" />
         <div className="absolute bottom-0 left-0 right-0 h-72 bg-gradient-to-t from-black/90 via-black/60 to-transparent" />
       </div>
+
+      {/* Pull to Profile indicator */}
+      <VilaTokPullToProfile
+        progress={pullProgress}
+        isVisible={isLastVideo && (isPulling || pullProgress > 0)}
+        establishmentName={establishmentSlug}
+      />
     </div>
   );
 }

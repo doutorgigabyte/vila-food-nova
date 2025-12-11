@@ -265,6 +265,8 @@ export default function VilaTok() {
                           thumbnailUrl={video.thumbnail_url}
                           musicUrl={video.music_url}
                           isActive={isActive}
+                          isLastVideo={vidIndex === est.videos.length - 1}
+                          establishmentSlug={est.establishment.slug}
                           onViewCountIncrement={() => incrementViews(video.id)}
                           onVideoEnd={() => {}}
                           onAutoAdvance={handleAutoAdvance}

@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
-import { generateUUID, safeLocalStorage } from '@/lib/utils';
+import { generateUUID } from '@/lib/utils';
 
 interface EstablishmentVideo {
   id: string;
@@ -51,105 +52,114 @@ interface UseVilaTokOptions {
   mainCategorySlug?: string | null;
 }
 
+// Optimized fetch function
+async function fetchVilaTokData(mainCategorySlug: string | null | undefined) {
+  // Single optimized query with all joins
+  let query = supabase
+    .from('establishment_videos')
+    .select(`
+      id, establishment_id, product_id, video_url, thumbnail_url,
+      title, description, duration, views_count, likes_count,
+      shares_count, comments_count, is_active, sort_order,
+      created_at, music_url, main_category_id,
+      establishment:establishments!inner(id, name, slug, logo_url, segment_id),
+      product:products(id, name, price, promotional_price, image_url)
+    `)
+    .eq('is_active', true)
+    .eq('display_in_marketplace', true)
+    .order('created_at', { ascending: false })
+    .limit(50); // Limit initial load for performance
+
+  const { data: videos, error } = await query;
+  if (error) throw error;
+
+  let filteredVideos = videos || [];
+
+  // Filter by category if specified (single query instead of multiple)
+  if (mainCategorySlug && filteredVideos.length > 0) {
+    const { data: categoryData } = await supabase
+      .from('main_categories')
+      .select('id, segments:segments(id)')
+      .eq('slug', mainCategorySlug)
+      .single();
+
+    if (categoryData) {
+      const segmentIds = new Set(categoryData.segments?.map((s: { id: string }) => s.id) || []);
+      filteredVideos = filteredVideos.filter(video => 
+        video.main_category_id === categoryData.id ||
+        (video.establishment?.segment_id && segmentIds.has(video.establishment.segment_id))
+      );
+    }
+  }
+
+  // Group videos by establishment
+  const grouped = filteredVideos.reduce((acc, video) => {
+    const estId = video.establishment_id;
+    if (!acc[estId] && video.establishment) {
+      acc[estId] = {
+        establishment: video.establishment,
+        videos: []
+      };
+    }
+    if (acc[estId]) {
+      acc[estId].videos.push(video);
+    }
+    return acc;
+  }, {} as Record<string, EstablishmentWithVideos>);
+
+  return Object.values(grouped);
+}
+
 export function useVilaTok(options: UseVilaTokOptions = {}) {
   const { mainCategorySlug } = options;
   const { user } = useAuth();
-  const [establishments, setEstablishments] = useState<EstablishmentWithVideos[]>([]);
+  const queryClient = useQueryClient();
+  
   const [currentEstablishmentIndex, setCurrentEstablishmentIndex] = useState(0);
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
   const [likedVideos, setLikedVideos] = useState<Set<string>>(new Set());
-  const [sessionId] = useState(() => {
+  
+  const sessionId = useMemo(() => {
     let id = localStorage.getItem('vilatok_session_id');
     if (!id) {
       id = generateUUID();
       localStorage.setItem('vilatok_session_id', id);
     }
     return id;
+  }, []);
+
+  // Use React Query for optimized caching and fetching
+  const { data: establishments = [], isLoading } = useQuery({
+    queryKey: ['vilatok-videos', mainCategorySlug],
+    queryFn: () => fetchVilaTokData(mainCategorySlug),
+    staleTime: 5 * 60 * 1000, // 5 minutes cache
+    gcTime: 10 * 60 * 1000, // 10 minutes garbage collection
+    refetchOnWindowFocus: false,
   });
 
-  const fetchVideos = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      let query = supabase
-        .from('establishment_videos')
-        .select(`
-          *,
-          establishment:establishments(id, name, slug, logo_url, segment_id),
-          product:products(id, name, price, promotional_price, image_url)
-        `)
-        .eq('is_active', true)
-        .eq('display_in_marketplace', true)
-        .order('created_at', { ascending: false });
+  // Fetch liked videos separately (only when user is logged in)
+  const { data: userLikes } = useQuery({
+    queryKey: ['vilatok-likes', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data } = await supabase
+        .from('video_likes')
+        .select('video_id')
+        .eq('user_id', user.id);
+      return data?.map(l => l.video_id) || [];
+    },
+    enabled: !!user?.id,
+    staleTime: 60 * 1000, // 1 minute
+  });
 
-      const { data: videos, error } = await query;
-
-      if (error) throw error;
-
-      let filteredVideos = videos || [];
-
-      // Filter by category if specified
-      if (mainCategorySlug) {
-        // Fetch segments for this category
-        const { data: mainCategory } = await supabase
-          .from('main_categories')
-          .select('id')
-          .eq('slug', mainCategorySlug)
-          .single();
-
-        if (mainCategory) {
-          const { data: segments } = await supabase
-            .from('segments')
-            .select('id')
-            .eq('parent_category_id', mainCategory.id);
-
-          const segmentIds = new Set(segments?.map(s => s.id) || []);
-          
-          filteredVideos = filteredVideos.filter(video => 
-            video.main_category_id === mainCategory.id ||
-            (video.establishment?.segment_id && segmentIds.has(video.establishment.segment_id))
-          );
-        }
-      }
-
-      // Group videos by establishment
-      const grouped = filteredVideos.reduce((acc, video) => {
-        const estId = video.establishment_id;
-        if (!acc[estId]) {
-          acc[estId] = {
-            establishment: video.establishment,
-            videos: []
-          };
-        }
-        acc[estId].videos.push(video);
-        return acc;
-      }, {} as Record<string, EstablishmentWithVideos>);
-
-      setEstablishments(Object.values(grouped));
-
-      // Fetch user's liked videos (only if logged in)
-      if (user?.id) {
-        const { data: likes } = await supabase
-          .from('video_likes')
-          .select('video_id')
-          .eq('user_id', user.id);
-        
-        if (likes) {
-          setLikedVideos(new Set(likes.map(l => l.video_id)));
-        }
-      } else {
-        setLikedVideos(new Set());
-      }
-    } catch (error) {
-      console.error('Error fetching VilaTok videos:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [user?.id, sessionId, mainCategorySlug]);
-
+  // Update liked videos when userLikes changes
   useEffect(() => {
-    fetchVideos();
-  }, [fetchVideos]);
+    if (userLikes) {
+      setLikedVideos(new Set(userLikes));
+    } else {
+      setLikedVideos(new Set());
+    }
+  }, [userLikes]);
 
   // Reset indices when category changes
   useEffect(() => {
@@ -195,7 +205,7 @@ export function useVilaTok(options: UseVilaTokOptions = {}) {
     const isLiked = likedVideos.has(videoId);
 
     try {
-      // Update otimista - atualizar estado local primeiro
+      // Optimistic update
       if (isLiked) {
         setLikedVideos(prev => {
           const next = new Set(prev);
@@ -207,35 +217,30 @@ export function useVilaTok(options: UseVilaTokOptions = {}) {
       }
 
       if (isLiked) {
-        // Unlike
         const { error } = await supabase.from('video_likes').delete().eq('video_id', videoId).eq('user_id', user.id);
-        
         if (error) throw error;
         
-        // Update local count
         await supabase
           .from('establishment_videos')
           .update({ likes_count: (currentVideo?.likes_count || 1) - 1 })
           .eq('id', videoId);
       } else {
-        // Like
         const { error } = await supabase.from('video_likes').insert({ video_id: videoId, user_id: user.id });
-
         if (error) throw error;
 
-        // Update local count
         await supabase
           .from('establishment_videos')
           .update({ likes_count: (currentVideo?.likes_count || 0) + 1 })
           .eq('id', videoId);
       }
 
-      // Refresh apenas para sincronizar contagens, não para reverter o like
-      fetchVideos();
+      // Invalidate cache to refetch on next access
+      queryClient.invalidateQueries({ queryKey: ['vilatok-videos'] });
+      queryClient.invalidateQueries({ queryKey: ['vilatok-likes'] });
       return true;
     } catch (error) {
       console.error('Error toggling like:', error);
-      // Reverter em caso de erro
+      // Revert on error
       if (isLiked) {
         setLikedVideos(prev => new Set([...prev, videoId]));
       } else {
@@ -247,7 +252,7 @@ export function useVilaTok(options: UseVilaTokOptions = {}) {
       }
       return false;
     }
-  }, [likedVideos, user?.id, currentVideo, fetchVideos]);
+  }, [likedVideos, user?.id, currentVideo, queryClient]);
 
   const incrementViews = useCallback(async (videoId: string) => {
     try {
