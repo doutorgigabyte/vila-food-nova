@@ -38,11 +38,15 @@ import {
   Store,
   Users,
   Video,
-  ShoppingBag
+  ShoppingBag,
+  RefreshCw,
+  Loader2
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import AdminLayout from "@/components/admin/AdminLayout";
+import { useSyncPlansWithMP } from "@/hooks/useSubscription";
+import { Progress } from "@/components/ui/progress";
 
 interface Plan {
   id: string;
@@ -91,6 +95,8 @@ const PlansManagement = () => {
   const [editingAddon, setEditingAddon] = useState<Addon | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deletingType, setDeletingType] = useState<"plan" | "addon">("plan");
+  
+  const { syncAllPlans, isLoading: isSyncing, progress } = useSyncPlansWithMP();
 
   const [formData, setFormData] = useState({
     name: "",
@@ -372,20 +378,49 @@ const PlansManagement = () => {
 
         {/* PLANOS TAB */}
         <TabsContent value="plans" className="space-y-6">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">
-              Gerencie os planos de assinatura disponíveis para os estabelecimentos
-            </p>
-            <Dialog open={dialogOpen} onOpenChange={(open) => {
-              setDialogOpen(open);
-              if (!open) { setEditingPlan(null); resetForm(); }
-            }}>
-              <DialogTrigger asChild>
-                <Button className="gap-2">
-                  <Plus className="w-4 h-4" />
-                  Novo Plano
-                </Button>
-              </DialogTrigger>
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="flex-1">
+              <p className="text-sm text-muted-foreground">
+                Gerencie os planos de assinatura disponíveis para os estabelecimentos
+              </p>
+              {isSyncing && (
+                <div className="mt-2 space-y-1">
+                  <Progress value={(progress.current / progress.total) * 100} className="h-2" />
+                  <p className="text-xs text-muted-foreground">
+                    Sincronizando {progress.current}/{progress.total} planos...
+                  </p>
+                </div>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                className="gap-2"
+                onClick={() => syncAllPlans(plans.map(p => ({
+                  ...p,
+                  features: p.features || [],
+                  created_at: null,
+                  ai_unlimited: null,
+                })))}
+                disabled={isSyncing || plans.length === 0}
+              >
+                {isSyncing ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="w-4 h-4" />
+                )}
+                Sincronizar com MP
+              </Button>
+              <Dialog open={dialogOpen} onOpenChange={(open) => {
+                setDialogOpen(open);
+                if (!open) { setEditingPlan(null); resetForm(); }
+              }}>
+                <DialogTrigger asChild>
+                  <Button className="gap-2">
+                    <Plus className="w-4 h-4" />
+                    Novo Plano
+                  </Button>
+                </DialogTrigger>
               <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>{editingPlan ? "Editar Plano" : "Novo Plano"}</DialogTitle>
@@ -615,6 +650,7 @@ const PlansManagement = () => {
                 </div>
               </DialogContent>
             </Dialog>
+            </div>
           </div>
 
           {/* Plans Grid */}

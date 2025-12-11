@@ -1,27 +1,80 @@
+import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { useUserEstablishment } from "@/hooks/useDashboardData";
 import { useEstablishmentPlan } from "@/hooks/useEstablishmentPlan";
 import { usePlanAddons, Plan } from "@/hooks/usePlans";
+import { useSubscription } from "@/hooks/useSubscription";
 import { PlanSelector } from "@/components/plans/PlanSelector";
 import { PlanUsageOverview } from "@/components/plans/PlanUsageOverview";
+import { SubscriptionConfirmModal } from "@/components/plans/SubscriptionConfirmModal";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Check, Plus, Sparkles } from "lucide-react";
+import { Check, Plus, Sparkles, AlertCircle } from "lucide-react";
 import { Price } from "@/components/ui/price";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
 const UpgradePage = () => {
   const { slug } = useParams<{ slug: string }>();
-  const { establishmentId, loading: estLoading } = useUserEstablishment();
+  const { establishmentId, establishment, loading: estLoading } = useUserEstablishment();
   const { planFeatures, isLoading: isPlanLoading } = useEstablishmentPlan(establishmentId);
   const { data: addons, isLoading: isAddonsLoading } = usePlanAddons();
+  const { subscribe, isLoading: isSubscribing } = useSubscription();
 
-  const handlePlanSelect = (plan: Plan, isYearly: boolean) => {
-    // TODO: Implement plan upgrade flow with Mercado Pago
-    console.log("Selected plan:", plan.id, "Yearly:", isYearly);
+  const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
+  const [isYearly, setIsYearly] = useState(false);
+  const [confirmModalOpen, setConfirmModalOpen] = useState(false);
+
+  const handlePlanSelect = (plan: Plan, yearly: boolean) => {
+    // If it's a free plan, no subscription needed
+    if ((plan.price_monthly || plan.price) <= 0) {
+      toast({
+        title: "Plano Gratuito",
+        description: "Este plano não requer pagamento.",
+      });
+      return;
+    }
+
+    // Check if user already has this plan
+    if (plan.id === planFeatures?.planId) {
+      toast({
+        title: "Plano atual",
+        description: "Você já está usando este plano.",
+      });
+      return;
+    }
+
+    setSelectedPlan(plan);
+    setIsYearly(yearly);
+    setConfirmModalOpen(true);
+  };
+
+  const handleConfirmSubscription = async () => {
+    if (!selectedPlan || !establishmentId) {
+      throw new Error("Selecione um plano");
+    }
+
+    // Get user email
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user?.email) {
+      throw new Error("Email do usuário não encontrado");
+    }
+
+    await subscribe({
+      planId: selectedPlan.id,
+      establishmentId,
+      payerEmail: user.email,
+      isYearly,
+    });
   };
 
   const handleAddonAdd = (addonId: string) => {
     // TODO: Implement addon purchase flow
+    toast({
+      title: "Em breve",
+      description: "A compra de add-ons estará disponível em breve.",
+    });
     console.log("Add addon:", addonId);
   };
 
@@ -41,6 +94,17 @@ const UpgradePage = () => {
           Escolha o plano ideal para o seu negócio
         </p>
       </div>
+
+      {/* Current Subscription Alert */}
+      {planFeatures?.planName && planFeatures.planName !== "Gratuito" && (
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Você está no plano <strong>{planFeatures.planName}</strong>. 
+            Ao assinar um novo plano, o anterior será cancelado automaticamente.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Current Plan Overview */}
       {establishmentId && (
@@ -118,6 +182,17 @@ const UpgradePage = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Subscription Confirmation Modal */}
+      <SubscriptionConfirmModal
+        open={confirmModalOpen}
+        onOpenChange={setConfirmModalOpen}
+        plan={selectedPlan}
+        isYearly={isYearly}
+        onConfirm={handleConfirmSubscription}
+        isLoading={isSubscribing}
+        currentPlanName={planFeatures?.planName}
+      />
     </div>
   );
 };

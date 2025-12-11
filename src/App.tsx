@@ -87,6 +87,7 @@ const TeamManagement = lazy(() => import("./pages/dashboard/TeamManagement"));
 
 // Checkout callback pages
 const CheckoutResult = lazy(() => import("./pages/checkout/CheckoutResult"));
+const SubscriptionCallback = lazy(() => import("./pages/SubscriptionCallback"));
 
 // Public pages
 const ReviewOrder = lazy(() => import("./pages/ReviewOrder"));
@@ -212,6 +213,7 @@ const AppRoutes = () => {
               <Route path="/vila/:slug" element={<Vila />} />
               <Route path="/checkout" element={<Checkout />} />
               <Route path="/checkout/resultado" element={<CheckoutResult />} />
+              <Route path="/assinatura/resultado" element={<SubscriptionCallback />} />
               <Route path="/pedidos" element={<Orders />} />
               <Route path="/pedidos/:orderId/rastreamento" element={<OrderTracking />} />
               <Route path="/meus-pedidos" element={<Orders />} />
