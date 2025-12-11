@@ -15,6 +15,33 @@ import {
 } from "@/components/dashboard/vilatok-tv/TVBackgroundPatterns";
 import { SlideFooter } from "@/components/dashboard/vilatok-tv/SlideFooter";
 import { QRCodeWithFrame, QRCodeCompact } from "@/components/dashboard/vilatok-tv/QRCodeWithFrame";
+import {
+  CleanMinimalBackground,
+  ZenLines,
+  NeonGlow,
+  PopArtDots,
+  GradientBurst,
+  DynamicSplash,
+  Retro70sPattern,
+  VintageFilmGrain,
+  ArtDecoPattern,
+  RusticWoodTexture,
+  ChristmasPattern,
+  EasterPattern,
+  ValentinesPattern,
+  SaoJoaoPattern,
+  CarnivalPattern,
+  HalloweenPattern,
+  BeachWaves,
+  PalmTrees,
+  SunsetGradient,
+  TropicalFruits,
+  NordesteTexture,
+  ModernCleanGradient,
+  WarmCozyGradient,
+  FreshGreenGradient,
+  GlassMorphism,
+} from "@/components/dashboard/vilatok-tv/ThematicPatterns";
 
 interface TVSlide {
   id: string;
@@ -1254,8 +1281,512 @@ export default function TVSlidePlayer() {
             </div>
           )}
 
+          {/* ===== TEMPLATE: CLEAN WHITE (Minimalista) ===== */}
+          {currentSlide.template_type === 'clean_white' && (
+            <div className="relative w-full h-full flex flex-col" style={{ backgroundColor: '#ffffff' }}>
+              <CleanMinimalBackground color="#ffffff" />
+              
+              <FixedLogo logoUrl={establishment?.logo_url} name={establishment?.name || ''} />
+              
+              <div className="flex-1 flex relative z-10">
+                <div className="w-[55%] h-full relative">
+                  <motion.div initial={{ x: -50, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="absolute inset-y-12 left-0 right-12">
+                    <MediaFrame slide={currentSlide} frameClassName="w-full h-full rounded-r-[60px] shadow-2xl" />
+                  </motion.div>
+                </div>
+                <div className="w-[45%] h-full flex flex-col justify-center pl-8 pr-16">
+                  <motion.h1 initial={{ opacity: 0 }} animate={{ opacity: 1 }} className={`${TV_TITLE} text-gray-900 mb-8`}>
+                    {currentSlide.title || currentSlide.product?.name || 'Destaque'}
+                  </motion.h1>
+                  {currentSlide.subtitle && <p className={`${TV_SUBTITLE} text-gray-500 mb-8 max-w-xl`}>{currentSlide.subtitle}</p>}
+                  {currentSlide.product && <div className={`${TV_PRICE} text-gray-800 mb-10`}>{formatPrice(currentSlide.product.promotional_price || currentSlide.product.price)}</div>}
+                  <QRCodeWithFrame url={productUrl} primaryColor={primaryColor} label="COMPRE AQUI" buttonText="Eu quero!" size="md" />
+                </div>
+              </div>
+              <SlideFooter primaryColor={primaryColor} slug={establishment?.slug || ''} phone={establishment?.phone} whatsapp={establishment?.whatsapp} socialLinks={socialLinks} />
+            </div>
+          )}
+
+          {/* ===== TEMPLATE: ZEN SIMPLE (Minimalista) ===== */}
+          {currentSlide.template_type === 'zen_simple' && (
+            <div className="relative w-full h-full flex flex-col" style={{ backgroundColor: '#fafafa' }}>
+              <ZenLines color="#333" />
+              <FixedLogo logoUrl={establishment?.logo_url} name={establishment?.name || ''} />
+              <div className="flex-1 flex items-center justify-center relative z-10 px-20 pt-20">
+                <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="w-[500px] h-[500px] rounded-[40px] overflow-hidden shadow-xl border border-gray-200">
+                  <MediaFrame slide={currentSlide} frameClassName="w-full h-full" />
+                </motion.div>
+                <div className="flex-1 flex flex-col justify-center pl-16">
+                  <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-7xl font-light text-gray-800 mb-6 tracking-tight">{currentSlide.title || 'Destaque'}</motion.h1>
+                  {currentSlide.subtitle && <p className="text-2xl text-gray-500 mb-8 max-w-lg font-light">{currentSlide.subtitle}</p>}
+                  {currentSlide.product && <div className="text-6xl font-semibold text-gray-900 mb-10">{formatPrice(currentSlide.product.promotional_price || currentSlide.product.price)}</div>}
+                  <QRCodeCompact url={productUrl} primaryColor={primaryColor} buttonText="Eu quero!" size="md" />
+                </div>
+              </div>
+              <SlideFooter primaryColor={primaryColor} slug={establishment?.slug || ''} phone={establishment?.phone} whatsapp={establishment?.whatsapp} socialLinks={socialLinks} />
+            </div>
+          )}
+
+          {/* ===== TEMPLATE: GLASS CARD (Minimalista) ===== */}
+          {currentSlide.template_type === 'glass_card' && (
+            <div className="relative w-full h-full flex flex-col" style={{ backgroundColor: secondaryColor }}>
+              <GlassMorphism color={primaryColor} />
+              <FixedLogo logoUrl={establishment?.logo_url} name={establishment?.name || ''} />
+              <div className="flex-1 flex relative z-10">
+                <div className="w-[55%] h-full relative">
+                  <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="absolute inset-12">
+                    <div className="w-full h-full rounded-[40px] overflow-hidden shadow-2xl backdrop-blur-sm border border-white/30">
+                      <MediaFrame slide={currentSlide} frameClassName="w-full h-full" />
+                    </div>
+                  </motion.div>
+                </div>
+                <div className="w-[45%] h-full flex flex-col justify-center pl-4 pr-16">
+                  <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white/80 backdrop-blur-md rounded-3xl p-12 shadow-xl">
+                    <h1 className={`${TV_TITLE} mb-6`} style={{ color: primaryColor }}>{currentSlide.title || currentSlide.product?.name || 'Destaque'}</h1>
+                    {currentSlide.subtitle && <p className={`${TV_SUBTITLE} text-gray-600 mb-6`}>{currentSlide.subtitle}</p>}
+                    {currentSlide.product && <div className={`${TV_PRICE} text-gray-800 mb-8`}>{formatPrice(currentSlide.product.promotional_price || currentSlide.product.price)}</div>}
+                    <QRCodeCompact url={productUrl} primaryColor={primaryColor} buttonText="Eu quero!" size="md" />
+                  </motion.div>
+                </div>
+              </div>
+              <SlideFooter primaryColor={primaryColor} slug={establishment?.slug || ''} phone={establishment?.phone} whatsapp={establishment?.whatsapp} socialLinks={socialLinks} />
+            </div>
+          )}
+
+          {/* ===== TEMPLATE: NEON GLOW (Vibrante) ===== */}
+          {currentSlide.template_type === 'neon_glow' && (
+            <div className="relative w-full h-full flex flex-col overflow-hidden">
+              <NeonGlow primaryColor={primaryColor} accentColor={accentColor} />
+              <FixedLogo logoUrl={establishment?.logo_url} name={establishment?.name || ''} variant="dark" />
+              <div className="flex-1 flex relative z-10 items-center px-20 pt-20">
+                <div className="flex-1 flex items-center justify-center">
+                  <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="relative">
+                    <div className="absolute inset-0 rounded-full blur-3xl scale-110" style={{ backgroundColor: primaryColor, opacity: 0.5 }} />
+                    <div className="relative w-[600px] h-[600px] rounded-full overflow-hidden border-8 shadow-2xl" style={{ borderColor: primaryColor, boxShadow: `0 0 60px ${primaryColor}` }}>
+                      <MediaFrame slide={currentSlide} frameClassName="w-full h-full" />
+                    </div>
+                  </motion.div>
+                </div>
+                <div className="flex-1 flex flex-col justify-center pl-12">
+                  <motion.h1 initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} className={`${TV_TITLE} text-white mb-8`} style={{ textShadow: `0 0 30px ${primaryColor}` }}>{currentSlide.title || 'Destaque'}</motion.h1>
+                  {currentSlide.subtitle && <p className={`${TV_SUBTITLE} text-gray-300 mb-10`}>{currentSlide.subtitle}</p>}
+                  {currentSlide.product && <div className={`${TV_PRICE} mb-12`} style={{ color: accentColor, textShadow: `0 0 20px ${accentColor}` }}>{formatPrice(currentSlide.product.promotional_price || currentSlide.product.price)}</div>}
+                  <QRCodeCompact url={productUrl} primaryColor={primaryColor} buttonText="Eu quero!" size="lg" />
+                </div>
+              </div>
+              <SlideFooter primaryColor={primaryColor} slug={establishment?.slug || ''} phone={establishment?.phone} whatsapp={establishment?.whatsapp} socialLinks={socialLinks} variant="transparent" />
+            </div>
+          )}
+
+          {/* ===== TEMPLATE: POP ART (Vibrante) ===== */}
+          {currentSlide.template_type === 'pop_art' && (
+            <div className="relative w-full h-full flex flex-col overflow-hidden" style={{ backgroundColor: '#ffeb3b' }}>
+              <PopArtDots color="#000" />
+              <FixedLogo logoUrl={establishment?.logo_url} name={establishment?.name || ''} />
+              <div className="flex-1 flex relative z-10">
+                <div className="w-[55%] h-full relative">
+                  <motion.div initial={{ rotate: -5, scale: 0.9 }} animate={{ rotate: 0, scale: 1 }} className="absolute inset-8">
+                    <div className="w-full h-full rounded-3xl overflow-hidden border-8 border-black shadow-[8px_8px_0_0_#000]">
+                      <MediaFrame slide={currentSlide} frameClassName="w-full h-full" />
+                    </div>
+                  </motion.div>
+                </div>
+                <div className="w-[45%] h-full flex flex-col justify-center pl-8 pr-16">
+                  <motion.h1 initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} className={`${TV_TITLE} text-black mb-8`} style={{ textShadow: '4px 4px 0 #fff' }}>{currentSlide.title || 'WOW!'}</motion.h1>
+                  {currentSlide.subtitle && <p className={`${TV_SUBTITLE} text-gray-800 mb-8`}>{currentSlide.subtitle}</p>}
+                  {currentSlide.product && <div className="inline-flex px-10 py-6 bg-black text-white rounded-none mb-10"><span className={`${TV_PRICE}`}>{formatPrice(currentSlide.product.promotional_price || currentSlide.product.price)}</span></div>}
+                  <QRCodeWithFrame url={productUrl} primaryColor="#000" label="COMPRE!" buttonText="Eu quero!" size="md" />
+                </div>
+              </div>
+              <SlideFooter primaryColor="#000" slug={establishment?.slug || ''} phone={establishment?.phone} whatsapp={establishment?.whatsapp} socialLinks={socialLinks} />
+            </div>
+          )}
+
+          {/* ===== TEMPLATE: GRADIENT BURST (Vibrante) ===== */}
+          {currentSlide.template_type === 'gradient_burst' && (
+            <div className="relative w-full h-full flex flex-col overflow-hidden">
+              <GradientBurst colors={[primaryColor, accentColor, '#ec4899', '#8b5cf6', primaryColor]} />
+              <NoiseTexture opacity={0.03} />
+              <FixedLogo logoUrl={establishment?.logo_url} name={establishment?.name || ''} variant="dark" />
+              <div className="flex-1 flex relative z-10 items-center px-20 pt-20">
+                <div className="flex-1 flex flex-col justify-center">
+                  <motion.h1 initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className={`${TV_TITLE} text-white mb-10`}>{currentSlide.title || 'Destaque'}</motion.h1>
+                  {currentSlide.subtitle && <p className={`${TV_SUBTITLE} text-white/80 mb-12`}>{currentSlide.subtitle}</p>}
+                  {currentSlide.product && <div className={`${TV_PRICE} text-white mb-12`}>{formatPrice(currentSlide.product.promotional_price || currentSlide.product.price)}</div>}
+                  <QRCodeCompact url={productUrl} primaryColor="#fff" buttonText="Eu quero!" size="lg" />
+                </div>
+                <div className="flex-1 flex items-center justify-center">
+                  <motion.div initial={{ scale: 0.8, rotate: 5 }} animate={{ scale: 1, rotate: 0 }} className="w-[580px] h-[580px] rounded-[60px] overflow-hidden border-8 border-white/30 shadow-2xl">
+                    <MediaFrame slide={currentSlide} frameClassName="w-full h-full" />
+                  </motion.div>
+                </div>
+              </div>
+              <SlideFooter primaryColor={primaryColor} slug={establishment?.slug || ''} phone={establishment?.phone} whatsapp={establishment?.whatsapp} socialLinks={socialLinks} variant="transparent" />
+            </div>
+          )}
+
+          {/* ===== TEMPLATE: RETRO 70s (Vintage) ===== */}
+          {currentSlide.template_type === 'retro_70s' && (
+            <div className="relative w-full h-full flex flex-col overflow-hidden" style={{ backgroundColor: '#f4e4bc' }}>
+              <Retro70sPattern color="#8b4513" />
+              <VintageFilmGrain />
+              <FixedLogo logoUrl={establishment?.logo_url} name={establishment?.name || ''} />
+              <div className="flex-1 flex relative z-10">
+                <div className="w-[55%] h-full relative">
+                  <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="absolute inset-10">
+                    <div className="w-full h-full rounded-full overflow-hidden border-[16px] border-amber-800/30 shadow-2xl">
+                      <MediaFrame slide={currentSlide} frameClassName="w-full h-full" />
+                    </div>
+                  </motion.div>
+                </div>
+                <div className="w-[45%] h-full flex flex-col justify-center pl-8 pr-16">
+                  <motion.h1 initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-7xl font-black text-amber-900 uppercase mb-8" style={{ fontFamily: 'serif' }}>{currentSlide.title || 'Clássico'}</motion.h1>
+                  {currentSlide.subtitle && <p className="text-2xl text-amber-800/80 mb-8">{currentSlide.subtitle}</p>}
+                  {currentSlide.product && <div className="text-6xl font-black text-amber-900 mb-10">{formatPrice(currentSlide.product.promotional_price || currentSlide.product.price)}</div>}
+                  <QRCodeWithFrame url={productUrl} primaryColor="#8b4513" label="COMPRE" buttonText="Eu quero!" size="md" />
+                </div>
+              </div>
+              <SlideFooter primaryColor="#8b4513" slug={establishment?.slug || ''} phone={establishment?.phone} whatsapp={establishment?.whatsapp} socialLinks={socialLinks} />
+            </div>
+          )}
+
+          {/* ===== TEMPLATE: ART DECO (Vintage) ===== */}
+          {currentSlide.template_type === 'art_deco' && (
+            <div className="relative w-full h-full flex flex-col overflow-hidden" style={{ backgroundColor: '#1a1a2e' }}>
+              <ArtDecoPattern color="#c9a227" />
+              <NoiseTexture opacity={0.03} />
+              <FixedLogo logoUrl={establishment?.logo_url} name={establishment?.name || ''} variant="dark" />
+              <div className="flex-1 flex relative z-10 items-center px-20 pt-20">
+                <div className="flex-1 flex flex-col justify-center">
+                  <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-7xl font-black text-[#c9a227] uppercase mb-8 tracking-widest">{currentSlide.title || 'Elegância'}</motion.h1>
+                  {currentSlide.subtitle && <p className="text-2xl text-gray-300 mb-10">{currentSlide.subtitle}</p>}
+                  {currentSlide.product && <div className="text-6xl font-black text-white mb-12">{formatPrice(currentSlide.product.promotional_price || currentSlide.product.price)}</div>}
+                  <QRCodeCompact url={productUrl} primaryColor="#c9a227" buttonText="Eu quero!" size="lg" />
+                </div>
+                <div className="flex-1 flex items-center justify-center">
+                  <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} className="w-[550px] h-[550px] overflow-hidden border-8 border-[#c9a227] shadow-2xl" style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}>
+                    <MediaFrame slide={currentSlide} frameClassName="w-full h-full" />
+                  </motion.div>
+                </div>
+              </div>
+              <SlideFooter primaryColor="#c9a227" slug={establishment?.slug || ''} phone={establishment?.phone} whatsapp={establishment?.whatsapp} socialLinks={socialLinks} variant="transparent" />
+            </div>
+          )}
+
+          {/* ===== TEMPLATE: RUSTIC WOOD (Vintage) ===== */}
+          {currentSlide.template_type === 'rustic_wood' && (
+            <div className="relative w-full h-full flex flex-col overflow-hidden" style={{ backgroundColor: '#3d2914' }}>
+              <RusticWoodTexture />
+              <FixedLogo logoUrl={establishment?.logo_url} name={establishment?.name || ''} variant="dark" />
+              <div className="flex-1 flex relative z-10">
+                <div className="w-[55%] h-full relative">
+                  <motion.div initial={{ x: -50, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="absolute inset-10">
+                    <div className="w-full h-full rounded-3xl overflow-hidden border-8 border-amber-200/20 shadow-2xl">
+                      <MediaFrame slide={currentSlide} frameClassName="w-full h-full" />
+                    </div>
+                  </motion.div>
+                </div>
+                <div className="w-[45%] h-full flex flex-col justify-center pl-8 pr-16">
+                  <motion.h1 initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-7xl font-black text-amber-100 uppercase mb-8">{currentSlide.title || 'Artesanal'}</motion.h1>
+                  {currentSlide.subtitle && <p className="text-2xl text-amber-200/70 mb-8">{currentSlide.subtitle}</p>}
+                  {currentSlide.product && <div className="text-6xl font-black text-amber-100 mb-10">{formatPrice(currentSlide.product.promotional_price || currentSlide.product.price)}</div>}
+                  <QRCodeWithFrame url={productUrl} primaryColor="#d4a574" label="COMPRE" buttonText="Eu quero!" size="md" />
+                </div>
+              </div>
+              <SlideFooter primaryColor="#d4a574" slug={establishment?.slug || ''} phone={establishment?.phone} whatsapp={establishment?.whatsapp} socialLinks={socialLinks} />
+            </div>
+          )}
+
+          {/* ===== TEMPLATE: CHRISTMAS (Comemorativo) ===== */}
+          {currentSlide.template_type === 'christmas' && (
+            <div className="relative w-full h-full flex flex-col overflow-hidden" style={{ backgroundColor: '#1a472a' }}>
+              <ChristmasPattern />
+              <FixedLogo logoUrl={establishment?.logo_url} name={establishment?.name || ''} variant="dark" />
+              <div className="flex-1 flex relative z-10 items-center px-20 pt-20">
+                <div className="flex-1 flex flex-col justify-center">
+                  <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="text-6xl mb-6">🎄</motion.div>
+                  <motion.h1 initial={{ opacity: 0 }} animate={{ opacity: 1 }} className={`${TV_TITLE} text-white mb-8`}>{currentSlide.title || 'Feliz Natal!'}</motion.h1>
+                  {currentSlide.subtitle && <p className={`${TV_SUBTITLE} text-green-100/80 mb-10`}>{currentSlide.subtitle}</p>}
+                  {currentSlide.product && <div className="inline-flex px-10 py-6 bg-red-600 rounded-2xl mb-10"><span className={`${TV_PRICE} text-white`}>{formatPrice(currentSlide.product.promotional_price || currentSlide.product.price)}</span></div>}
+                  <QRCodeCompact url={productUrl} primaryColor="#dc2626" buttonText="Eu quero!" size="lg" />
+                </div>
+                <div className="flex-1 flex items-center justify-center">
+                  <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} className="w-[550px] h-[550px] rounded-full overflow-hidden border-[16px] border-red-600 shadow-2xl">
+                    <MediaFrame slide={currentSlide} frameClassName="w-full h-full" />
+                  </motion.div>
+                </div>
+              </div>
+              <SlideFooter primaryColor="#dc2626" slug={establishment?.slug || ''} phone={establishment?.phone} whatsapp={establishment?.whatsapp} socialLinks={socialLinks} variant="transparent" />
+            </div>
+          )}
+
+          {/* ===== TEMPLATE: VALENTINES (Comemorativo) ===== */}
+          {currentSlide.template_type === 'valentines' && (
+            <div className="relative w-full h-full flex flex-col overflow-hidden" style={{ backgroundColor: '#fce7f3' }}>
+              <ValentinesPattern />
+              <FixedLogo logoUrl={establishment?.logo_url} name={establishment?.name || ''} />
+              <div className="flex-1 flex relative z-10">
+                <div className="w-[55%] h-full relative">
+                  <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="absolute inset-10">
+                    <div className="w-full h-full overflow-hidden border-8 border-pink-300 shadow-2xl" style={{ borderRadius: '50% 50% 50% 50% / 60% 60% 40% 40%' }}>
+                      <MediaFrame slide={currentSlide} frameClassName="w-full h-full" />
+                    </div>
+                  </motion.div>
+                </div>
+                <div className="w-[45%] h-full flex flex-col justify-center pl-8 pr-16">
+                  <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="text-5xl mb-4">💕</motion.div>
+                  <motion.h1 initial={{ opacity: 0 }} animate={{ opacity: 1 }} className={`${TV_TITLE} text-pink-600 mb-8`}>{currentSlide.title || 'Com Amor'}</motion.h1>
+                  {currentSlide.subtitle && <p className={`${TV_SUBTITLE} text-pink-500/80 mb-8`}>{currentSlide.subtitle}</p>}
+                  {currentSlide.product && <div className={`${TV_PRICE} text-pink-700 mb-10`}>{formatPrice(currentSlide.product.promotional_price || currentSlide.product.price)}</div>}
+                  <QRCodeWithFrame url={productUrl} primaryColor="#db2777" label="COMPRE" buttonText="Eu quero!" size="md" />
+                </div>
+              </div>
+              <SlideFooter primaryColor="#db2777" slug={establishment?.slug || ''} phone={establishment?.phone} whatsapp={establishment?.whatsapp} socialLinks={socialLinks} />
+            </div>
+          )}
+
+          {/* ===== TEMPLATE: SAO JOAO (Comemorativo) ===== */}
+          {currentSlide.template_type === 'sao_joao' && (
+            <div className="relative w-full h-full flex flex-col overflow-hidden" style={{ backgroundColor: '#1e1b4b' }}>
+              <SaoJoaoPattern />
+              <FixedLogo logoUrl={establishment?.logo_url} name={establishment?.name || ''} variant="dark" />
+              <div className="flex-1 flex relative z-10 items-center px-20 pt-28">
+                <div className="flex-1 flex flex-col justify-center">
+                  <motion.div initial={{ scale: 0, rotate: -10 }} animate={{ scale: 1, rotate: 0 }} className="text-5xl mb-6">🔥🎉</motion.div>
+                  <motion.h1 initial={{ opacity: 0 }} animate={{ opacity: 1 }} className={`${TV_TITLE} text-yellow-400 mb-8`}>{currentSlide.title || 'Arraiá!'}</motion.h1>
+                  {currentSlide.subtitle && <p className={`${TV_SUBTITLE} text-yellow-100/80 mb-10`}>{currentSlide.subtitle}</p>}
+                  {currentSlide.product && <div className="inline-flex px-10 py-6 bg-orange-500 rounded-2xl mb-10"><span className={`${TV_PRICE} text-white`}>{formatPrice(currentSlide.product.promotional_price || currentSlide.product.price)}</span></div>}
+                  <QRCodeCompact url={productUrl} primaryColor="#f59e0b" buttonText="Eu quero!" size="lg" />
+                </div>
+                <div className="flex-1 flex items-center justify-center">
+                  <motion.div initial={{ rotate: -5, scale: 0.9 }} animate={{ rotate: 0, scale: 1 }} className="w-[520px] h-[520px] rounded-3xl overflow-hidden border-8 border-yellow-400 shadow-2xl">
+                    <MediaFrame slide={currentSlide} frameClassName="w-full h-full" />
+                  </motion.div>
+                </div>
+              </div>
+              <SlideFooter primaryColor="#f59e0b" slug={establishment?.slug || ''} phone={establishment?.phone} whatsapp={establishment?.whatsapp} socialLinks={socialLinks} variant="transparent" />
+            </div>
+          )}
+
+          {/* ===== TEMPLATE: CARNIVAL (Comemorativo) ===== */}
+          {currentSlide.template_type === 'carnival' && (
+            <div className="relative w-full h-full flex flex-col overflow-hidden" style={{ backgroundColor: '#7c3aed' }}>
+              <CarnivalPattern />
+              <FixedLogo logoUrl={establishment?.logo_url} name={establishment?.name || ''} variant="dark" />
+              <div className="flex-1 flex relative z-10">
+                <div className="w-[55%] h-full relative">
+                  <motion.div initial={{ rotate: 5, scale: 0.9 }} animate={{ rotate: 0, scale: 1 }} className="absolute inset-10">
+                    <div className="w-full h-full rounded-[60px] overflow-hidden border-8 border-yellow-400 shadow-2xl">
+                      <MediaFrame slide={currentSlide} frameClassName="w-full h-full" />
+                    </div>
+                  </motion.div>
+                </div>
+                <div className="w-[45%] h-full flex flex-col justify-center pl-8 pr-16">
+                  <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="text-5xl mb-4">🎭✨</motion.div>
+                  <motion.h1 initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} className={`${TV_TITLE} text-white mb-8`} style={{ textShadow: '4px 4px 0 #ec4899' }}>{currentSlide.title || 'Carnaval!'}</motion.h1>
+                  {currentSlide.subtitle && <p className={`${TV_SUBTITLE} text-white/80 mb-8`}>{currentSlide.subtitle}</p>}
+                  {currentSlide.product && <div className="inline-flex px-10 py-6 bg-yellow-400 rounded-2xl mb-10"><span className={`${TV_PRICE} text-purple-900`}>{formatPrice(currentSlide.product.promotional_price || currentSlide.product.price)}</span></div>}
+                  <QRCodeWithFrame url={productUrl} primaryColor="#facc15" label="COMPRE" buttonText="Eu quero!" size="md" />
+                </div>
+              </div>
+              <SlideFooter primaryColor="#facc15" slug={establishment?.slug || ''} phone={establishment?.phone} whatsapp={establishment?.whatsapp} socialLinks={socialLinks} />
+            </div>
+          )}
+
+          {/* ===== TEMPLATE: HALLOWEEN (Comemorativo) ===== */}
+          {currentSlide.template_type === 'halloween' && (
+            <div className="relative w-full h-full flex flex-col overflow-hidden">
+              <HalloweenPattern />
+              <FixedLogo logoUrl={establishment?.logo_url} name={establishment?.name || ''} variant="dark" />
+              <div className="flex-1 flex relative z-10 items-center px-20 pt-20">
+                <div className="flex-1 flex flex-col justify-center">
+                  <motion.div initial={{ scale: 0, rotate: -20 }} animate={{ scale: 1, rotate: 0 }} className="text-6xl mb-6">🎃👻</motion.div>
+                  <motion.h1 initial={{ opacity: 0 }} animate={{ opacity: 1 }} className={`${TV_TITLE} text-orange-500 mb-8`}>{currentSlide.title || 'Halloween!'}</motion.h1>
+                  {currentSlide.subtitle && <p className={`${TV_SUBTITLE} text-gray-300 mb-10`}>{currentSlide.subtitle}</p>}
+                  {currentSlide.product && <div className={`${TV_PRICE} text-orange-400 mb-12`}>{formatPrice(currentSlide.product.promotional_price || currentSlide.product.price)}</div>}
+                  <QRCodeCompact url={productUrl} primaryColor="#f97316" buttonText="Eu quero!" size="lg" />
+                </div>
+                <div className="flex-1 flex items-center justify-center">
+                  <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} className="w-[550px] h-[550px] rounded-full overflow-hidden border-[16px] border-orange-500 shadow-2xl">
+                    <MediaFrame slide={currentSlide} frameClassName="w-full h-full" />
+                  </motion.div>
+                </div>
+              </div>
+              <SlideFooter primaryColor="#f97316" slug={establishment?.slug || ''} phone={establishment?.phone} whatsapp={establishment?.whatsapp} socialLinks={socialLinks} variant="transparent" />
+            </div>
+          )}
+
+          {/* ===== TEMPLATE: BEACH TROPICAL (Regional) ===== */}
+          {currentSlide.template_type === 'beach_tropical' && (
+            <div className="relative w-full h-full flex flex-col overflow-hidden" style={{ backgroundColor: '#e0f2fe' }}>
+              <BeachWaves color="#0ea5e9" />
+              <PalmTrees />
+              <FixedLogo logoUrl={establishment?.logo_url} name={establishment?.name || ''} />
+              <div className="flex-1 flex relative z-10">
+                <div className="w-[55%] h-full relative">
+                  <motion.div initial={{ x: -50, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="absolute inset-10">
+                    <div className="w-full h-full rounded-[60px] overflow-hidden border-8 border-cyan-400 shadow-2xl">
+                      <MediaFrame slide={currentSlide} frameClassName="w-full h-full" />
+                    </div>
+                  </motion.div>
+                </div>
+                <div className="w-[45%] h-full flex flex-col justify-center pl-8 pr-16">
+                  <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="text-5xl mb-4">🏖️🌴</motion.div>
+                  <motion.h1 initial={{ opacity: 0 }} animate={{ opacity: 1 }} className={`${TV_TITLE} text-cyan-700 mb-8`}>{currentSlide.title || 'Praia!'}</motion.h1>
+                  {currentSlide.subtitle && <p className={`${TV_SUBTITLE} text-cyan-600/80 mb-8`}>{currentSlide.subtitle}</p>}
+                  {currentSlide.product && <div className={`${TV_PRICE} text-cyan-800 mb-10`}>{formatPrice(currentSlide.product.promotional_price || currentSlide.product.price)}</div>}
+                  <QRCodeWithFrame url={productUrl} primaryColor="#0891b2" label="COMPRE" buttonText="Eu quero!" size="md" />
+                </div>
+              </div>
+              <SlideFooter primaryColor="#0891b2" slug={establishment?.slug || ''} phone={establishment?.phone} whatsapp={establishment?.whatsapp} socialLinks={socialLinks} />
+            </div>
+          )}
+
+          {/* ===== TEMPLATE: SUNSET BEACH (Regional) ===== */}
+          {currentSlide.template_type === 'sunset_beach' && (
+            <div className="relative w-full h-full flex flex-col overflow-hidden">
+              <SunsetGradient />
+              <PalmTrees />
+              <FixedLogo logoUrl={establishment?.logo_url} name={establishment?.name || ''} variant="dark" />
+              <div className="flex-1 flex relative z-10 items-center px-20 pt-20">
+                <div className="flex-1 flex flex-col justify-center">
+                  <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className={`${TV_TITLE} text-white mb-10`} style={{ textShadow: '2px 2px 10px rgba(0,0,0,0.5)' }}>{currentSlide.title || 'Pôr do Sol'}</motion.h1>
+                  {currentSlide.subtitle && <p className={`${TV_SUBTITLE} text-white/90 mb-10`}>{currentSlide.subtitle}</p>}
+                  {currentSlide.product && <div className={`${TV_PRICE} text-white mb-12`}>{formatPrice(currentSlide.product.promotional_price || currentSlide.product.price)}</div>}
+                  <QRCodeCompact url={productUrl} primaryColor="#fb923c" buttonText="Eu quero!" size="lg" />
+                </div>
+                <div className="flex-1 flex items-center justify-center">
+                  <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} className="w-[550px] h-[550px] rounded-full overflow-hidden border-[12px] border-white/50 shadow-2xl">
+                    <MediaFrame slide={currentSlide} frameClassName="w-full h-full" />
+                  </motion.div>
+                </div>
+              </div>
+              <SlideFooter primaryColor="#fb923c" slug={establishment?.slug || ''} phone={establishment?.phone} whatsapp={establishment?.whatsapp} socialLinks={socialLinks} variant="transparent" />
+            </div>
+          )}
+
+          {/* ===== TEMPLATE: TROPICAL FRUITS (Regional) ===== */}
+          {currentSlide.template_type === 'tropical_fruits' && (
+            <div className="relative w-full h-full flex flex-col overflow-hidden" style={{ backgroundColor: '#fef3c7' }}>
+              <TropicalFruits />
+              <FixedLogo logoUrl={establishment?.logo_url} name={establishment?.name || ''} />
+              <div className="flex-1 flex relative z-10">
+                <div className="w-[55%] h-full relative">
+                  <motion.div initial={{ scale: 0.9, rotate: -3 }} animate={{ scale: 1, rotate: 0 }} className="absolute inset-10">
+                    <div className="w-full h-full rounded-[50px] overflow-hidden border-8 border-orange-400 shadow-2xl">
+                      <MediaFrame slide={currentSlide} frameClassName="w-full h-full" />
+                    </div>
+                  </motion.div>
+                </div>
+                <div className="w-[45%] h-full flex flex-col justify-center pl-8 pr-16">
+                  <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="text-5xl mb-4">🥭🍍🥥</motion.div>
+                  <motion.h1 initial={{ opacity: 0 }} animate={{ opacity: 1 }} className={`${TV_TITLE} text-orange-600 mb-8`}>{currentSlide.title || 'Tropical!'}</motion.h1>
+                  {currentSlide.subtitle && <p className={`${TV_SUBTITLE} text-orange-500/80 mb-8`}>{currentSlide.subtitle}</p>}
+                  {currentSlide.product && <div className={`${TV_PRICE} text-orange-700 mb-10`}>{formatPrice(currentSlide.product.promotional_price || currentSlide.product.price)}</div>}
+                  <QRCodeWithFrame url={productUrl} primaryColor="#ea580c" label="COMPRE" buttonText="Eu quero!" size="md" />
+                </div>
+              </div>
+              <SlideFooter primaryColor="#ea580c" slug={establishment?.slug || ''} phone={establishment?.phone} whatsapp={establishment?.whatsapp} socialLinks={socialLinks} />
+            </div>
+          )}
+
+          {/* ===== TEMPLATE: NORDESTE (Regional) ===== */}
+          {currentSlide.template_type === 'nordeste_rustic' && (
+            <div className="relative w-full h-full flex flex-col overflow-hidden" style={{ backgroundColor: '#fef7ee' }}>
+              <NordesteTexture color="#c2410c" />
+              <FixedLogo logoUrl={establishment?.logo_url} name={establishment?.name || ''} />
+              <div className="flex-1 flex relative z-10">
+                <div className="w-[55%] h-full relative">
+                  <motion.div initial={{ x: -50, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="absolute inset-10">
+                    <div className="w-full h-full rounded-3xl overflow-hidden border-8 border-orange-300 shadow-2xl">
+                      <MediaFrame slide={currentSlide} frameClassName="w-full h-full" />
+                    </div>
+                  </motion.div>
+                </div>
+                <div className="w-[45%] h-full flex flex-col justify-center pl-8 pr-16">
+                  <motion.h1 initial={{ opacity: 0 }} animate={{ opacity: 1 }} className={`${TV_TITLE} text-orange-800 mb-8`}>{currentSlide.title || 'Nordeste'}</motion.h1>
+                  {currentSlide.subtitle && <p className={`${TV_SUBTITLE} text-orange-700/80 mb-8`}>{currentSlide.subtitle}</p>}
+                  {currentSlide.product && <div className={`${TV_PRICE} text-orange-900 mb-10`}>{formatPrice(currentSlide.product.promotional_price || currentSlide.product.price)}</div>}
+                  <QRCodeWithFrame url={productUrl} primaryColor="#c2410c" label="COMPRE" buttonText="Eu quero!" size="md" />
+                </div>
+              </div>
+              <SlideFooter primaryColor="#c2410c" slug={establishment?.slug || ''} phone={establishment?.phone} whatsapp={establishment?.whatsapp} socialLinks={socialLinks} />
+            </div>
+          )}
+
+          {/* ===== TEMPLATE: MODERN CLASSIC (Equilibrado) ===== */}
+          {currentSlide.template_type === 'modern_classic' && (
+            <div className="relative w-full h-full flex flex-col" style={{ backgroundColor: secondaryColor }}>
+              <ModernCleanGradient color={primaryColor} />
+              <FixedLogo logoUrl={establishment?.logo_url} name={establishment?.name || ''} />
+              <div className="flex-1 flex relative z-10">
+                <div className="w-[55%] h-full relative">
+                  <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="absolute inset-y-10 left-0 right-10">
+                    <MediaFrame slide={currentSlide} frameClassName="w-full h-full rounded-r-[60px] shadow-2xl" />
+                  </motion.div>
+                </div>
+                <div className="w-[45%] h-full flex flex-col justify-center pl-8 pr-16">
+                  <motion.h1 initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} className={`${TV_TITLE} mb-8`} style={{ color: primaryColor }}>{currentSlide.title || currentSlide.product?.name || 'Destaque'}</motion.h1>
+                  {currentSlide.subtitle && <p className={`${TV_SUBTITLE} text-gray-600 mb-8 max-w-xl`}>{currentSlide.subtitle}</p>}
+                  {currentSlide.product && <div className={`${TV_PRICE} text-gray-800 mb-10`}>{formatPrice(currentSlide.product.promotional_price || currentSlide.product.price)}</div>}
+                  <QRCodeWithFrame url={productUrl} primaryColor={primaryColor} label="COMPRE AQUI" buttonText="Eu quero!" size="md" />
+                </div>
+              </div>
+              <SlideFooter primaryColor={primaryColor} slug={establishment?.slug || ''} phone={establishment?.phone} whatsapp={establishment?.whatsapp} socialLinks={socialLinks} />
+            </div>
+          )}
+
+          {/* ===== TEMPLATE: WARM COZY (Equilibrado) ===== */}
+          {currentSlide.template_type === 'warm_cozy' && (
+            <div className="relative w-full h-full flex flex-col overflow-hidden">
+              <WarmCozyGradient />
+              <FixedLogo logoUrl={establishment?.logo_url} name={establishment?.name || ''} />
+              <div className="flex-1 flex relative z-10">
+                <div className="w-[55%] h-full relative">
+                  <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="absolute inset-10">
+                    <div className="w-full h-full rounded-[40px] overflow-hidden border-4 border-amber-200 shadow-xl">
+                      <MediaFrame slide={currentSlide} frameClassName="w-full h-full" />
+                    </div>
+                  </motion.div>
+                </div>
+                <div className="w-[45%] h-full flex flex-col justify-center pl-8 pr-16">
+                  <motion.h1 initial={{ opacity: 0 }} animate={{ opacity: 1 }} className={`${TV_TITLE} text-amber-900 mb-8`}>{currentSlide.title || 'Aconchego'}</motion.h1>
+                  {currentSlide.subtitle && <p className={`${TV_SUBTITLE} text-amber-800/80 mb-8`}>{currentSlide.subtitle}</p>}
+                  {currentSlide.product && <div className={`${TV_PRICE} text-amber-900 mb-10`}>{formatPrice(currentSlide.product.promotional_price || currentSlide.product.price)}</div>}
+                  <QRCodeWithFrame url={productUrl} primaryColor="#d97706" label="COMPRE" buttonText="Eu quero!" size="md" />
+                </div>
+              </div>
+              <SlideFooter primaryColor="#d97706" slug={establishment?.slug || ''} phone={establishment?.phone} whatsapp={establishment?.whatsapp} socialLinks={socialLinks} />
+            </div>
+          )}
+
+          {/* ===== TEMPLATE: FRESH GREEN (Equilibrado) ===== */}
+          {currentSlide.template_type === 'fresh_green' && (
+            <div className="relative w-full h-full flex flex-col overflow-hidden">
+              <FreshGreenGradient />
+              <FixedLogo logoUrl={establishment?.logo_url} name={establishment?.name || ''} />
+              <div className="flex-1 flex relative z-10">
+                <div className="w-[55%] h-full relative">
+                  <motion.div initial={{ x: -50, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="absolute inset-10">
+                    <div className="w-full h-full rounded-[50px] overflow-hidden border-4 border-green-300 shadow-xl">
+                      <MediaFrame slide={currentSlide} frameClassName="w-full h-full" />
+                    </div>
+                  </motion.div>
+                </div>
+                <div className="w-[45%] h-full flex flex-col justify-center pl-8 pr-16">
+                  <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="text-4xl mb-4">🌿</motion.div>
+                  <motion.h1 initial={{ opacity: 0 }} animate={{ opacity: 1 }} className={`${TV_TITLE} text-green-800 mb-8`}>{currentSlide.title || 'Fresco'}</motion.h1>
+                  {currentSlide.subtitle && <p className={`${TV_SUBTITLE} text-green-700/80 mb-8`}>{currentSlide.subtitle}</p>}
+                  {currentSlide.product && <div className={`${TV_PRICE} text-green-900 mb-10`}>{formatPrice(currentSlide.product.promotional_price || currentSlide.product.price)}</div>}
+                  <QRCodeWithFrame url={productUrl} primaryColor="#16a34a" label="COMPRE" buttonText="Eu quero!" size="md" />
+                </div>
+              </div>
+              <SlideFooter primaryColor="#16a34a" slug={establishment?.slug || ''} phone={establishment?.phone} whatsapp={establishment?.whatsapp} socialLinks={socialLinks} />
+            </div>
+          )}
+
           {/* ===== FALLBACK para templates não mapeados ===== */}
-          {!['product_showcase', 'minimal', 'promo', 'full_image', 'blob_modern', 'polaroid', 'diamond', 'diagonal', 'menu_grid', 'special_day', 'catering', 'circles'].includes(currentSlide.template_type) && (
+          {!['product_showcase', 'minimal', 'promo', 'full_image', 'blob_modern', 'polaroid', 'diamond', 'diagonal', 'menu_grid', 'special_day', 'catering', 'circles', 'clean_white', 'zen_simple', 'glass_card', 'neon_glow', 'pop_art', 'gradient_burst', 'retro_70s', 'art_deco', 'rustic_wood', 'christmas', 'valentines', 'sao_joao', 'carnival', 'halloween', 'beach_tropical', 'sunset_beach', 'tropical_fruits', 'nordeste_rustic', 'modern_classic', 'warm_cozy', 'fresh_green'].includes(currentSlide.template_type) && (
             <div className="relative w-full h-full flex flex-col" style={{ backgroundColor: secondaryColor }}>
               <GradientBackground primaryColor={primaryColor} secondaryColor={secondaryColor} variant="mesh" />
               <NoiseTexture opacity={0.02} />
