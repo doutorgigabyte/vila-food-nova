@@ -330,15 +330,15 @@ export default function TVSlideManagement() {
               {/* Product Link */}
               <div className="space-y-2">
                 <Label>Vincular Produto</Label>
-                <Select
-                  value={formData.product_id}
-                  onValueChange={(v) => setFormData({ ...formData, product_id: v })}
+              <Select
+                  value={formData.product_id || "none"}
+                  onValueChange={(v) => setFormData({ ...formData, product_id: v === "none" ? "" : v })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione um produto..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Nenhum</SelectItem>
+                    <SelectItem value="none">Nenhum</SelectItem>
                     {products.map(p => (
                       <SelectItem key={p.id} value={p.id}>
                         {p.name} - R$ {(p.promotional_price || p.price).toFixed(2)}
