@@ -14,6 +14,7 @@ import {
   StripeLines
 } from "@/components/dashboard/vilatok-tv/TVBackgroundPatterns";
 import { SlideFooter } from "@/components/dashboard/vilatok-tv/SlideFooter";
+import { QRCodeWithFrame, QRCodeCompact } from "@/components/dashboard/vilatok-tv/QRCodeWithFrame";
 
 interface TVSlide {
   id: string;
@@ -63,7 +64,7 @@ interface PlaylistSettings {
 // COMPONENTES AUXILIARES
 // =====================
 
-// Logo fixa com moldura circular - posição consistente em todos os templates
+// Logo fixa com moldura circular - PREENCHENDO 100% da moldura
 function FixedLogo({ logoUrl, name, variant = 'light' }: { logoUrl: string | null; name: string; variant?: 'light' | 'dark' }) {
   if (!logoUrl) return null;
   
@@ -72,103 +73,19 @@ function FixedLogo({ logoUrl, name, variant = 'light' }: { logoUrl: string | nul
       initial={{ opacity: 0, scale: 0.8 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ delay: 0.1 }}
-      className="absolute top-8 left-8 z-30"
+      className="absolute top-10 left-10 z-30"
     >
       <div 
-        className={`w-24 h-24 rounded-full overflow-hidden border-4 shadow-2xl flex items-center justify-center ${
-          variant === 'dark' ? 'border-white/30 bg-white/10' : 'border-white bg-white'
+        className={`w-28 h-28 rounded-full overflow-hidden border-4 shadow-2xl ${
+          variant === 'dark' ? 'border-white/40 bg-white/20' : 'border-white bg-white'
         }`}
+        style={{ boxShadow: '0 10px 40px rgba(0,0,0,0.3)' }}
       >
         <img 
           src={logoUrl} 
           alt={name} 
-          className="w-20 h-20 object-contain"
+          className="w-full h-full object-cover"
         />
-      </div>
-    </motion.div>
-  );
-}
-
-// QR Code do produto com moldura colorida e CTA
-function ProductQRCode({ 
-  url, 
-  primaryColor,
-  label = "Compre aqui",
-  buttonText = "Eu quero!",
-  size = "lg"
-}: { 
-  url: string; 
-  primaryColor: string;
-  label?: string;
-  buttonText?: string;
-  size?: "md" | "lg" | "xl";
-}) {
-  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(url)}&color=333333&bgcolor=FFFFFF&margin=1`;
-  
-  const sizeClasses = {
-    md: "w-28 h-28",
-    lg: "w-36 h-36", 
-    xl: "w-44 h-44"
-  };
-
-  return (
-    <motion.div 
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.5 }}
-      className="flex items-center gap-6"
-    >
-      <div 
-        className="p-3 rounded-2xl shadow-2xl"
-        style={{ 
-          backgroundColor: primaryColor,
-          boxShadow: `0 10px 40px ${primaryColor}60`
-        }}
-      >
-        <div className="bg-white p-2 rounded-xl">
-          <img src={qrCodeUrl} alt="QR Code" className={sizeClasses[size]} />
-        </div>
-      </div>
-      <div className="flex flex-col gap-3">
-        <span className="text-2xl text-gray-600 uppercase tracking-wider font-medium">{label}</span>
-        <div 
-          className="px-10 py-4 rounded-full text-white text-3xl font-black shadow-xl"
-          style={{ backgroundColor: primaryColor }}
-        >
-          {buttonText}
-        </div>
-      </div>
-    </motion.div>
-  );
-}
-
-// QR Code compacto para templates escuros
-function CompactQRCode({ 
-  url, 
-  primaryColor,
-  label = "Eu quero!"
-}: { 
-  url: string; 
-  primaryColor: string;
-  label?: string;
-}) {
-  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}&color=333333&bgcolor=FFFFFF&margin=1`;
-
-  return (
-    <motion.div 
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ delay: 0.5 }}
-      className="flex items-center gap-4"
-    >
-      <div 
-        className="px-8 py-4 rounded-full text-white text-2xl font-black"
-        style={{ backgroundColor: primaryColor }}
-      >
-        {label}
-      </div>
-      <div className="bg-white p-2 rounded-xl shadow-lg">
-        <img src={qrCodeUrl} alt="QR Code" className="w-24 h-24" />
       </div>
     </motion.div>
   );
@@ -208,7 +125,7 @@ function MediaFrame({
           loop
           playsInline
         />
-        {showOverlay && <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />}
+        {showOverlay && <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />}
       </div>
     );
   }
@@ -221,7 +138,7 @@ function MediaFrame({
         className={`w-full h-full object-cover ${className}`}
         style={mediaStyle}
       />
-      {showOverlay && <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />}
+      {showOverlay && <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />}
     </div>
   );
 }
@@ -337,7 +254,7 @@ export default function TVSlidePlayer() {
   if (loading) {
     return (
       <div className="fixed inset-0 bg-black flex items-center justify-center">
-        <div className="animate-pulse text-white text-3xl">Carregando...</div>
+        <div className="animate-pulse text-white text-4xl font-bold">Carregando...</div>
       </div>
     );
   }
@@ -346,9 +263,9 @@ export default function TVSlidePlayer() {
   if (error) {
     return (
       <div className="fixed inset-0 bg-black flex flex-col items-center justify-center text-white">
-        <AlertCircle className="w-20 h-20 text-red-500 mb-6" />
-        <h1 className="text-4xl font-bold mb-2">Acesso Negado</h1>
-        <p className="text-2xl text-gray-400">{error}</p>
+        <AlertCircle className="w-24 h-24 text-red-500 mb-8" />
+        <h1 className="text-5xl font-bold mb-4">Acesso Negado</h1>
+        <p className="text-3xl text-gray-400">{error}</p>
       </div>
     );
   }
@@ -357,8 +274,8 @@ export default function TVSlidePlayer() {
   if (slides.length === 0) {
     return (
       <div className="fixed inset-0 bg-black flex flex-col items-center justify-center text-white">
-        <h1 className="text-5xl font-bold mb-6">{establishment?.name}</h1>
-        <p className="text-2xl text-gray-400">Nenhum slide configurado</p>
+        <h1 className="text-6xl font-bold mb-8">{establishment?.name}</h1>
+        <p className="text-3xl text-gray-400">Nenhum slide configurado</p>
       </div>
     );
   }
@@ -383,6 +300,14 @@ export default function TVSlidePlayer() {
     youtube_url: establishment?.youtube_url
   };
 
+  // =====================
+  // CONSTANTES DE TIPOGRAFIA TV
+  // =====================
+  const TV_TITLE = "text-8xl font-black uppercase leading-[0.92]";
+  const TV_SUBTITLE = "text-3xl leading-relaxed";
+  const TV_PRICE = "text-7xl font-black";
+  const TV_MARGIN = "px-16 py-12";
+
   return (
     <div className="fixed inset-0 overflow-hidden" style={{ backgroundColor: secondaryColor }}>
       <AnimatePresence mode="wait">
@@ -401,33 +326,31 @@ export default function TVSlidePlayer() {
               <WaveLines color={primaryColor} opacity={0.12} />
               <NoiseTexture opacity={0.02} />
               
-              {/* Logo fixa */}
               <FixedLogo logoUrl={establishment?.logo_url} name={establishment?.name || ''} />
               
               <div className="flex-1 flex relative z-10">
-                {/* Imagem - 60% largura, sangra à esquerda */}
-                <div className="w-[60%] h-full relative">
+                {/* Imagem - 58% largura */}
+                <div className="w-[58%] h-full relative">
                   <motion.div
                     initial={{ scale: 0.9, x: -50, opacity: 0 }}
                     animate={{ scale: 1, x: 0, opacity: 1 }}
                     transition={{ duration: 0.6, delay: 0.2 }}
-                    className="absolute inset-0 -left-8"
+                    className="absolute inset-y-8 left-0 right-8"
                   >
                     <MediaFrame 
                       slide={currentSlide} 
-                      frameClassName="w-full h-full rounded-r-[100px] shadow-[0_0_100px_rgba(0,0,0,0.3)]"
-                      showOverlay
+                      frameClassName="w-full h-full rounded-r-[80px] shadow-[0_0_80px_rgba(0,0,0,0.25)]"
                     />
                   </motion.div>
                 </div>
 
-                {/* Conteúdo - 40% largura */}
-                <div className="w-[40%] h-full flex flex-col justify-center items-start pl-12 pr-10">
+                {/* Conteúdo - 42% largura */}
+                <div className="w-[42%] h-full flex flex-col justify-center items-start pl-8 pr-16">
                   <motion.h1 
                     initial={{ opacity: 0, x: 30 }} 
                     animate={{ opacity: 1, x: 0 }} 
                     transition={{ delay: 0.2 }} 
-                    className="text-7xl font-black uppercase mb-6 leading-[0.95]" 
+                    className={`${TV_TITLE} mb-8`}
                     style={{ color: primaryColor, textShadow: '4px 4px 0 rgba(0,0,0,0.08)' }}
                   >
                     {currentSlide.title || currentSlide.product?.name || 'Destaque'}
@@ -438,7 +361,7 @@ export default function TVSlidePlayer() {
                       initial={{ opacity: 0 }} 
                       animate={{ opacity: 1 }} 
                       transition={{ delay: 0.3 }} 
-                      className="text-3xl text-gray-600 mb-6 max-w-lg leading-relaxed line-clamp-3"
+                      className={`${TV_SUBTITLE} text-gray-600 mb-8 max-w-xl line-clamp-3`}
                     >
                       {currentSlide.subtitle}
                     </motion.p>
@@ -449,23 +372,22 @@ export default function TVSlidePlayer() {
                       initial={{ opacity: 0, scale: 0.8 }} 
                       animate={{ opacity: 1, scale: 1 }} 
                       transition={{ delay: 0.4 }} 
-                      className="text-6xl font-black text-gray-800 mb-8"
+                      className={`${TV_PRICE} text-gray-800 mb-10`}
                     >
                       {formatPrice(currentSlide.product.promotional_price || currentSlide.product.price)}
                     </motion.div>
                   )}
                   
-                  <ProductQRCode
+                  <QRCodeWithFrame
                     url={productUrl}
                     primaryColor={primaryColor}
-                    label={currentSlide.product ? "Compre aqui" : "Ver cardápio"}
+                    label="COMPRE AQUI"
                     buttonText="Eu quero!"
                     size="lg"
                   />
                 </div>
               </div>
 
-              {/* Rodapé Padronizado */}
               <SlideFooter 
                 primaryColor={primaryColor}
                 slug={establishment?.slug || ''}
@@ -486,28 +408,30 @@ export default function TVSlidePlayer() {
                   showOverlay
                 />
                 
-                {/* Logo fixa */}
                 <FixedLogo logoUrl={establishment?.logo_url} name={establishment?.name || ''} variant="dark" />
                 
                 {/* Conteúdo sobreposto */}
-                <div className="absolute bottom-12 left-12 right-12 flex items-end justify-between">
+                <div className="absolute bottom-16 left-16 right-16 flex items-end justify-between">
                   <motion.div 
                     initial={{ opacity: 0, y: 30 }} 
                     animate={{ opacity: 1, y: 0 }} 
-                    className="bg-black/70 backdrop-blur-md px-10 py-6 rounded-3xl max-w-2xl"
+                    className="bg-black/70 backdrop-blur-md px-12 py-8 rounded-3xl max-w-3xl"
                   >
-                    <h2 className="text-6xl font-black text-white leading-tight">{currentSlide.title || 'Destaque'}</h2>
+                    <h2 className="text-7xl font-black text-white uppercase leading-tight mb-4">
+                      {currentSlide.title || 'Destaque'}
+                    </h2>
                     {currentSlide.product && (
-                      <p className="text-4xl font-black text-white mt-3">
+                      <p className="text-5xl font-black text-white">
                         {formatPrice(currentSlide.product.promotional_price || currentSlide.product.price)}
                       </p>
                     )}
                   </motion.div>
 
-                  <CompactQRCode 
+                  <QRCodeCompact 
                     url={productUrl}
                     primaryColor={primaryColor}
-                    label={currentSlide.product ? "Eu quero!" : "Ver menu"}
+                    buttonText="Eu quero!"
+                    size="lg"
                   />
                 </div>
               </div>
@@ -534,58 +458,59 @@ export default function TVSlidePlayer() {
               <FixedLogo logoUrl={establishment?.logo_url} name={establishment?.name || ''} />
               
               <div className="flex-1 flex relative z-10">
-                {/* Info - 40% */}
-                <div className="w-2/5 h-full flex flex-col justify-center p-14 pt-32">
-                  <motion.div 
-                    animate={{ scale: [1, 1.05, 1] }} 
-                    transition={{ repeat: Infinity, duration: 2 }} 
-                    className="inline-flex items-center gap-3 px-8 py-3 rounded-full text-2xl font-bold text-white mb-8 w-fit shadow-xl" 
-                    style={{ backgroundColor: accentColor }}
-                  >
-                    ⭐ {currentSlide.badge_text || 'Menu Especial'}
-                  </motion.div>
+                {/* Info - 42% */}
+                <div className="w-[42%] h-full flex flex-col justify-center pl-16 pr-8 pt-20">
+                  {currentSlide.badge_text && (
+                    <motion.div 
+                      animate={{ scale: [1, 1.05, 1] }} 
+                      transition={{ repeat: Infinity, duration: 2 }} 
+                      className="inline-flex items-center gap-3 px-10 py-4 rounded-full text-2xl font-bold text-white mb-10 w-fit shadow-xl" 
+                      style={{ backgroundColor: accentColor }}
+                    >
+                      ⭐ {currentSlide.badge_text}
+                    </motion.div>
+                  )}
                   
                   <h1 
-                    className="text-7xl font-black uppercase leading-[0.9] mb-6" 
-                    style={{ color: primaryColor, textShadow: '3px 3px 0 rgba(0,0,0,0.08)' }}
+                    className={`${TV_TITLE} mb-8`}
+                    style={{ color: primaryColor, textShadow: '4px 4px 0 rgba(0,0,0,0.08)' }}
                   >
                     {currentSlide.title || currentSlide.product?.name}
                   </h1>
                   
                   {currentSlide.product && (
-                    <div className="mb-10">
+                    <div className="mb-12">
                       {currentSlide.product.promotional_price && (
-                        <span className="text-4xl text-gray-400 line-through mr-4">
+                        <span className="text-4xl text-gray-400 line-through mr-6">
                           {formatPrice(currentSlide.product.price)}
                         </span>
                       )}
-                      <span className="text-6xl font-black text-gray-800">
+                      <span className={`${TV_PRICE} text-gray-800`}>
                         {formatPrice(currentSlide.product.promotional_price || currentSlide.product.price)}
                       </span>
                     </div>
                   )}
 
-                  <ProductQRCode
+                  <QRCodeWithFrame
                     url={productUrl}
                     primaryColor={primaryColor}
-                    label="Compre pelo QR"
+                    label="COMPRE AQUI"
                     buttonText="Eu quero!"
                     size="md"
                   />
                 </div>
 
-                {/* Imagem - 60%, sangra à direita */}
-                <div className="w-3/5 h-full relative">
+                {/* Imagem - 58% */}
+                <div className="w-[58%] h-full relative">
                   <motion.div 
                     initial={{ scale: 0.9, x: 50 }} 
                     animate={{ scale: 1, x: 0 }} 
                     transition={{ duration: 0.5 }} 
-                    className="absolute inset-0 -right-8"
+                    className="absolute inset-y-8 left-8 right-0"
                   >
                     <MediaFrame 
                       slide={currentSlide}
                       frameClassName="w-full h-full rounded-l-[80px] shadow-[0_0_80px_rgba(0,0,0,0.25)]"
-                      showOverlay
                     />
                   </motion.div>
                 </div>
@@ -609,26 +534,27 @@ export default function TVSlidePlayer() {
                 
                 <FixedLogo logoUrl={establishment?.logo_url} name={establishment?.name || ''} variant="dark" />
 
-                <div className="absolute bottom-12 left-12 right-12 flex items-end justify-between">
+                <div className="absolute bottom-16 left-16 right-16 flex items-end justify-between">
                   {currentSlide.title && (
                     <motion.div 
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="bg-black/70 backdrop-blur-md px-10 py-6 rounded-3xl"
+                      className="bg-black/70 backdrop-blur-md px-12 py-8 rounded-3xl"
                     >
-                      <h2 className="text-6xl font-black text-white">{currentSlide.title}</h2>
+                      <h2 className="text-7xl font-black text-white uppercase">{currentSlide.title}</h2>
                       {currentSlide.product && (
-                        <p className="text-4xl font-black text-white mt-2">
+                        <p className="text-5xl font-black text-white mt-4">
                           {formatPrice(currentSlide.product.promotional_price || currentSlide.product.price)}
                         </p>
                       )}
                     </motion.div>
                   )}
 
-                  <CompactQRCode 
+                  <QRCodeCompact 
                     url={productUrl}
                     primaryColor={primaryColor}
-                    label="Eu quero!"
+                    buttonText="Eu quero!"
+                    size="lg"
                   />
                 </div>
               </div>
@@ -653,7 +579,7 @@ export default function TVSlidePlayer() {
               
               <FixedLogo logoUrl={establishment?.logo_url} name={establishment?.name || ''} variant="dark" />
               
-              <div className="flex-1 relative z-10 flex items-center px-16 pt-8">
+              <div className="flex-1 relative z-10 flex items-center px-20 pt-16">
                 {/* Imagem - círculo grande */}
                 <div className="flex-1 flex items-center justify-center">
                   <motion.div 
@@ -663,19 +589,19 @@ export default function TVSlidePlayer() {
                     className="relative"
                   >
                     <div className="absolute inset-0 rounded-full bg-white/10 blur-3xl scale-125" />
-                    <div className="relative w-[600px] h-[600px] rounded-full overflow-hidden border-[12px] border-white shadow-2xl">
+                    <div className="relative w-[650px] h-[650px] rounded-full overflow-hidden border-[14px] border-white shadow-2xl">
                       <MediaFrame slide={currentSlide} frameClassName="w-full h-full" />
                     </div>
                   </motion.div>
                 </div>
 
                 {/* Conteúdo */}
-                <div className="flex-1 flex flex-col justify-center pl-8">
+                <div className="flex-1 flex flex-col justify-center pl-12">
                   <motion.h1 
                     initial={{ opacity: 0, x: 30 }} 
                     animate={{ opacity: 1, x: 0 }} 
                     transition={{ delay: 0.2 }} 
-                    className="text-8xl font-black text-white uppercase leading-[0.9] mb-6"
+                    className={`${TV_TITLE} text-white mb-8`}
                   >
                     {currentSlide.title || currentSlide.product?.name || 'Destaque'}
                   </motion.h1>
@@ -685,7 +611,7 @@ export default function TVSlidePlayer() {
                       initial={{ opacity: 0 }} 
                       animate={{ opacity: 1 }} 
                       transition={{ delay: 0.3 }} 
-                      className="text-3xl text-gray-300 mb-8 max-w-lg"
+                      className={`${TV_SUBTITLE} text-gray-300 mb-10 max-w-xl`}
                     >
                       {currentSlide.subtitle}
                     </motion.p>
@@ -696,17 +622,18 @@ export default function TVSlidePlayer() {
                       initial={{ opacity: 0, scale: 0.8 }} 
                       animate={{ opacity: 1, scale: 1 }} 
                       transition={{ delay: 0.4 }} 
-                      className="text-6xl font-black mb-10" 
+                      className={`${TV_PRICE} mb-12`}
                       style={{ color: accentColor }}
                     >
                       {formatPrice(currentSlide.product.promotional_price || currentSlide.product.price)}
                     </motion.div>
                   )}
                   
-                  <CompactQRCode 
+                  <QRCodeCompact 
                     url={productUrl}
                     primaryColor={accentColor}
-                    label="Eu quero!"
+                    buttonText="Eu quero!"
+                    size="lg"
                   />
                 </div>
               </div>
@@ -731,30 +658,30 @@ export default function TVSlidePlayer() {
               
               <FixedLogo logoUrl={establishment?.logo_url} name={establishment?.name || ''} variant="dark" />
               
-              <div className="flex-1 relative z-10 flex items-center justify-center pt-12">
-                <div className="flex items-center gap-20">
+              <div className="flex-1 relative z-10 flex items-center justify-center pt-20 px-16">
+                <div className="flex items-center gap-24">
                   {/* Polaroid - maior */}
                   <motion.div 
                     initial={{ rotate: -12, scale: 0.8, opacity: 0 }} 
                     animate={{ rotate: -6, scale: 1, opacity: 1 }} 
                     transition={{ duration: 0.5 }} 
-                    className="bg-white p-6 pb-24 rounded-lg shadow-2xl transform -rotate-6"
+                    className="bg-white p-8 pb-28 rounded-lg shadow-2xl transform -rotate-6"
                   >
-                    <div className="w-[420px] h-[420px] overflow-hidden">
+                    <div className="w-[480px] h-[480px] overflow-hidden">
                       <MediaFrame slide={currentSlide} frameClassName="w-full h-full" />
                     </div>
-                    <p className="absolute bottom-8 left-0 right-0 text-center font-handwriting text-gray-700 text-3xl">
+                    <p className="absolute bottom-10 left-0 right-0 text-center font-handwriting text-gray-700 text-4xl">
                       {currentSlide.title || 'Delícia!'}
                     </p>
                   </motion.div>
                   
                   {/* Conteúdo */}
-                  <div className="flex flex-col items-start max-w-xl">
+                  <div className="flex flex-col items-start max-w-2xl">
                     <motion.h1 
                       initial={{ opacity: 0, y: 20 }} 
                       animate={{ opacity: 1, y: 0 }} 
                       transition={{ delay: 0.3 }} 
-                      className="text-7xl font-black text-white uppercase leading-[0.9] mb-6"
+                      className={`${TV_TITLE} text-white mb-8`}
                     >
                       {currentSlide.title || 'Novidade'}
                     </motion.h1>
@@ -764,7 +691,7 @@ export default function TVSlidePlayer() {
                         initial={{ opacity: 0 }} 
                         animate={{ opacity: 1 }} 
                         transition={{ delay: 0.4 }} 
-                        className="text-3xl text-gray-300 mb-8"
+                        className={`${TV_SUBTITLE} text-gray-300 mb-10`}
                       >
                         {currentSlide.subtitle}
                       </motion.p>
@@ -775,17 +702,18 @@ export default function TVSlidePlayer() {
                         initial={{ opacity: 0 }} 
                         animate={{ opacity: 1 }} 
                         transition={{ delay: 0.5 }} 
-                        className="text-5xl font-black mb-10" 
+                        className={`${TV_PRICE} mb-12`}
                         style={{ color: accentColor }}
                       >
                         {formatPrice(currentSlide.product.promotional_price || currentSlide.product.price)}
                       </motion.div>
                     )}
                     
-                    <CompactQRCode 
+                    <QRCodeCompact 
                       url={productUrl}
                       primaryColor={primaryColor}
-                      label="Eu quero!"
+                      buttonText="Eu quero!"
+                      size="lg"
                     />
                   </div>
                 </div>
@@ -811,14 +739,14 @@ export default function TVSlidePlayer() {
               
               <FixedLogo logoUrl={establishment?.logo_url} name={establishment?.name || ''} />
               
-              <div className="flex-1 relative z-10 flex items-center px-16 pt-12">
+              <div className="flex-1 relative z-10 flex items-center px-20 pt-20">
                 {/* Conteúdo */}
-                <div className="flex-1 flex flex-col justify-center pr-10">
+                <div className="flex-1 flex flex-col justify-center pr-12">
                   <motion.h1 
                     initial={{ opacity: 0, x: -30 }} 
                     animate={{ opacity: 1, x: 0 }} 
                     transition={{ delay: 0.2 }} 
-                    className="text-8xl font-black uppercase leading-[0.9] mb-6" 
+                    className={`${TV_TITLE} mb-10`}
                     style={{ color: primaryColor }}
                   >
                     {currentSlide.title || currentSlide.product?.name || 'Destaque'}
@@ -829,7 +757,7 @@ export default function TVSlidePlayer() {
                       initial={{ opacity: 0 }} 
                       animate={{ opacity: 1 }} 
                       transition={{ delay: 0.3 }} 
-                      className="text-3xl text-gray-600 mb-8 max-w-lg"
+                      className={`${TV_SUBTITLE} text-gray-600 mb-10 max-w-xl`}
                     >
                       {currentSlide.subtitle}
                     </motion.p>
@@ -840,16 +768,16 @@ export default function TVSlidePlayer() {
                       initial={{ opacity: 0 }} 
                       animate={{ opacity: 1 }} 
                       transition={{ delay: 0.4 }} 
-                      className="text-6xl font-black text-gray-800 mb-10"
+                      className={`${TV_PRICE} text-gray-800 mb-12`}
                     >
                       {formatPrice(currentSlide.product.promotional_price || currentSlide.product.price)}
                     </motion.div>
                   )}
                   
-                  <ProductQRCode
+                  <QRCodeWithFrame
                     url={productUrl}
                     primaryColor={primaryColor}
-                    label="Compre aqui"
+                    label="COMPRE AQUI"
                     buttonText="Eu quero!"
                     size="md"
                   />
@@ -868,8 +796,8 @@ export default function TVSlidePlayer() {
                       style={{ backgroundColor: primaryColor, opacity: 0.2 }} 
                     />
                     <div 
-                      className="relative w-[500px] h-[500px] overflow-hidden border-[14px] border-white shadow-2xl"
-                      style={{ borderRadius: '20px' }}
+                      className="relative w-[550px] h-[550px] overflow-hidden border-[16px] border-white shadow-2xl"
+                      style={{ borderRadius: '24px' }}
                     >
                       <div className="-rotate-45 scale-[1.42] w-full h-full">
                         <MediaFrame slide={currentSlide} frameClassName="w-full h-full" />
@@ -898,105 +826,127 @@ export default function TVSlidePlayer() {
               
               <FixedLogo logoUrl={establishment?.logo_url} name={establishment?.name || ''} />
               
-              {/* Imagem Diagonal - 65% largura */}
-              <motion.div 
-                initial={{ x: -100, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                transition={{ duration: 0.6 }}
-                className="absolute inset-0 w-[65%] bottom-24" 
-                style={{ clipPath: 'polygon(0 0, 100% 0, 75% 100%, 0 100%)' }}
-              >
-                <MediaFrame slide={currentSlide} frameClassName="w-full h-full" showOverlay />
-              </motion.div>
-              
-              {/* Badge */}
-              {currentSlide.badge_text && (
-                <div className="absolute top-8 right-10 z-20">
+              <div className="flex-1 relative z-10 flex items-center">
+                {/* Imagem diagonal - 55% */}
+                <div className="w-[55%] h-full relative">
                   <motion.div 
-                    initial={{ scale: 0 }} 
-                    animate={{ scale: 1 }} 
-                    transition={{ type: 'spring' }} 
-                    className="w-36 h-36 rounded-full bg-red-500 text-white flex items-center justify-center text-center font-black text-2xl shadow-xl"
+                    initial={{ x: -100, opacity: 0 }} 
+                    animate={{ x: 0, opacity: 1 }} 
+                    transition={{ duration: 0.6 }} 
+                    className="absolute inset-0 -left-20"
+                    style={{ 
+                      clipPath: 'polygon(0 0, 90% 0, 100% 100%, 0% 100%)'
+                    }}
                   >
-                    {currentSlide.badge_text}
+                    <MediaFrame slide={currentSlide} frameClassName="w-full h-full" />
                   </motion.div>
                 </div>
-              )}
-              
-              {/* Conteúdo - Lado direito */}
-              <div className="absolute right-12 top-1/2 -translate-y-1/2 max-w-xl z-10">
-                <motion.h1 
-                  initial={{ opacity: 0, x: 30 }} 
-                  animate={{ opacity: 1, x: 0 }} 
-                  transition={{ delay: 0.2 }} 
-                  className="text-7xl font-black uppercase leading-[0.9] mb-6" 
-                  style={{ color: primaryColor }}
-                >
-                  {currentSlide.title || currentSlide.product?.name || 'Destaque'}
-                </motion.h1>
-                
-                {currentSlide.subtitle && (
-                  <motion.p 
-                    initial={{ opacity: 0 }} 
-                    animate={{ opacity: 1 }} 
-                    transition={{ delay: 0.3 }} 
-                    className="text-3xl text-gray-700 mb-8"
+
+                {/* Conteúdo - 45% */}
+                <div className="w-[45%] h-full flex flex-col justify-center px-16">
+                  <motion.h1 
+                    initial={{ opacity: 0, x: 30 }} 
+                    animate={{ opacity: 1, x: 0 }} 
+                    transition={{ delay: 0.2 }} 
+                    className={`${TV_TITLE} mb-10`}
+                    style={{ color: primaryColor }}
                   >
-                    {currentSlide.subtitle}
-                  </motion.p>
-                )}
-                
-                {currentSlide.product && (
-                  <motion.div 
-                    initial={{ opacity: 0 }} 
-                    animate={{ opacity: 1 }} 
-                    transition={{ delay: 0.4 }} 
-                    className="text-6xl font-black text-gray-800 mb-10"
-                  >
-                    {formatPrice(currentSlide.product.promotional_price || currentSlide.product.price)}
-                  </motion.div>
-                )}
-                
-                <ProductQRCode
-                  url={productUrl}
-                  primaryColor={primaryColor}
-                  label="Compre aqui"
-                  buttonText="Eu quero!"
-                  size="md"
-                />
+                    {currentSlide.title || currentSlide.product?.name || 'Destaque'}
+                  </motion.h1>
+                  
+                  {currentSlide.subtitle && (
+                    <motion.p 
+                      initial={{ opacity: 0 }} 
+                      animate={{ opacity: 1 }} 
+                      transition={{ delay: 0.3 }} 
+                      className={`${TV_SUBTITLE} text-gray-600 mb-10 max-w-lg`}
+                    >
+                      {currentSlide.subtitle}
+                    </motion.p>
+                  )}
+                  
+                  {currentSlide.product && (
+                    <motion.div 
+                      initial={{ opacity: 0 }} 
+                      animate={{ opacity: 1 }} 
+                      transition={{ delay: 0.4 }} 
+                      className={`${TV_PRICE} text-gray-800 mb-12`}
+                    >
+                      {formatPrice(currentSlide.product.promotional_price || currentSlide.product.price)}
+                    </motion.div>
+                  )}
+                  
+                  <QRCodeWithFrame
+                    url={productUrl}
+                    primaryColor={primaryColor}
+                    label="COMPRE AQUI"
+                    buttonText="Eu quero!"
+                    size="md"
+                  />
+                </div>
               </div>
 
-              <div className="absolute bottom-0 left-0 right-0">
-                <SlideFooter 
-                  primaryColor={primaryColor}
-                  slug={establishment?.slug || ''}
-                  phone={establishment?.phone}
-                  whatsapp={establishment?.whatsapp}
-                  socialLinks={socialLinks}
-                />
-              </div>
+              <SlideFooter 
+                primaryColor={primaryColor}
+                slug={establishment?.slug || ''}
+                phone={establishment?.phone}
+                whatsapp={establishment?.whatsapp}
+                socialLinks={socialLinks}
+              />
             </div>
           )}
 
           {/* ===== TEMPLATE: MENU GRID ===== */}
           {currentSlide.template_type === 'menu_grid' && (
-            <div className="relative w-full h-full bg-gray-900 flex flex-col overflow-hidden">
-              <BlobShapes color={primaryColor} variant="large" />
-              <BlobShapes color={accentColor} variant="scattered" />
-              <NoiseTexture opacity={0.04} />
+            <div 
+              className="relative w-full h-full flex flex-col overflow-hidden" 
+              style={{ background: `linear-gradient(135deg, ${primaryColor}ee 0%, ${primaryColor} 100%)` }}
+            >
+              <WaveLines color="#fff" opacity={0.08} animated={false} />
+              <NoiseTexture opacity={0.03} />
               
               <FixedLogo logoUrl={establishment?.logo_url} name={establishment?.name || ''} variant="dark" />
               
-              <div className="flex-1 relative z-10 flex flex-col p-12 pt-20">
-                {/* Header */}
-                <div className="flex items-center justify-end mb-8">
-                  <motion.h2 
-                    initial={{ opacity: 0 }} 
-                    animate={{ opacity: 1 }} 
-                    className="text-6xl font-black text-white uppercase tracking-wide"
+              <div className="flex-1 relative z-10 flex items-center px-20 pt-20">
+                {/* Conteúdo - esquerda */}
+                <div className="flex-1 flex flex-col justify-center">
+                  <motion.h1 
+                    initial={{ opacity: 0, x: -30 }} 
+                    animate={{ opacity: 1, x: 0 }} 
+                    transition={{ delay: 0.2 }} 
+                    className={`${TV_TITLE} text-white mb-10`}
                   >
-                    {currentSlide.title || 'Menu Especial'}
-                  </motion.h2>
+                    {currentSlide.title || 'Menu do Dia'}
+                  </motion.h1>
+                  
+                  {currentSlide.subtitle && (
+                    <motion.p 
+                      initial={{ opacity: 0 }} 
+                      animate={{ opacity: 1 }} 
+                      transition={{ delay: 0.3 }} 
+                      className={`${TV_SUBTITLE} text-white/80 mb-10 max-w-lg`}
+                    >
+                      {currentSlide.subtitle}
+                    </motion.p>
+                  )}
+                  
+                  {currentSlide.product && (
+                    <motion.div 
+                      initial={{ scale: 0.8, opacity: 0 }} 
+                      animate={{ scale: 1, opacity: 1 }} 
+                      transition={{ delay: 0.4 }} 
+                      className={`${TV_PRICE} text-white mb-12`}
+                    >
+                      {formatPrice(currentSlide.product.promotional_price || currentSlide.product.price)}
+                    </motion.div>
+                  )}
+                  
+                  <QRCodeCompact 
+                    url={productUrl}
+                    primaryColor="#fff"
+                    buttonText="Eu quero!"
+                    size="lg"
+                  />
                 </div>
                 
                 {/* Imagem Principal - círculo grande */}
@@ -1007,7 +957,7 @@ export default function TVSlidePlayer() {
                     transition={{ duration: 0.5 }} 
                     className="relative"
                   >
-                    <div className="w-[700px] h-[700px] rounded-full overflow-hidden border-[16px] border-white shadow-2xl">
+                    <div className="w-[700px] h-[700px] rounded-full overflow-hidden border-[18px] border-white shadow-2xl">
                       <MediaFrame slide={currentSlide} frameClassName="w-full h-full" />
                     </div>
                     {currentSlide.product && (
@@ -1015,8 +965,8 @@ export default function TVSlidePlayer() {
                         initial={{ y: 20, opacity: 0 }}
                         animate={{ y: 0, opacity: 1 }}
                         transition={{ delay: 0.4 }}
-                        className="absolute -bottom-6 left-1/2 -translate-x-1/2 px-12 py-5 rounded-full text-white text-5xl font-black shadow-xl" 
-                        style={{ backgroundColor: primaryColor }}
+                        className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-16 py-6 rounded-full text-white text-6xl font-black shadow-xl" 
+                        style={{ backgroundColor: accentColor }}
                       >
                         {formatPrice(currentSlide.product.promotional_price || currentSlide.product.price)}
                       </motion.div>
@@ -1048,14 +998,14 @@ export default function TVSlidePlayer() {
               
               <FixedLogo logoUrl={establishment?.logo_url} name={establishment?.name || ''} variant="dark" />
               
-              <div className="flex-1 relative z-10 flex items-center px-16 pt-12">
+              <div className="flex-1 relative z-10 flex items-center px-20 pt-20">
                 {/* Conteúdo */}
                 <div className="flex-1 flex flex-col justify-center">
                   <motion.h1 
                     initial={{ opacity: 0, y: 20 }} 
                     animate={{ opacity: 1, y: 0 }} 
                     transition={{ delay: 0.2 }} 
-                    className="text-8xl font-black text-white uppercase leading-[0.9] mb-8"
+                    className={`${TV_TITLE} text-white mb-10`}
                   >
                     {currentSlide.title || 'Especial do Dia'}
                   </motion.h1>
@@ -1065,7 +1015,7 @@ export default function TVSlidePlayer() {
                       initial={{ opacity: 0 }} 
                       animate={{ opacity: 1 }} 
                       transition={{ delay: 0.3 }} 
-                      className="text-3xl text-white/80 mb-10 max-w-lg"
+                      className={`${TV_SUBTITLE} text-white/80 mb-12 max-w-lg`}
                     >
                       {currentSlide.subtitle}
                     </motion.p>
@@ -1076,20 +1026,21 @@ export default function TVSlidePlayer() {
                       initial={{ scale: 0.8, opacity: 0 }} 
                       animate={{ scale: 1, opacity: 1 }} 
                       transition={{ delay: 0.4 }} 
-                      className="inline-flex items-center gap-4 px-10 py-5 rounded-2xl mb-10" 
+                      className="inline-flex items-center gap-6 px-12 py-6 rounded-2xl mb-12" 
                       style={{ backgroundColor: accentColor }}
                     >
-                      <span className="text-gray-900 text-2xl font-semibold">APENAS</span>
-                      <span className="text-5xl font-black text-gray-900">
+                      <span className="text-gray-900 text-3xl font-semibold">APENAS</span>
+                      <span className="text-6xl font-black text-gray-900">
                         {formatPrice(currentSlide.product.promotional_price || currentSlide.product.price)}
                       </span>
                     </motion.div>
                   )}
                   
-                  <CompactQRCode 
+                  <QRCodeCompact 
                     url={productUrl}
                     primaryColor="#fff"
-                    label="Eu quero!"
+                    buttonText="Eu quero!"
+                    size="lg"
                   />
                 </div>
 
@@ -1105,7 +1056,7 @@ export default function TVSlidePlayer() {
                       className="absolute inset-0 rounded-full blur-3xl scale-125" 
                       style={{ backgroundColor: accentColor, opacity: 0.3 }} 
                     />
-                    <div className="relative w-[600px] h-[600px] rounded-full overflow-hidden border-[16px] border-white shadow-2xl">
+                    <div className="relative w-[650px] h-[650px] rounded-full overflow-hidden border-[18px] border-white shadow-2xl">
                       <MediaFrame slide={currentSlide} frameClassName="w-full h-full" />
                     </div>
                   </motion.div>
@@ -1126,25 +1077,25 @@ export default function TVSlidePlayer() {
           {/* ===== TEMPLATE: CATERING ===== */}
           {currentSlide.template_type === 'catering' && (
             <div className="relative w-full h-full flex flex-col overflow-hidden">
-              {/* Imagem - 65% largura */}
+              {/* Imagem - 62% largura */}
               <div className="flex-1 flex">
-                <div className="w-[65%] h-full relative">
+                <div className="w-[62%] h-full relative">
                   <MediaFrame slide={currentSlide} frameClassName="w-full h-full" showOverlay />
                   <FixedLogo logoUrl={establishment?.logo_url} name={establishment?.name || ''} variant="dark" />
                 </div>
                 
-                {/* Painel de Conteúdo - 35% */}
-                <div className="w-[35%] h-full relative" style={{ backgroundColor: primaryColor }}>
+                {/* Painel de Conteúdo - 38% */}
+                <div className="w-[38%] h-full relative" style={{ backgroundColor: primaryColor }}>
                   <WaveLines color="#fff" opacity={0.08} animated={false} />
                   <NoiseTexture opacity={0.03} />
                   
-                  <div className="relative z-10 h-full flex flex-col justify-center p-14">
+                  <div className="relative z-10 h-full flex flex-col justify-center p-16">
                     {currentSlide.badge_text && (
                       <motion.div 
                         initial={{ scale: 0 }} 
                         animate={{ scale: 1 }} 
                         transition={{ type: 'spring' }} 
-                        className="inline-flex items-center justify-center px-8 py-3 rounded-full text-xl font-bold mb-8 bg-white/20 text-white border-2 border-white/30 w-fit"
+                        className="inline-flex items-center justify-center px-10 py-4 rounded-full text-2xl font-bold mb-10 bg-white/20 text-white border-2 border-white/30 w-fit"
                       >
                         {currentSlide.badge_text}
                       </motion.div>
@@ -1154,7 +1105,7 @@ export default function TVSlidePlayer() {
                       initial={{ opacity: 0, y: 20 }} 
                       animate={{ opacity: 1, y: 0 }} 
                       transition={{ delay: 0.2 }} 
-                      className="text-6xl font-black text-white uppercase leading-[0.9] mb-8"
+                      className="text-7xl font-black text-white uppercase leading-[0.92] mb-10"
                     >
                       {currentSlide.title || 'Eventos & Catering'}
                     </motion.h1>
@@ -1164,7 +1115,7 @@ export default function TVSlidePlayer() {
                         initial={{ opacity: 0 }} 
                         animate={{ opacity: 1 }} 
                         transition={{ delay: 0.3 }} 
-                        className="text-2xl text-white/80 mb-10"
+                        className={`${TV_SUBTITLE} text-white/80 mb-12`}
                       >
                         {currentSlide.subtitle}
                       </motion.p>
@@ -1175,7 +1126,7 @@ export default function TVSlidePlayer() {
                         initial={{ opacity: 0 }} 
                         animate={{ opacity: 1 }} 
                         transition={{ delay: 0.4 }} 
-                        className="text-5xl font-black text-white mb-10"
+                        className={`${TV_PRICE} text-white mb-12`}
                       >
                         {formatPrice(currentSlide.product.promotional_price || currentSlide.product.price)}
                       </motion.div>
@@ -1185,20 +1136,20 @@ export default function TVSlidePlayer() {
                       initial={{ opacity: 0, y: 20 }} 
                       animate={{ opacity: 1, y: 0 }} 
                       transition={{ delay: 0.5 }} 
-                      className="flex flex-col gap-4"
+                      className="flex flex-col gap-6"
                     >
-                      <div className="px-10 py-5 rounded-full bg-white text-gray-900 text-2xl font-bold text-center shadow-lg">
+                      <div className="px-12 py-6 rounded-full bg-white text-gray-900 text-3xl font-bold text-center shadow-lg">
                         Solicite um orçamento
                       </div>
-                      <div className="flex items-center gap-4 mt-4">
-                        <div className="bg-white p-2 rounded-xl">
+                      <div className="flex items-center gap-6 mt-4">
+                        <div className="bg-white p-3 rounded-xl">
                           <img 
-                            src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(productUrl)}&color=333333&bgcolor=FFFFFF&margin=1`}
+                            src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(productUrl)}&color=333333&bgcolor=FFFFFF&margin=1`}
                             alt="QR Code" 
-                            className="w-20 h-20"
+                            className="w-24 h-24"
                           />
                         </div>
-                        <span className="text-white/80 text-xl">Escaneie para ver o menu</span>
+                        <span className="text-white/80 text-2xl">Escaneie para ver o menu</span>
                       </div>
                     </motion.div>
                   </div>
@@ -1223,8 +1174,8 @@ export default function TVSlidePlayer() {
               
               <FixedLogo logoUrl={establishment?.logo_url} name={establishment?.name || ''} variant="dark" />
               
-              <div className="flex-1 relative z-10 flex items-center px-16 pt-12">
-                {/* Imagem - múltiplos círculos decorativos */}
+              <div className="flex-1 relative z-10 flex items-center px-20 pt-20">
+                {/* Imagem - círculo com decorações */}
                 <div className="flex-1 flex items-center justify-center">
                   <motion.div 
                     initial={{ scale: 0.8, opacity: 0 }} 
@@ -1234,28 +1185,28 @@ export default function TVSlidePlayer() {
                   >
                     {/* Círculos decorativos */}
                     <div 
-                      className="absolute -top-20 -left-20 w-40 h-40 rounded-full border-4 opacity-30"
+                      className="absolute -top-24 -left-24 w-48 h-48 rounded-full border-4 opacity-30"
                       style={{ borderColor: primaryColor }}
                     />
                     <div 
-                      className="absolute -bottom-16 -right-16 w-32 h-32 rounded-full"
+                      className="absolute -bottom-20 -right-20 w-40 h-40 rounded-full"
                       style={{ backgroundColor: accentColor, opacity: 0.6 }}
                     />
                     
                     {/* Imagem principal */}
-                    <div className="relative w-[600px] h-[600px] rounded-full overflow-hidden border-[14px] border-white shadow-2xl">
+                    <div className="relative w-[650px] h-[650px] rounded-full overflow-hidden border-[16px] border-white shadow-2xl">
                       <MediaFrame slide={currentSlide} frameClassName="w-full h-full" />
                     </div>
                   </motion.div>
                 </div>
 
                 {/* Conteúdo */}
-                <div className="flex-1 flex flex-col justify-center pl-10">
+                <div className="flex-1 flex flex-col justify-center pl-12">
                   <motion.h1 
                     initial={{ opacity: 0, x: 30 }} 
                     animate={{ opacity: 1, x: 0 }} 
                     transition={{ delay: 0.2 }} 
-                    className="text-8xl font-black text-white uppercase leading-[0.9] mb-8"
+                    className={`${TV_TITLE} text-white mb-10`}
                   >
                     {currentSlide.title || currentSlide.product?.name || 'Destaque'}
                   </motion.h1>
@@ -1265,7 +1216,7 @@ export default function TVSlidePlayer() {
                       initial={{ opacity: 0 }} 
                       animate={{ opacity: 1 }} 
                       transition={{ delay: 0.3 }} 
-                      className="text-3xl text-gray-300 mb-8 max-w-lg"
+                      className={`${TV_SUBTITLE} text-gray-300 mb-10 max-w-xl`}
                     >
                       {currentSlide.subtitle}
                     </motion.p>
@@ -1276,17 +1227,18 @@ export default function TVSlidePlayer() {
                       initial={{ opacity: 0 }} 
                       animate={{ opacity: 1 }} 
                       transition={{ delay: 0.4 }} 
-                      className="text-6xl font-black mb-10" 
+                      className={`${TV_PRICE} mb-12`}
                       style={{ color: accentColor }}
                     >
                       {formatPrice(currentSlide.product.promotional_price || currentSlide.product.price)}
                     </motion.div>
                   )}
                   
-                  <CompactQRCode 
+                  <QRCodeCompact 
                     url={productUrl}
                     primaryColor={primaryColor}
-                    label="Eu quero!"
+                    buttonText="Eu quero!"
+                    size="lg"
                   />
                 </div>
               </div>
@@ -1311,47 +1263,46 @@ export default function TVSlidePlayer() {
               <FixedLogo logoUrl={establishment?.logo_url} name={establishment?.name || ''} />
               
               <div className="flex-1 flex relative z-10">
-                <div className="w-[60%] h-full relative">
+                <div className="w-[58%] h-full relative">
                   <motion.div
                     initial={{ scale: 0.9, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     transition={{ duration: 0.6 }}
-                    className="absolute inset-0 -left-8"
+                    className="absolute inset-y-8 left-0 right-8"
                   >
                     <MediaFrame 
                       slide={currentSlide} 
-                      frameClassName="w-full h-full rounded-r-[100px] shadow-[0_0_100px_rgba(0,0,0,0.3)]"
-                      showOverlay
+                      frameClassName="w-full h-full rounded-r-[80px] shadow-[0_0_80px_rgba(0,0,0,0.25)]"
                     />
                   </motion.div>
                 </div>
 
-                <div className="w-[40%] h-full flex flex-col justify-center items-start pl-12 pr-10">
+                <div className="w-[42%] h-full flex flex-col justify-center items-start pl-8 pr-16">
                   <motion.h1 
                     initial={{ opacity: 0, x: 30 }} 
                     animate={{ opacity: 1, x: 0 }} 
-                    className="text-7xl font-black uppercase mb-6 leading-[0.95]" 
+                    className={`${TV_TITLE} mb-8`}
                     style={{ color: primaryColor }}
                   >
                     {currentSlide.title || currentSlide.product?.name || 'Destaque'}
                   </motion.h1>
                   
                   {currentSlide.subtitle && (
-                    <p className="text-3xl text-gray-600 mb-6 max-w-lg leading-relaxed line-clamp-3">
+                    <p className={`${TV_SUBTITLE} text-gray-600 mb-8 max-w-xl line-clamp-3`}>
                       {currentSlide.subtitle}
                     </p>
                   )}
                   
                   {currentSlide.product && (
-                    <div className="text-6xl font-black text-gray-800 mb-8">
+                    <div className={`${TV_PRICE} text-gray-800 mb-10`}>
                       {formatPrice(currentSlide.product.promotional_price || currentSlide.product.price)}
                     </div>
                   )}
                   
-                  <ProductQRCode
+                  <QRCodeWithFrame
                     url={productUrl}
                     primaryColor={primaryColor}
-                    label="Compre aqui"
+                    label="COMPRE AQUI"
                     buttonText="Eu quero!"
                     size="lg"
                   />
