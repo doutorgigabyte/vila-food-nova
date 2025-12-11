@@ -164,7 +164,7 @@ const AllFeaturesSection = () => {
         <div className="flex flex-col lg:flex-row items-center lg:items-start gap-6 lg:gap-10 max-w-5xl mx-auto">
           {/* Phone Frame */}
           <div className="flex-shrink-0">
-            <PhoneFrame className="w-[260px] md:w-[300px]">
+            <PhoneFrame className="w-[280px] md:w-[320px]">
               {currentTab.simulation}
             </PhoneFrame>
           </div>

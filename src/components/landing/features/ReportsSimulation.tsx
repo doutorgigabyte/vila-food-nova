@@ -46,7 +46,7 @@ const ReportsSimulation = () => {
 
   const metrics: Metric[] = [
     {
-      label: "Vendas Hoje",
+      label: "Vendas",
       value: `R$ ${salesValue.toLocaleString("pt-BR")}`,
       change: 12.5,
       icon: DollarSign,
@@ -60,7 +60,7 @@ const ReportsSimulation = () => {
       color: "from-blue-400 to-blue-600",
     },
     {
-      label: "Ticket Médio",
+      label: "Ticket",
       value: `R$ ${ticketValue}`,
       change: -2.1,
       icon: TrendingUp,
@@ -70,7 +70,7 @@ const ReportsSimulation = () => {
 
   const topProducts = [
     { name: "Pizza Margherita", quantity: 23, revenue: "R$ 1.035" },
-    { name: "Hambúrguer Especial", quantity: 18, revenue: "R$ 684" },
+    { name: "Hambúrguer", quantity: 18, revenue: "R$ 684" },
     { name: "Açaí 500ml", quantity: 15, revenue: "R$ 420" },
   ];
 
@@ -87,54 +87,54 @@ const ReportsSimulation = () => {
   return (
     <div className="flex flex-col h-full bg-zinc-950 overflow-y-auto">
       {/* Header */}
-      <div className="px-4 py-3 bg-zinc-900 border-b border-zinc-800">
+      <div className="px-2 py-1.5 bg-zinc-900 border-b border-zinc-800">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-white font-semibold text-sm">Dashboard</h3>
-            <p className="text-white/50 text-xs">Hoje, 11 Dez</p>
+            <h3 className="text-white font-semibold text-xs">Dashboard</h3>
+            <p className="text-white/50 text-[9px]">Hoje, 11 Dez</p>
           </div>
-          <div className="px-2 py-1 bg-emerald-500/20 rounded-full">
-            <span className="text-emerald-400 text-[10px] font-medium">● Ao vivo</span>
+          <div className="px-1.5 py-0.5 bg-emerald-500/20 rounded-full">
+            <span className="text-emerald-400 text-[8px] font-medium">● Ao vivo</span>
           </div>
         </div>
       </div>
 
       {/* Metrics cards */}
-      <div className="p-3 grid grid-cols-3 gap-2">
+      <div className="p-2 grid grid-cols-3 gap-1.5">
         {metrics.map((metric) => (
           <div
             key={metric.label}
-            className="p-3 bg-zinc-900 rounded-xl border border-zinc-800"
+            className="p-2 bg-zinc-900 rounded-lg border border-zinc-800"
           >
-            <div className={`w-7 h-7 rounded-lg bg-gradient-to-br ${metric.color} flex items-center justify-center mb-2`}>
-              <metric.icon className="w-3.5 h-3.5 text-white" />
+            <div className={`w-5 h-5 rounded bg-gradient-to-br ${metric.color} flex items-center justify-center mb-1`}>
+              <metric.icon className="w-3 h-3 text-white" />
             </div>
-            <p className="text-white font-bold text-sm">{metric.value}</p>
-            <p className="text-white/40 text-[10px] mb-1">{metric.label}</p>
+            <p className="text-white font-bold text-[10px]">{metric.value}</p>
+            <p className="text-white/40 text-[8px]">{metric.label}</p>
             <div className={`flex items-center gap-0.5 ${metric.change >= 0 ? "text-emerald-400" : "text-red-400"}`}>
               {metric.change >= 0 ? (
-                <TrendingUp className="w-3 h-3" />
+                <TrendingUp className="w-2 h-2" />
               ) : (
-                <TrendingDown className="w-3 h-3" />
+                <TrendingDown className="w-2 h-2" />
               )}
-              <span className="text-[10px] font-medium">{Math.abs(metric.change)}%</span>
+              <span className="text-[8px] font-medium">{Math.abs(metric.change)}%</span>
             </div>
           </div>
         ))}
       </div>
 
       {/* Chart */}
-      <div className="px-3 pb-3">
-        <div className="p-3 bg-zinc-900 rounded-xl border border-zinc-800">
-          <p className="text-white/60 text-xs mb-3">Vendas por hora</p>
-          <div className="flex items-end justify-between h-20 gap-1">
+      <div className="px-2 pb-2">
+        <div className="p-2 bg-zinc-900 rounded-lg border border-zinc-800">
+          <p className="text-white/60 text-[9px] mb-2">Vendas/hora</p>
+          <div className="flex items-end justify-between h-14 gap-0.5">
             {chartBars.map((height, i) => (
-              <div key={i} className="flex-1 flex flex-col items-center gap-1">
+              <div key={i} className="flex-1 flex flex-col items-center gap-0.5">
                 <div
                   className="w-full bg-gradient-to-t from-primary/80 to-primary rounded-t transition-all duration-500"
                   style={{ height: `${height}%` }}
                 />
-                <span className="text-white/30 text-[8px]">{peakHours[i]?.hour}</span>
+                <span className="text-white/30 text-[7px]">{peakHours[i]?.hour}</span>
               </div>
             ))}
           </div>
@@ -142,26 +142,26 @@ const ReportsSimulation = () => {
       </div>
 
       {/* Top products */}
-      <div className="px-3 pb-3">
-        <div className="p-3 bg-zinc-900 rounded-xl border border-zinc-800">
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-white/60 text-xs">Produtos mais vendidos</p>
-            <span className="text-primary text-[10px]">Ver todos</span>
+      <div className="px-2 pb-2">
+        <div className="p-2 bg-zinc-900 rounded-lg border border-zinc-800">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-white/60 text-[9px]">Mais vendidos</p>
+            <span className="text-primary text-[8px]">Ver todos</span>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             {topProducts.map((product, i) => (
-              <div key={product.name} className="flex items-center gap-2">
-                <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
+              <div key={product.name} className="flex items-center gap-1.5">
+                <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold ${
                   i === 0 ? "bg-yellow-500 text-black" : i === 1 ? "bg-zinc-400 text-black" : "bg-amber-700 text-white"
                 }`}>
                   {i + 1}
                 </span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-white text-xs truncate">{product.name}</p>
+                  <p className="text-white text-[9px] truncate">{product.name}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-white/80 text-[10px]">{product.quantity}x</p>
-                  <p className="text-emerald-400 text-[10px] font-medium">{product.revenue}</p>
+                  <p className="text-white/80 text-[8px]">{product.quantity}x</p>
+                  <p className="text-emerald-400 text-[8px] font-medium">{product.revenue}</p>
                 </div>
               </div>
             ))}
@@ -170,34 +170,34 @@ const ReportsSimulation = () => {
       </div>
 
       {/* Peak hours */}
-      <div className="px-3 pb-3">
-        <div className="p-3 bg-zinc-900 rounded-xl border border-zinc-800">
-          <div className="flex items-center gap-2 mb-2">
-            <Clock className="w-4 h-4 text-primary" />
-            <p className="text-white/60 text-xs">Horário de pico</p>
+      <div className="px-2 pb-2">
+        <div className="p-2 bg-zinc-900 rounded-lg border border-zinc-800">
+          <div className="flex items-center gap-1.5 mb-1">
+            <Clock className="w-3 h-3 text-primary" />
+            <p className="text-white/60 text-[9px]">Horário de pico</p>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-3xl">🔥</span>
+          <div className="flex items-center gap-1.5">
+            <span className="text-xl">🔥</span>
             <div>
-              <p className="text-white font-bold text-lg">20h - 21h</p>
-              <p className="text-white/40 text-[10px]">18 pedidos em média</p>
+              <p className="text-white font-bold text-sm">20h - 21h</p>
+              <p className="text-white/40 text-[8px]">18 pedidos em média</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* Quick stats */}
-      <div className="px-3 pb-4">
-        <div className="grid grid-cols-2 gap-2">
-          <div className="p-3 bg-emerald-500/10 rounded-xl border border-emerald-500/20">
-            <Users className="w-4 h-4 text-emerald-400 mb-1" />
-            <p className="text-emerald-400 font-bold text-sm">32</p>
-            <p className="text-emerald-400/60 text-[10px]">Novos clientes</p>
+      <div className="px-2 pb-2">
+        <div className="grid grid-cols-2 gap-1.5">
+          <div className="p-2 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
+            <Users className="w-3 h-3 text-emerald-400 mb-0.5" />
+            <p className="text-emerald-400 font-bold text-xs">32</p>
+            <p className="text-emerald-400/60 text-[8px]">Novos clientes</p>
           </div>
-          <div className="p-3 bg-blue-500/10 rounded-xl border border-blue-500/20">
-            <TrendingUp className="w-4 h-4 text-blue-400 mb-1" />
-            <p className="text-blue-400 font-bold text-sm">89%</p>
-            <p className="text-blue-400/60 text-[10px]">Taxa conversão</p>
+          <div className="p-2 bg-blue-500/10 rounded-lg border border-blue-500/20">
+            <TrendingUp className="w-3 h-3 text-blue-400 mb-0.5" />
+            <p className="text-blue-400 font-bold text-xs">89%</p>
+            <p className="text-blue-400/60 text-[8px]">Conversão</p>
           </div>
         </div>
       </div>
