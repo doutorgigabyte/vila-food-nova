@@ -189,7 +189,7 @@ const CommissionDebtPanel = ({ establishmentId }: CommissionDebtPanelProps) => {
               <p className="font-medium text-blue-700 dark:text-blue-400">Como funciona o extrato de comissões</p>
               <p className="text-muted-foreground mt-1">
                 Quando um pedido é pago na entrega (dinheiro ou maquininha), a comissão da plataforma 
-                (5% dos produtos + R$1 taxa de serviço) é registrada aqui como pendente. 
+                (5% dos produtos) é registrada aqui como pendente. 
                 Essa comissão será descontada automaticamente das suas vendas online ou cobrada via boleto mensal.
               </p>
             </div>

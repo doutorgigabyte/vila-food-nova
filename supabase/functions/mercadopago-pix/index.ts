@@ -5,7 +5,7 @@
  * 
  * MODELO BLINDADO - Plataforma como SaaS:
  * - 100% do FRETE vai para a LOJA (establishment)
- * - Plataforma recebe apenas: 5% do valor dos PRODUTOS + R$1 taxa de serviço
+ * - Plataforma recebe apenas: 5% do valor dos PRODUTOS (taxa de serviço desativada)
  * - Loja é responsável por pagar o entregador diretamente
  * 
  * https://www.mercadopago.com.br/developers/pt/docs/checkout-api/landing
@@ -25,7 +25,7 @@ const corsHeaders = {
 // Platform Access Token (from secrets)
 const PLATFORM_ACCESS_TOKEN = Deno.env.get('MERCADOPAGO_ACCESS_TOKEN');
 const PLATFORM_FEE_PERCENT = 5; // 5% platform fee (only on PRODUCTS, not delivery)
-const PLATFORM_SERVICE_FEE = 1; // R$1 fixed service fee
+const PLATFORM_SERVICE_FEE = 0; // Service fee DISABLED - subscription-only model
 
 interface PixRequest {
   establishment_id: string;

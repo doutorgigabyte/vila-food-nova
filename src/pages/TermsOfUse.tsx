@@ -109,8 +109,8 @@ const TermsOfUse = () => {
 
                     <h3 className="text-lg font-semibold">2. Comissões e Taxas</h3>
                     <p className="text-muted-foreground">
-                      A plataforma cobra 5% sobre o valor dos produtos vendidos via marketplace, mais R$0,99 de taxa de serviço 
-                      por pedido. Para vendas diretas via cardápio digital, não há cobrança. A taxa de entrega é 100% do 
+                      A plataforma cobra 5% sobre o valor dos produtos vendidos via marketplace. 
+                      Para vendas diretas via cardápio digital, não há cobrança. A taxa de entrega é 100% do 
                       estabelecimento.
                     </p>
 

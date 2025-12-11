@@ -186,16 +186,9 @@ const VilasConceptSection = () => {
                         <span className="text-muted-foreground">Taxa de entrega</span>
                         <span className="text-green-600">Grátis</span>
                       </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-muted-foreground flex items-center gap-1">
-                          Taxa de serviço
-                          <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded">?</span>
-                        </span>
-                        <span>R$ 0,99</span>
-                      </div>
                       <div className="flex justify-between font-bold pt-2 border-t border-border">
                         <span>Total</span>
-                        <span className="text-primary text-lg">R$ 106,89</span>
+                        <span className="text-primary text-lg">R$ 105,90</span>
                       </div>
                     </div>
 
@@ -320,17 +313,7 @@ const VilasConceptSection = () => {
           </div>
 
           {/* Fee explanation cards */}
-          <div className="grid md:grid-cols-2 gap-4 mt-8 max-w-2xl mx-auto">
-            <div className="bg-muted/50 rounded-lg p-4">
-              <p className="text-sm font-medium text-foreground mb-2 flex items-center gap-2">
-                <Users className="w-4 h-4 text-primary" />
-                Cliente paga
-              </p>
-              <p className="text-xs text-muted-foreground">
-                <strong>Taxa de serviço de R$ 0,99</strong> por pedido — inclui licenciamento da plataforma, 
-                custos operacionais, desenvolvimento, suporte e segurança.
-              </p>
-            </div>
+          <div className="grid md:grid-cols-1 gap-4 mt-8 max-w-md mx-auto">
             <div className="bg-muted/50 rounded-lg p-4">
               <p className="text-sm font-medium text-foreground mb-2 flex items-center gap-2">
                 <Store className="w-4 h-4 text-primary" />
