@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Upload, Image as ImageIcon, ShoppingBag, Video, Clock } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Upload, Image as ImageIcon, ShoppingBag, Video, Clock, ImagePlus } from "lucide-react";
 import { TemplatePreviewSelector, TEMPLATE_OPTIONS } from "@/components/dashboard/TemplatePreviewSelector";
 import { uploadToS3, uploadVideoToS3, validateFile, validateVideoFile } from "@/lib/s3";
 import { toast } from "sonner";
@@ -71,25 +72,41 @@ export function TVSlideForm({
 }: TVSlideFormProps) {
   const [uploading, setUploading] = useState(false);
   const [creationMode, setCreationMode] = useState<'custom' | 'product'>('custom');
+  const [useProductImage, setUseProductImage] = useState(true);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   // Auto-fill when product is selected
   const handleProductSelect = (productId: string) => {
     if (productId === 'none') {
       setFormData({ ...formData, product_id: '' });
+      setSelectedProduct(null);
       return;
     }
 
     const product = products.find(p => p.id === productId);
     if (product) {
+      setSelectedProduct(product);
       setFormData({
         ...formData,
         product_id: productId,
         title: product.name,
         subtitle: product.description || '',
-        image_url: product.image_url || formData.image_url,
+        image_url: useProductImage ? (product.image_url || formData.image_url) : formData.image_url,
         media_type: 'image'
       });
       toast.success("Dados do produto preenchidos automaticamente!");
+    }
+  };
+
+  // Toggle between product image and custom upload
+  const handleUseProductImageToggle = (useProduct: boolean) => {
+    setUseProductImage(useProduct);
+    if (useProduct && selectedProduct?.image_url) {
+      setFormData({
+        ...formData,
+        image_url: selectedProduct.image_url,
+        media_type: 'image'
+      });
     }
   };
 
@@ -227,6 +244,54 @@ export function TVSlideForm({
                     </SelectContent>
                   </Select>
                 </div>
+
+                {/* Option to use product image or upload new */}
+                {selectedProduct && (
+                  <div className="p-4 bg-muted/30 rounded-lg border space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label className="text-sm font-medium">Usar foto do produto</Label>
+                        <p className="text-xs text-muted-foreground">
+                          {useProductImage 
+                            ? "Usando a foto original do produto" 
+                            : "Você pode enviar uma foto ou vídeo personalizado"}
+                        </p>
+                      </div>
+                      <Switch
+                        checked={useProductImage}
+                        onCheckedChange={handleUseProductImageToggle}
+                      />
+                    </div>
+
+                    {/* Custom media upload for product mode */}
+                    {!useProductImage && (
+                      <div className="space-y-3 pt-2 border-t">
+                        <Label className="text-sm font-medium flex items-center gap-2">
+                          <ImagePlus className="w-4 h-4" />
+                          Upload de Mídia Personalizada
+                        </Label>
+                        <label className="block">
+                          <input
+                            type="file"
+                            accept="image/*,video/mp4,video/webm"
+                            onChange={handleFileUpload}
+                            className="hidden"
+                            disabled={uploading}
+                          />
+                          <div className={`flex items-center justify-center gap-2 p-4 border-2 border-dashed rounded-lg cursor-pointer hover:border-primary transition-colors ${uploading ? 'opacity-50' : ''}`}>
+                            <Upload className="w-5 h-5" />
+                            <span className="text-sm">
+                              {uploading ? 'Enviando...' : 'Clique para enviar foto ou vídeo'}
+                            </span>
+                          </div>
+                        </label>
+                        <p className="text-xs text-muted-foreground">
+                          Formatos: JPG, PNG, WebP (até 10MB) ou MP4, WebM (até 100MB)
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </TabsContent>
 
               <TabsContent value="custom" className="space-y-4 mt-4">
