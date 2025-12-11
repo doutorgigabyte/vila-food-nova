@@ -334,6 +334,462 @@ export function TVSlidePreview({
     );
   }
 
+  // ===== MINIMALISTAS =====
+
+  // Clean White template
+  if (templateType === 'clean_white') {
+    return (
+      <div className="relative w-full h-full bg-white overflow-hidden">
+        <div className="flex h-full">
+          <div className="w-[55%] h-full overflow-hidden rounded-r-xl -ml-1">{renderMedia("w-full h-full")}</div>
+          <div className="w-[45%] p-2 flex flex-col justify-center">
+            {logoUrl && <img src={getImageUrl(logoUrl)} alt="" className="w-4 h-4 object-contain mb-1" />}
+            <h3 className="text-[7px] font-bold text-gray-900 truncate">{title || 'Título'}</h3>
+            <p className="text-[4px] text-gray-500 line-clamp-2 mt-0.5">{subtitle}</p>
+            <div className="mt-1"><QRCodePreview primaryColor={primaryColor} size="xs" /></div>
+          </div>
+        </div>
+        <StandardFooter />
+      </div>
+    );
+  }
+
+  // Zen Simple template
+  if (templateType === 'zen_simple') {
+    return (
+      <div className="relative w-full h-full bg-gray-50 overflow-hidden flex items-center justify-center p-2">
+        <div className="w-10 h-10 rounded-lg overflow-hidden border border-gray-200">{renderMedia("w-full h-full")}</div>
+        <div className="flex-1 pl-2">
+          <h3 className="text-[6px] font-light text-gray-800 truncate">{title || 'Zen'}</h3>
+          <p className="text-[4px] text-gray-500 truncate">{subtitle}</p>
+          <div className="mt-1"><QRCodePreview primaryColor={primaryColor} size="xs" /></div>
+        </div>
+        <StandardFooter />
+      </div>
+    );
+  }
+
+  // Glass Card template
+  if (templateType === 'glass_card') {
+    return (
+      <div className="relative w-full h-full overflow-hidden" style={{ backgroundColor: `${primaryColor}10` }}>
+        <div className="absolute inset-0 backdrop-blur-sm" />
+        <div className="flex h-full relative z-10">
+          <div className="w-[55%] h-full p-1">
+            <div className="w-full h-full rounded-lg overflow-hidden border border-white/30 backdrop-blur-sm">
+              {renderMedia("w-full h-full")}
+            </div>
+          </div>
+          <div className="w-[45%] p-2 flex flex-col justify-center">
+            <div className="bg-white/80 backdrop-blur rounded-lg p-1.5">
+              <h3 className="text-[6px] font-bold truncate" style={{ color: primaryColor }}>{title || 'Glass'}</h3>
+              <p className="text-[4px] text-gray-600 truncate">{subtitle}</p>
+              <div className="mt-1"><QRCodePreview primaryColor={primaryColor} size="xs" /></div>
+            </div>
+          </div>
+        </div>
+        <StandardFooter />
+      </div>
+    );
+  }
+
+  // ===== VIBRANTES =====
+
+  // Neon Glow template
+  if (templateType === 'neon_glow') {
+    return (
+      <div className="relative w-full h-full bg-gray-900 overflow-hidden">
+        <div className="absolute inset-0 opacity-30" style={{ background: `radial-gradient(circle at 50% 50%, ${primaryColor}40, transparent 70%)` }} />
+        <div className="flex h-full relative z-10">
+          <div className="w-1/2 flex items-center justify-center p-2">
+            <div className="w-12 h-12 rounded-lg overflow-hidden" style={{ boxShadow: `0 0 20px ${primaryColor}80` }}>
+              {renderMedia("w-full h-full")}
+            </div>
+          </div>
+          <div className="w-1/2 p-2 flex flex-col justify-center">
+            <h3 className="text-[7px] font-bold text-white truncate" style={{ textShadow: `0 0 10px ${primaryColor}` }}>{title || 'Neon'}</h3>
+            <p className="text-[4px] text-gray-400 truncate">{subtitle}</p>
+            <div className="mt-1"><QRCodePreview primaryColor={primaryColor} size="xs" /></div>
+          </div>
+        </div>
+        <StandardFooter />
+      </div>
+    );
+  }
+
+  // Pop Art template
+  if (templateType === 'pop_art') {
+    return (
+      <div className="relative w-full h-full overflow-hidden" style={{ background: `linear-gradient(135deg, #ec4899 0%, #8b5cf6 50%, #06b6d4 100%)` }}>
+        <div className="absolute inset-0 opacity-20">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="absolute w-3 h-3 rounded-full bg-white" style={{ top: `${20 + i * 15}%`, left: `${10 + i * 15}%` }} />
+          ))}
+        </div>
+        <div className="flex h-full relative z-10">
+          <div className="w-[55%] h-full p-1">
+            <div className="w-full h-full rounded-lg overflow-hidden border-2 border-white">
+              {renderMedia("w-full h-full")}
+            </div>
+          </div>
+          <div className="w-[45%] p-2 flex flex-col justify-center">
+            <h3 className="text-[7px] font-black text-white truncate">{title || 'Pop!'}</h3>
+            <p className="text-[4px] text-white/80 truncate">{subtitle}</p>
+            <div className="mt-1"><QRCodePreview primaryColor="#ffffff" size="xs" /></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Gradient Burst template
+  if (templateType === 'gradient_burst') {
+    return (
+      <div className="relative w-full h-full overflow-hidden" style={{ background: `linear-gradient(45deg, ${primaryColor}, ${primaryColor}dd, #f59e0b)` }}>
+        <div className="flex h-full relative z-10">
+          <div className="w-1/2 p-2 flex flex-col justify-center">
+            <h3 className="text-[7px] font-black text-white truncate">{title || 'Burst!'}</h3>
+            <p className="text-[4px] text-white/80 truncate">{subtitle}</p>
+            <div className="mt-1"><QRCodePreview primaryColor="#ffffff" size="xs" /></div>
+          </div>
+          <div className="w-1/2 flex items-center justify-center p-1">
+            <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white shadow-lg">
+              {renderMedia("w-full h-full")}
+            </div>
+          </div>
+        </div>
+        <StandardFooter />
+      </div>
+    );
+  }
+
+  // ===== VINTAGE =====
+
+  // Retro 70s template
+  if (templateType === 'retro_70s') {
+    return (
+      <div className="relative w-full h-full overflow-hidden" style={{ background: 'linear-gradient(180deg, #d97706 0%, #92400e 100%)' }}>
+        <div className="flex h-full relative z-10">
+          <div className="w-[55%] h-full p-1">
+            <div className="w-full h-full rounded-lg overflow-hidden border-2 border-amber-300">
+              {renderMedia("w-full h-full")}
+            </div>
+          </div>
+          <div className="w-[45%] p-2 flex flex-col justify-center">
+            <h3 className="text-[7px] font-bold text-amber-100 truncate">{title || 'Retro'}</h3>
+            <p className="text-[4px] text-amber-200/80 truncate">{subtitle}</p>
+            <div className="mt-1"><QRCodePreview primaryColor="#fbbf24" size="xs" /></div>
+          </div>
+        </div>
+        <StandardFooter />
+      </div>
+    );
+  }
+
+  // Art Deco template
+  if (templateType === 'art_deco') {
+    return (
+      <div className="relative w-full h-full bg-gray-900 overflow-hidden">
+        <div className="absolute inset-0 opacity-20">
+          <div className="absolute top-0 left-1/4 w-0.5 h-full bg-amber-400" />
+          <div className="absolute top-0 right-1/4 w-0.5 h-full bg-amber-400" />
+        </div>
+        <div className="flex h-full relative z-10">
+          <div className="w-1/2 flex items-center justify-center p-2">
+            <div className="w-12 h-12 overflow-hidden border-2 border-amber-400" style={{ clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' }}>
+              {renderMedia("w-full h-full")}
+            </div>
+          </div>
+          <div className="w-1/2 p-2 flex flex-col justify-center">
+            <h3 className="text-[7px] font-bold text-amber-400 truncate">{title || 'Deco'}</h3>
+            <p className="text-[4px] text-gray-400 truncate">{subtitle}</p>
+            <div className="mt-1"><QRCodePreview primaryColor="#fbbf24" size="xs" /></div>
+          </div>
+        </div>
+        <StandardFooter />
+      </div>
+    );
+  }
+
+  // Rustic Wood template
+  if (templateType === 'rustic_wood') {
+    return (
+      <div className="relative w-full h-full overflow-hidden" style={{ background: 'linear-gradient(135deg, #78350f, #451a03)' }}>
+        <div className="flex h-full relative z-10">
+          <div className="w-[55%] h-full p-1">
+            <div className="w-full h-full rounded-lg overflow-hidden border-2 border-amber-700">
+              {renderMedia("w-full h-full")}
+            </div>
+          </div>
+          <div className="w-[45%] p-2 flex flex-col justify-center">
+            <h3 className="text-[7px] font-bold text-amber-100 truncate">{title || 'Rústico'}</h3>
+            <p className="text-[4px] text-amber-200/80 truncate">{subtitle}</p>
+            <div className="mt-1"><QRCodePreview primaryColor="#d97706" size="xs" /></div>
+          </div>
+        </div>
+        <StandardFooter />
+      </div>
+    );
+  }
+
+  // ===== DATAS COMEMORATIVAS =====
+
+  // Christmas template
+  if (templateType === 'christmas') {
+    return (
+      <div className="relative w-full h-full overflow-hidden" style={{ backgroundColor: '#1a472a' }}>
+        <div className="flex h-full relative z-10 items-center">
+          <div className="w-1/2 p-2 flex flex-col justify-center">
+            <span className="text-[10px] mb-0.5">🎄</span>
+            <h3 className="text-[7px] font-bold text-white truncate">{title || 'Natal!'}</h3>
+            <p className="text-[4px] text-green-100/80 truncate">{subtitle}</p>
+            <div className="mt-1"><QRCodePreview primaryColor="#dc2626" size="xs" /></div>
+          </div>
+          <div className="w-1/2 flex items-center justify-center p-1">
+            <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-red-600">
+              {renderMedia("w-full h-full")}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Valentines template
+  if (templateType === 'valentines') {
+    return (
+      <div className="relative w-full h-full overflow-hidden" style={{ backgroundColor: '#fce7f3' }}>
+        <div className="flex h-full relative z-10">
+          <div className="w-[55%] h-full p-1">
+            <div className="w-full h-full rounded-lg overflow-hidden border-2 border-pink-300">
+              {renderMedia("w-full h-full")}
+            </div>
+          </div>
+          <div className="w-[45%] p-2 flex flex-col justify-center">
+            <span className="text-[8px] mb-0.5">💕</span>
+            <h3 className="text-[7px] font-bold text-pink-600 truncate">{title || 'Com Amor'}</h3>
+            <p className="text-[4px] text-pink-500/80 truncate">{subtitle}</p>
+            <div className="mt-1"><QRCodePreview primaryColor="#db2777" size="xs" /></div>
+          </div>
+        </div>
+        <StandardFooter />
+      </div>
+    );
+  }
+
+  // São João template
+  if (templateType === 'sao_joao') {
+    return (
+      <div className="relative w-full h-full overflow-hidden" style={{ backgroundColor: '#1e1b4b' }}>
+        <div className="flex h-full relative z-10 items-center">
+          <div className="w-1/2 p-2 flex flex-col justify-center">
+            <span className="text-[8px] mb-0.5">🔥🎉</span>
+            <h3 className="text-[7px] font-bold text-yellow-400 truncate">{title || 'Arraiá!'}</h3>
+            <p className="text-[4px] text-yellow-100/80 truncate">{subtitle}</p>
+            <div className="mt-1"><QRCodePreview primaryColor="#f59e0b" size="xs" /></div>
+          </div>
+          <div className="w-1/2 flex items-center justify-center p-1">
+            <div className="w-11 h-11 rounded-lg overflow-hidden border-2 border-yellow-400">
+              {renderMedia("w-full h-full")}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Carnival template
+  if (templateType === 'carnival') {
+    return (
+      <div className="relative w-full h-full overflow-hidden" style={{ backgroundColor: '#7c3aed' }}>
+        <div className="flex h-full relative z-10">
+          <div className="w-[55%] h-full p-1">
+            <div className="w-full h-full rounded-lg overflow-hidden border-2 border-yellow-400">
+              {renderMedia("w-full h-full")}
+            </div>
+          </div>
+          <div className="w-[45%] p-2 flex flex-col justify-center">
+            <span className="text-[8px] mb-0.5">🎭✨</span>
+            <h3 className="text-[7px] font-bold text-white truncate">{title || 'Carnaval!'}</h3>
+            <p className="text-[4px] text-white/80 truncate">{subtitle}</p>
+            <div className="mt-1"><QRCodePreview primaryColor="#facc15" size="xs" /></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Halloween template
+  if (templateType === 'halloween') {
+    return (
+      <div className="relative w-full h-full overflow-hidden bg-gray-900">
+        <div className="flex h-full relative z-10 items-center">
+          <div className="w-1/2 p-2 flex flex-col justify-center">
+            <span className="text-[10px] mb-0.5">🎃👻</span>
+            <h3 className="text-[7px] font-bold text-orange-500 truncate">{title || 'Halloween!'}</h3>
+            <p className="text-[4px] text-gray-300 truncate">{subtitle}</p>
+            <div className="mt-1"><QRCodePreview primaryColor="#f97316" size="xs" /></div>
+          </div>
+          <div className="w-1/2 flex items-center justify-center p-1">
+            <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-orange-500">
+              {renderMedia("w-full h-full")}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ===== REGIONAIS =====
+
+  // Beach Tropical template
+  if (templateType === 'beach_tropical') {
+    return (
+      <div className="relative w-full h-full overflow-hidden" style={{ backgroundColor: '#e0f2fe' }}>
+        <div className="flex h-full relative z-10">
+          <div className="w-[55%] h-full p-1">
+            <div className="w-full h-full rounded-lg overflow-hidden border-2 border-cyan-400">
+              {renderMedia("w-full h-full")}
+            </div>
+          </div>
+          <div className="w-[45%] p-2 flex flex-col justify-center">
+            <span className="text-[8px] mb-0.5">🏖️🌴</span>
+            <h3 className="text-[7px] font-bold text-cyan-700 truncate">{title || 'Praia!'}</h3>
+            <p className="text-[4px] text-cyan-600/80 truncate">{subtitle}</p>
+            <div className="mt-1"><QRCodePreview primaryColor="#0891b2" size="xs" /></div>
+          </div>
+        </div>
+        <StandardFooter />
+      </div>
+    );
+  }
+
+  // Sunset Beach template
+  if (templateType === 'sunset_beach') {
+    return (
+      <div className="relative w-full h-full overflow-hidden" style={{ background: 'linear-gradient(to bottom, #f97316, #dc2626, #7c2d12)' }}>
+        <div className="flex h-full relative z-10 items-center">
+          <div className="w-1/2 p-2 flex flex-col justify-center">
+            <h3 className="text-[7px] font-bold text-white truncate">{title || 'Pôr do Sol'}</h3>
+            <p className="text-[4px] text-white/80 truncate">{subtitle}</p>
+            <div className="mt-1"><QRCodePreview primaryColor="#fb923c" size="xs" /></div>
+          </div>
+          <div className="w-1/2 flex items-center justify-center p-1">
+            <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white/50">
+              {renderMedia("w-full h-full")}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Tropical Fruits template
+  if (templateType === 'tropical_fruits') {
+    return (
+      <div className="relative w-full h-full overflow-hidden" style={{ backgroundColor: '#fef3c7' }}>
+        <div className="flex h-full relative z-10">
+          <div className="w-[55%] h-full p-1">
+            <div className="w-full h-full rounded-lg overflow-hidden border-2 border-orange-400">
+              {renderMedia("w-full h-full")}
+            </div>
+          </div>
+          <div className="w-[45%] p-2 flex flex-col justify-center">
+            <span className="text-[8px] mb-0.5">🥭🍍🥥</span>
+            <h3 className="text-[7px] font-bold text-orange-600 truncate">{title || 'Tropical!'}</h3>
+            <p className="text-[4px] text-orange-500/80 truncate">{subtitle}</p>
+            <div className="mt-1"><QRCodePreview primaryColor="#ea580c" size="xs" /></div>
+          </div>
+        </div>
+        <StandardFooter />
+      </div>
+    );
+  }
+
+  // Nordeste Rustic template
+  if (templateType === 'nordeste_rustic') {
+    return (
+      <div className="relative w-full h-full overflow-hidden" style={{ backgroundColor: '#fef7ee' }}>
+        <div className="flex h-full relative z-10">
+          <div className="w-[55%] h-full p-1">
+            <div className="w-full h-full rounded-lg overflow-hidden border-2 border-orange-300">
+              {renderMedia("w-full h-full")}
+            </div>
+          </div>
+          <div className="w-[45%] p-2 flex flex-col justify-center">
+            <h3 className="text-[7px] font-bold text-orange-800 truncate">{title || 'Nordeste'}</h3>
+            <p className="text-[4px] text-orange-700/80 truncate">{subtitle}</p>
+            <div className="mt-1"><QRCodePreview primaryColor="#c2410c" size="xs" /></div>
+          </div>
+        </div>
+        <StandardFooter />
+      </div>
+    );
+  }
+
+  // ===== EQUILIBRADOS =====
+
+  // Modern Classic template
+  if (templateType === 'modern_classic') {
+    return (
+      <div className="relative w-full h-full overflow-hidden" style={{ backgroundColor: `${primaryColor}08` }}>
+        <div className="flex h-full relative z-10">
+          <div className="w-[55%] h-full overflow-hidden rounded-r-xl -ml-1">{renderMedia("w-full h-full")}</div>
+          <div className="w-[45%] p-2 flex flex-col justify-center">
+            {logoUrl && <img src={getImageUrl(logoUrl)} alt="" className="w-4 h-4 object-contain mb-1" />}
+            <h3 className="text-[7px] font-bold truncate" style={{ color: primaryColor }}>{title || 'Clássico'}</h3>
+            <p className="text-[4px] text-gray-600 line-clamp-2 mt-0.5">{subtitle}</p>
+            <div className="mt-1"><QRCodePreview primaryColor={primaryColor} size="xs" /></div>
+          </div>
+        </div>
+        <StandardFooter />
+      </div>
+    );
+  }
+
+  // Warm Cozy template
+  if (templateType === 'warm_cozy') {
+    return (
+      <div className="relative w-full h-full overflow-hidden" style={{ background: 'linear-gradient(135deg, #fef3c7, #fde68a)' }}>
+        <div className="flex h-full relative z-10">
+          <div className="w-[55%] h-full p-1">
+            <div className="w-full h-full rounded-lg overflow-hidden border-2 border-amber-200">
+              {renderMedia("w-full h-full")}
+            </div>
+          </div>
+          <div className="w-[45%] p-2 flex flex-col justify-center">
+            <h3 className="text-[7px] font-bold text-amber-900 truncate">{title || 'Aconchego'}</h3>
+            <p className="text-[4px] text-amber-800/80 truncate">{subtitle}</p>
+            <div className="mt-1"><QRCodePreview primaryColor="#d97706" size="xs" /></div>
+          </div>
+        </div>
+        <StandardFooter />
+      </div>
+    );
+  }
+
+  // Fresh Green template
+  if (templateType === 'fresh_green') {
+    return (
+      <div className="relative w-full h-full overflow-hidden" style={{ background: 'linear-gradient(135deg, #dcfce7, #bbf7d0)' }}>
+        <div className="flex h-full relative z-10">
+          <div className="w-[55%] h-full p-1">
+            <div className="w-full h-full rounded-lg overflow-hidden border-2 border-green-300">
+              {renderMedia("w-full h-full")}
+            </div>
+          </div>
+          <div className="w-[45%] p-2 flex flex-col justify-center">
+            <span className="text-[8px] mb-0.5">🌿</span>
+            <h3 className="text-[7px] font-bold text-green-800 truncate">{title || 'Fresco'}</h3>
+            <p className="text-[4px] text-green-700/80 truncate">{subtitle}</p>
+            <div className="mt-1"><QRCodePreview primaryColor="#16a34a" size="xs" /></div>
+          </div>
+        </div>
+        <StandardFooter />
+      </div>
+    );
+  }
+
   // Default fallback
   return (
     <div className="relative w-full h-full bg-muted overflow-hidden flex items-center justify-center">
