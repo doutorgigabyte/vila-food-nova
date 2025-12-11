@@ -5,47 +5,48 @@
 
 const CoinEaterAnimation = () => {
   return (
-    <div className="relative inline-flex items-center justify-center w-16 h-10 md:w-20 md:h-12 ml-1">
-      {/* Coins coming from the right (lower z-index - will be "eaten") */}
+    <div className="relative inline-flex items-center justify-center w-20 h-12 md:w-24 md:h-14 ml-2">
+      {/* Coins coming from the right */}
       <div className="absolute right-0 top-1/2 -translate-y-1/2 z-10">
-        <span 
-          className="absolute animate-coin-slide text-lg md:text-xl"
-          style={{ animationDelay: '0s' }}
-        >
-          🪙
-        </span>
-        <span 
-          className="absolute animate-coin-slide text-lg md:text-xl"
-          style={{ animationDelay: '0.8s' }}
-        >
-          🪙
-        </span>
-        <span 
-          className="absolute animate-coin-slide text-lg md:text-xl"
-          style={{ animationDelay: '1.6s' }}
-        >
-          🪙
-        </span>
+        <svg className="absolute w-6 h-6 md:w-7 md:h-7 animate-coin-slide" viewBox="0 0 40 40" style={{ animationDelay: '0s' }}>
+          <defs>
+            <radialGradient id="coinGrad1">
+              <stop offset="0%" stopColor="#ffd700" />
+              <stop offset="100%" stopColor="#daa520" />
+            </radialGradient>
+          </defs>
+          <circle cx="20" cy="20" r="18" fill="url(#coinGrad1)" stroke="#daa520" strokeWidth="2" />
+          <text x="20" y="27" fontSize="18" fontWeight="bold" fill="#000" textAnchor="middle" fontFamily="Arial">$</text>
+        </svg>
+        <svg className="absolute w-6 h-6 md:w-7 md:h-7 animate-coin-slide" viewBox="0 0 40 40" style={{ animationDelay: '0.8s' }}>
+          <circle cx="20" cy="20" r="18" fill="url(#coinGrad1)" stroke="#daa520" strokeWidth="2" />
+          <text x="20" y="27" fontSize="18" fontWeight="bold" fill="#000" textAnchor="middle" fontFamily="Arial">$</text>
+        </svg>
+        <svg className="absolute w-6 h-6 md:w-7 md:h-7 animate-coin-slide" viewBox="0 0 40 40" style={{ animationDelay: '1.6s' }}>
+          <circle cx="20" cy="20" r="18" fill="url(#coinGrad1)" stroke="#daa520" strokeWidth="2" />
+          <text x="20" y="27" fontSize="18" fontWeight="bold" fill="#000" textAnchor="middle" fontFamily="Arial">$</text>
+        </svg>
       </div>
       
-      {/* Pac-Man using conic-gradient - guaranteed to work */}
+      {/* Pac-Man SVG with animated mouth */}
       <div className="relative z-20">
-        <div 
-          className="w-10 h-10 md:w-12 md:h-12 rounded-full animate-pacman"
-          style={{
-            background: `conic-gradient(
-              hsl(var(--destructive)) 0deg,
-              hsl(var(--destructive)) 30deg,
-              transparent 30deg,
-              transparent 330deg,
-              hsl(var(--destructive)) 330deg
-            )`
-          }}
-        />
-        {/* Eye */}
-        <div className="absolute top-1.5 md:top-2 left-1/2 w-2 h-2 md:w-2.5 md:h-2.5 bg-white rounded-full">
-          <div className="absolute top-0.5 right-0 w-1 h-1 bg-[hsl(220,20%,15%)] rounded-full" />
-        </div>
+        <svg viewBox="0 0 100 100" className="w-10 h-10 md:w-12 md:h-12">
+          {/* Body */}
+          <circle cx="50" cy="50" r="40" fill="hsl(var(--destructive))" />
+          {/* Animated mouth (black pie slice) */}
+          <path fill="hsl(var(--background))">
+            <animate
+              attributeName="d"
+              dur="0.3s"
+              repeatCount="indefinite"
+              values="M 50,50 L 50,10 A 40,40 0 0,1 50,90 Z;
+                      M 50,50 L 85,35 A 40,40 0 0,1 85,65 Z;
+                      M 50,50 L 50,10 A 40,40 0 0,1 50,90 Z"
+            />
+          </path>
+          {/* Eye */}
+          <circle cx="55" cy="30" r="5" fill="hsl(var(--background))" />
+        </svg>
       </div>
     </div>
   );
