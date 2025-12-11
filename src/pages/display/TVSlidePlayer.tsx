@@ -8,12 +8,12 @@ import { DOMAIN } from "@/lib/constants";
 interface TVSlide {
   id: string;
   title: string | null;
-  description: string | null;
+  subtitle: string | null;
   image_url: string;
   product_id: string | null;
   template_type: string;
-  duration_seconds: number;
   badge_text?: string | null;
+  secondary_images?: string[];
   product?: {
     id: string;
     name: string;
@@ -103,7 +103,7 @@ export default function TVSlidePlayer() {
 
   useEffect(() => {
     if (slides.length === 0) return;
-    const duration = (slides[currentIndex]?.duration_seconds || 8) * 1000;
+    const duration = 8000; // 8 seconds per slide
     const timer = setTimeout(() => setCurrentIndex((prev) => (prev + 1) % slides.length), duration);
     return () => clearTimeout(timer);
   }, [currentIndex, slides]);
@@ -227,7 +227,7 @@ export default function TVSlidePlayer() {
                   <motion.h1 initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }} className="text-7xl font-black uppercase mb-6 leading-tight" style={{ color: primaryColor, textShadow: '3px 3px 0 rgba(0,0,0,0.1)' }}>
                     {currentSlide.title || currentSlide.product?.name || 'Destaque'}
                   </motion.h1>
-                  {currentSlide.description && <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} className="text-2xl text-gray-700 mb-8 max-w-lg">{currentSlide.description}</motion.p>}
+                  {currentSlide.subtitle && <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} className="text-2xl text-gray-700 mb-8 max-w-lg">{currentSlide.subtitle}</motion.p>}
                   {currentSlide.product && <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.4 }} className="text-6xl font-black text-gray-800 mb-8">{formatPrice(currentSlide.product.promotional_price || currentSlide.product.price)}</motion.div>}
                   <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="px-12 py-5 rounded-full text-white text-3xl font-bold shadow-lg" style={{ backgroundColor: primaryColor }}>Peça agora</motion.div>
                 </div>
@@ -295,7 +295,7 @@ export default function TVSlidePlayer() {
                 <div className="flex-1 flex flex-col justify-center pl-8">
                   {establishment?.logo_url && <motion.img initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} src={establishment.logo_url} alt={establishment.name} className="h-16 w-auto mb-8 brightness-0 invert" />}
                   <motion.h1 initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }} className="text-7xl font-black text-white uppercase leading-none mb-4">{currentSlide.title || currentSlide.product?.name || 'Destaque'}</motion.h1>
-                  {currentSlide.description && <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} className="text-2xl text-gray-300 mb-6 max-w-md">{currentSlide.description}</motion.p>}
+                  {currentSlide.subtitle && <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} className="text-2xl text-gray-300 mb-6 max-w-md">{currentSlide.subtitle}</motion.p>}
                   {currentSlide.product && <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.4 }} className="text-5xl font-black mb-8" style={{ color: accentColor }}>{formatPrice(currentSlide.product.promotional_price || currentSlide.product.price)}</motion.div>}
                   <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="flex items-center gap-6"><div className="px-10 py-4 rounded-full text-gray-900 text-2xl font-bold" style={{ backgroundColor: accentColor }}>Peça agora</div><div className="bg-white p-2 rounded-xl"><img src={qrCodeUrl} alt="QR Code" className="w-16 h-16" /></div></motion.div>
                 </div>
@@ -317,7 +317,7 @@ export default function TVSlidePlayer() {
                   <div className="flex flex-col items-start max-w-md">
                     {establishment?.logo_url && <motion.img initial={{ opacity: 0 }} animate={{ opacity: 1 }} src={establishment.logo_url} alt={establishment.name} className="h-16 w-auto mb-6 brightness-0 invert" />}
                     <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="text-6xl font-black text-white uppercase leading-tight mb-4">{currentSlide.title || 'Novidade'}</motion.h1>
-                    {currentSlide.description && <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} className="text-xl text-gray-300 mb-6">{currentSlide.description}</motion.p>}
+                    {currentSlide.subtitle && <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} className="text-xl text-gray-300 mb-6">{currentSlide.subtitle}</motion.p>}
                     {currentSlide.product && <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="text-4xl font-black mb-6" style={{ color: accentColor }}>{formatPrice(currentSlide.product.promotional_price || currentSlide.product.price)}</motion.div>}
                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }} className="flex items-center gap-4"><div className="px-8 py-3 rounded-full text-white text-xl font-bold" style={{ backgroundColor: primaryColor }}>Peça já!</div><div className="bg-white p-2 rounded-lg"><img src={qrCodeUrl} alt="QR Code" className="w-14 h-14" /></div></motion.div>
                   </div>
@@ -341,7 +341,7 @@ export default function TVSlidePlayer() {
                   {establishment?.logo_url && <motion.img initial={{ opacity: 0 }} animate={{ opacity: 1 }} src={establishment.logo_url} alt={establishment.name} className="h-16 w-auto mb-6" />}
                   {currentSlide.badge_text && <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.2, type: 'spring' }} className="inline-flex items-center justify-center w-24 h-24 rounded-full text-white text-xl font-black mb-6 bg-red-500 shadow-lg">{currentSlide.badge_text}</motion.div>}
                   <motion.h1 initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }} className="text-6xl font-black uppercase leading-none mb-4" style={{ color: primaryColor }}>{currentSlide.title || currentSlide.product?.name || 'Especial'}</motion.h1>
-                  {currentSlide.description && <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} className="text-xl text-gray-600 mb-6 max-w-md">{currentSlide.description}</motion.p>}
+                  {currentSlide.subtitle && <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} className="text-xl text-gray-600 mb-6 max-w-md">{currentSlide.subtitle}</motion.p>}
                   {currentSlide.product && <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="text-5xl font-black text-gray-800 mb-8">{formatPrice(currentSlide.product.promotional_price || currentSlide.product.price)}</motion.div>}
                   <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }} className="flex items-center gap-6"><div className="px-10 py-4 rounded-full text-white text-2xl font-bold shadow-lg" style={{ backgroundColor: primaryColor }}>Peça agora</div><div className="bg-white p-2 rounded-xl shadow-lg"><img src={qrCodeUrl} alt="QR Code" className="w-16 h-16" /></div></motion.div>
                 </div>
@@ -362,7 +362,7 @@ export default function TVSlidePlayer() {
               <div className="absolute right-16 top-1/2 -translate-y-1/2 max-w-lg">
                 {establishment?.logo_url && <motion.img initial={{ opacity: 0 }} animate={{ opacity: 1 }} src={establishment.logo_url} alt={establishment.name} className="h-14 w-auto mb-6" />}
                 <motion.h1 initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }} className="text-6xl font-black uppercase leading-none mb-4" style={{ color: primaryColor }}>{currentSlide.title || currentSlide.product?.name || 'Destaque'}</motion.h1>
-                {currentSlide.description && <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} className="text-xl text-gray-700 mb-6">{currentSlide.description}</motion.p>}
+                {currentSlide.subtitle && <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} className="text-xl text-gray-700 mb-6">{currentSlide.subtitle}</motion.p>}
                 {currentSlide.product && <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} className="text-5xl font-black text-gray-800 mb-8">{formatPrice(currentSlide.product.promotional_price || currentSlide.product.price)}</motion.div>}
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="flex items-center gap-6"><div className="px-10 py-4 rounded-full text-white text-2xl font-bold shadow-lg" style={{ backgroundColor: primaryColor }}>Peça agora</div><div className="bg-white p-2 rounded-xl shadow-lg"><img src={qrCodeUrl} alt="QR Code" className="w-16 h-16" /></div></motion.div>
               </div>
@@ -401,7 +401,7 @@ export default function TVSlidePlayer() {
                 <div className="flex-1 flex flex-col justify-center">
                   {establishment?.logo_url && <motion.img initial={{ opacity: 0 }} animate={{ opacity: 1 }} src={establishment.logo_url} alt={establishment.name} className="h-16 w-auto mb-8 brightness-0 invert" />}
                   <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="text-7xl font-black text-white uppercase leading-none mb-6">{currentSlide.title || 'Especial do Dia'}</motion.h1>
-                  {currentSlide.description && <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} className="text-2xl text-white/80 mb-8 max-w-md">{currentSlide.description}</motion.p>}
+                  {currentSlide.subtitle && <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} className="text-2xl text-white/80 mb-8 max-w-md">{currentSlide.subtitle}</motion.p>}
                   {currentSlide.product && <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.4 }} className="inline-flex items-center gap-4 px-8 py-4 rounded-2xl mb-8" style={{ backgroundColor: accentColor }}><span className="text-gray-900 text-lg font-semibold">APENAS</span><span className="text-4xl font-black text-gray-900">{formatPrice(currentSlide.product.promotional_price || currentSlide.product.price)}</span></motion.div>}
                   <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="flex items-center gap-6"><div className="px-10 py-4 rounded-full bg-white text-gray-900 text-2xl font-bold shadow-lg">Peça agora</div><div className="bg-white p-2 rounded-xl"><img src={qrCodeUrl} alt="QR Code" className="w-16 h-16" /></div></motion.div>
                 </div>
@@ -426,7 +426,7 @@ export default function TVSlidePlayer() {
                   {establishment?.logo_url && <motion.img initial={{ opacity: 0 }} animate={{ opacity: 1 }} src={establishment.logo_url} alt={establishment.name} className="h-14 w-auto mb-8 brightness-0 invert" />}
                   {currentSlide.badge_text && <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring' }} className="inline-flex items-center justify-center px-6 py-2 rounded-full text-lg font-bold mb-6 bg-white/20 text-white border-2 border-white/30">{currentSlide.badge_text}</motion.div>}
                   <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="text-5xl font-black text-white uppercase leading-tight mb-6">{currentSlide.title || 'Eventos & Catering'}</motion.h1>
-                  {currentSlide.description && <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} className="text-xl text-white/80 mb-8">{currentSlide.description}</motion.p>}
+                  {currentSlide.subtitle && <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} className="text-xl text-white/80 mb-8">{currentSlide.subtitle}</motion.p>}
                   {currentSlide.product && <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} className="text-4xl font-black text-white mb-8">{formatPrice(currentSlide.product.promotional_price || currentSlide.product.price)}</motion.div>}
                   <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="flex flex-col gap-4"><div className="px-8 py-4 rounded-full bg-white text-gray-900 text-xl font-bold text-center shadow-lg">Solicite um orçamento</div><div className="flex items-center justify-center gap-4"><div className="bg-white p-2 rounded-xl"><img src={qrCodeUrl} alt="QR Code" className="w-14 h-14" /></div><span className="text-white/80">Escaneie para ver o menu</span></div></motion.div>
                 </div>
@@ -454,7 +454,7 @@ export default function TVSlidePlayer() {
                 <div className="flex-1 flex flex-col justify-center pl-8">
                   {establishment?.logo_url && <motion.img initial={{ opacity: 0 }} animate={{ opacity: 1 }} src={establishment.logo_url} alt={establishment.name} className="h-16 w-auto mb-8 brightness-0 invert" />}
                   <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="text-6xl font-black text-white uppercase leading-tight mb-6">{currentSlide.title || 'Especial'}</motion.h1>
-                  {currentSlide.description && <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="text-2xl text-white/80 mb-8 max-w-md">{currentSlide.description}</motion.p>}
+                  {currentSlide.subtitle && <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="text-2xl text-white/80 mb-8 max-w-md">{currentSlide.subtitle}</motion.p>}
                   <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }} className="flex items-center gap-6"><div className="px-10 py-4 rounded-full text-gray-900 text-2xl font-bold shadow-lg" style={{ backgroundColor: accentColor }}>Peça agora</div><div className="bg-white p-2 rounded-xl"><img src={qrCodeUrl} alt="QR Code" className="w-16 h-16" /></div></motion.div>
                 </div>
               </div>
