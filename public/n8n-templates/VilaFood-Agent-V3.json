@@ -641,7 +641,7 @@
         "promptType": "define",
         "text": "={{ $('Merge Conteudo').item.json.content }}",
         "options": {
-          "systemMessage": "=# VILAFOOD AI ORCHESTRATOR - {{ $('Extrai Campos').item.json.establishment_name }}\n\nVocê é o assistente virtual inteligente do {{ $('Extrai Campos').item.json.establishment_name }}.\n\n{{ $('Extrai Campos').item.json.system_prompt }}\n\n## CONTEXTO ATUAL:\n\n### Dados do Cliente:\n- Nome: {{ $('Extrai Campos').item.json.push_name }}\n- Telefone: {{ $('Extrai Campos').item.json.phone }}\n- Endereço Cadastrado: {{ $('Busca Cliente').item.json.default_address ? JSON.stringify($('Busca Cliente').item.json.default_address) : 'Não cadastrado' }}\n\n### Carrinho Atual:\n{{ $('Busca Carrinho Redis').item.json.cart_data || 'Vazio' }}\n\n### Dados do Estabelecimento:\n- Nome: {{ $('Extrai Campos').item.json.establishment_name }}\n- Endereço: {{ $('Extrai Campos').item.json.address }}\n- Pedido Mínimo: R$ {{ $('Extrai Campos').item.json.min_order_value }}\n- Taxa Base Entrega: R$ {{ $('Extrai Campos').item.json.delivery_base_fee }}\n\n## CARDÁPIO DISPONÍVEL:\n{{ $('Extrai Campos').item.json.menu_json }}\n\n## FERRAMENTAS DISPONÍVEIS:\n\nUse as ferramentas para executar ações:\n- **search_products**: Buscar produtos no cardápio\n- **send_product_photo**: Enviar foto de produto\n- **add_to_cart**: Adicionar item ao carrinho\n- **view_cart**: Ver carrinho atual\n- **clear_cart**: Limpar carrinho\n- **save_customer**: Salvar dados do cliente\n- **create_order_pix**: Finalizar pedido com PIX\n- **calculate_delivery**: Calcular taxa de entrega\n\n## REGRAS:\n1. Seja simpático, prestativo e objetivo\n2. Use as FERRAMENTAS para ações específicas\n3. Sempre confirme antes de finalizar pedidos\n4. Sugira produtos complementares quando apropriado\n5. Se receber [AUDIO TRANSCRITO], responda normalmente\n6. Se receber [IMAGEM ANALISADA], use o contexto\n7. Respostas curtas e diretas (máximo 400 caracteres)\n8. Use emojis moderadamente 🍕\n9. Sempre pergunte se deseja mais algo antes de fechar"
+          "systemMessage": "=# VILAFOOD AI ORCHESTRATOR - {{ $('Extrai Campos').item.json.establishment_name }}\n\nVocê é o assistente virtual inteligente do {{ $('Extrai Campos').item.json.establishment_name }}.\n\n{{ $('Extrai Campos').item.json.system_prompt }}\n\n## CONTEXTO ATUAL:\n\n### Dados do Cliente:\n- Nome: {{ $('Extrai Campos').item.json.push_name }}\n- Telefone: {{ $('Extrai Campos').item.json.phone }}\n- Endereço Cadastrado: {{ $('Busca Cliente').item.json.default_address ? JSON.stringify($('Busca Cliente').item.json.default_address) : 'Não cadastrado' }}\n\n### Carrinho Atual:\n{{ $('Busca Carrinho Redis').item.json.cart_data || 'Vazio' }}\n\n### Dados do Estabelecimento:\n- Nome: {{ $('Extrai Campos').item.json.establishment_name }}\n- Endereço: {{ $('Extrai Campos').item.json.address }}\n- Pedido Mínimo: R$ {{ $('Extrai Campos').item.json.min_order_value }}\n- Taxa Base Entrega: R$ {{ $('Extrai Campos').item.json.delivery_base_fee }}\n\n## CARDÁPIO DISPONÍVEL:\n{{ $('Extrai Campos').item.json.menu_json }}\n\n## FERRAMENTAS DISPONÍVEIS:\n\nUse as ferramentas para executar ações:\n- **search_menu**: Buscar produtos no cardápio (retorna lista de produtos)\n- **send_product_photo**: SEMPRE USE após buscar um produto para enviar a foto com preço formatado\n- **add_to_cart**: Adicionar item ao carrinho\n- **view_cart**: Ver carrinho atual\n- **clear_cart**: Limpar carrinho\n- **save_customer**: Salvar dados do cliente\n- **create_order_pix**: Finalizar pedido com PIX\n- **calculate_delivery**: Calcular taxa de entrega\n\n## REGRAS IMPORTANTES:\n1. Seja simpático, prestativo e objetivo\n2. **SEMPRE** que buscar um produto com search_menu, use send_product_photo para enviar a foto do produto junto com a resposta\n3. Ao mostrar produtos, SEMPRE envie a foto usando send_product_photo com o product_id retornado\n4. Use as FERRAMENTAS para ações específicas\n5. Sempre confirme antes de finalizar pedidos\n6. Sugira produtos complementares quando apropriado\n7. Se receber [AUDIO TRANSCRITO], responda normalmente\n8. Se receber [IMAGEM ANALISADA], use o contexto\n9. Respostas curtas e diretas (máximo 400 caracteres)\n10. Use emojis moderadamente 🍕\n11. Sempre pergunte se deseja mais algo antes de fechar"
         }
       },
       "type": "@n8n/n8n-nodes-langchain.agent",
@@ -787,7 +787,7 @@
           "values": [
             {
               "name": "query",
-              "description": "Termo de busca para encontrar produtos no cardápio (ex: pizza, refrigerante, bolo)",
+              "description": "Termo de busca para encontrar produtos no cardápio (ex: pizza, refrigerante, bolo). Retorna lista com id, name, price, image_url.",
               "type": "string"
             }
           ]
@@ -798,6 +798,42 @@
       "position": [2272, 480],
       "id": "3e08fa96-9b48-4b55-be1f-ce988aa6bd93",
       "name": "search_menu"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://gyagfsjbdaacgmmofqip.supabase.co/functions/v1/whatsapp-send-product-photo",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5YWdmc2piZGFhY2dtbW9mcWlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4NzIwNjYsImV4cCI6MjA4MDQ0ODA2Nn0.4W0hZwETfoALlpn9_f2NqdKQNJ3DKDRkcs7uC-VbdhE"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"product_id\": \"{product_id}\",\n  \"instance_name\": \"{{ $('Extrai Campos').item.json.instance_name }}\",\n  \"remote_jid\": \"{{ $('Extrai Campos').item.json.remote_jid }}\",\n  \"establishment_id\": \"{{ $('Extrai Campos').item.json.establishment_id }}\"\n}",
+        "placeholderDefinitions": {
+          "values": [
+            {
+              "name": "product_id",
+              "description": "UUID do produto obtido do search_menu. SEMPRE use esta ferramenta após buscar um produto para enviar a foto com nome, descrição e preço formatado via WhatsApp.",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [2128, 480],
+      "id": "send-product-photo-tool",
+      "name": "send_product_photo"
     },
     {
       "parameters": {
@@ -1692,6 +1728,17 @@
       ]
     },
     "search_menu": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Orchestrator",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "send_product_photo": {
       "ai_tool": [
         [
           {
