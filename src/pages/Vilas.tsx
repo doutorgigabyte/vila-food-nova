@@ -68,8 +68,8 @@ const Vilas = () => {
               <ArrowLeft className="w-5 h-5" />
             </Link>
             <div>
-              <h1 className="text-lg font-semibold">Vilas Gastronômicas</h1>
-              <p className="text-sm text-muted-foreground">Explore os melhores polos de alimentação</p>
+              <h1 className="text-lg font-semibold">Vilas</h1>
+              <p className="text-sm text-muted-foreground">Polos comerciais com múltiplas lojas</p>
             </div>
           </div>
         </div>
@@ -86,7 +86,7 @@ const Vilas = () => {
               <div>
                 <h2 className="font-semibold text-lg mb-1">Pedido único para múltiplos estabelecimentos</h2>
                 <p className="text-muted-foreground">
-                  Nas vilas gastronômicas, você pode fazer pedidos em vários estabelecimentos ao mesmo tempo 
+                  Nas vilas, você pode fazer pedidos em vários estabelecimentos ao mesmo tempo 
                   e retirar tudo em um único local. Ideal para grupos e famílias!
                 </p>
               </div>
@@ -106,7 +106,7 @@ const Vilas = () => {
             <MapPin className="w-16 h-16 text-muted-foreground/30 mx-auto mb-4" />
             <h2 className="text-xl font-semibold mb-2">Nenhuma vila disponível</h2>
             <p className="text-muted-foreground mb-6">
-              Em breve teremos novas vilas gastronômicas para você explorar.
+              Em breve teremos novas vilas para você explorar.
             </p>
             <Link to="/marketplace" className="text-primary hover:underline">
               Voltar ao marketplace

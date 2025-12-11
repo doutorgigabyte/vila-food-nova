@@ -62,8 +62,8 @@ const dashboardCards: DashboardCard[] = [
     color: 'bg-red-100 text-red-600'
   },
   {
-    title: 'Vilas Gastronômicas',
-    description: 'Configurar polos de alimentação',
+    title: 'Vilas',
+    description: 'Configurar polos comerciais',
     icon: Globe,
     href: '/admin/vilas',
     color: 'bg-blue-100 text-blue-600'
