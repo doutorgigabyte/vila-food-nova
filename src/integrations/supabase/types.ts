@@ -4849,6 +4849,69 @@ export type Database = {
         }
         Relationships: []
       }
+      tv_slides: {
+        Row: {
+          badge_text: string | null
+          created_at: string | null
+          establishment_id: string
+          id: string
+          image_url: string
+          is_active: boolean | null
+          product_id: string | null
+          secondary_images: Json | null
+          sort_order: number | null
+          subtitle: string | null
+          template_type: string
+          title: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          badge_text?: string | null
+          created_at?: string | null
+          establishment_id: string
+          id?: string
+          image_url: string
+          is_active?: boolean | null
+          product_id?: string | null
+          secondary_images?: Json | null
+          sort_order?: number | null
+          subtitle?: string | null
+          template_type?: string
+          title?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          badge_text?: string | null
+          created_at?: string | null
+          establishment_id?: string
+          id?: string
+          image_url?: string
+          is_active?: boolean | null
+          product_id?: string | null
+          secondary_images?: Json | null
+          sort_order?: number | null
+          subtitle?: string | null
+          template_type?: string
+          title?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tv_slides_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tv_slides_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_behavior_logs: {
         Row: {
           action_type: string

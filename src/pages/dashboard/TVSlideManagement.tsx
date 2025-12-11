@@ -12,7 +12,7 @@ import { useUserEstablishment } from "@/hooks/useDashboardData";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
+
 import { PublicDisplayManager } from "@/components/dashboard/PublicDisplayManager";
 import { TemplatePreviewSelector, TEMPLATE_OPTIONS } from "@/components/dashboard/TemplatePreviewSelector";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -20,14 +20,14 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 interface TVSlide {
   id: string;
   title: string | null;
-  description: string | null;
+  subtitle: string | null;
   image_url: string;
   product_id: string | null;
   template_type: string;
   sort_order: number;
-  duration_seconds: number;
   is_active: boolean;
   badge_text?: string | null;
+  secondary_images?: string[];
   product?: {
     id: string;
     name: string;
@@ -52,11 +52,10 @@ export default function TVSlideManagement() {
   const [editingSlide, setEditingSlide] = useState<TVSlide | null>(null);
   const [formData, setFormData] = useState({
     title: '',
-    description: '',
+    subtitle: '',
     image_url: '',
     product_id: '',
     template_type: 'product_showcase',
-    duration_seconds: 8,
     badge_text: ''
   });
 
@@ -102,11 +101,10 @@ export default function TVSlideManagement() {
       const slideData = {
         establishment_id: establishmentId,
         title: formData.title || null,
-        description: formData.description || null,
+        subtitle: formData.subtitle || null,
         image_url: formData.image_url,
         product_id: formData.product_id || null,
         template_type: formData.template_type,
-        duration_seconds: formData.duration_seconds,
         badge_text: formData.badge_text || null,
         sort_order: editingSlide ? editingSlide.sort_order : slides.length
       };
@@ -129,11 +127,10 @@ export default function TVSlideManagement() {
   const resetForm = () => {
     setFormData({
       title: '',
-      description: '',
+      subtitle: '',
       image_url: '',
       product_id: '',
       template_type: 'product_showcase',
-      duration_seconds: 8,
       badge_text: ''
     });
     setEditingSlide(null);
@@ -143,11 +140,10 @@ export default function TVSlideManagement() {
     setEditingSlide(slide);
     setFormData({
       title: slide.title || '',
-      description: slide.description || '',
+      subtitle: slide.subtitle || '',
       image_url: slide.image_url,
       product_id: slide.product_id || '',
       template_type: slide.template_type,
-      duration_seconds: slide.duration_seconds,
       badge_text: slide.badge_text || ''
     });
     setIsDialogOpen(true);
@@ -232,7 +228,7 @@ export default function TVSlideManagement() {
                       <div className="flex items-center justify-between">
                         <div className="truncate">
                           <p className="font-medium truncate">{slide.title || 'Sem título'}</p>
-                          <p className="text-xs text-muted-foreground">{slide.duration_seconds}s</p>
+                          {slide.subtitle && <p className="text-xs text-muted-foreground truncate">{slide.subtitle}</p>}
                         </div>
                         <div className="flex items-center gap-1">
                           <Button variant="ghost" size="icon" onClick={() => toggleSlideActive(slide)}>
@@ -309,14 +305,13 @@ export default function TVSlideManagement() {
                 />
               </div>
 
-              {/* Description */}
+              {/* Subtitle */}
               <div className="space-y-2">
-                <Label>Descrição</Label>
-                <Textarea
-                  placeholder="Descrição breve..."
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  rows={2}
+                <Label>Subtítulo</Label>
+                <Input
+                  placeholder="Ex: Sabor irresistível..."
+                  value={formData.subtitle}
+                  onChange={(e) => setFormData({ ...formData, subtitle: e.target.value })}
                 />
               </div>
 
@@ -351,18 +346,6 @@ export default function TVSlideManagement() {
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
-
-              {/* Duration */}
-              <div className="space-y-2">
-                <Label>Duração (segundos)</Label>
-                <Input
-                  type="number"
-                  min={3}
-                  max={30}
-                  value={formData.duration_seconds}
-                  onChange={(e) => setFormData({ ...formData, duration_seconds: parseInt(e.target.value) || 8 })}
-                />
               </div>
 
               <Button onClick={handleSubmit} className="w-full">
