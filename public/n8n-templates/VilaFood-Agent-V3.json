@@ -569,7 +569,7 @@
     {
       "parameters": {
         "method": "GET",
-        "url": "=https://gyagfsjbdaacgmmofqip.supabase.co/rest/v1/whatsapp_chats?phone=eq.{{ $json.body.data.key.remoteJid.replace('@s.whatsapp.net', '') }}&select=ai_status",
+        "url": "=https://gyagfsjbdaacgmmofqip.supabase.co/rest/v1/whatsapp_chats?phone=eq.{{ $json.phone }}&select=ai_status",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -583,11 +583,17 @@
             }
           ]
         },
-        "options": {}
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [64, 240],
+      "position": [1200, 240],
       "id": "http-check-ai-status-1",
       "name": "Verifica Status IA"
     },
@@ -647,9 +653,59 @@
       },
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3,
-      "position": [256, 240],
+      "position": [1392, 240],
       "id": "switch-ia-status-1",
       "name": "Rota Status IA"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "restore-phone",
+              "name": "phone",
+              "value": "={{ $('Extrai Campos').item.json.phone }}",
+              "type": "string"
+            },
+            {
+              "id": "restore-instance",
+              "name": "instance_name",
+              "value": "={{ $('Extrai Campos').item.json.instance_name }}",
+              "type": "string"
+            },
+            {
+              "id": "restore-content",
+              "name": "message_content",
+              "value": "={{ $('Extrai Campos').item.json.message_content }}",
+              "type": "string"
+            },
+            {
+              "id": "restore-type",
+              "name": "message_type",
+              "value": "={{ $('Extrai Campos').item.json.message_type }}",
+              "type": "string"
+            },
+            {
+              "id": "restore-push",
+              "name": "push_name",
+              "value": "={{ $('Extrai Campos').item.json.push_name }}",
+              "type": "string"
+            },
+            {
+              "id": "restore-establishment",
+              "name": "establishment",
+              "value": "={{ $('Busca Estabelecimento').item.json }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1584, 160],
+      "id": "set-restore-data-1",
+      "name": "Restaura Dados"
     },
     {
       "parameters": {},
@@ -2406,7 +2462,7 @@
       "main": [
         [
           {
-            "node": "Tipo de Mensagem",
+            "node": "Verifica Status IA",
             "type": "main",
             "index": 0
           }
@@ -2457,7 +2513,7 @@
         ],
         [
           {
-            "node": "Verifica Status IA",
+            "node": "Filter Self Messages",
             "type": "main",
             "index": 0
           }
@@ -2519,7 +2575,7 @@
       "main": [
         [
           {
-            "node": "Filter Self Messages",
+            "node": "Restaura Dados",
             "type": "main",
             "index": 0
           }
@@ -2527,6 +2583,17 @@
         [
           {
             "node": "IA Pausada (Fim)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restaura Dados": {
+      "main": [
+        [
+          {
+            "node": "Tipo de Mensagem",
             "type": "main",
             "index": 0
           }
