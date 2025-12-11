@@ -170,7 +170,7 @@ export function SlideFooterPreview({
 }) {
   return (
     <div 
-      className="absolute bottom-0 left-0 right-0 h-3 flex items-center justify-between px-2"
+      className="absolute bottom-0 left-0 right-0 h-5 z-50 flex items-center justify-between px-2"
       style={{ backgroundColor: primaryColor }}
     >
       <div className="flex items-center gap-1">
