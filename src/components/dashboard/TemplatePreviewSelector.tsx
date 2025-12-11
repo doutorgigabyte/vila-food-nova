@@ -565,10 +565,10 @@ export const TEMPLATE_CATEGORIES: TemplateCategory[] = [
 export const TEMPLATE_OPTIONS: TemplateOption[] = TEMPLATE_CATEGORIES.flatMap(cat => cat.templates);
 
 export function TemplatePreviewSelector({ templates, value, onValueChange }: TemplatePreviewSelectorProps) {
-  // Se templates vazios, usa categorias
-  const useCategories = templates.length === 0 || templates === TEMPLATE_OPTIONS;
+  // Se templates vazios ou igual ao TEMPLATE_OPTIONS, usa categorias
+  const useCategories = !templates || templates.length === 0 || templates.length === TEMPLATE_OPTIONS.length;
 
-  if (useCategories || templates.length > 20) {
+  if (useCategories) {
     return (
       <TooltipProvider delayDuration={300}>
         <div className="space-y-6">
