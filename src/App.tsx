@@ -216,6 +216,7 @@ const AppRoutes = () => {
               <Route path="/assinatura/resultado" element={<SubscriptionCallback />} />
               <Route path="/pedidos" element={<Orders />} />
               <Route path="/pedidos/:orderId/rastreamento" element={<OrderTracking />} />
+              <Route path="/pedidos/:orderId/avaliar/:token" element={<ReviewOrder />} />
               <Route path="/meus-pedidos" element={<Orders />} />
               <Route path="/menu" element={<Menu />} />
               <Route path="/favoritos" element={<Favorites />} />
