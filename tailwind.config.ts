@@ -102,18 +102,18 @@ export default {
           "100%": { opacity: "1", transform: "translateY(0)" },
         },
         "coin-slide": {
-          "0%": { transform: "translateX(50px)", opacity: "1" },
-          "70%": { transform: "translateX(5px)", opacity: "1" },
-          "85%": { transform: "translateX(0)", opacity: "0.5" },
-          "100%": { transform: "translateX(-15px)", opacity: "0" },
+          "0%": { transform: "translateX(60px)", opacity: "1" },
+          "60%": { transform: "translateX(10px)", opacity: "1" },
+          "80%": { transform: "translateX(0)", opacity: "0.6" },
+          "100%": { transform: "translateX(-20px)", opacity: "0" },
         },
-        "chomp": {
-          "0%, 100%": { 
-            clipPath: "polygon(100% 50%, 85% 0%, 0% 0%, 0% 100%, 85% 100%)" 
-          },
-          "50%": { 
-            clipPath: "polygon(100% 50%, 100% 25%, 0% 0%, 0% 100%, 100% 75%)" 
-          },
+        "chomp-top": {
+          "0%, 100%": { transform: "rotate(0deg)" },
+          "50%": { transform: "rotate(-25deg)" },
+        },
+        "chomp-bottom": {
+          "0%, 100%": { transform: "rotate(0deg)" },
+          "50%": { transform: "rotate(25deg)" },
         },
       },
       animation: {
@@ -125,7 +125,8 @@ export default {
         "spring-in": "spring-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards",
         "fade-up": "fade-up 0.3s ease-out forwards",
         "coin-slide": "coin-slide 2.4s ease-in-out infinite",
-        "chomp": "chomp 0.4s ease-in-out infinite",
+        "chomp-top": "chomp-top 0.3s ease-in-out infinite",
+        "chomp-bottom": "chomp-bottom 0.3s ease-in-out infinite",
       },
       backgroundImage: {
         "gradient-primary": "var(--gradient-primary)",
