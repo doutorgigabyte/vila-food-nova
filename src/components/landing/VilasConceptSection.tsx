@@ -1,7 +1,46 @@
 import { motion } from "framer-motion";
-import { MapPin, Store, CreditCard, ShoppingBag, Users, ArrowRight, Check, Building2 } from "lucide-react";
+import { MapPin, Store, CreditCard, ShoppingBag, Users, ArrowRight, Check, Building2, Plus } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+
+const STORES_DATA = [
+  { 
+    name: "Pizzaria Bella", 
+    image: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=200&h=200&fit=crop",
+    product: "https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=100&h=100&fit=crop",
+    price: "R$ 45,90"
+  },
+  { 
+    name: "Burger House", 
+    image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=200&h=200&fit=crop",
+    product: "https://images.unsplash.com/photo-1550547660-d9450f859349?w=100&h=100&fit=crop",
+    price: "R$ 32,00"
+  },
+  { 
+    name: "Açaí da Ilha", 
+    image: "https://images.unsplash.com/photo-1590301157890-4810ed352733?w=200&h=200&fit=crop",
+    product: "https://images.unsplash.com/photo-1615485290382-441e4d049cb5?w=100&h=100&fit=crop",
+    price: "R$ 28,00"
+  },
+  { 
+    name: "Sushi Express", 
+    image: "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=200&h=200&fit=crop",
+    product: "https://images.unsplash.com/photo-1617196034796-73dfa7b1fd56?w=100&h=100&fit=crop",
+    price: "R$ 65,00"
+  },
+  { 
+    name: "Doce Sabor", 
+    image: "https://images.unsplash.com/photo-1551024601-bec78aea704b?w=200&h=200&fit=crop",
+    product: "https://images.unsplash.com/photo-1587668178277-295251f900ce?w=100&h=100&fit=crop",
+    price: "R$ 18,00"
+  },
+  { 
+    name: "Café Aroma", 
+    image: "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=200&h=200&fit=crop",
+    product: "https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=100&h=100&fit=crop",
+    price: "R$ 12,00"
+  },
+];
 
 const VilasConceptSection = () => {
   return (
@@ -29,7 +68,7 @@ const VilasConceptSection = () => {
 
         {/* Main Content - Concept Illustration */}
         <div className="grid lg:grid-cols-2 gap-12 items-center mb-16">
-          {/* Left - Visual Illustration */}
+          {/* Left - Visual Illustration with Real Photos */}
           <motion.div
             initial={{ opacity: 0, x: -30 }}
             whileInView={{ opacity: 1, x: 0 }}
@@ -37,75 +76,119 @@ const VilasConceptSection = () => {
             className="relative"
           >
             {/* Vila Illustration */}
-            <div className="relative bg-gradient-to-br from-primary/5 to-accent/5 rounded-3xl p-8 border border-border/50">
+            <div className="relative bg-gradient-to-br from-card to-muted/50 rounded-3xl p-6 md:p-8 border border-border/50 shadow-xl">
               {/* Central Vila Hub */}
               <div className="flex flex-col items-center">
                 {/* Vila Name */}
-                <div className="bg-primary text-primary-foreground px-6 py-2 rounded-full font-semibold mb-8 shadow-lg">
-                  🏪 Vila das Artes
+                <div className="bg-primary text-primary-foreground px-6 py-2.5 rounded-full font-semibold mb-6 shadow-lg flex items-center gap-2">
+                  <Building2 className="w-5 h-5" />
+                  Vila das Artes
                 </div>
 
-                {/* Stores Grid */}
-                <div className="grid grid-cols-3 gap-4 mb-8">
-                  {[
-                    { name: "Pizzaria", emoji: "🍕", color: "bg-red-100 border-red-200" },
-                    { name: "Hamburgueria", emoji: "🍔", color: "bg-amber-100 border-amber-200" },
-                    { name: "Açaí", emoji: "🍇", color: "bg-purple-100 border-purple-200" },
-                    { name: "Sushi", emoji: "🍣", color: "bg-orange-100 border-orange-200" },
-                    { name: "Doceria", emoji: "🧁", color: "bg-pink-100 border-pink-200" },
-                    { name: "Café", emoji: "☕", color: "bg-amber-50 border-amber-200" },
-                  ].map((store, idx) => (
+                {/* Stores Grid with Real Photos */}
+                <div className="grid grid-cols-3 gap-3 md:gap-4 mb-6 w-full max-w-sm">
+                  {STORES_DATA.map((store, idx) => (
                     <motion.div
                       key={store.name}
-                      initial={{ scale: 0 }}
-                      whileInView={{ scale: 1 }}
+                      initial={{ scale: 0, opacity: 0 }}
+                      whileInView={{ scale: 1, opacity: 1 }}
                       viewport={{ once: true }}
                       transition={{ delay: idx * 0.1 }}
-                      className={`${store.color} border rounded-xl p-3 text-center shadow-sm`}
+                      className="group relative bg-card rounded-xl overflow-hidden shadow-md border border-border/50 hover:shadow-lg transition-all hover:scale-105"
                     >
-                      <span className="text-2xl block mb-1">{store.emoji}</span>
-                      <span className="text-xs font-medium text-foreground/80">{store.name}</span>
+                      <div className="aspect-square relative overflow-hidden">
+                        <img
+                          src={store.image}
+                          alt={store.name}
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+                        <div className="absolute bottom-1 left-1 right-1">
+                          <p className="text-white text-[9px] md:text-[10px] font-medium truncate text-center">
+                            {store.name}
+                          </p>
+                        </div>
+                      </div>
                     </motion.div>
                   ))}
                 </div>
 
-                {/* Flow Arrow */}
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  whileInView={{ opacity: 1 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: 0.6 }}
-                  className="flex items-center gap-3 text-muted-foreground mb-4"
-                >
-                  <div className="h-px w-8 bg-border" />
-                  <ArrowRight className="w-5 h-5 text-primary animate-pulse" />
-                  <div className="h-px w-8 bg-border" />
-                </motion.div>
-
-                {/* Single Order Result */}
+                {/* Selected Products Flow */}
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
-                  transition={{ delay: 0.8 }}
-                  className="bg-card border border-border rounded-xl p-4 shadow-md w-full max-w-xs"
+                  transition={{ delay: 0.6 }}
+                  className="w-full max-w-sm"
                 >
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                      <Check className="w-5 h-5 text-green-600" />
-                    </div>
-                    <div>
-                      <p className="font-semibold text-sm">Pedido Único</p>
-                      <p className="text-xs text-muted-foreground">3 lojas • 1 pagamento</p>
-                    </div>
+                  {/* Products being added */}
+                  <div className="flex items-center justify-center gap-2 mb-4">
+                    <p className="text-xs text-muted-foreground">Produtos selecionados:</p>
                   </div>
-                  <div className="flex items-center justify-between text-xs text-muted-foreground border-t border-border pt-3">
-                    <span className="flex items-center gap-1">
-                      <ShoppingBag className="w-3 h-3" />
-                      Retirada única
-                    </span>
-                    <span className="text-primary font-medium">R$ 87,50</span>
+                  
+                  <div className="flex items-center justify-center gap-1 mb-4">
+                    {STORES_DATA.slice(0, 3).map((store, idx) => (
+                      <motion.div
+                        key={idx}
+                        initial={{ x: -20, opacity: 0 }}
+                        whileInView={{ x: 0, opacity: 1 }}
+                        viewport={{ once: true }}
+                        transition={{ delay: 0.7 + idx * 0.15 }}
+                        className="relative"
+                      >
+                        <img
+                          src={store.product}
+                          alt="Produto"
+                          className="w-12 h-12 md:w-14 md:h-14 rounded-lg object-cover border-2 border-card shadow-md"
+                        />
+                        {idx < 2 && (
+                          <Plus className="absolute -right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-primary bg-card rounded-full" />
+                        )}
+                      </motion.div>
+                    ))}
                   </div>
+
+                  {/* Arrow */}
+                  <div className="flex justify-center mb-4">
+                    <motion.div
+                      animate={{ y: [0, 5, 0] }}
+                      transition={{ repeat: Infinity, duration: 1.5 }}
+                    >
+                      <ArrowRight className="w-6 h-6 text-primary rotate-90" />
+                    </motion.div>
+                  </div>
+
+                  {/* Single Order Result */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 1.2 }}
+                    className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-xl p-4 shadow-md"
+                  >
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center shadow-lg">
+                        <Check className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-sm text-green-800 dark:text-green-200">Pedido Único</p>
+                        <p className="text-xs text-green-600 dark:text-green-400">3 lojas • 1 pagamento • 1 retirada</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between text-sm border-t border-green-200 dark:border-green-800 pt-3">
+                      <div className="flex items-center gap-2">
+                        {STORES_DATA.slice(0, 3).map((store, idx) => (
+                          <img
+                            key={idx}
+                            src={store.product}
+                            alt="Produto"
+                            className="w-8 h-8 rounded-md object-cover border border-green-300"
+                          />
+                        ))}
+                      </div>
+                      <span className="text-green-700 dark:text-green-300 font-bold text-lg">R$ 105,90</span>
+                    </div>
+                  </motion.div>
                 </motion.div>
               </div>
             </div>
