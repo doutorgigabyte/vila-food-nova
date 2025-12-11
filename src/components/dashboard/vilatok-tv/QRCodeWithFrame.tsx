@@ -12,17 +12,19 @@ interface QRCodeWithFrameProps {
   buttonText?: string;
 }
 
+// Tamanhos otimizados para visualização em TV
 const sizeConfig = {
-  sm: { qr: 80, padding: 8, border: 4, fontSize: 'text-sm' },
-  md: { qr: 120, padding: 12, border: 6, fontSize: 'text-base' },
-  lg: { qr: 160, padding: 16, border: 8, fontSize: 'text-lg' },
-  xl: { qr: 200, padding: 20, border: 10, fontSize: 'text-xl' }
+  sm: { qr: 100, padding: 10, border: 5, fontSize: 'text-lg', buttonPadding: 'px-8 py-3', buttonText: 'text-xl' },
+  md: { qr: 140, padding: 14, border: 7, fontSize: 'text-xl', buttonPadding: 'px-10 py-4', buttonText: 'text-2xl' },
+  lg: { qr: 180, padding: 18, border: 9, fontSize: 'text-2xl', buttonPadding: 'px-12 py-5', buttonText: 'text-3xl' },
+  xl: { qr: 220, padding: 22, border: 11, fontSize: 'text-3xl', buttonPadding: 'px-14 py-6', buttonText: 'text-4xl' }
 };
 
+// QR Code do Produto com moldura colorida + Botão "Eu quero!" lado a lado
 export function QRCodeWithFrame({
   url,
   primaryColor,
-  label = "Compre pelo QR Code",
+  label = "COMPRE AQUI",
   sublabel,
   size = 'lg',
   variant = 'product',
@@ -30,133 +32,29 @@ export function QRCodeWithFrame({
   buttonText = "Eu quero!"
 }: QRCodeWithFrameProps) {
   const config = sizeConfig[size];
-  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(url)}&color=333333&bgcolor=FFFFFF&margin=1`;
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(url)}&color=333333&bgcolor=FFFFFF&margin=1`;
 
   return (
     <motion.div 
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ delay: 0.4 }}
-      className="flex flex-col items-center gap-4"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.5 }}
+      className="flex items-center gap-8"
     >
-      {/* QR Code with colored frame */}
-      <div 
-        className="relative rounded-2xl shadow-2xl"
-        style={{
-          padding: config.border,
-          backgroundColor: primaryColor,
-          boxShadow: `0 10px 40px ${primaryColor}50, 0 0 60px ${primaryColor}30`
-        }}
-      >
-        {/* Inner white container */}
-        <div 
-          className="bg-white rounded-xl overflow-hidden"
-          style={{ padding: config.padding }}
+      {/* QR Code com moldura colorida */}
+      <div className="flex flex-col items-center gap-3">
+        <span 
+          className={`${config.fontSize} font-bold uppercase tracking-wider`}
+          style={{ color: primaryColor }}
         >
-          <img 
-            src={qrCodeUrl} 
-            alt="QR Code" 
-            width={config.qr}
-            height={config.qr}
-            className="block"
-            style={{ imageRendering: 'crisp-edges' }}
-          />
-        </div>
-        
-        {/* Decorative corner accents */}
-        <div 
-          className="absolute -top-1 -left-1 w-4 h-4 border-t-4 border-l-4 rounded-tl-lg"
-          style={{ borderColor: 'white' }}
-        />
-        <div 
-          className="absolute -top-1 -right-1 w-4 h-4 border-t-4 border-r-4 rounded-tr-lg"
-          style={{ borderColor: 'white' }}
-        />
-        <div 
-          className="absolute -bottom-1 -left-1 w-4 h-4 border-b-4 border-l-4 rounded-bl-lg"
-          style={{ borderColor: 'white' }}
-        />
-        <div 
-          className="absolute -bottom-1 -right-1 w-4 h-4 border-b-4 border-r-4 rounded-br-lg"
-          style={{ borderColor: 'white' }}
-        />
-      </div>
-
-      {/* Label */}
-      <div className="flex flex-col items-center text-center">
-        <div className="flex items-center gap-2 mb-1">
-          <QrCode className="w-5 h-5" style={{ color: primaryColor }} />
-          <span className={`font-bold ${config.fontSize}`} style={{ color: primaryColor }}>
-            {label}
-          </span>
-        </div>
-        {sublabel && (
-          <span className="text-sm text-gray-500">{sublabel}</span>
-        )}
-      </div>
-
-      {/* Optional CTA Button */}
-      {showButton && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
-          className="px-10 py-4 rounded-full text-white text-2xl font-bold shadow-xl cursor-pointer hover:scale-105 transition-transform"
-          style={{ 
-            backgroundColor: primaryColor,
-            boxShadow: `0 8px 25px ${primaryColor}50`
-          }}
-        >
-          {buttonText}
-        </motion.div>
-      )}
-    </motion.div>
-  );
-}
-
-// Horizontal layout variant
-export function QRCodeWithFrameHorizontal({
-  url,
-  primaryColor,
-  label = "Compre pelo QR Code",
-  size = 'md',
-  showButton = true,
-  buttonText = "Eu quero!"
-}: QRCodeWithFrameProps) {
-  const config = sizeConfig[size];
-  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(url)}&color=333333&bgcolor=FFFFFF&margin=1`;
-
-  return (
-    <motion.div 
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ delay: 0.4 }}
-      className="flex items-center gap-6"
-    >
-      {/* CTA Button */}
-      {showButton && (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.5 }}
-          className="px-10 py-5 rounded-full text-white text-2xl font-bold shadow-xl"
-          style={{ 
-            backgroundColor: primaryColor,
-            boxShadow: `0 8px 25px ${primaryColor}50`
-          }}
-        >
-          {buttonText}
-        </motion.div>
-      )}
-
-      {/* QR Code with frame */}
-      <div className="flex items-center gap-4">
+          {label}
+        </span>
         <div 
           className="rounded-2xl shadow-2xl"
           style={{
             padding: config.border,
             backgroundColor: primaryColor,
-            boxShadow: `0 10px 30px ${primaryColor}40`
+            boxShadow: `0 15px 50px ${primaryColor}50, 0 0 80px ${primaryColor}25`
           }}
         >
           <div 
@@ -169,16 +67,72 @@ export function QRCodeWithFrameHorizontal({
               width={config.qr}
               height={config.qr}
               className="block"
+              style={{ imageRendering: 'crisp-edges' }}
             />
           </div>
         </div>
-        
-        <div className="flex flex-col">
-          <span className="text-xs uppercase tracking-wider text-gray-500">Escaneie</span>
-          <span className={`font-bold ${config.fontSize}`} style={{ color: primaryColor }}>
-            {label}
-          </span>
-        </div>
+        {sublabel && (
+          <span className="text-lg text-gray-500 text-center">{sublabel}</span>
+        )}
+      </div>
+
+      {/* Botão "Eu quero!" */}
+      {showButton && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.6 }}
+          className={`${config.buttonPadding} rounded-full text-white ${config.buttonText} font-black shadow-2xl cursor-pointer hover:scale-105 transition-transform`}
+          style={{ 
+            backgroundColor: primaryColor,
+            boxShadow: `0 12px 40px ${primaryColor}50`
+          }}
+        >
+          {buttonText}
+        </motion.div>
+      )}
+    </motion.div>
+  );
+}
+
+// Layout horizontal compacto para templates escuros
+export function QRCodeCompact({
+  url,
+  primaryColor,
+  buttonText = "Eu quero!",
+  size = 'md'
+}: {
+  url: string;
+  primaryColor: string;
+  buttonText?: string;
+  size?: 'sm' | 'md' | 'lg';
+}) {
+  const sizes = {
+    sm: { qr: 80, button: 'text-xl px-6 py-3' },
+    md: { qr: 110, button: 'text-2xl px-10 py-4' },
+    lg: { qr: 140, button: 'text-3xl px-12 py-5' }
+  };
+  const cfg = sizes[size];
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(url)}&color=333333&bgcolor=FFFFFF&margin=1`;
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ delay: 0.5 }}
+      className="flex items-center gap-6"
+    >
+      <div 
+        className={`${cfg.button} rounded-full text-white font-black shadow-xl`}
+        style={{ backgroundColor: primaryColor }}
+      >
+        {buttonText}
+      </div>
+      <div 
+        className="bg-white p-3 rounded-xl shadow-xl border-4"
+        style={{ borderColor: primaryColor }}
+      >
+        <img src={qrCodeUrl} alt="QR Code" width={cfg.qr} height={cfg.qr} />
       </div>
     </motion.div>
   );
