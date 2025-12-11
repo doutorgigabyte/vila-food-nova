@@ -20,7 +20,7 @@ export function QuickAccessButtons({ establishmentSlug, establishmentName }: Qui
   const [copied, setCopied] = useState(false);
   
   const storeUrl = `https://${establishmentSlug}.${DOMAIN}`;
-  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(storeUrl)}`;
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&ecc=H&data=${encodeURIComponent(storeUrl)}`;
   
   const handleVisitStore = () => {
     window.open(storeUrl, '_blank');
@@ -37,15 +37,70 @@ export function QuickAccessButtons({ establishmentSlug, establishmentName }: Qui
     }
   };
   
-  const handleDownloadQR = () => {
-    const link = document.createElement('a');
-    link.href = qrCodeUrl;
-    link.download = `qrcode-${establishmentSlug}.png`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    toast.success("QR Code baixado!");
+  const handleDownloadQR = async () => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 300;
+    canvas.height = 300;
+    const ctx = canvas.getContext("2d");
+    
+    if (!ctx) {
+      toast.error("Erro ao gerar imagem");
+      return;
+    }
+    
+    const qrImage = new Image();
+    qrImage.crossOrigin = "anonymous";
+    
+    qrImage.onload = () => {
+      ctx.drawImage(qrImage, 0, 0, 300, 300);
+      
+      const logo = new Image();
+      logo.src = "/images/qrcode-logo.png";
+      
+      logo.onload = () => {
+        const logoSize = 60;
+        const logoX = (300 - logoSize) / 2;
+        const logoY = (300 - logoSize) / 2;
+        
+        ctx.fillStyle = "white";
+        ctx.fillRect(logoX - 5, logoY - 5, logoSize + 10, logoSize + 10);
+        ctx.drawImage(logo, logoX, logoY, logoSize, logoSize);
+        
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const downloadUrl = window.URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = downloadUrl;
+            link.download = `qrcode-${establishmentSlug}.png`;
+            link.click();
+            window.URL.revokeObjectURL(downloadUrl);
+            toast.success("QR Code baixado!");
+          }
+        }, "image/png");
+      };
+    };
+    
+    qrImage.src = qrCodeUrl;
   };
+  
+  const QRCodeWithLogo = () => (
+    <div className="relative inline-block">
+      <img
+        src={qrCodeUrl}
+        alt={`QR Code - ${establishmentName}`}
+        className="w-64 h-64"
+      />
+      <div className="absolute inset-0 flex items-center justify-center">
+        <div className="bg-white p-1.5 rounded">
+          <img
+            src="/images/qrcode-logo.png"
+            alt="Logo"
+            className="w-12 h-12"
+          />
+        </div>
+      </div>
+    </div>
+  );
   
   return (
     <>
@@ -78,11 +133,7 @@ export function QuickAccessButtons({ establishmentSlug, establishmentName }: Qui
           
           <div className="flex flex-col items-center gap-4 py-4">
             <div className="bg-white p-4 rounded-xl shadow-inner">
-              <img
-                src={qrCodeUrl}
-                alt={`QR Code - ${establishmentName}`}
-                className="w-64 h-64"
-              />
+              <QRCodeWithLogo />
             </div>
             
             <p className="text-center text-sm text-muted-foreground">
