@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Heart, MessageCircle, Share2, ShoppingBag, Volume2 } from "lucide-react";
+import { Heart, MessageCircle, Share2, ShoppingBag, Volume2, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 
 const MOCK_STORIES = [
   {
@@ -41,6 +41,8 @@ const VilaTokSimulation = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [progress, setProgress] = useState(0);
   const [isLiked, setIsLiked] = useState(false);
+  const [showSwipeHint, setShowSwipeHint] = useState(true);
+  const [swipeDirection, setSwipeDirection] = useState<'vertical' | 'horizontal'>('vertical');
 
   const currentStory = MOCK_STORIES[currentIndex];
 
@@ -68,6 +70,15 @@ const VilaTokSimulation = () => {
 
     return () => clearTimeout(likeTimeout);
   }, [currentIndex]);
+
+  // Alternate swipe hint direction
+  useEffect(() => {
+    const hintInterval = setInterval(() => {
+      setSwipeDirection(prev => prev === 'vertical' ? 'horizontal' : 'vertical');
+    }, 3000);
+
+    return () => clearInterval(hintInterval);
+  }, []);
 
   return (
     <div className="relative w-full h-full">
@@ -107,6 +118,53 @@ const VilaTokSimulation = () => {
           <p className="text-white/70 text-[10px]">há 2h</p>
         </div>
         <Volume2 className="w-4 h-4 text-white/80" />
+      </div>
+
+      {/* Swipe Navigation Hint Overlay */}
+      {showSwipeHint && (
+        <div className="absolute inset-0 z-20 pointer-events-none">
+          {/* Vertical swipe indicator */}
+          <div className={`absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 flex flex-col items-center gap-1 transition-opacity duration-500 ${swipeDirection === 'vertical' ? 'opacity-100' : 'opacity-0'}`}>
+            <div className="flex flex-col items-center animate-bounce">
+              <ChevronUp className="w-6 h-6 text-white drop-shadow-lg" />
+              <ChevronUp className="w-6 h-6 text-white drop-shadow-lg -mt-4" />
+            </div>
+            <div className="bg-black/60 backdrop-blur-sm rounded-lg px-3 py-1.5 mt-1">
+              <p className="text-white text-[10px] font-medium text-center">Deslize ↕️</p>
+              <p className="text-white/80 text-[8px] text-center">Trocar estabelecimento</p>
+            </div>
+            <div className="flex flex-col items-center animate-bounce mt-1">
+              <ChevronDown className="w-6 h-6 text-white drop-shadow-lg" />
+              <ChevronDown className="w-6 h-6 text-white drop-shadow-lg -mt-4" />
+            </div>
+          </div>
+
+          {/* Horizontal swipe indicator */}
+          <div className={`absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 flex items-center gap-1 transition-opacity duration-500 ${swipeDirection === 'horizontal' ? 'opacity-100' : 'opacity-0'}`}>
+            <div className="flex items-center animate-pulse">
+              <ChevronLeft className="w-6 h-6 text-white drop-shadow-lg" />
+              <ChevronLeft className="w-6 h-6 text-white drop-shadow-lg -ml-4" />
+            </div>
+            <div className="bg-black/60 backdrop-blur-sm rounded-lg px-3 py-1.5 mx-1">
+              <p className="text-white text-[10px] font-medium text-center">Deslize ↔️</p>
+              <p className="text-white/80 text-[8px] text-center">Próximo vídeo da loja</p>
+            </div>
+            <div className="flex items-center animate-pulse">
+              <ChevronRight className="w-6 h-6 text-white drop-shadow-lg" />
+              <ChevronRight className="w-6 h-6 text-white drop-shadow-lg -ml-4" />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Navigation explanation badges */}
+      <div className="absolute top-14 left-2 right-2 z-10 flex justify-between">
+        <div className="bg-black/50 backdrop-blur-sm rounded px-1.5 py-0.5">
+          <p className="text-white/90 text-[7px]">↕️ Lojas</p>
+        </div>
+        <div className="bg-black/50 backdrop-blur-sm rounded px-1.5 py-0.5">
+          <p className="text-white/90 text-[7px]">↔️ Vídeos</p>
+        </div>
       </div>
 
       {/* Right side actions */}
