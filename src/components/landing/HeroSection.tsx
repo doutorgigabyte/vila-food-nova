@@ -11,7 +11,7 @@ const HeroSection = () => {
   };
 
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-hero-pattern pt-20">
+    <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-hero-pattern pt-12 md:pt-16">
       {/* Animated background rays */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[200%] h-full bg-[radial-gradient(ellipse_at_top,_transparent_0%,_hsl(0_0%_0%_/_0.1)_100%)]" />
@@ -28,7 +28,7 @@ const HeroSection = () => {
 
             <h1 className="text-3xl md:text-5xl lg:text-6xl xl:text-7xl font-bold leading-tight mb-4 md:mb-6 animate-fade-up">
               Pare de pagar{" "}
-              <span className="text-destructive">taxas abusivas</span>
+              <span className="text-accent">taxas abusivas</span>
               {" "}para marketplaces
             </h1>
 
