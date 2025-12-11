@@ -1,21 +1,34 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Tv, Trash2, Image as ImageIcon, Eye, EyeOff, Settings } from "lucide-react";
+import { Plus, Tv, Image as ImageIcon, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserEstablishment } from "@/hooks/useDashboardData";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-
 import { PublicDisplayManager } from "@/components/dashboard/PublicDisplayManager";
-import { TemplatePreviewSelector, TEMPLATE_OPTIONS } from "@/components/dashboard/TemplatePreviewSelector";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { TEMPLATE_OPTIONS } from "@/components/dashboard/TemplatePreviewSelector";
+import { PlaylistSettings } from "@/components/dashboard/vilatok-tv/PlaylistSettings";
+import { TVSlideCard } from "@/components/dashboard/vilatok-tv/TVSlideCard";
+import { TVSlideForm } from "@/components/dashboard/vilatok-tv/TVSlideForm";
+
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  rectSortingStrategy,
+} from "@dnd-kit/sortable";
 
 interface TVSlide {
   id: string;
@@ -27,7 +40,8 @@ interface TVSlide {
   sort_order: number;
   is_active: boolean;
   badge_text?: string | null;
-  secondary_images?: string[];
+  media_type?: string;
+  duration_seconds?: number;
   product?: {
     id: string;
     name: string;
@@ -39,8 +53,10 @@ interface TVSlide {
 interface Product {
   id: string;
   name: string;
+  description: string | null;
   price: number;
   promotional_price: number | null;
+  image_url: string | null;
 }
 
 export default function TVSlideManagement() {
@@ -56,8 +72,15 @@ export default function TVSlideManagement() {
     image_url: '',
     product_id: '',
     template_type: 'product_showcase',
-    badge_text: ''
+    badge_text: '',
+    media_type: 'image' as 'image' | 'video',
+    duration_seconds: 10
   });
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
 
   useEffect(() => {
     if (establishmentId) {
@@ -85,7 +108,7 @@ export default function TVSlideManagement() {
   const fetchProducts = async () => {
     const { data } = await supabase
       .from("products")
-      .select("id, name, price, promotional_price")
+      .select("id, name, description, price, promotional_price, image_url")
       .eq("establishment_id", establishmentId!)
       .eq("is_active", true)
       .order("name");
@@ -94,7 +117,7 @@ export default function TVSlideManagement() {
 
   const handleSubmit = async () => {
     if (!formData.image_url) {
-      toast.error("Adicione uma imagem");
+      toast.error("Adicione uma imagem ou vídeo");
       return;
     }
     try {
@@ -106,6 +129,8 @@ export default function TVSlideManagement() {
         product_id: formData.product_id || null,
         template_type: formData.template_type,
         badge_text: formData.badge_text || null,
+        media_type: formData.media_type,
+        duration_seconds: formData.duration_seconds,
         sort_order: editingSlide ? editingSlide.sort_order : slides.length
       };
       
@@ -131,7 +156,9 @@ export default function TVSlideManagement() {
       image_url: '',
       product_id: '',
       template_type: 'product_showcase',
-      badge_text: ''
+      badge_text: '',
+      media_type: 'image',
+      duration_seconds: 10
     });
     setEditingSlide(null);
   };
@@ -144,7 +171,9 @@ export default function TVSlideManagement() {
       image_url: slide.image_url,
       product_id: slide.product_id || '',
       template_type: slide.template_type,
-      badge_text: slide.badge_text || ''
+      badge_text: slide.badge_text || '',
+      media_type: (slide.media_type as 'image' | 'video') || 'image',
+      duration_seconds: slide.duration_seconds || 10
     });
     setIsDialogOpen(true);
   };
@@ -161,8 +190,44 @@ export default function TVSlideManagement() {
     fetchSlides();
   };
 
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    if (over && active.id !== over.id) {
+      const oldIndex = slides.findIndex((s) => s.id === active.id);
+      const newIndex = slides.findIndex((s) => s.id === over.id);
+      
+      const newSlides = arrayMove(slides, oldIndex, newIndex);
+      setSlides(newSlides);
+      
+      // Update sort_order in database
+      try {
+        const updates = newSlides.map((slide, index) => ({
+          id: slide.id,
+          sort_order: index
+        }));
+        
+        for (const update of updates) {
+          await (supabase
+            .from("tv_slides" as any)
+            .update({ sort_order: update.sort_order })
+            .eq("id", update.id) as any);
+        }
+        toast.success("Ordem atualizada!");
+      } catch (error) {
+        toast.error("Erro ao atualizar ordem");
+        fetchSlides(); // Revert on error
+      }
+    }
+  };
+
   const getTemplateName = (value: string) => {
     return TEMPLATE_OPTIONS.find(t => t.value === value)?.label || value;
+  };
+
+  const getPublicDisplayUrl = () => {
+    // This would be fetched from public_display_tokens table
+    return `/display/tv/${establishmentId}`;
   };
 
   if (estLoading) {
@@ -176,18 +241,36 @@ export default function TVSlideManagement() {
   return (
     <DashboardLayout title="VilaTok TV" establishment={establishment}>
       <div className="space-y-6">
+        {/* Public Display Manager */}
         {establishmentId && <PublicDisplayManager establishmentId={establishmentId} />}
         
+        {/* Playlist Settings */}
+        {establishmentId && <PlaylistSettings establishmentId={establishmentId} />}
+        
+        {/* Slides Grid */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="flex items-center gap-2">
               <Tv className="w-5 h-5" />
               Slides para TV
+              {slides.length > 0 && (
+                <span className="text-sm font-normal text-muted-foreground">
+                  ({slides.filter(s => s.is_active).length} ativos)
+                </span>
+              )}
             </CardTitle>
-            <Button onClick={() => { resetForm(); setIsDialogOpen(true); }}>
-              <Plus className="w-4 h-4 mr-2" />
-              Novo Slide
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" asChild>
+                <a href={getPublicDisplayUrl()} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  Testar Visualização
+                </a>
+              </Button>
+              <Button onClick={() => { resetForm(); setIsDialogOpen(true); }}>
+                <Plus className="w-4 h-4 mr-2" />
+                Novo Slide
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             {loading ? (
@@ -198,161 +281,59 @@ export default function TVSlideManagement() {
               <div className="text-center py-12">
                 <ImageIcon className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-medium mb-2">Nenhum slide criado</h3>
-                <p className="text-muted-foreground mb-4">Crie slides para exibir em TVs do seu estabelecimento</p>
+                <p className="text-muted-foreground mb-4">
+                  Crie slides para exibir em TVs do seu estabelecimento.
+                  <br />
+                  <span className="text-sm">Arraste para reordenar • Upload de fotos e vídeos • Templates variados</span>
+                </p>
                 <Button onClick={() => setIsDialogOpen(true)}>
                   <Plus className="w-4 h-4 mr-2" />
                   Criar Primeiro Slide
                 </Button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {slides.map((slide, index) => (
-                  <Card key={slide.id} className={`overflow-hidden ${!slide.is_active ? 'opacity-50' : ''}`}>
-                    <div className="relative aspect-video bg-muted">
-                      <img
-                        src={slide.image_url}
-                        alt={slide.title || 'Slide'}
-                        className="w-full h-full object-cover"
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext items={slides.map(s => s.id)} strategy={rectSortingStrategy}>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {slides.map((slide, index) => (
+                      <TVSlideCard
+                        key={slide.id}
+                        slide={slide}
+                        index={index}
+                        getTemplateName={getTemplateName}
+                        onToggleActive={toggleSlideActive}
+                        onEdit={openEditDialog}
+                        onDelete={deleteSlide}
                       />
-                      <div className="absolute top-2 left-2 flex gap-1 flex-wrap">
-                        <Badge variant="secondary" className="text-xs">#{index + 1}</Badge>
-                        <Badge variant="outline" className="text-xs bg-background/80">
-                          {getTemplateName(slide.template_type)}
-                        </Badge>
-                      </div>
-                      {slide.product && (
-                        <Badge className="absolute bottom-2 left-2">{slide.product.name}</Badge>
-                      )}
-                    </div>
-                    <CardContent className="p-3">
-                      <div className="flex items-center justify-between">
-                        <div className="truncate">
-                          <p className="font-medium truncate">{slide.title || 'Sem título'}</p>
-                          {slide.subtitle && <p className="text-xs text-muted-foreground truncate">{slide.subtitle}</p>}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Button variant="ghost" size="icon" onClick={() => toggleSlideActive(slide)}>
-                            {slide.is_active ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-                          </Button>
-                          <Button variant="ghost" size="icon" onClick={() => openEditDialog(slide)}>
-                            <Settings className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => deleteSlide(slide.id)}
-                            className="text-destructive hover:text-destructive"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                    ))}
+                  </div>
+                </SortableContext>
+              </DndContext>
             )}
           </CardContent>
         </Card>
       </div>
 
+      {/* Create/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) resetForm(); }}>
         <DialogContent className="max-w-2xl max-h-[90vh]">
           <DialogHeader>
             <DialogTitle>{editingSlide ? 'Editar Slide' : 'Novo Slide'}</DialogTitle>
           </DialogHeader>
-          <ScrollArea className="max-h-[calc(90vh-100px)] pr-4">
-            <div className="space-y-6 pt-4">
-              {/* Image URL */}
-              <div className="space-y-2">
-                <Label>URL da Imagem *</Label>
-                <Input
-                  placeholder="https://..."
-                  value={formData.image_url}
-                  onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-                />
-                {formData.image_url && (
-                  <div className="aspect-video bg-muted rounded-lg overflow-hidden">
-                    <img
-                      src={formData.image_url}
-                      alt="Preview"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                )}
-              </div>
-
-              {/* Template Selection - Visual Gallery */}
-              <div className="space-y-3">
-                <Label>Escolha o Template</Label>
-                <TemplatePreviewSelector
-                  templates={TEMPLATE_OPTIONS}
-                  value={formData.template_type}
-                  onValueChange={(v) => setFormData({ ...formData, template_type: v })}
-                />
-                <p className="text-xs text-muted-foreground">
-                  {TEMPLATE_OPTIONS.find(t => t.value === formData.template_type)?.description}
-                </p>
-              </div>
-
-              {/* Title */}
-              <div className="space-y-2">
-                <Label>Título</Label>
-                <Input
-                  placeholder="Ex: Promoção do Dia"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                />
-              </div>
-
-              {/* Subtitle */}
-              <div className="space-y-2">
-                <Label>Subtítulo</Label>
-                <Input
-                  placeholder="Ex: Sabor irresistível..."
-                  value={formData.subtitle}
-                  onChange={(e) => setFormData({ ...formData, subtitle: e.target.value })}
-                />
-              </div>
-
-              {/* Badge Text - for templates that support it */}
-              {['promo', 'diamond', 'diagonal', 'catering'].includes(formData.template_type) && (
-                <div className="space-y-2">
-                  <Label>Texto do Badge (opcional)</Label>
-                  <Input
-                    placeholder="Ex: 30% OFF, Menu Especial, Novidade"
-                    value={formData.badge_text}
-                    onChange={(e) => setFormData({ ...formData, badge_text: e.target.value })}
-                  />
-                </div>
-              )}
-
-              {/* Product Link */}
-              <div className="space-y-2">
-                <Label>Vincular Produto</Label>
-              <Select
-                  value={formData.product_id || "none"}
-                  onValueChange={(v) => setFormData({ ...formData, product_id: v === "none" ? "" : v })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione um produto..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Nenhum</SelectItem>
-                    {products.map(p => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {p.name} - R$ {(p.promotional_price || p.price).toFixed(2)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <Button onClick={handleSubmit} className="w-full">
-                {editingSlide ? 'Salvar Alterações' : 'Criar Slide'}
-              </Button>
-            </div>
-          </ScrollArea>
+          {establishmentId && (
+            <TVSlideForm
+              formData={formData}
+              setFormData={setFormData}
+              products={products}
+              establishmentId={establishmentId}
+              onSubmit={handleSubmit}
+              isEditing={!!editingSlide}
+            />
+          )}
         </DialogContent>
       </Dialog>
     </DashboardLayout>

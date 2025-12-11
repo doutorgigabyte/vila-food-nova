@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams } from "react-router-dom";
-import { AlertCircle, Phone, Globe } from "lucide-react";
+import { AlertCircle, Phone, Globe, Play } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 import { DOMAIN } from "@/lib/constants";
@@ -14,6 +14,8 @@ interface TVSlide {
   template_type: string;
   badge_text?: string | null;
   secondary_images?: string[];
+  media_type?: string;
+  duration_seconds?: number;
   product?: {
     id: string;
     name: string;
@@ -30,6 +32,12 @@ interface Establishment {
   primary_color: string | null;
   phone: string | null;
   whatsapp: string | null;
+}
+
+interface PlaylistSettings {
+  playback_mode: 'sequential' | 'random' | 'loop';
+  default_duration: number;
+  transition_type: 'fade' | 'slide' | 'zoom';
 }
 
 // Blob SVG component for modern templates
@@ -89,6 +97,31 @@ const DecorativeDots = ({ color }: { color: string }) => (
   </div>
 );
 
+// Transition variants based on playlist settings
+const getTransitionVariants = (transitionType: string) => {
+  switch (transitionType) {
+    case 'slide':
+      return {
+        initial: { opacity: 0, x: 100 },
+        animate: { opacity: 1, x: 0 },
+        exit: { opacity: 0, x: -100 },
+      };
+    case 'zoom':
+      return {
+        initial: { opacity: 0, scale: 0.8 },
+        animate: { opacity: 1, scale: 1 },
+        exit: { opacity: 0, scale: 1.2 },
+      };
+    case 'fade':
+    default:
+      return {
+        initial: { opacity: 0 },
+        animate: { opacity: 1 },
+        exit: { opacity: 0 },
+      };
+  }
+};
+
 export default function TVSlidePlayer() {
   const { token } = useParams<{ token: string }>();
   const [slides, setSlides] = useState<TVSlide[]>([]);
@@ -96,17 +129,63 @@ export default function TVSlidePlayer() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [establishment, setEstablishment] = useState<Establishment | null>(null);
+  const [playlistSettings, setPlaylistSettings] = useState<PlaylistSettings>({
+    playback_mode: 'sequential',
+    default_duration: 10,
+    transition_type: 'fade'
+  });
+  const [shuffledOrder, setShuffledOrder] = useState<number[]>([]);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     if (token) validateAndFetch();
   }, [token]);
 
+  // Create shuffled order when slides change and mode is random
+  useEffect(() => {
+    if (playlistSettings.playback_mode === 'random' && slides.length > 0) {
+      const order = [...Array(slides.length).keys()];
+      // Fisher-Yates shuffle
+      for (let i = order.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [order[i], order[j]] = [order[j], order[i]];
+      }
+      setShuffledOrder(order);
+    }
+  }, [slides.length, playlistSettings.playback_mode]);
+
+  // Get actual slide index based on playback mode
+  const getActualSlideIndex = useCallback((index: number) => {
+    if (playlistSettings.playback_mode === 'random' && shuffledOrder.length > 0) {
+      return shuffledOrder[index % shuffledOrder.length];
+    }
+    return index;
+  }, [playlistSettings.playback_mode, shuffledOrder]);
+
+  // Handle video end
+  const handleVideoEnd = useCallback(() => {
+    setCurrentIndex((prev) => (prev + 1) % slides.length);
+  }, [slides.length]);
+
+  // Timer for slides (images or fallback)
   useEffect(() => {
     if (slides.length === 0) return;
-    const duration = 8000; // 8 seconds per slide
-    const timer = setTimeout(() => setCurrentIndex((prev) => (prev + 1) % slides.length), duration);
+    
+    const actualIndex = getActualSlideIndex(currentIndex);
+    const currentSlide = slides[actualIndex];
+    const isVideo = currentSlide?.media_type === 'video' || 
+      currentSlide?.image_url?.match(/\.(mp4|webm|mov)$/i);
+    
+    // Don't set timer for videos - they advance on end
+    if (isVideo) return;
+    
+    const duration = (currentSlide?.duration_seconds || playlistSettings.default_duration) * 1000;
+    const timer = setTimeout(() => {
+      setCurrentIndex((prev) => (prev + 1) % slides.length);
+    }, duration);
+    
     return () => clearTimeout(timer);
-  }, [currentIndex, slides]);
+  }, [currentIndex, slides, playlistSettings.default_duration, getActualSlideIndex]);
 
   const validateAndFetch = async () => {
     try {
@@ -124,6 +203,7 @@ export default function TVSlidePlayer() {
         return;
       }
 
+      // Fetch establishment
       const { data: estData } = await supabase
         .from("establishments")
         .select("id, name, slug, logo_url, primary_color, phone, whatsapp")
@@ -132,6 +212,18 @@ export default function TVSlidePlayer() {
 
       if (estData) setEstablishment(estData);
 
+      // Fetch playlist settings
+      const { data: settingsData } = await (supabase
+        .from("tv_playlist_settings" as any)
+        .select("playback_mode, default_duration, transition_type")
+        .eq("establishment_id", tokenData.establishment_id)
+        .single() as any);
+
+      if (settingsData) {
+        setPlaylistSettings(settingsData);
+      }
+
+      // Fetch slides
       const { data: slidesData } = await (supabase
         .from("tv_slides" as any)
         .select("*, product:products(id, name, price, promotional_price)")
@@ -174,12 +266,15 @@ export default function TVSlidePlayer() {
     );
   }
 
-  const currentSlide = slides[currentIndex];
+  const actualIndex = getActualSlideIndex(currentIndex);
+  const currentSlide = slides[actualIndex];
   const storeUrl = establishment ? `https://${establishment.slug}.${DOMAIN}` : '';
   const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(storeUrl)}&color=333333&bgcolor=FFFFFF`;
   const primaryColor = establishment?.primary_color || '#2D8B8B';
   const secondaryColor = '#F5E6D3';
   const accentColor = '#C4A574';
+  const transitionVariants = getTransitionVariants(playlistSettings.transition_type);
+  const isVideo = currentSlide?.media_type === 'video' || currentSlide?.image_url?.match(/\.(mp4|webm|mov)$/i);
 
   const formatPhone = (phone: string | null) => {
     if (!phone) return null;
