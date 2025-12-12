@@ -128,8 +128,8 @@ const QRCodeManagement = () => {
       <StyledQRCode 
         url={url}
         size={160}
-        logoUrl="/images/qrcode-logo.png"
-        primaryColor="#333333"
+        primaryColor="#ea580c"
+        useThemedLogo={true}
       />
     </div>
   );
