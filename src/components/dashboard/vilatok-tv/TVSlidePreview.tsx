@@ -268,6 +268,11 @@ export function TVSlidePreview({
 
   // ===== 6. GRADIENT_BURST - Triângulo invertido com explosão =====
   if (templateType === 'gradient_burst') {
+    // Para fundos gradiente, usar cores sólidas contrastantes
+    const isLightBg = isLightColor(primaryColor);
+    const contrastColor = isLightBg ? '#333333' : '#ffffff';
+    const qrBgColor = isLightBg ? '#ffffff' : '#333333';
+    
     return (
       <div className="relative w-full h-full overflow-hidden" style={{ background: `radial-gradient(circle at center, ${primaryColor}60, ${primaryColor})` }}>
         <div className="absolute top-2 left-1/2 -translate-x-1/2"><Logo size="sm" /></div>
@@ -276,13 +281,13 @@ export function TVSlidePreview({
           {renderMedia("w-full h-full")}
         </div>
         <div className="absolute right-2 top-12 max-w-[45%] space-y-1">
-          <h3 className="text-[10px] font-bold text-white drop-shadow-lg truncate">{title}</h3>
-          <p className="text-[5px] text-white/80 truncate">{subtitle}</p>
-          <PriceDisplay textColor="#ffffff" size="lg" />
+          <h3 className="text-[10px] font-bold drop-shadow-lg truncate" style={{ color: contrastColor }}>{title}</h3>
+          <p className="text-[5px] truncate" style={{ color: `${contrastColor}cc` }}>{subtitle}</p>
+          <PriceDisplay textColor={contrastColor} size="lg" />
         </div>
         <div className="absolute bottom-10 right-2 flex items-center gap-2">
-          <QRPreview color="#ffffff" />
-          <CTAButton bgColor="rgba(255,255,255,0.2)" />
+          <QRPreview color={qrBgColor} />
+          <CTAButton bgColor={qrBgColor} />
         </div>
         <Footer />
       </div>
