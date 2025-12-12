@@ -33,10 +33,15 @@ export function QRCodeWithFrame({
   buttonText = "Eu quero!"
 }: QRCodeWithFrameProps) {
   const config = sizeConfig[size];
+  const safeColor = primaryColor || '#ea580c';
   
-  // Calcular cor do texto baseado no contraste
-  const isLightBg = isLightColor(primaryColor);
-  const buttonTextColor = isLightBg ? '#333333' : '#ffffff';
+  // Calcular cor do texto baseado no contraste - garantir sempre visibilidade
+  const isLightBg = isLightColor(safeColor);
+  const buttonTextColor = isLightBg ? '#1f2937' : '#ffffff';
+  // Para label e moldura em templates escuros, manter a cor original
+  // Para QR code que aparece em fundo branco, StyledQRCode já faz a inversão se necessário
+  const labelColor = isLightBg ? '#1f2937' : safeColor;
+  const frameColor = isLightBg ? '#333333' : safeColor;
 
   return (
     <motion.div 
@@ -49,7 +54,7 @@ export function QRCodeWithFrame({
       <div className="flex flex-col items-center gap-3">
         <span 
           className={`${config.fontSize} font-bold uppercase tracking-wider`}
-          style={{ color: primaryColor }}
+          style={{ color: labelColor }}
         >
           {label}
         </span>
@@ -57,8 +62,8 @@ export function QRCodeWithFrame({
           className="rounded-2xl shadow-2xl"
           style={{
             padding: config.border,
-            backgroundColor: primaryColor,
-            boxShadow: `0 15px 50px ${primaryColor}50, 0 0 80px ${primaryColor}25`
+            backgroundColor: frameColor,
+            boxShadow: isLightBg ? '0 15px 50px rgba(0,0,0,0.2)' : `0 15px 50px ${safeColor}50, 0 0 80px ${safeColor}25`
           }}
         >
           <div 
@@ -68,7 +73,7 @@ export function QRCodeWithFrame({
             <StyledQRCode 
               url={url}
               size={config.qr}
-              primaryColor={primaryColor}
+              primaryColor={safeColor}
             />
           </div>
         </div>
@@ -77,7 +82,7 @@ export function QRCodeWithFrame({
         )}
       </div>
 
-      {/* Botão "Eu quero!" */}
+      {/* Botão "Eu quero!" - Sempre visível com contraste garantido */}
       {showButton && (
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
@@ -85,9 +90,9 @@ export function QRCodeWithFrame({
           transition={{ delay: 0.6 }}
           className={`${config.buttonPadding} rounded-full ${config.buttonText} font-black shadow-2xl cursor-pointer hover:scale-105 transition-transform whitespace-nowrap`}
           style={{ 
-            backgroundColor: primaryColor,
+            backgroundColor: safeColor,
             color: buttonTextColor,
-            boxShadow: `0 12px 40px ${primaryColor}50`
+            boxShadow: `0 12px 40px ${safeColor}50`
           }}
         >
           {buttonText}
@@ -115,10 +120,12 @@ export function QRCodeCompact({
     lg: { qr: 140, button: 'text-3xl px-12 py-5' }
   };
   const cfg = sizes[size];
+  const safeColor = primaryColor || '#ea580c';
   
-  // Calcular cor do texto baseado no contraste
-  const isLightBg = isLightColor(primaryColor);
-  const buttonTextColor = isLightBg ? '#333333' : '#ffffff';
+  // Calcular cor do texto baseado no contraste - garantir sempre visibilidade
+  const isLightBg = isLightColor(safeColor);
+  const buttonTextColor = isLightBg ? '#1f2937' : '#ffffff';
+  const borderColor = isLightBg ? '#333333' : safeColor;
 
   return (
     <motion.div 
@@ -129,18 +136,18 @@ export function QRCodeCompact({
     >
       <div 
         className={`${cfg.button} rounded-full font-black shadow-xl whitespace-nowrap`}
-        style={{ backgroundColor: primaryColor, color: buttonTextColor }}
+        style={{ backgroundColor: isLightBg ? '#333333' : safeColor, color: isLightBg ? '#ffffff' : buttonTextColor }}
       >
         {buttonText}
       </div>
       <div 
         className="bg-white p-3 rounded-xl shadow-xl border-4 flex items-center justify-center"
-        style={{ borderColor: primaryColor }}
+        style={{ borderColor: borderColor }}
       >
         <StyledQRCode 
           url={url}
           size={cfg.qr}
-          primaryColor={primaryColor}
+          primaryColor={safeColor}
         />
       </div>
     </motion.div>
