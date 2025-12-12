@@ -1,5 +1,6 @@
 import { QrCode } from "lucide-react";
 import { motion } from "framer-motion";
+import { StyledQRCode, isLightColor } from "@/components/ui/StyledQRCode";
 
 interface QRCodeWithFrameProps {
   url: string;
@@ -32,7 +33,10 @@ export function QRCodeWithFrame({
   buttonText = "Eu quero!"
 }: QRCodeWithFrameProps) {
   const config = sizeConfig[size];
-  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(url)}&color=333333&bgcolor=FFFFFF&margin=1`;
+  
+  // Calcular cor do texto baseado no contraste
+  const isLightBg = isLightColor(primaryColor);
+  const buttonTextColor = isLightBg ? '#333333' : '#ffffff';
 
   return (
     <motion.div 
@@ -58,16 +62,13 @@ export function QRCodeWithFrame({
           }}
         >
           <div 
-            className="bg-white rounded-xl overflow-hidden"
+            className="bg-white rounded-xl overflow-hidden flex items-center justify-center"
             style={{ padding: config.padding }}
           >
-            <img 
-              src={qrCodeUrl} 
-              alt="QR Code" 
-              width={config.qr}
-              height={config.qr}
-              className="block"
-              style={{ imageRendering: 'crisp-edges' }}
+            <StyledQRCode 
+              url={url}
+              size={config.qr}
+              primaryColor={primaryColor}
             />
           </div>
         </div>
@@ -82,9 +83,10 @@ export function QRCodeWithFrame({
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.6 }}
-          className={`${config.buttonPadding} rounded-full text-white ${config.buttonText} font-black shadow-2xl cursor-pointer hover:scale-105 transition-transform`}
+          className={`${config.buttonPadding} rounded-full ${config.buttonText} font-black shadow-2xl cursor-pointer hover:scale-105 transition-transform whitespace-nowrap`}
           style={{ 
             backgroundColor: primaryColor,
+            color: buttonTextColor,
             boxShadow: `0 12px 40px ${primaryColor}50`
           }}
         >
@@ -113,7 +115,10 @@ export function QRCodeCompact({
     lg: { qr: 140, button: 'text-3xl px-12 py-5' }
   };
   const cfg = sizes[size];
-  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(url)}&color=333333&bgcolor=FFFFFF&margin=1`;
+  
+  // Calcular cor do texto baseado no contraste
+  const isLightBg = isLightColor(primaryColor);
+  const buttonTextColor = isLightBg ? '#333333' : '#ffffff';
 
   return (
     <motion.div 
@@ -123,16 +128,20 @@ export function QRCodeCompact({
       className="flex items-center gap-6"
     >
       <div 
-        className={`${cfg.button} rounded-full text-white font-black shadow-xl`}
-        style={{ backgroundColor: primaryColor }}
+        className={`${cfg.button} rounded-full font-black shadow-xl whitespace-nowrap`}
+        style={{ backgroundColor: primaryColor, color: buttonTextColor }}
       >
         {buttonText}
       </div>
       <div 
-        className="bg-white p-3 rounded-xl shadow-xl border-4"
+        className="bg-white p-3 rounded-xl shadow-xl border-4 flex items-center justify-center"
         style={{ borderColor: primaryColor }}
       >
-        <img src={qrCodeUrl} alt="QR Code" width={cfg.qr} height={cfg.qr} />
+        <StyledQRCode 
+          url={url}
+          size={cfg.qr}
+          primaryColor={primaryColor}
+        />
       </div>
     </motion.div>
   );

@@ -125,15 +125,30 @@ export function TVSlidePreview({
     );
   };
 
-  // Botão "Eu quero!" padrão
-  const CTAButton = ({ bgColor = primaryColor }: { bgColor?: string }) => (
-    <div 
-      className="px-3 py-1 rounded-full text-[6px] font-bold text-white whitespace-nowrap"
-      style={{ backgroundColor: bgColor }}
-    >
-      Eu quero!
-    </div>
-  );
+  // Função para calcular contraste
+  const isLightColor = (color: string): boolean => {
+    const hex = color.replace('#', '');
+    const r = parseInt(hex.substr(0, 2), 16);
+    const g = parseInt(hex.substr(2, 2), 16);
+    const b = parseInt(hex.substr(4, 2), 16);
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+    return brightness > 155;
+  };
+
+  // Botão "Eu quero!" padrão com contraste automático
+  const CTAButton = ({ bgColor = primaryColor }: { bgColor?: string }) => {
+    const isLightBg = isLightColor(bgColor);
+    const textColor = isLightBg ? '#333333' : '#ffffff';
+    
+    return (
+      <div 
+        className="px-3 py-1 rounded-full text-[6px] font-bold whitespace-nowrap"
+        style={{ backgroundColor: bgColor, color: textColor }}
+      >
+        Eu quero!
+      </div>
+    );
+  };
 
   // Preço formatado - nunca quebra linha
   const PriceDisplay = ({ textColor = primaryColor, size = "md" }: { textColor?: string; size?: "sm" | "md" | "lg" }) => {
