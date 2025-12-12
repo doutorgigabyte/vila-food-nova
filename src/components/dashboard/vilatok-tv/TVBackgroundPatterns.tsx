@@ -113,7 +113,8 @@ export function GeometricShapes({
     <>
       <div className="absolute -top-32 -right-32 w-96 h-96 rounded-full border-[40px] opacity-10" style={{ borderColor: color }} />
       <div className="absolute -bottom-48 -left-48 w-[500px] h-[500px] rounded-full border-[60px] opacity-5" style={{ borderColor: color }} />
-      <div className="absolute top-1/3 left-1/4 w-64 h-64 rounded-full border-[20px] opacity-8" style={{ borderColor: color }} />
+      {/* Círculo decorativo movido para canto inferior direito para não sobrepor texto */}
+      <div className="absolute -bottom-20 right-1/4 w-64 h-64 rounded-full border-[20px] opacity-8" style={{ borderColor: color }} />
     </>
   ) : variant === "diamonds" ? (
     <>
