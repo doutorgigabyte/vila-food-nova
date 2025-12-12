@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { ArrowLeft, Plus, Trash2, Download, QrCode, Loader2, Utensils, Truck, Table2 } from "lucide-react";
+import { StyledQRCode } from "@/components/ui/StyledQRCode";
 
 interface QRCodeEntry {
   id: string;
@@ -122,79 +123,89 @@ const QRCodeManagement = () => {
     return `https://api.qrserver.com/v1/create-qr-code/?size=300x300&ecc=H&data=${encodeURIComponent(url)}`;
   };
 
-  const QRCodeWithLogo = ({ url }: { url: string }) => (
-    <div className="relative inline-block">
-      <img
-        src={generateQRCodeImage(url)}
-        alt="QR Code"
-        className="w-40 h-40 rounded-lg border border-border"
+  const QRCodeWithLogo = ({ url, qrcodeId }: { url: string; qrcodeId: string }) => (
+    <div id={`qr-${qrcodeId}`} className="relative inline-block p-2 bg-white rounded-lg border border-border">
+      <StyledQRCode 
+        url={url}
+        size={160}
+        logoUrl="/images/qrcode-logo.png"
+        primaryColor="#333333"
       />
-      <div className="absolute inset-0 flex items-center justify-center">
-        <div className="bg-white p-1 rounded">
-          <img
-            src="/images/qrcode-logo.png"
-            alt="Logo"
-            className="w-10 h-10"
-          />
-        </div>
-      </div>
     </div>
   );
 
   const handleDownload = async (qrcode: QRCodeEntry) => {
     const url = getQRCodeUrl(qrcode);
-    const qrImageUrl = generateQRCodeImage(url);
     
-    // Create canvas to merge QR code with logo
-    const canvas = document.createElement("canvas");
-    canvas.width = 300;
-    canvas.height = 300;
-    const ctx = canvas.getContext("2d");
+    // Find the QR code canvas rendered by react-qrcode-logo
+    const qrContainer = document.getElementById(`qr-${qrcode.id}`);
+    if (!qrContainer) {
+      // Fallback to old method
+      const qrImageUrl = generateQRCodeImage(url);
+      const canvas = document.createElement("canvas");
+      canvas.width = 300;
+      canvas.height = 300;
+      const ctx = canvas.getContext("2d");
+      
+      if (!ctx) {
+        toast.error("Erro ao gerar imagem");
+        return;
+      }
+      
+      const qrImage = new Image();
+      qrImage.crossOrigin = "anonymous";
+      
+      qrImage.onload = async () => {
+        ctx.drawImage(qrImage, 0, 0, 300, 300);
+        
+        const logo = new Image();
+        logo.src = "/images/qrcode-logo.png";
+        
+        logo.onload = () => {
+          const logoSize = 60;
+          const logoX = (300 - logoSize) / 2;
+          const logoY = (300 - logoSize) / 2;
+          
+          ctx.fillStyle = "white";
+          ctx.fillRect(logoX - 5, logoY - 5, logoSize + 10, logoSize + 10);
+          ctx.drawImage(logo, logoX, logoY, logoSize, logoSize);
+          
+          canvas.toBlob((blob) => {
+            if (blob) {
+              const downloadUrl = window.URL.createObjectURL(blob);
+              const link = document.createElement("a");
+              link.href = downloadUrl;
+              link.download = `qrcode-${qrcode.type}${qrcode.table_number ? `-mesa-${qrcode.table_number}` : ""}.png`;
+              link.click();
+              window.URL.revokeObjectURL(downloadUrl);
+              toast.success("QR Code baixado!");
+            }
+          }, "image/png");
+        };
+      };
+      
+      qrImage.src = qrImageUrl;
+      return;
+    }
     
-    if (!ctx) {
+    // Get canvas from react-qrcode-logo
+    const canvas = qrContainer.querySelector('canvas');
+    if (!canvas) {
       toast.error("Erro ao gerar imagem");
       return;
     }
     
-    // Load and draw QR code
-    const qrImage = new Image();
-    qrImage.crossOrigin = "anonymous";
-    
-    qrImage.onload = async () => {
-      ctx.drawImage(qrImage, 0, 0, 300, 300);
-      
-      // Load and draw logo in center
-      const logo = new Image();
-      logo.src = "/images/qrcode-logo.png";
-      
-      logo.onload = () => {
-        const logoSize = 60;
-        const logoX = (300 - logoSize) / 2;
-        const logoY = (300 - logoSize) / 2;
-        
-        // Draw white background for logo
-        ctx.fillStyle = "white";
-        ctx.fillRect(logoX - 5, logoY - 5, logoSize + 10, logoSize + 10);
-        
-        // Draw logo
-        ctx.drawImage(logo, logoX, logoY, logoSize, logoSize);
-        
-        // Download
-        canvas.toBlob((blob) => {
-          if (blob) {
-            const downloadUrl = window.URL.createObjectURL(blob);
-            const link = document.createElement("a");
-            link.href = downloadUrl;
-            link.download = `qrcode-${qrcode.type}${qrcode.table_number ? `-mesa-${qrcode.table_number}` : ""}.png`;
-            link.click();
-            window.URL.revokeObjectURL(downloadUrl);
-            toast.success("QR Code baixado!");
-          }
-        }, "image/png");
-      };
-    };
-    
-    qrImage.src = qrImageUrl;
+    canvas.toBlob((blob) => {
+      if (blob) {
+        const downloadUrl = window.URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = downloadUrl;
+        link.download = `qrcode-${qrcode.type}${qrcode.table_number ? `-mesa-${qrcode.table_number}` : ""}.png`;
+        link.click();
+        window.URL.revokeObjectURL(downloadUrl);
+        toast.success("QR Code baixado!");
+      }
+    }, "image/png");
   };
 
   const getTypeIcon = (type: string) => {
@@ -271,7 +282,7 @@ const QRCodeManagement = () => {
                   </div>
                   
                   <div className="flex justify-center mb-4">
-                    <QRCodeWithLogo url={getQRCodeUrl(qrcode)} />
+                    <QRCodeWithLogo url={getQRCodeUrl(qrcode)} qrcodeId={qrcode.id} />
                   </div>
 
                   <div className="flex gap-2">
