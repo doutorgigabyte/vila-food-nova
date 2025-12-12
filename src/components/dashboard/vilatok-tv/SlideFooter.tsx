@@ -81,7 +81,7 @@ export function SlideFooter({
 
   return (
     <div 
-      className="h-24 flex items-center justify-between px-12"
+      className="h-24 flex items-center justify-between px-12 z-50 relative"
       style={bgStyles[variant]}
     >
       {/* Left: Social Media Links */}
