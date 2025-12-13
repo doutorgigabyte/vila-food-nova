@@ -724,14 +724,14 @@ const UsersManagement = () => {
             <div className="space-y-2">
               <Label>Vincular a estabelecimento</Label>
               <Select 
-                value={formData.establishment_id} 
-                onValueChange={(value) => setFormData(prev => ({ ...prev, establishment_id: value }))}
+                value={formData.establishment_id || "none"} 
+                onValueChange={(value) => setFormData(prev => ({ ...prev, establishment_id: value === "none" ? "" : value }))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione (opcional)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Nenhum</SelectItem>
+                  <SelectItem value="none">Nenhum</SelectItem>
                   {establishments.map(est => (
                     <SelectItem key={est.id} value={est.id}>{est.name}</SelectItem>
                   ))}

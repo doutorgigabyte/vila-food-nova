@@ -19,6 +19,7 @@ interface CartConfirmationStepProps {
   onContinue: () => void;
   subtotal: number;
   freeDeliveryThreshold?: number;
+  acceptsDelivery?: boolean;
 }
 
 export const CartConfirmationStep = ({
@@ -30,6 +31,7 @@ export const CartConfirmationStep = ({
   onContinue,
   subtotal,
   freeDeliveryThreshold = 50,
+  acceptsDelivery = true,
 }: CartConfirmationStepProps) => {
   const [addedFromRelated, setAddedFromRelated] = useState<string[]>([]);
   
@@ -42,8 +44,8 @@ export const CartConfirmationStep = ({
 
   return (
     <div className="space-y-4">
-      {/* Free Delivery Banner */}
-      {!hasFreeDelivery && amountForFreeDelivery > 0 && (
+      {/* Free Delivery Banner - Only show if store accepts delivery */}
+      {acceptsDelivery && !hasFreeDelivery && amountForFreeDelivery > 0 && (
         <Card className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 border-green-500/20">
           <CardContent className="p-3 flex items-center gap-3">
             <div className="p-2 bg-green-500/20 rounded-full">
@@ -51,7 +53,7 @@ export const CartConfirmationStep = ({
             </div>
             <div className="flex-1">
               <p className="text-sm font-medium text-green-700 dark:text-green-400">
-                Adicione <Price value={amountForFreeDelivery} size="sm" className="text-green-700 dark:text-green-400 inline" /> e ganhe entrega grátis!
+                Adicione <Price value={amountForFreeDelivery} size="sm" className="text-green-700 dark:text-green-400 inline" /> para entrega grátis (se optar por delivery)
               </p>
               <div className="mt-1 h-1.5 bg-green-200 dark:bg-green-900 rounded-full overflow-hidden">
                 <div 
@@ -64,14 +66,14 @@ export const CartConfirmationStep = ({
         </Card>
       )}
 
-      {hasFreeDelivery && (
+      {acceptsDelivery && hasFreeDelivery && (
         <Card className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 border-green-500/20">
           <CardContent className="p-3 flex items-center gap-3">
             <div className="p-2 bg-green-500/20 rounded-full">
               <Gift className="w-4 h-4 text-green-600" />
             </div>
             <p className="text-sm font-medium text-green-700 dark:text-green-400">
-              Parabéns! Você ganhou entrega grátis!
+              Parabéns! Entrega grátis disponível!
             </p>
           </CardContent>
         </Card>
