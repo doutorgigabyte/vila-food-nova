@@ -948,7 +948,12 @@ const Checkout = () => {
             <DeliveryOptionsCards
               selectedOption={deliveryType}
               onOptionChange={setDeliveryType}
-              deliveryFee={firstEstablishment?.delivery_base_fee || 8}
+              deliveryFee={deliveryValidation.checked && deliveryValidation.fee !== undefined 
+                ? deliveryValidation.fee 
+                : (firstEstablishment?.delivery_base_fee || 8)}
+              estimatedTime={deliveryValidation.checked && deliveryValidation.canDeliver 
+                ? { min: 25, max: 40 } 
+                : undefined}
               isMultiStore={isMultiStore}
               acceptsDelivery={firstEstablishment?.accepts_delivery}
               acceptsPickup={firstEstablishment?.accepts_pickup}
