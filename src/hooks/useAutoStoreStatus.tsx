@@ -1,12 +1,19 @@
 import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
+// Support both old format (enabled, open, close) and new format (open, start, end)
+interface OperatingHoursDay {
+  // New format
+  open?: boolean;
+  start?: string;
+  end?: string;
+  // Old format (for backwards compatibility)
+  enabled?: boolean;
+  close?: string;
+}
+
 interface OperatingHours {
-  [key: string]: {
-    open: boolean;
-    start: string;
-    end: string;
-  };
+  [key: string]: OperatingHoursDay;
 }
 
 const dayMapping: { [key: number]: string } = {
@@ -19,6 +26,18 @@ const dayMapping: { [key: number]: string } = {
   6: 'saturday',
 };
 
+// Normalize to handle both formats
+function normalizeHours(hours: OperatingHoursDay): { isOpen: boolean; start: string; end: string } {
+  // Check for 'enabled' (old format) or 'open' (new format)
+  const isOpen = hours.enabled ?? hours.open ?? false;
+  // Check for 'open' as time (old format) or 'start' (new format)
+  const start = hours.start ?? (typeof hours.open === 'string' ? hours.open : '08:00');
+  // Check for 'close' (old format) or 'end' (new format)
+  const end = hours.end ?? hours.close ?? '22:00';
+  
+  return { isOpen, start, end };
+}
+
 export function isStoreOpenNow(operatingHours: OperatingHours | null): boolean {
   if (!operatingHours) return true; // Se não tem horário configurado, considera aberto
 
@@ -26,12 +45,16 @@ export function isStoreOpenNow(operatingHours: OperatingHours | null): boolean {
   const currentDay = dayMapping[now.getDay()];
   const todayHours = operatingHours[currentDay];
 
-  if (!todayHours || !todayHours.open) return false;
+  if (!todayHours) return false;
+
+  const { isOpen, start, end } = normalizeHours(todayHours);
+  
+  if (!isOpen) return false;
 
   const currentTime = now.getHours() * 60 + now.getMinutes();
   
-  const [startHour, startMin] = todayHours.start.split(':').map(Number);
-  const [endHour, endMin] = todayHours.end.split(':').map(Number);
+  const [startHour, startMin] = start.split(':').map(Number);
+  const [endHour, endMin] = end.split(':').map(Number);
   
   const startTime = startHour * 60 + startMin;
   const endTime = endHour * 60 + endMin;

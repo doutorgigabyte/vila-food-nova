@@ -29,7 +29,11 @@ import {
   Users,
   CheckCircle,
   XCircle,
-  Loader2
+  Loader2,
+  Share2,
+  Bot,
+  Instagram,
+  Globe
 } from "lucide-react";
 import { ImageUpload } from "@/components/ImageUpload";
 
@@ -198,6 +202,16 @@ const EstablishmentSettings = () => {
     pix_key: "",
     mercado_pago_token: "",
     mp_public_key: "",
+    // Social Media
+    instagram: "",
+    facebook: "",
+    tiktok: "",
+    twitter: "",
+    youtube: "",
+    website: "",
+    // AI Agent
+    ai_prompt: "",
+    ai_enabled: false,
   });
   
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
@@ -263,6 +277,16 @@ const EstablishmentSettings = () => {
         pix_key: data.pix_key || "",
         mercado_pago_token: data.mercado_pago_token || "",
         mp_public_key: data.mp_public_key || "",
+        // Social Media (use optional chaining since columns may not exist yet)
+        instagram: (data as any).instagram || "",
+        facebook: (data as any).facebook || "",
+        tiktok: (data as any).tiktok || "",
+        twitter: (data as any).twitter || "",
+        youtube: (data as any).youtube || "",
+        website: (data as any).website || "",
+        // AI Agent
+        ai_prompt: (data as any).ai_prompt || "",
+        ai_enabled: (data as any).ai_enabled ?? false,
       });
       setLogoUrl(data.logo_url);
       setBannerUrl(data.banner_url);
@@ -407,34 +431,42 @@ const EstablishmentSettings = () => {
 
         <div className="p-6">
           <Tabs defaultValue="profile" className="space-y-6">
-            <TabsList className="flex-wrap h-auto p-1">
-              <TabsTrigger value="profile" className="gap-2">
+            <TabsList className="flex flex-wrap h-auto gap-1 p-1 bg-muted/50">
+              <TabsTrigger value="profile" className="gap-2 text-xs sm:text-sm">
                 <Store className="w-4 h-4" />
-                Perfil
+                <span className="hidden sm:inline">Perfil</span>
               </TabsTrigger>
-              <TabsTrigger value="hours" className="gap-2">
+              <TabsTrigger value="hours" className="gap-2 text-xs sm:text-sm">
                 <Clock className="w-4 h-4" />
-                Horários
+                <span className="hidden sm:inline">Horários</span>
               </TabsTrigger>
-              <TabsTrigger value="payments" className="gap-2">
+              <TabsTrigger value="payments" className="gap-2 text-xs sm:text-sm">
                 <CreditCard className="w-4 h-4" />
-                Pagamentos
+                <span className="hidden sm:inline">Pagamentos</span>
               </TabsTrigger>
-              <TabsTrigger value="delivery" className="gap-2">
+              <TabsTrigger value="delivery" className="gap-2 text-xs sm:text-sm">
                 <Truck className="w-4 h-4" />
-                Delivery
+                <span className="hidden sm:inline">Delivery</span>
               </TabsTrigger>
-              <TabsTrigger value="appearance" className="gap-2">
+              <TabsTrigger value="appearance" className="gap-2 text-xs sm:text-sm">
                 <Palette className="w-4 h-4" />
-                Aparência
+                <span className="hidden sm:inline">Aparência</span>
               </TabsTrigger>
-              <TabsTrigger value="notifications" className="gap-2">
+              <TabsTrigger value="social" className="gap-2 text-xs sm:text-sm">
+                <Share2 className="w-4 h-4" />
+                <span className="hidden sm:inline">Redes</span>
+              </TabsTrigger>
+              <TabsTrigger value="ai" className="gap-2 text-xs sm:text-sm">
+                <Bot className="w-4 h-4" />
+                <span className="hidden sm:inline">IA</span>
+              </TabsTrigger>
+              <TabsTrigger value="notifications" className="gap-2 text-xs sm:text-sm">
                 <Bell className="w-4 h-4" />
-                Notificações
+                <span className="hidden sm:inline">Alertas</span>
               </TabsTrigger>
-              <TabsTrigger value="drivers" className="gap-2">
+              <TabsTrigger value="drivers" className="gap-2 text-xs sm:text-sm">
                 <Users className="w-4 h-4" />
-                Entregadores
+                <span className="hidden sm:inline">Entrega</span>
               </TabsTrigger>
             </TabsList>
 
@@ -776,11 +808,135 @@ const EstablishmentSettings = () => {
               </Card>
             </TabsContent>
 
+            {/* Social Media Tab */}
+            <TabsContent value="social">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Share2 className="w-5 h-5" />
+                    Redes Sociais
+                  </CardTitle>
+                  <CardDescription>Links das suas redes sociais (serão exibidos no cardápio e VilaTok TV)</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="instagram" className="flex items-center gap-2">
+                        <Instagram className="w-4 h-4 text-pink-500" />
+                        Instagram
+                      </Label>
+                      <Input
+                        id="instagram"
+                        placeholder="@seuinstagram"
+                        value={formData.instagram}
+                        onChange={(e) => setFormData({ ...formData, instagram: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="facebook" className="flex items-center gap-2">
+                        <Globe className="w-4 h-4 text-blue-600" />
+                        Facebook
+                      </Label>
+                      <Input
+                        id="facebook"
+                        placeholder="facebook.com/suapagina"
+                        value={formData.facebook}
+                        onChange={(e) => setFormData({ ...formData, facebook: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="tiktok">TikTok</Label>
+                      <Input
+                        id="tiktok"
+                        placeholder="@seutiktok"
+                        value={formData.tiktok}
+                        onChange={(e) => setFormData({ ...formData, tiktok: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="youtube">YouTube</Label>
+                      <Input
+                        id="youtube"
+                        placeholder="youtube.com/@seucanal"
+                        value={formData.youtube}
+                        onChange={(e) => setFormData({ ...formData, youtube: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="twitter">Twitter / X</Label>
+                      <Input
+                        id="twitter"
+                        placeholder="@seutwitter"
+                        value={formData.twitter}
+                        onChange={(e) => setFormData({ ...formData, twitter: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="website" className="flex items-center gap-2">
+                        <Globe className="w-4 h-4" />
+                        Website
+                      </Label>
+                      <Input
+                        id="website"
+                        placeholder="https://seusite.com.br"
+                        value={formData.website}
+                        onChange={(e) => setFormData({ ...formData, website: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* AI Agent Tab */}
+            <TabsContent value="ai">
+              <div className="grid gap-6 md:grid-cols-2">
+                <Card className="md:col-span-2">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Bot className="w-5 h-5" />
+                      Agente de IA
+                    </CardTitle>
+                    <CardDescription>Configure o comportamento do seu assistente virtual via WhatsApp</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center justify-between p-4 border rounded-lg">
+                      <div>
+                        <p className="font-medium">Ativar Agente IA</p>
+                        <p className="text-sm text-muted-foreground">Permitir que o bot responda automaticamente no WhatsApp</p>
+                      </div>
+                      <Switch
+                        checked={formData.ai_enabled}
+                        onCheckedChange={(checked) => setFormData({ ...formData, ai_enabled: checked })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="ai_prompt">Prompt do Sistema (Personalidade do Bot)</Label>
+                      <Textarea
+                        id="ai_prompt"
+                        placeholder="Você é um atendente amigável de uma lanchonete. Responda de forma cordial e ajude o cliente a fazer pedidos..."
+                        value={formData.ai_prompt}
+                        onChange={(e) => setFormData({ ...formData, ai_prompt: e.target.value })}
+                        rows={6}
+                        className="font-mono text-sm"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Este texto define como o bot deve se comportar. Inclua instruções sobre tom de voz, produtos em destaque, e como lidar com dúvidas.
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+
             {/* Notifications Tab */}
             <TabsContent value="notifications">
               <Card>
                 <CardHeader>
-                  <CardTitle>Notificações</CardTitle>
+                  <CardTitle className="flex items-center gap-2">
+                    <Bell className="w-5 h-5" />
+                    Notificações
+                  </CardTitle>
                   <CardDescription>Configure alertas e sons</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
