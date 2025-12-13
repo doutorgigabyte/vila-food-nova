@@ -145,13 +145,13 @@ const getMenuGroups = (baseUrl: string): MenuGroup[] => [
     ],
   },
   {
-    title: "Configurações",
+    title: "Administração",
     icon: Settings,
     items: [
       { icon: QrCode, label: "QR Code", href: `${baseUrl}/qrcode` },
       { icon: Plug, label: "Integrações", href: `${baseUrl}/integracoes` },
       { icon: Users, label: "Equipe", href: `${baseUrl}/equipe`, badge: "Novo" },
-      { icon: Settings, label: "Configurações", href: `${baseUrl}/configuracoes` },
+      { icon: Settings, label: "Preferências", href: `${baseUrl}/configuracoes` },
     ],
   },
 ];
@@ -205,43 +205,44 @@ const DashboardSidebar = ({
       isOpen ? "translate-x-0" : "-translate-x-full"
     }`}>
       <div className="flex flex-col h-full">
-        {/* Logo / Establishment */}
-        <div className="p-4 border-b border-border flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-background flex items-center justify-center overflow-hidden">
-              {establishment?.logo_url ? (
-                <img 
-                  src={establishment.logo_url} 
-                  alt={establishment.name} 
-                  className="w-full h-full object-cover" 
-                />
-              ) : (
-                <img 
-                  src={logoHorizontal} 
-                  alt="VilaFood" 
-                  className="w-full h-full object-contain p-1" 
-                />
-              )}
+        {/* Establishment Header - Logo e Nome da Loja */}
+        <div className="p-4 border-b border-border">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+              {/* Logo circular do estabelecimento */}
+              <div className="w-12 h-12 rounded-full bg-primary/10 border-2 border-primary/20 flex items-center justify-center overflow-hidden shrink-0">
+                {establishment?.logo_url ? (
+                  <img 
+                    src={establishment.logo_url} 
+                    alt={establishment.name} 
+                    className="w-full h-full object-cover" 
+                  />
+                ) : (
+                  <span className="text-primary font-bold text-lg">
+                    {establishment?.name?.substring(0, 2).toUpperCase() || 'VF'}
+                  </span>
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <span className="font-bold text-base truncate block">
+                  {establishment?.name || 'Minha Loja'}
+                </span>
+                <Badge variant="secondary" className="text-xs mt-0.5">
+                  Painel da Loja
+                </Badge>
+              </div>
             </div>
-            <div className="flex-1 min-w-0">
-              <span className="font-bold text-sm truncate block">
-                {establishment?.name || 'VilaFood'}
-              </span>
-              <Badge variant="outline" className="text-xs">
-                Painel
-              </Badge>
+            <div className="flex items-center gap-1 shrink-0">
+              <NotificationCenter />
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="lg:hidden"
+                onClick={onClose}
+              >
+                <X className="w-5 h-5" />
+              </Button>
             </div>
-          </Link>
-          <div className="flex items-center gap-1">
-            <NotificationCenter />
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="lg:hidden shrink-0"
-              onClick={onClose}
-            >
-              <X className="w-5 h-5" />
-            </Button>
           </div>
         </div>
 
@@ -328,31 +329,26 @@ const DashboardSidebar = ({
           })}
         </nav>
 
-        {/* User Footer */}
-        <div className="p-4 border-t border-border">
+        {/* User Footer - Usuário logado */}
+        <div className="p-4 border-t border-border bg-muted/30">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
-              {establishment?.logo_url ? (
-                <img 
-                  src={establishment.logo_url} 
-                  alt="" 
-                  className="w-full h-full object-cover" 
-                />
-              ) : (
-                <span className="text-primary font-medium text-sm">
-                  {establishment?.name?.substring(0, 2).toUpperCase() || 'VF'}
-                </span>
-              )}
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden shrink-0">
+              <span className="text-primary font-medium text-sm">
+                {user?.email?.substring(0, 2).toUpperCase() || 'US'}
+              </span>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-medium text-sm truncate">{establishment?.name || 'Minha Loja'}</p>
-              <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+              <p className="font-medium text-sm truncate">{user?.email?.split('@')[0] || 'Usuário'}</p>
+              <p className="text-xs text-muted-foreground truncate">
+                {appRole === 'super_admin' ? 'Super Admin' : 'Proprietário'}
+              </p>
             </div>
             <Button 
               variant="ghost" 
               size="icon"
               onClick={handleSignOut}
               title="Sair"
+              className="shrink-0"
             >
               <LogOut className="w-4 h-4" />
             </Button>
