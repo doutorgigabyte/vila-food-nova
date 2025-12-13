@@ -5262,6 +5262,51 @@ export type Database = {
           },
         ]
       }
+      waiter_tab_history: {
+        Row: {
+          action: string
+          created_at: string
+          details: Json | null
+          establishment_id: string
+          id: string
+          tab_id: string
+          user_name: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          details?: Json | null
+          establishment_id: string
+          id?: string
+          tab_id: string
+          user_name?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          details?: Json | null
+          establishment_id?: string
+          id?: string
+          tab_id?: string
+          user_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "waiter_tab_history_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "waiter_tab_history_tab_id_fkey"
+            columns: ["tab_id"]
+            isOneToOne: false
+            referencedRelation: "waiter_tabs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       waiter_tabs: {
         Row: {
           closed_at: string | null

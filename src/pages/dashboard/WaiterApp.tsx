@@ -11,7 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { 
   Plus, Minus, ClipboardList, Users, DollarSign, Trash2, Check, 
   Search, Clock, CreditCard, QrCode, Banknote, Receipt, 
-  ChefHat, Grid3X3, LayoutGrid, X, Printer, Split, Send
+  ChefHat, Grid3X3, LayoutGrid, X, Printer, Split, Send, History
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -78,6 +78,45 @@ const WaiterApp = () => {
   const [splitCount, setSplitCount] = useState(1);
   const [establishmentId, setEstablishmentId] = useState<string | null>(null);
   const [userName, setUserName] = useState<string>("");
+  const [historyDialog, setHistoryDialog] = useState(false);
+  const [tabHistory, setTabHistory] = useState<any[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+
+  // Helper to log tab history
+  const logTabHistory = async (tabId: string, action: string, details: any = {}) => {
+    if (!establishmentId) return;
+    try {
+      await supabase.from("waiter_tab_history").insert({
+        tab_id: tabId,
+        establishment_id: establishmentId,
+        action,
+        details,
+        user_name: userName
+      });
+    } catch (error) {
+      console.error("Error logging tab history:", error);
+    }
+  };
+
+  // Fetch tab history
+  const fetchTabHistory = async (tabId: string) => {
+    setLoadingHistory(true);
+    try {
+      const { data, error } = await supabase
+        .from("waiter_tab_history")
+        .select("*")
+        .eq("tab_id", tabId)
+        .order("created_at", { ascending: false });
+      
+      if (!error && data) {
+        setTabHistory(data);
+      }
+    } catch (error) {
+      console.error("Error fetching tab history:", error);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
 
   useEffect(() => {
     fetchData();
@@ -278,6 +317,13 @@ const WaiterApp = () => {
       setSelectedTab(updatedTab);
       setTabs(tabs.map(t => t.id === selectedTab.id ? updatedTab : t));
       toast.success(`${product.name} adicionado`);
+      
+      // Log history
+      logTabHistory(selectedTab.id, existingItem ? 'item_updated' : 'item_added', {
+        product_name: product.name,
+        quantity: existingItem ? existingItem.quantity + 1 : 1,
+        price: product.price
+      });
     }
   };
 
@@ -304,6 +350,17 @@ const WaiterApp = () => {
       const updatedTab = { ...selectedTab, items: newItems, subtotal, total };
       setSelectedTab(updatedTab);
       setTabs(tabs.map(t => t.id === selectedTab.id ? updatedTab : t));
+      
+      // Log history for quantity change
+      const item = selectedTab.items.find(i => i.product_id === productId && i.sent_to_kitchen === sentToKitchen);
+      if (item) {
+        const action = delta > 0 ? 'item_updated' : (item.quantity + delta <= 0 ? 'item_removed' : 'item_updated');
+        logTabHistory(selectedTab.id, action, {
+          product_name: item.product_name,
+          quantity_change: delta,
+          new_quantity: Math.max(0, item.quantity + delta)
+        });
+      }
     }
   };
 
@@ -325,6 +382,13 @@ const WaiterApp = () => {
       setSelectedTab(updatedTab);
       setTabs(tabs.map(t => t.id === selectedTab.id ? updatedTab : t));
       toast.success("Pedido enviado para a cozinha!");
+      
+      // Log history
+      const pendingItemsToSend = selectedTab.items.filter(i => !i.sent_to_kitchen);
+      logTabHistory(selectedTab.id, 'sent_to_kitchen', {
+        items_count: pendingItemsToSend.length,
+        items: pendingItemsToSend.map(i => ({ name: i.product_name, quantity: i.quantity }))
+      });
     }
   };
 
@@ -341,6 +405,13 @@ const WaiterApp = () => {
       .eq("id", selectedTab.id);
 
     if (!error) {
+      // Log history before clearing selection
+      logTabHistory(selectedTab.id, 'tab_closed', {
+        payment_method: paymentMethod,
+        split_count: splitCount,
+        total: selectedTab.total
+      });
+      
       setTabs(tabs.filter(t => t.id !== selectedTab.id));
       setSelectedTab(null);
       setCloseTabDialog(false);
@@ -635,10 +706,21 @@ const WaiterApp = () => {
                     <span className="text-primary">R$ {(selectedTab.total || 0).toFixed(2)}</span>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-3 gap-2">
                     <Button variant="outline" size="sm">
                       <Printer className="w-4 h-4 mr-1" />
                       Imprimir
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => {
+                        fetchTabHistory(selectedTab.id);
+                        setHistoryDialog(true);
+                      }}
+                    >
+                      <History className="w-4 h-4 mr-1" />
+                      Histórico
                     </Button>
                     <Dialog open={closeTabDialog} onOpenChange={setCloseTabDialog}>
                       <DialogTrigger asChild>
@@ -794,6 +876,73 @@ const WaiterApp = () => {
               Abrir Comanda
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Histórico */}
+      <Dialog open={historyDialog} onOpenChange={setHistoryDialog}>
+        <DialogContent className="max-w-md max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <History className="w-5 h-5" />
+              Histórico de Alterações
+            </DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="flex-1 -mx-6 px-6">
+            {loadingHistory ? (
+              <div className="text-center py-8 text-muted-foreground">
+                Carregando histórico...
+              </div>
+            ) : tabHistory.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                Nenhuma alteração registrada
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {tabHistory.map((entry) => (
+                  <div key={entry.id} className="p-3 bg-muted/50 rounded-lg border">
+                    <div className="flex items-center justify-between mb-1">
+                      <Badge variant={
+                        entry.action === 'item_added' ? 'default' :
+                        entry.action === 'item_removed' ? 'destructive' :
+                        entry.action === 'sent_to_kitchen' ? 'secondary' :
+                        entry.action === 'tab_closed' ? 'outline' : 'secondary'
+                      }>
+                        {entry.action === 'item_added' && 'Item Adicionado'}
+                        {entry.action === 'item_removed' && 'Item Removido'}
+                        {entry.action === 'item_updated' && 'Item Atualizado'}
+                        {entry.action === 'sent_to_kitchen' && 'Enviado à Cozinha'}
+                        {entry.action === 'tab_closed' && 'Comanda Fechada'}
+                        {entry.action === 'discount_applied' && 'Desconto Aplicado'}
+                      </Badge>
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(entry.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                    <p className="text-sm">
+                      {entry.details?.product_name && (
+                        <span className="font-medium">{entry.details.product_name}</span>
+                      )}
+                      {entry.details?.quantity && (
+                        <span> × {entry.details.quantity}</span>
+                      )}
+                      {entry.details?.items_count && (
+                        <span>{entry.details.items_count} itens</span>
+                      )}
+                      {entry.details?.payment_method && (
+                        <span>Pagamento: {entry.details.payment_method}</span>
+                      )}
+                    </p>
+                    {entry.user_name && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Por: {entry.user_name}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </ScrollArea>
         </DialogContent>
       </Dialog>
     </DashboardLayout>
