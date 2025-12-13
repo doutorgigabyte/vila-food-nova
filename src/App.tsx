@@ -37,6 +37,7 @@ const Menu = lazy(() => import("./pages/Menu"));
 const Favorites = lazy(() => import("./pages/Favorites"));
 const ProductsListing = lazy(() => import("./pages/ProductsListing"));
 const ProductDetail = lazy(() => import("./pages/ProductDetail"));
+const ProductKitDetail = lazy(() => import("./pages/ProductKitDetail"));
 const VilaTokPage = lazy(() => import("./pages/VilaTok"));
 const VilaTokProfile = lazy(() => import("./pages/VilaTokProfile"));
 const CategoryPage = lazy(() => import("./pages/CategoryPage"));
@@ -231,6 +232,7 @@ const AppRoutes = () => {
               <Route path="/enderecos" element={<Addresses />} />
               <Route path="/produtos/:section" element={<ProductsListing />} />
               <Route path="/produto/:id" element={<ProductDetail />} />
+              <Route path="/kit/:id" element={<ProductKitDetail />} />
               {/* Dashboard routes with slug parameter for admin access */}
               <Route path="/painel" element={<EstablishmentDashboard />} />
               <Route path="/painel/:slug" element={<EstablishmentDashboard />} />
