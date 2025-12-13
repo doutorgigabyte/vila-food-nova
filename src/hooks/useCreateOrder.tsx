@@ -104,23 +104,54 @@ export const useCreateOrder = () => {
       // DEBUG: Log full payload for debugging
       console.log('[useCreateOrder] Full payload:', JSON.stringify(orderPayload, null, 2));
 
-      // Insert the order
-      const { data: order, error } = await supabase
-        .from('orders')
-        .insert([orderPayload])
-        .select()
-        .single();
-
-      if (error) {
-        console.error('[useCreateOrder] Supabase error:', {
-          code: error.code,
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          fullError: JSON.stringify(error),
+      // Insert the order using RPC function to bypass RLS issues
+      const { data: rpcResult, error: rpcError } = await supabase
+        .rpc('create_order', {
+          p_establishment_id: orderPayload.establishment_id,
+          p_customer_id: orderPayload.customer_id,
+          p_delivery_type: orderPayload.delivery_type,
+          p_payment_method: orderPayload.payment_method,
+          p_items: orderPayload.items,
+          p_subtotal: orderPayload.subtotal,
+          p_delivery_fee: orderPayload.delivery_fee,
+          p_discount: orderPayload.discount,
+          p_platform_fee: orderPayload.platform_fee,
+          p_order_source: orderPayload.order_source,
+          p_total: orderPayload.total,
+          p_delivery_address: orderPayload.delivery_address,
+          p_change_for: orderPayload.change_for,
+          p_observations: orderPayload.observations,
+          p_table_number: orderPayload.table_number,
+          p_scheduled_for: orderPayload.scheduled_for,
+          p_whatsapp_tracking_enabled: orderPayload.whatsapp_tracking_enabled,
+          p_customer_phone: orderPayload.customer_phone,
+          p_cpf: orderPayload.cpf,
+          p_out_of_stock_action: orderPayload.out_of_stock_action,
         });
-        throw new Error(error.message || 'Falha ao criar pedido');
+
+      if (rpcError) {
+        console.error('[useCreateOrder] RPC error:', {
+          code: rpcError.code,
+          message: rpcError.message,
+          details: rpcError.details,
+          hint: rpcError.hint,
+        });
+        throw new Error(rpcError.message || 'Falha ao criar pedido');
       }
+
+      const result = rpcResult as { success: boolean; id?: string; order_number?: number; error?: string };
+      
+      if (!result.success) {
+        console.error('[useCreateOrder] Order creation failed:', result.error);
+        throw new Error(result.error || 'Falha ao criar pedido');
+      }
+
+      // Build order object from RPC result
+      const order = {
+        id: result.id,
+        order_number: result.order_number,
+        status: 'pending' as const,
+      };
 
       console.log('[useCreateOrder] Order created successfully:', {
         id: order.id,
