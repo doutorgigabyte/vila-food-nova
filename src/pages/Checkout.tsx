@@ -982,6 +982,9 @@ const Checkout = () => {
               estimatedTime={deliveryValidation.checked && deliveryValidation.canDeliver 
                 ? { min: 25, max: 40 } 
                 : undefined}
+              pickupDistance={deliveryValidation.checked && deliveryValidation.distance 
+                ? `${deliveryValidation.distance.toFixed(1)} km` 
+                : undefined}
               isMultiStore={isMultiStore}
               acceptsDelivery={firstEstablishment?.accepts_delivery}
               acceptsPickup={firstEstablishment?.accepts_pickup}

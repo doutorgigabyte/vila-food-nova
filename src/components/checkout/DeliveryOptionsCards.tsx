@@ -32,7 +32,7 @@ export const DeliveryOptionsCards = ({
   onOptionChange,
   deliveryFee,
   estimatedTime = { min: 25, max: 40 },
-  pickupDistance = "1.2 km",
+  pickupDistance,
   isMultiStore = false,
   acceptsDelivery = true,
   acceptsPickup = true,
@@ -60,7 +60,7 @@ export const DeliveryOptionsCards = ({
     {
       id: "pickup",
       label: "Retirada",
-      description: pickupDistance,
+      description: pickupDistance || "No local",
       price: 0,
       icon: <Store className="w-5 h-5" />,
       disabled: !acceptsPickup,
