@@ -127,6 +127,7 @@ const PixelsDiagnostic = lazy(() => import("./pages/admin/PixelsDiagnostic"));
 const AdminWhatsAppManagement = lazy(() => import("./pages/admin/AdminWhatsAppManagement"));
 const SystemBroadcastCRM = lazy(() => import("./pages/admin/SystemBroadcastCRM"));
 const SecurityDocumentation = lazy(() => import("./pages/admin/SecurityDocumentation"));
+const TestingGuide = lazy(() => import("./pages/admin/TestingGuide"));
 const TermsOfUse = lazy(() => import("./pages/TermsOfUse"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 import { LojistaToPanel } from "./components/LegacyRedirects";
@@ -338,6 +339,7 @@ const AppRoutes = () => {
               <Route path="/admin/whatsapp" element={<ProtectedAdminRoute><AdminWhatsAppManagement /></ProtectedAdminRoute>} />
               <Route path="/admin/crm-disparos" element={<ProtectedAdminRoute><SystemBroadcastCRM /></ProtectedAdminRoute>} />
               <Route path="/admin/documentacao-seguranca" element={<ProtectedAdminRoute><SecurityDocumentation /></ProtectedAdminRoute>} />
+              <Route path="/admin/guia-testes" element={<ProtectedAdminRoute><TestingGuide /></ProtectedAdminRoute>} />
               {/* Affiliate routes */}
               <Route path="/afiliado" element={<AffiliateDashboard />} />
               <Route path="/afiliado/indicacoes" element={<AffiliateReferrals />} />

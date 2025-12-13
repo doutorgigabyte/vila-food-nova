@@ -56,7 +56,7 @@ const TestingGuide = () => {
   const [activeTab, setActiveTab] = useState('tester1');
 
   return (
-    <AdminLayout title="Guia de Testes" icon={<FileText className="h-6 w-6" />}>
+    <AdminLayout title="Guia de Testes">
       <div className="space-y-6">
         {/* Credenciais */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
