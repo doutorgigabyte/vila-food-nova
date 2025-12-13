@@ -16,6 +16,62 @@ interface PointRequest {
   payment_intent_id?: string;
 }
 
+// Helper function to authenticate request and verify establishment ownership
+async function authenticateAndVerify(req: Request, supabase: any, establishmentId: string): Promise<{ authorized: boolean; userId?: string; error?: string }> {
+  const authHeader = req.headers.get('authorization');
+  if (!authHeader) {
+    return { authorized: false, error: 'Autenticação necessária' };
+  }
+
+  const supabaseAuth = createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_ANON_KEY')!,
+    { global: { headers: { Authorization: authHeader } } }
+  );
+
+  const { data: { user }, error: userError } = await supabaseAuth.auth.getUser();
+  if (userError || !user) {
+    return { authorized: false, error: 'Token inválido ou expirado' };
+  }
+
+  // Check if user is owner or super_admin
+  const { data: establishment } = await supabase
+    .from('establishments')
+    .select('owner_id')
+    .eq('id', establishmentId)
+    .single();
+
+  if (establishment?.owner_id === user.id) {
+    return { authorized: true, userId: user.id };
+  }
+
+  const { data: userRole } = await supabase
+    .from('user_roles')
+    .select('role')
+    .eq('user_id', user.id)
+    .eq('role', 'super_admin')
+    .single();
+
+  if (userRole) {
+    return { authorized: true, userId: user.id };
+  }
+
+  // Check establishment_users
+  const { data: estUser } = await supabase
+    .from('establishment_users')
+    .select('role')
+    .eq('user_id', user.id)
+    .eq('establishment_id', establishmentId)
+    .eq('is_active', true)
+    .single();
+
+  if (estUser) {
+    return { authorized: true, userId: user.id };
+  }
+
+  return { authorized: false, error: 'Sem permissão para este estabelecimento' };
+}
+
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -38,6 +94,17 @@ serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    // SECURITY: Authenticate and verify access
+    const authResult = await authenticateAndVerify(req, supabase, establishment_id);
+    if (!authResult.authorized) {
+      return new Response(
+        JSON.stringify({ success: false, error: authResult.error }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log(`[mercadopago-point] Authenticated user: ${authResult.userId}`);
 
     // Fetch establishment with Mercado Pago credentials
     const { data: establishment, error: estError } = await supabase
