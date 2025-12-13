@@ -261,32 +261,33 @@ const AddressAutocomplete = ({
       <div className="space-y-2">
         <Label>Buscar endereço</Label>
         <div className="relative">
-          <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
           <Input
             placeholder="Digite seu endereço..."
             value={searchQuery}
             onChange={(e) => handleSearchChange(e.target.value)}
             className="pl-10"
           />
+          
+          {/* Suggestions dropdown - now inside relative container */}
+          {suggestions.length > 0 && (
+            <Card className="absolute left-0 right-0 z-50 mt-1 max-h-60 overflow-auto shadow-lg">
+              <CardContent className="p-0">
+                {suggestions.map((suggestion) => (
+                  <button
+                    key={suggestion.place_id}
+                    type="button"
+                    onClick={() => handleSelectSuggestion(suggestion.place_id, suggestion.description)}
+                    className="w-full px-4 py-3 text-left hover:bg-muted transition-colors border-b last:border-0 flex items-start gap-3"
+                  >
+                    <MapPin className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                    <span className="text-sm">{suggestion.description}</span>
+                  </button>
+                ))}
+              </CardContent>
+            </Card>
+          )}
         </div>
-        
-        {/* Suggestions dropdown */}
-        {suggestions.length > 0 && (
-          <Card className="absolute z-50 w-full mt-1 max-h-60 overflow-auto">
-            <CardContent className="p-0">
-              {suggestions.map((suggestion) => (
-                <button
-                  key={suggestion.place_id}
-                  onClick={() => handleSelectSuggestion(suggestion.place_id, suggestion.description)}
-                  className="w-full px-4 py-3 text-left hover:bg-muted transition-colors border-b last:border-0 flex items-start gap-3"
-                >
-                  <MapPin className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-                  <span className="text-sm">{suggestion.description}</span>
-                </button>
-              ))}
-            </CardContent>
-          </Card>
-        )}
       </div>
 
       {/* GPS Button */}
