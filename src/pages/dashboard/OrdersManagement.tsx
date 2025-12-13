@@ -190,7 +190,8 @@ const OrdersManagement = () => {
       }
 
       // Criar notificação quando status muda para ready
-      if (newStatus === 'ready' && establishmentId) {
+      if (newStatus === 'ready' && establishmentId && order) {
+        // Criar notificação interna
         await supabase.from('notifications').insert({
           establishment_id: establishmentId,
           type: 'order_ready',
@@ -200,6 +201,26 @@ const OrdersManagement = () => {
           target_roles: ['manager', 'cashier', 'waiter', 'delivery'],
           data: { order_id: orderId, order_number: order?.order_number }
         });
+
+        // Se for delivery, criar solicitação de entrega para motoristas
+        if (order.delivery_type === 'delivery') {
+          const expiresAt = new Date();
+          expiresAt.setMinutes(expiresAt.getMinutes() + 5); // 5 min para aceitar
+
+          await supabase.from('delivery_requests').insert({
+            order_id: orderId,
+            establishment_id: establishmentId,
+            status: 'pending',
+            calculated_fee: order.delivery_fee || 0,
+            driver_earnings: order.delivery_fee || 0,
+            expires_at: expiresAt.toISOString(),
+            pickup_address: establishment?.address || '',
+            delivery_address: order.delivery_address 
+              ? `${order.delivery_address.street}, ${order.delivery_address.number} - ${order.delivery_address.neighborhood}`
+              : '',
+            customer_name: order.delivery_address?.name || 'Cliente'
+          });
+        }
       }
       
       toast.success(`Pedido atualizado para: ${statusConfig[newStatus].label}`);

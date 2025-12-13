@@ -35,6 +35,24 @@ export const useDeliveryRequests = (driverId?: string) => {
     if (!driverId) return;
     
     try {
+      // Primeiro, buscar os estabelecimentos vinculados ao motorista
+      const { data: links, error: linksError } = await supabase
+        .from('driver_establishment_links')
+        .select('establishment_id')
+        .eq('driver_id', driverId)
+        .eq('status', 'approved');
+
+      if (linksError) throw linksError;
+
+      const linkedEstablishmentIds = links?.map(l => l.establishment_id) || [];
+      
+      if (linkedEstablishmentIds.length === 0) {
+        setRequests([]);
+        setLoading(false);
+        return;
+      }
+
+      // Buscar requests apenas dos estabelecimentos vinculados
       const { data, error } = await supabase
         .from('delivery_requests')
         .select(`
@@ -42,6 +60,7 @@ export const useDeliveryRequests = (driverId?: string) => {
           establishment:establishments(name, logo_url)
         `)
         .eq('status', 'pending')
+        .in('establishment_id', linkedEstablishmentIds)
         .gt('expires_at', new Date().toISOString())
         .order('created_at', { ascending: false });
 
