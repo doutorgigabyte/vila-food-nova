@@ -18,6 +18,7 @@ interface DeliveryZone {
   id: string;
   name: string;
   type: string;
+  delivery_mode: 'free' | 'minimum' | 'standard' | 'turbo';
   coordinates: { lat: number; lng: number }[];
   radius_km: number | null;
   neighborhoods: string[];
@@ -25,6 +26,24 @@ interface DeliveryZone {
   fee: number;
   min_time: number;
   max_time: number;
+  turbo_min_time: number;
+  turbo_max_time: number;
+}
+
+interface Establishment {
+  id: string;
+  name: string;
+  latitude: number;
+  longitude: number;
+  max_delivery_radius_km: number;
+  delivery_base_fee: number;
+  delivery_fee_per_km: number;
+  free_delivery_radius_km: number;
+  minimum_delivery_fee: number;
+  minimum_delivery_radius_km: number;
+  turbo_fee: number;
+  turbo_radius_km: number;
+  delivery_calculation_mode: 'distance' | 'fixed' | 'zone';
 }
 
 // Calculate distance using Haversine formula
@@ -62,6 +81,16 @@ function isPointInPolygon(
   return inside;
 }
 
+// Check if point is within radius
+function isPointInRadius(
+  point: { lat: number; lng: number },
+  center: { lat: number; lng: number },
+  radiusKm: number
+): boolean {
+  const distance = calculateDistance(center.lat, center.lng, point.lat, point.lng);
+  return distance <= radiusKm;
+}
+
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
@@ -79,10 +108,15 @@ serve(async (req) => {
     console.log(`Calculating delivery for establishment ${establishment_id}`);
     console.log(`Customer location: ${customer_lat}, ${customer_lng}`);
 
-    // Get establishment data
+    // Get establishment data with new delivery configuration fields
     const { data: establishment, error: estError } = await supabase
       .from("establishments")
-      .select("id, latitude, longitude, max_delivery_radius_km, delivery_base_fee, delivery_fee_per_km, name")
+      .select(`
+        id, name, latitude, longitude, 
+        max_delivery_radius_km, delivery_base_fee, delivery_fee_per_km,
+        free_delivery_radius_km, minimum_delivery_fee, minimum_delivery_radius_km,
+        turbo_fee, turbo_radius_km, delivery_calculation_mode
+      `)
       .eq("id", establishment_id)
       .single();
 
@@ -110,6 +144,9 @@ serve(async (req) => {
       );
     }
 
+    const estLocation = { lat: establishment.latitude, lng: establishment.longitude };
+    const customerPoint = { lat: customer_lat, lng: customer_lng };
+
     // Calculate distance
     const distance = calculateDistance(
       establishment.latitude,
@@ -120,7 +157,7 @@ serve(async (req) => {
 
     console.log(`Distance: ${distance.toFixed(2)} km`);
 
-    // Get delivery zones
+    // Get delivery zones by mode
     const { data: zones, error: zonesError } = await supabase
       .from("delivery_zones")
       .select("*")
@@ -131,80 +168,204 @@ serve(async (req) => {
       console.error("Error fetching zones:", zonesError);
     }
 
-    let matchedZone: DeliveryZone | null = null;
-    const customerPoint = { lat: customer_lat, lng: customer_lng };
+    // Group zones by delivery mode
+    const zonesByMode: Record<string, DeliveryZone[]> = {
+      free: [],
+      minimum: [],
+      standard: [],
+      turbo: []
+    };
 
-    // Check zones
-    if (zones && zones.length > 0) {
+    if (zones) {
       for (const zone of zones) {
-        // Check by CEP
-        if (customer_cep && zone.zip_codes?.includes(customer_cep)) {
-          matchedZone = zone;
-          console.log(`Matched by CEP: ${zone.name}`);
-          break;
-        }
-
-        // Check by radius
-        if (zone.type === "radius" && zone.radius_km) {
-          if (distance <= zone.radius_km) {
-            matchedZone = zone;
-            console.log(`Matched by radius: ${zone.name}`);
-            break;
-          }
-        }
-
-        // Check by polygon
-        if (zone.type === "polygon" && zone.coordinates?.length > 2) {
-          if (isPointInPolygon(customerPoint, zone.coordinates)) {
-            matchedZone = zone;
-            console.log(`Matched by polygon: ${zone.name}`);
-            break;
-          }
+        const mode = zone.delivery_mode || 'standard';
+        if (zonesByMode[mode]) {
+          zonesByMode[mode].push(zone);
         }
       }
     }
 
-    // Check if within max delivery radius
+    // Check if customer is in any zone
+    const checkZoneMatch = (zone: DeliveryZone): boolean => {
+      // Check by CEP
+      if (customer_cep && zone.zip_codes?.includes(customer_cep)) {
+        return true;
+      }
+      // Check by radius
+      if (zone.type === "radius" && zone.radius_km) {
+        return distance <= zone.radius_km;
+      }
+      // Check by polygon
+      if (zone.type === "polygon" && zone.coordinates?.length > 2) {
+        return isPointInPolygon(customerPoint, zone.coordinates);
+      }
+      return false;
+    };
+
+    // Establishment defaults
+    const freeRadius = establishment.free_delivery_radius_km || 0;
+    const minFeeRadius = establishment.minimum_delivery_radius_km || 1;
+    const minFee = establishment.minimum_delivery_fee || 5;
+    const baseFee = establishment.delivery_base_fee || 5;
+    const feePerKm = establishment.delivery_fee_per_km || 1.5;
+    const turboFee = establishment.turbo_fee || 15;
+    const turboRadius = establishment.turbo_radius_km || 15;
     const maxRadius = establishment.max_delivery_radius_km || 10;
-    const canDeliver = distance <= maxRadius || matchedZone !== null;
+    const calcMode = establishment.delivery_calculation_mode || 'distance';
 
-    // Calculate fee
-    let deliveryFee: number;
-    let estimatedMinTime: number;
-    let estimatedMaxTime: number;
+    // Initialize results
+    let standardFee = 0;
+    let turboFeeResult = turboFee;
+    let isFreeZone = false;
+    let isMinimumZone = false;
+    let canDeliverStandard = false;
+    let canDeliverTurbo = false;
+    let matchedStandardZone: DeliveryZone | null = null;
+    let matchedTurboZone: DeliveryZone | null = null;
 
-    if (matchedZone) {
-      deliveryFee = matchedZone.fee;
-      estimatedMinTime = matchedZone.min_time;
-      estimatedMaxTime = matchedZone.max_time;
-    } else {
-      // Calculate based on distance
-      const baseFee = establishment.delivery_base_fee || 5;
-      const feePerKm = establishment.delivery_fee_per_km || 1.5;
-      deliveryFee = baseFee + (distance * feePerKm);
-      
-      // Estimate time (roughly 3 min per km + 15 min prep)
-      const baseTime = 15;
-      const timePerKm = 3;
-      estimatedMinTime = Math.round(baseTime + (distance * timePerKm * 0.8));
-      estimatedMaxTime = Math.round(baseTime + (distance * timePerKm * 1.2));
+    // 1. Check free zone first
+    if (freeRadius > 0 && distance <= freeRadius) {
+      isFreeZone = true;
+      standardFee = 0;
+      canDeliverStandard = true;
+      console.log(`Customer in free delivery zone (radius: ${freeRadius}km)`);
+    }
+    
+    // Check free zones from delivery_zones
+    for (const zone of zonesByMode.free) {
+      if (checkZoneMatch(zone)) {
+        isFreeZone = true;
+        standardFee = 0;
+        canDeliverStandard = true;
+        matchedStandardZone = zone;
+        console.log(`Customer matched free zone: ${zone.name}`);
+        break;
+      }
     }
 
-    // Round fee to 2 decimal places
-    deliveryFee = Math.round(deliveryFee * 100) / 100;
+    // 2. Check minimum fee zone
+    if (!isFreeZone) {
+      if (minFeeRadius > 0 && distance <= minFeeRadius) {
+        isMinimumZone = true;
+        standardFee = minFee;
+        canDeliverStandard = true;
+        console.log(`Customer in minimum fee zone (radius: ${minFeeRadius}km, fee: ${minFee})`);
+      }
+
+      for (const zone of zonesByMode.minimum) {
+        if (checkZoneMatch(zone)) {
+          isMinimumZone = true;
+          standardFee = zone.fee;
+          canDeliverStandard = true;
+          matchedStandardZone = zone;
+          console.log(`Customer matched minimum zone: ${zone.name}`);
+          break;
+        }
+      }
+    }
+
+    // 3. Check standard zone
+    if (!isFreeZone && !isMinimumZone) {
+      // First check specific standard zones
+      for (const zone of zonesByMode.standard) {
+        if (checkZoneMatch(zone)) {
+          standardFee = zone.fee;
+          canDeliverStandard = true;
+          matchedStandardZone = zone;
+          console.log(`Customer matched standard zone: ${zone.name}`);
+          break;
+        }
+      }
+
+      // If no zone matched, calculate by distance or max radius
+      if (!matchedStandardZone && distance <= maxRadius) {
+        canDeliverStandard = true;
+        if (calcMode === 'distance') {
+          standardFee = baseFee + (distance * feePerKm);
+        } else if (calcMode === 'fixed') {
+          standardFee = baseFee;
+        }
+        console.log(`Standard fee calculated by ${calcMode}: ${standardFee.toFixed(2)}`);
+      }
+    }
+
+    // 4. Check turbo zone
+    // First check specific turbo zones
+    for (const zone of zonesByMode.turbo) {
+      if (checkZoneMatch(zone)) {
+        turboFeeResult = zone.fee;
+        canDeliverTurbo = true;
+        matchedTurboZone = zone;
+        console.log(`Customer matched turbo zone: ${zone.name}`);
+        break;
+      }
+    }
+
+    // If no turbo zone matched, check turbo radius
+    if (!matchedTurboZone && turboRadius > 0 && distance <= turboRadius) {
+      canDeliverTurbo = true;
+      console.log(`Customer in turbo radius: ${turboRadius}km`);
+    }
+
+    // If standard delivery is available, turbo is also available (with higher fee)
+    if (canDeliverStandard && !canDeliverTurbo) {
+      canDeliverTurbo = true;
+    }
+
+    // Round fees
+    standardFee = Math.round(standardFee * 100) / 100;
+    turboFeeResult = Math.round(turboFeeResult * 100) / 100;
+
+    // Calculate time estimates
+    const baseTime = 15;
+    const timePerKm = 3;
+    
+    let standardMinTime = matchedStandardZone?.min_time || Math.round(baseTime + (distance * timePerKm * 0.8));
+    let standardMaxTime = matchedStandardZone?.max_time || Math.round(baseTime + (distance * timePerKm * 1.2));
+    let turboMinTime = matchedTurboZone?.turbo_min_time || matchedTurboZone?.min_time || 10;
+    let turboMaxTime = matchedTurboZone?.turbo_max_time || matchedTurboZone?.max_time || 20;
+
+    const canDeliver = canDeliverStandard || canDeliverTurbo;
 
     const response = {
       success: true,
       can_deliver: canDeliver,
       distance_km: Math.round(distance * 100) / 100,
-      delivery_fee: deliveryFee,
-      estimated_min_time: estimatedMinTime,
-      estimated_max_time: estimatedMaxTime,
-      zone_name: matchedZone?.name || null,
+      
+      // Standard delivery
+      standard_fee: standardFee,
+      standard_available: canDeliverStandard,
+      standard_time: {
+        min: standardMinTime,
+        max: standardMaxTime
+      },
+      
+      // Turbo delivery
+      turbo_fee: turboFeeResult,
+      turbo_available: canDeliverTurbo,
+      turbo_time: {
+        min: turboMinTime,
+        max: turboMaxTime
+      },
+      
+      // Zone info
+      is_free_zone: isFreeZone,
+      is_minimum_zone: isMinimumZone,
+      matched_zone: matchedStandardZone?.name || null,
+      matched_turbo_zone: matchedTurboZone?.name || null,
+      
+      // Legacy fields for backwards compatibility
+      delivery_fee: standardFee,
+      estimated_min_time: standardMinTime,
+      estimated_max_time: standardMaxTime,
+      zone_name: matchedStandardZone?.name || null,
       establishment_name: establishment.name,
       max_radius_km: maxRadius,
+      
       message: canDeliver 
-        ? `Entrega disponível! Taxa: R$ ${deliveryFee.toFixed(2)}`
+        ? isFreeZone 
+          ? "Entrega grátis para sua região!"
+          : `Entrega disponível! Taxa: R$ ${standardFee.toFixed(2)}`
         : `Fora da área de entrega (distância: ${distance.toFixed(1)} km, máximo: ${maxRadius} km)`,
     };
 

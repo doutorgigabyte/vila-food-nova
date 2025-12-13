@@ -144,8 +144,19 @@ const Checkout = () => {
     checked: boolean;
     canDeliver: boolean;
     distance?: number;
-    fee?: number;
+    // Standard delivery
+    standardFee?: number;
+    standardAvailable?: boolean;
+    standardTime?: { min: number; max: number };
+    // Turbo delivery
+    turboFee?: number;
+    turboAvailable?: boolean;
+    turboTime?: { min: number; max: number };
+    // Zone info
+    isFreeZone?: boolean;
     message?: string;
+    // Legacy
+    fee?: number;
   }>({ checked: false, canDeliver: true });
   
   // Get first establishment ID for delivery calculation
@@ -253,8 +264,8 @@ const Checkout = () => {
   // Validate delivery address when coordinates are available
   useEffect(() => {
     const validateDeliveryArea = async () => {
-      // Only validate if delivery is selected and we have coordinates
-      if (deliveryType !== "delivery" || !addressData.lat || !addressData.lng) {
+      // Only validate if delivery/turbo is selected and we have coordinates
+      if ((deliveryType !== "delivery" && deliveryType !== "turbo") || !addressData.lat || !addressData.lng) {
         setDeliveryValidation({ checked: false, canDeliver: true });
         return;
       }
@@ -267,8 +278,19 @@ const Checkout = () => {
           checked: true,
           canDeliver: result.can_deliver,
           distance: 'distance_km' in result ? result.distance_km : undefined,
-          fee: 'delivery_fee' in result ? result.delivery_fee : undefined,
+          // Standard delivery
+          standardFee: 'standard_fee' in result ? result.standard_fee : undefined,
+          standardAvailable: 'standard_available' in result ? result.standard_available : true,
+          standardTime: 'standard_time' in result ? result.standard_time : undefined,
+          // Turbo delivery
+          turboFee: 'turbo_fee' in result ? result.turbo_fee : undefined,
+          turboAvailable: 'turbo_available' in result ? result.turbo_available : true,
+          turboTime: 'turbo_time' in result ? result.turbo_time : undefined,
+          // Zone info
+          isFreeZone: 'is_free_zone' in result ? result.is_free_zone : false,
           message: 'message' in result ? result.message : undefined,
+          // Legacy
+          fee: 'delivery_fee' in result ? result.delivery_fee : undefined,
         });
       } catch {
         // If validation fails, allow proceeding (backend will validate again)
@@ -976,15 +998,31 @@ const Checkout = () => {
             <DeliveryOptionsCards
               selectedOption={deliveryType}
               onOptionChange={setDeliveryType}
-              deliveryFee={deliveryValidation.checked && deliveryValidation.fee !== undefined 
-                ? deliveryValidation.fee 
+              // Standard delivery fee
+              deliveryFee={deliveryValidation.checked && deliveryValidation.standardFee !== undefined 
+                ? deliveryValidation.standardFee 
                 : (firstEstablishment?.delivery_base_fee || 8)}
-              estimatedTime={deliveryValidation.checked && deliveryValidation.canDeliver 
-                ? { min: 25, max: 40 } 
+              // Turbo delivery fee (separate calculation)
+              turboFee={deliveryValidation.checked && deliveryValidation.turboFee !== undefined 
+                ? deliveryValidation.turboFee 
                 : undefined}
+              // Availability
+              standardAvailable={deliveryValidation.standardAvailable ?? true}
+              turboAvailable={deliveryValidation.turboAvailable ?? true}
+              // Time estimates
+              estimatedTime={deliveryValidation.checked && deliveryValidation.standardTime 
+                ? deliveryValidation.standardTime 
+                : { min: 25, max: 40 }}
+              turboTime={deliveryValidation.checked && deliveryValidation.turboTime 
+                ? deliveryValidation.turboTime 
+                : { min: 10, max: 20 }}
+              // Distance info
               pickupDistance={deliveryValidation.checked && deliveryValidation.distance 
                 ? `${deliveryValidation.distance.toFixed(1)} km` 
                 : undefined}
+              // Free zone info
+              isFreeZone={deliveryValidation.isFreeZone}
+              // Store constraints
               isMultiStore={isMultiStore}
               acceptsDelivery={firstEstablishment?.accepts_delivery}
               acceptsPickup={firstEstablishment?.accepts_pickup}

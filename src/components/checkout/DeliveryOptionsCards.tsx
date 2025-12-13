@@ -19,9 +19,21 @@ interface DeliveryOption {
 interface DeliveryOptionsCardsProps {
   selectedOption: string;
   onOptionChange: (option: string) => void;
+  // Standard delivery fee
   deliveryFee: number;
+  // Turbo delivery fee (separate from standard)
+  turboFee?: number;
+  // Availability flags
+  standardAvailable?: boolean;
+  turboAvailable?: boolean;
+  // Time estimates
   estimatedTime?: { min: number; max: number };
+  turboTime?: { min: number; max: number };
+  // Distance info
   pickupDistance?: string;
+  // Free/minimum zone info
+  isFreeZone?: boolean;
+  // Store constraints
   isMultiStore?: boolean;
   acceptsDelivery?: boolean;
   acceptsPickup?: boolean;
@@ -31,22 +43,36 @@ export const DeliveryOptionsCards = ({
   selectedOption,
   onOptionChange,
   deliveryFee,
+  turboFee,
+  standardAvailable = true,
+  turboAvailable = true,
   estimatedTime = { min: 25, max: 40 },
+  turboTime = { min: 10, max: 20 },
   pickupDistance,
+  isFreeZone = false,
   isMultiStore = false,
   acceptsDelivery = true,
   acceptsPickup = true,
 }: DeliveryOptionsCardsProps) => {
+  // Use turboFee if provided, otherwise calculate a higher fee
+  const actualTurboFee = turboFee !== undefined ? turboFee : Math.max(deliveryFee * 1.5, deliveryFee + 5);
+  
   const options: DeliveryOption[] = [
     {
       id: "turbo",
       label: "Turbo",
-      description: "Até 15 min",
-      price: deliveryFee * 1.5,
+      description: `${turboTime.min}-${turboTime.max} min`,
+      price: actualTurboFee,
       icon: <Zap className="w-5 h-5" />,
-      badge: "Novo",
-      disabled: isMultiStore || !acceptsDelivery,
-      disabledReason: isMultiStore ? "Indisponível para múltiplas lojas" : "Loja não aceita entrega",
+      badge: "Rápido",
+      disabled: isMultiStore || !acceptsDelivery || !turboAvailable,
+      disabledReason: isMultiStore 
+        ? "Indisponível para múltiplas lojas" 
+        : !acceptsDelivery 
+          ? "Loja não aceita entrega"
+          : !turboAvailable
+            ? "Turbo indisponível para este endereço"
+            : undefined,
     },
     {
       id: "delivery",
@@ -54,8 +80,15 @@ export const DeliveryOptionsCards = ({
       description: `${estimatedTime.min}-${estimatedTime.max} min`,
       price: deliveryFee,
       icon: <Bike className="w-5 h-5" />,
-      disabled: isMultiStore || !acceptsDelivery,
-      disabledReason: isMultiStore ? "Indisponível para múltiplas lojas" : "Loja não aceita entrega",
+      badge: isFreeZone ? "Grátis" : undefined,
+      disabled: isMultiStore || !acceptsDelivery || !standardAvailable,
+      disabledReason: isMultiStore 
+        ? "Indisponível para múltiplas lojas" 
+        : !acceptsDelivery 
+          ? "Loja não aceita entrega"
+          : !standardAvailable
+            ? "Entrega indisponível para este endereço"
+            : undefined,
     },
     {
       id: "pickup",
@@ -67,8 +100,6 @@ export const DeliveryOptionsCards = ({
       disabledReason: "Loja não aceita retirada",
     },
   ];
-
-  const availableOptions = options.filter(opt => !opt.disabled);
 
   return (
     <div className="space-y-3">
@@ -112,7 +143,15 @@ export const DeliveryOptionsCards = ({
                     <div className="flex items-center gap-2">
                       <span className="font-medium text-sm">{option.label}</span>
                       {option.badge && (
-                        <Badge variant="default" className="text-[10px] px-1.5 py-0 h-4 bg-primary/10 text-primary border-0">
+                        <Badge 
+                          variant="default" 
+                          className={cn(
+                            "text-[10px] px-1.5 py-0 h-4 border-0",
+                            option.badge === "Grátis" 
+                              ? "bg-green-500/20 text-green-600" 
+                              : "bg-primary/10 text-primary"
+                          )}
+                        >
                           {option.badge}
                         </Badge>
                       )}
