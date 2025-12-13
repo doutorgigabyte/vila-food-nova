@@ -707,6 +707,34 @@ const Checkout = () => {
   const { subtotal, deliveryFee, platformFee, discount, total } = calculateTotals();
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
 
+  // Sending step - 99Food style animated checklist before order creation
+  if (step === "sending") {
+    const paymentLabels: Record<string, string> = {
+      'pix': 'PIX',
+      'cash': 'Dinheiro',
+      'card': 'Cartão de crédito',
+    };
+    
+    const checklistItems = createChecklistItems({
+      address: deliveryType === 'pickup' 
+        ? 'Retirada no local' 
+        : addressData.formatted_address || `${addressData.address}, ${addressData.number}`,
+      deliveryTime: deliveryType === 'pickup' ? '15-25 min' : '30-45 min',
+      paymentMethod: paymentLabels[paymentMethod] || paymentMethod,
+      itemsSummary: `${totalItems} ${totalItems === 1 ? 'item' : 'itens'}`,
+    });
+    
+    return (
+      <OrderSendingStep
+        items={checklistItems}
+        total={total}
+        onComplete={handleSendingComplete}
+        onModify={() => setStep("payment")}
+        autoCompleteSeconds={5}
+      />
+    );
+  }
+
   // Processing step - show payment processor (PIX or Card)
   if (step === "processing" && createdOrderId && currentEstablishmentId) {
     return (
