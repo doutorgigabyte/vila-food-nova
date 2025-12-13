@@ -18,7 +18,9 @@ import {
   Store,
   Menu,
   ShoppingBag,
-  RefreshCw
+  RefreshCw,
+  Wifi,
+  WifiOff
 } from "lucide-react";
 import { toast } from "sonner";
 import { useDashboardData, useUserEstablishment } from "@/hooks/useDashboardData";
@@ -33,7 +35,7 @@ const EstablishmentDashboard = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { establishmentId, establishment, loading: estLoading, isSuperAdmin } = useUserEstablishment();
-  const { stats, pendingOrders, recentOrders, loading, refetch } = useDashboardData(establishmentId);
+  const { stats, pendingOrders, recentOrders, loading, refetch, lastUpdate, isConnected } = useDashboardData(establishmentId);
   
   const [isOpen, setIsOpen] = useState(establishment?.is_open ?? false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -184,9 +186,26 @@ const EstablishmentDashboard = () => {
               >
                 <Menu className="w-5 h-5" />
               </Button>
-              <h1 className="text-lg font-semibold truncate">Dashboard</h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-lg font-semibold truncate">Dashboard</h1>
+                {isConnected ? (
+                  <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
+                    <Wifi className="w-3 h-3" />
+                    <span className="hidden sm:inline">Ao vivo</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <WifiOff className="w-3 h-3" />
+                  </div>
+                )}
+              </div>
             </div>
             <div className="flex items-center gap-2 shrink-0">
+              {lastUpdate && (
+                <span className="text-xs text-muted-foreground hidden md:block">
+                  Atualizado às {lastUpdate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                </span>
+              )}
               <Button variant="ghost" size="icon" onClick={refetch}>
                 <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
               </Button>

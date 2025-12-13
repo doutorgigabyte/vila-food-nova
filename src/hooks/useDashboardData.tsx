@@ -55,6 +55,8 @@ export const useDashboardData = (establishmentId: string | null) => {
   const [pendingOrders, setPendingOrders] = useState<Order[]>([]);
   const [recentOrders, setRecentOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+  const [isConnected, setIsConnected] = useState(false);
 
   const fetchData = async () => {
     if (!establishmentId) return;
@@ -143,6 +145,7 @@ export const useDashboardData = (establishmentId: string | null) => {
 
       setPendingOrders(pending || []);
       setRecentOrders(recent || []);
+      setLastUpdate(new Date());
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {
@@ -169,15 +172,18 @@ export const useDashboardData = (establishmentId: string | null) => {
             fetchData();
           }
         )
-        .subscribe();
+        .subscribe((status) => {
+          setIsConnected(status === 'SUBSCRIBED');
+        });
 
       return () => {
         supabase.removeChannel(channel);
+        setIsConnected(false);
       };
     }
   }, [establishmentId]);
 
-  return { stats, pendingOrders, recentOrders, loading, refetch: fetchData };
+  return { stats, pendingOrders, recentOrders, loading, refetch: fetchData, lastUpdate, isConnected };
 };
 
 export const useUserEstablishment = () => {
