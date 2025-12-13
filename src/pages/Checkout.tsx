@@ -27,6 +27,7 @@ import {
   CalendarClock
 } from "lucide-react";
 import { ScheduledOrderModal } from "@/components/checkout/ScheduledOrderModal";
+import { SignupRequiredModal } from "@/components/checkout/SignupRequiredModal";
 import { toast } from "sonner";
 import { Price } from "@/components/ui/price";
 import { useCart } from "@/hooks/useCart";
@@ -327,6 +328,7 @@ const Checkout = () => {
   const storeOpenStatus = checkIfStoreOpen();
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [scheduledFor, setScheduledFor] = useState<Date | null>(null);
+  const [showSignupModal, setShowSignupModal] = useState(false);
 
   // Show loading while cart is being loaded
   if (!isLoaded) {
@@ -487,7 +489,20 @@ const Checkout = () => {
       return;
     }
     
+    // Check if user is logged in - if not, show signup modal
+    if (!user) {
+      setShowSignupModal(true);
+      return;
+    }
+    
     // Go to sending step (99Food style)
+    setStep("sending");
+  };
+  
+  // Called when signup is completed successfully
+  const handleSignupSuccess = () => {
+    setShowSignupModal(false);
+    // Proceed to sending step after successful signup
     setStep("sending");
   };
 
@@ -1405,6 +1420,15 @@ const Checkout = () => {
           </div>
         )}
       </main>
+      
+      {/* Signup Required Modal */}
+      <SignupRequiredModal
+        open={showSignupModal}
+        onOpenChange={setShowSignupModal}
+        onSuccess={handleSignupSuccess}
+        cartItemsCount={totalItems}
+        cartTotal={total}
+      />
     </div>
   );
 };
