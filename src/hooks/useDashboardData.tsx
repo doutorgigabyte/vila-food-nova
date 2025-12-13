@@ -38,6 +38,18 @@ interface Order {
   } | null;
 }
 
+interface RecentOrder {
+  id: string;
+  order_number: number;
+  status: string;
+  total: number;
+  created_at: string;
+  customer?: {
+    name: string;
+    phone: string;
+  } | null;
+}
+
 export const useDashboardData = (establishmentId: string | null) => {
   const [stats, setStats] = useState<DashboardStats>({
     todaySales: 0,
@@ -53,7 +65,7 @@ export const useDashboardData = (establishmentId: string | null) => {
     },
   });
   const [pendingOrders, setPendingOrders] = useState<Order[]>([]);
-  const [recentOrders, setRecentOrders] = useState<Order[]>([]);
+  const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [isConnected, setIsConnected] = useState(false);
@@ -71,43 +83,52 @@ export const useDashboardData = (establishmentId: string | null) => {
       const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
       const monthISO = monthStart.toISOString();
 
-      // Fetch today's orders with source info
-      const { data: todayOrders } = await supabase
-        .from('orders')
-        .select('total, status, order_source, platform_fee')
-        .eq('establishment_id', establishmentId)
-        .gte('created_at', todayISO);
-
-      // Fetch month's orders with source info
-      const { data: monthOrders } = await supabase
-        .from('orders')
-        .select('total, status, order_source, platform_fee')
-        .eq('establishment_id', establishmentId)
-        .gte('created_at', monthISO);
-
-      // Fetch pending orders with customer data
-      const { data: pending } = await supabase
-        .from('orders')
-        .select(`
-          *,
-          customer:customers(name, phone)
-        `)
-        .eq('establishment_id', establishmentId)
-        .in('status', ['pending', 'confirmed', 'preparing'])
-        .order('created_at', { ascending: false })
-        .limit(10);
-
-      // Fetch recent completed orders
-      const { data: recent } = await supabase
-        .from('orders')
-        .select(`
-          *,
-          customer:customers(name, phone)
-        `)
-        .eq('establishment_id', establishmentId)
-        .in('status', ['delivered', 'cancelled', 'ready'])
-        .order('created_at', { ascending: false })
-        .limit(5);
+      // Execute all queries in parallel for better performance
+      const [
+        { data: todayOrders },
+        { data: monthOrders },
+        { data: pending },
+        { data: recent }
+      ] = await Promise.all([
+        // Today's orders - only fields needed for calculations
+        supabase
+          .from('orders')
+          .select('total, status, order_source, platform_fee')
+          .eq('establishment_id', establishmentId)
+          .gte('created_at', todayISO),
+        
+        // Month's orders - only fields needed for calculations
+        supabase
+          .from('orders')
+          .select('total, status, order_source, platform_fee')
+          .eq('establishment_id', establishmentId)
+          .gte('created_at', monthISO),
+        
+        // Pending orders with customer data - only fields needed for display
+        supabase
+          .from('orders')
+          .select(`
+            id, order_number, customer_id, status, delivery_type, payment_method,
+            items, subtotal, delivery_fee, total, delivery_address, observations, created_at,
+            customer:customers(name, phone)
+          `)
+          .eq('establishment_id', establishmentId)
+          .in('status', ['pending', 'confirmed', 'preparing'])
+          .order('created_at', { ascending: false })
+          .limit(10),
+        
+        // Recent completed orders - only fields needed for display
+        supabase
+          .from('orders')
+          .select(`
+            id, order_number, status, total, created_at,
+            customer:customers(name, phone)
+          `)
+          .eq('establishment_id', establishmentId)
+          .in('status', ['delivered', 'cancelled', 'ready'])
+          .order('created_at', { ascending: false })
+          .limit(5)
+      ]);
 
       // Calculate stats
       const todaySales = todayOrders
