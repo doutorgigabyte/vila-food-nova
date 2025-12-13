@@ -36,6 +36,9 @@ import {
   Globe
 } from "lucide-react";
 import { ImageUpload } from "@/components/ImageUpload";
+import { NotificationSoundSelector } from "@/components/settings/NotificationSoundSelector";
+import { WhatsAppNotificationsConfig } from "@/components/settings/WhatsAppNotificationsConfig";
+import { AssociatedDriversList } from "@/components/settings/AssociatedDriversList";
 
 // Component to show available platform gateways
 const AvailableGatewaysCard = () => {
@@ -236,6 +239,21 @@ const EstablishmentSettings = () => {
     friday: { open: "08:00", close: "22:00", enabled: true },
     saturday: { open: "08:00", close: "22:00", enabled: true },
     sunday: { open: "08:00", close: "22:00", enabled: false },
+  });
+  
+  // Notification settings state
+  const [notificationSound, setNotificationSound] = useState("new-order");
+  const [notificationVolume, setNotificationVolume] = useState(80);
+  const [whatsappNotificationsEnabled, setWhatsappNotificationsEnabled] = useState(false);
+  const [whatsappNotifications, setWhatsappNotifications] = useState<Record<string, boolean>>({
+    new_order: true,
+    order_ready: true,
+    payment_confirmed: true,
+    delivery_assigned: false,
+    delivery_completed: false,
+    review_received: false,
+    low_stock: false,
+    scheduled_order: false,
   });
 
   useEffect(() => {
@@ -931,42 +949,36 @@ const EstablishmentSettings = () => {
 
             {/* Notifications Tab */}
             <TabsContent value="notifications">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Bell className="w-5 h-5" />
-                    Notificações
-                  </CardTitle>
-                  <CardDescription>Configure alertas e sons</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between p-4 border rounded-lg">
-                    <div>
-                      <p className="font-medium">Som de Novo Pedido</p>
-                      <p className="text-sm text-muted-foreground">Tocar som quando receber novo pedido</p>
-                    </div>
-                    <Switch defaultChecked />
-                  </div>
-                  <div className="flex items-center justify-between p-4 border rounded-lg">
-                    <div>
-                      <p className="font-medium">Notificação por WhatsApp</p>
-                      <p className="text-sm text-muted-foreground">Receber alertas no WhatsApp</p>
-                    </div>
-                    <Switch />
-                  </div>
-                  <div className="p-4 border rounded-lg bg-muted/30">
-                    <p className="text-sm text-muted-foreground">
-                      <strong>Nota:</strong> Todas as notificações são internas (dentro da plataforma) ou via WhatsApp. 
-                      E-mail é usado apenas para validação de conta.
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
+              <div className="grid gap-6 md:grid-cols-2">
+                <NotificationSoundSelector
+                  selectedSound={notificationSound}
+                  volume={notificationVolume}
+                  onSoundChange={setNotificationSound}
+                  onVolumeChange={setNotificationVolume}
+                />
+                <WhatsAppNotificationsConfig
+                  enabled={whatsappNotificationsEnabled}
+                  onEnabledChange={setWhatsappNotificationsEnabled}
+                  notifications={whatsappNotifications}
+                  onNotificationChange={(id, enabled) => 
+                    setWhatsappNotifications(prev => ({ ...prev, [id]: enabled }))
+                  }
+                />
+              </div>
+              <div className="mt-6 p-4 border rounded-lg bg-muted/30">
+                <p className="text-sm text-muted-foreground">
+                  <strong>Nota:</strong> Todas as notificações são internas (dentro da plataforma) ou via WhatsApp. 
+                  E-mail é usado apenas para validação de conta.
+                </p>
+              </div>
             </TabsContent>
 
             {/* Drivers Tab */}
             <TabsContent value="drivers">
-              <DeliveryConfigTab establishmentId={establishment?.id || null} />
+              <div className="space-y-6">
+                <AssociatedDriversList establishmentId={establishment?.id || null} />
+                <DeliveryConfigTab establishmentId={establishment?.id || null} />
+              </div>
             </TabsContent>
           </Tabs>
         </div>
