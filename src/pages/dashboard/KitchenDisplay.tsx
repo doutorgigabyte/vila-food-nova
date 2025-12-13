@@ -28,6 +28,7 @@ interface Order {
   created_at: string;
   status: string;
   observations?: string;
+  payment_method?: string;
 }
 
 interface DailyStats {
@@ -521,7 +522,7 @@ const KitchenDisplay = () => {
                     <span className="font-bold text-lg">{getTimeElapsed(order.created_at)}</span>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <Badge variant={order.delivery_type === "delivery" ? "default" : "secondary"}>
                     {order.delivery_type === "delivery" ? "🚚 Delivery" : 
                      order.delivery_type === "pickup" ? "🏪 Retirada" : 
@@ -531,6 +532,16 @@ const KitchenDisplay = () => {
                     className={order.status === "ready" ? "bg-green-500 text-white" : ""}>
                     {order.status === "preparing" ? "Preparando" : "Pronto"}
                   </Badge>
+                  {order.payment_method && (
+                    <Badge variant="outline" className="text-xs">
+                      {order.payment_method === "pix" ? "💳 PIX" :
+                       order.payment_method === "credit_card" ? "💳 Crédito" :
+                       order.payment_method === "debit_card" ? "💳 Débito" :
+                       order.payment_method === "cash" ? "💵 Dinheiro" :
+                       order.payment_method === "card_on_delivery" ? "💳 Cartão Entrega" :
+                       order.payment_method}
+                    </Badge>
+                  )}
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
