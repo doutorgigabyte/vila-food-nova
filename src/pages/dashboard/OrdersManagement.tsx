@@ -172,6 +172,35 @@ const OrdersManagement = () => {
         .eq('id', orderId);
 
       if (error) throw error;
+
+      // Buscar o pedido atualizado para obter order_number
+      const order = orders.find(o => o.id === orderId);
+      
+      // Criar notificação quando status muda para confirmed (pedido aceito vai para cozinha)
+      if (newStatus === 'confirmed' && establishmentId) {
+        await supabase.from('notifications').insert({
+          establishment_id: establishmentId,
+          type: 'order_confirmed',
+          priority: 'high',
+          title: `Pedido #${order?.order_number || ''} confirmado!`,
+          message: 'Novo pedido para preparação na cozinha',
+          target_roles: ['manager', 'kitchen'],
+          data: { order_id: orderId, order_number: order?.order_number }
+        });
+      }
+
+      // Criar notificação quando status muda para ready
+      if (newStatus === 'ready' && establishmentId) {
+        await supabase.from('notifications').insert({
+          establishment_id: establishmentId,
+          type: 'order_ready',
+          priority: 'high',
+          title: `Pedido #${order?.order_number || ''} pronto!`,
+          message: 'Pedido pronto para entrega/retirada',
+          target_roles: ['manager', 'cashier', 'waiter', 'delivery'],
+          data: { order_id: orderId, order_number: order?.order_number }
+        });
+      }
       
       toast.success(`Pedido atualizado para: ${statusConfig[newStatus].label}`);
       setShowOrderModal(false);

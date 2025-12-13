@@ -1,10 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { useParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ChefHat, Clock, CheckCircle, AlertCircle, Utensils, Package, Cog } from "lucide-react";
+import { ChefHat, Clock, CheckCircle, AlertCircle, Utensils, Package, Cog, Bell, VolumeX, Volume2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useNotificationSound } from "@/hooks/useNotificationSound";
+import { useAuth } from "@/hooks/useAuth";
 
 interface OrderItem {
   name: string;
@@ -56,77 +59,180 @@ const getDisplayConfig = (segmentSlug: string | null) => {
 };
 
 const KitchenDisplay = () => {
+  const { slug } = useParams();
+  const { user } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [segmentSlug, setSegmentSlug] = useState<string | null>(null);
+  const [establishmentId, setEstablishmentId] = useState<string | null>(null);
+  const [showNewOrderSplash, setShowNewOrderSplash] = useState(false);
+  const [newOrderNumber, setNewOrderNumber] = useState<number | null>(null);
+  const previousOrdersRef = useRef<string[]>([]);
+  
+  const { playNotification, stopSound, isPlaying } = useNotificationSound();
 
+  // Buscar estabelecimento considerando super admin
+  const fetchEstablishment = useCallback(async () => {
+    if (!user) return null;
+
+    try {
+      // Check if super_admin
+      const { data: isSuperAdmin } = await supabase.rpc('has_role', {
+        _user_id: user.id,
+        _role: 'super_admin'
+      });
+
+      let establishment = null;
+
+      // Se super admin e tem slug, buscar pelo slug
+      if (isSuperAdmin && slug) {
+        const { data } = await supabase
+          .from("establishments")
+          .select("id, segment_id")
+          .eq("slug", slug)
+          .single();
+        establishment = data;
+      } 
+      // Se não é super admin ou não tem slug, buscar pelo owner_id
+      else if (!isSuperAdmin) {
+        const { data } = await supabase
+          .from("establishments")
+          .select("id, segment_id")
+          .eq("owner_id", user.id)
+          .single();
+        establishment = data;
+      }
+      // Se é super admin sem slug, tentar buscar via establishment_users
+      else {
+        const { data: estUsers } = await supabase
+          .from("establishment_users")
+          .select("establishment_id, establishments(id, segment_id)")
+          .eq("user_id", user.id)
+          .eq("is_active", true)
+          .limit(1)
+          .single();
+        
+        if (estUsers?.establishments) {
+          establishment = estUsers.establishments;
+        }
+      }
+
+      if (establishment) {
+        setEstablishmentId(establishment.id);
+        
+        // Buscar slug do segmento
+        if (establishment.segment_id) {
+          const { data: segment } = await supabase
+            .from("segments")
+            .select("slug")
+            .eq("id", establishment.segment_id)
+            .single();
+          
+          if (segment) {
+            setSegmentSlug(segment.slug);
+          }
+        }
+      }
+
+      return establishment;
+    } catch (error) {
+      console.error("Error fetching establishment:", error);
+      return null;
+    }
+  }, [user, slug]);
+
+  const fetchOrders = useCallback(async () => {
+    if (!establishmentId) return;
+
+    try {
+      const { data } = await supabase
+        .from("orders")
+        .select("*")
+        .eq("establishment_id", establishmentId)
+        .in("status", ["confirmed", "preparing"])
+        .order("created_at", { ascending: true });
+
+      if (data) {
+        const newOrders = data.map(o => ({
+          ...o,
+          items: (o.items as unknown as OrderItem[]) || []
+        }));
+
+        // Detectar novos pedidos
+        const currentIds = newOrders.map(o => o.id);
+        const newIds = currentIds.filter(id => !previousOrdersRef.current.includes(id));
+        
+        if (newIds.length > 0 && previousOrdersRef.current.length > 0) {
+          // Há novos pedidos - mostrar splash e tocar som
+          const newOrder = newOrders.find(o => o.id === newIds[0]);
+          if (newOrder) {
+            setNewOrderNumber(newOrder.order_number);
+            setShowNewOrderSplash(true);
+            playNotification('new_order');
+            
+            // Criar notificação no banco
+            await supabase.from('notifications').insert({
+              establishment_id: establishmentId,
+              type: 'new_order',
+              priority: 'high',
+              title: `Pedido #${newOrder.order_number} na cozinha!`,
+              message: `Novo pedido para preparação`,
+              target_roles: ['manager', 'kitchen'],
+              data: { order_id: newOrder.id, order_number: newOrder.order_number }
+            });
+            
+            // Fechar splash após 3 segundos
+            setTimeout(() => {
+              setShowNewOrderSplash(false);
+              setNewOrderNumber(null);
+              stopSound();
+            }, 3000);
+          }
+        }
+
+        previousOrdersRef.current = currentIds;
+        setOrders(newOrders);
+      }
+    } catch (error) {
+      console.error("Error fetching orders:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [establishmentId, playNotification, stopSound]);
+
+  // Inicialização
   useEffect(() => {
+    fetchEstablishment();
+  }, [fetchEstablishment]);
+
+  // Buscar pedidos e configurar realtime quando tiver establishmentId
+  useEffect(() => {
+    if (!establishmentId) return;
+
     fetchOrders();
     
-    // Real-time subscription
+    // Real-time subscription com filtro de establishment_id
     const channel = supabase
-      .channel('kitchen-orders')
+      .channel(`kitchen-orders-${establishmentId}`)
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
-          table: 'orders'
+          table: 'orders',
+          filter: `establishment_id=eq.${establishmentId}`
         },
-        () => fetchOrders()
+        (payload) => {
+          console.log('Kitchen order change:', payload);
+          fetchOrders();
+        }
       )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
-
-  const fetchOrders = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: establishment } = await supabase
-        .from("establishments")
-        .select("id, segment_id")
-        .eq("owner_id", user.id)
-        .single();
-
-      if (!establishment) return;
-
-      // Buscar slug do segmento
-      if (establishment.segment_id) {
-        const { data: segment } = await supabase
-          .from("segments")
-          .select("slug")
-          .eq("id", establishment.segment_id)
-          .single();
-        
-        if (segment) {
-          setSegmentSlug(segment.slug);
-        }
-      }
-
-      const { data } = await supabase
-        .from("orders")
-        .select("*")
-        .eq("establishment_id", establishment.id)
-        .in("status", ["confirmed", "preparing"])
-        .order("created_at", { ascending: true });
-
-      if (data) {
-        setOrders(data.map(o => ({
-          ...o,
-          items: (o.items as unknown as OrderItem[]) || []
-        })));
-      }
-    } catch (error) {
-      console.error("Error:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [establishmentId, fetchOrders]);
 
   const updateStatus = async (orderId: string, newStatus: "pending" | "confirmed" | "preparing" | "ready" | "delivering" | "delivered" | "cancelled") => {
     try {
@@ -139,6 +245,17 @@ const KitchenDisplay = () => {
 
       if (newStatus === "ready") {
         toast.success("Pedido pronto para entrega!");
+        
+        // Criar notificação de pedido pronto
+        await supabase.from('notifications').insert({
+          establishment_id: establishmentId,
+          type: 'order_ready',
+          priority: 'high',
+          title: `Pedido pronto!`,
+          message: `Pedido está pronto para entrega/retirada`,
+          target_roles: ['manager', 'cashier', 'waiter', 'delivery'],
+          data: { order_id: orderId }
+        });
       } else if (newStatus === "preparing") {
         toast.info("Pedido em preparo");
       }
@@ -167,13 +284,41 @@ const KitchenDisplay = () => {
   const DisplayIcon = displayConfig.icon;
 
   return (
-    <div className="min-h-screen bg-background p-4">
+    <div className="min-h-screen bg-background p-4 relative">
+      {/* Splash Screen para novo pedido */}
+      {showNewOrderSplash && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-primary/95 animate-pulse cursor-pointer"
+          onClick={() => {
+            setShowNewOrderSplash(false);
+            stopSound();
+          }}
+        >
+          <div className="text-center text-primary-foreground">
+            <Bell className="w-24 h-24 mx-auto mb-6 animate-bounce" />
+            <h1 className="text-6xl font-bold mb-4">NOVO PEDIDO!</h1>
+            <p className="text-4xl font-semibold">#{newOrderNumber}</p>
+            <p className="text-xl mt-6 opacity-80">Toque para fechar</p>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <DisplayIcon className="w-8 h-8 text-primary" />
           <h1 className="text-2xl font-bold">{displayConfig.title}</h1>
         </div>
         <div className="flex items-center gap-2">
+          {isPlaying && (
+            <Button 
+              variant="outline" 
+              size="icon"
+              onClick={stopSound}
+              className="text-destructive"
+            >
+              <VolumeX className="w-5 h-5" />
+            </Button>
+          )}
           <Badge variant="outline" className="text-lg px-4 py-2">
             {orders.length} pedidos
           </Badge>
