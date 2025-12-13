@@ -38,6 +38,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import QuickEstablishmentSearch from "./QuickEstablishmentSearch";
 
 interface NavItem {
   icon: React.ElementType;
@@ -163,6 +164,11 @@ const AdminSidebar = ({ isOpen, onClose }: AdminSidebarProps) => {
           >
             <X className="w-5 h-5" />
           </Button>
+        </div>
+
+        {/* Quick Establishment Search */}
+        <div className="px-3 py-2 border-b border-border">
+          <QuickEstablishmentSearch />
         </div>
 
         {/* Navigation */}
