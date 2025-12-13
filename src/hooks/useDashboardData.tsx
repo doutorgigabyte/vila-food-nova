@@ -253,7 +253,7 @@ export const useUserEstablishment = () => {
           .select('*')
           .eq('owner_id', user.id)
           .limit(1)
-          .single();
+          .maybeSingle();
 
         if (owned) {
           setEstablishment(owned);
@@ -273,7 +273,7 @@ export const useUserEstablishment = () => {
           .eq('user_id', user.id)
           .eq('is_active', true)
           .limit(1)
-          .single();
+          .maybeSingle();
 
         if (userEst) {
           setEstablishment(userEst.establishments);
