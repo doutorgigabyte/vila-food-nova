@@ -35,14 +35,24 @@ export function OrderSendingStep({
   const [countdown, setCountdown] = useState(autoCompleteSeconds);
   const [allComplete, setAllComplete] = useState(false);
 
-  // Animate checklist items one by one
+  // Animate checklist items one by one - use stable item IDs
   useEffect(() => {
+    // Capture item IDs at effect start to avoid issues with items changing
     const itemIds = items.map(i => i.id);
     let currentIndex = 0;
+    
+    // Reset state when items change
+    setCompletedItems([]);
+    setAllComplete(false);
 
     const interval = setInterval(() => {
       if (currentIndex < itemIds.length) {
-        setCompletedItems(prev => [...prev, itemIds[currentIndex]]);
+        const idToAdd = itemIds[currentIndex];
+        setCompletedItems(prev => {
+          // Avoid duplicates
+          if (prev.includes(idToAdd)) return prev;
+          return [...prev, idToAdd];
+        });
         currentIndex++;
       } else {
         clearInterval(interval);
@@ -51,7 +61,7 @@ export function OrderSendingStep({
     }, 400); // 400ms between each item
 
     return () => clearInterval(interval);
-  }, [items]);
+  }, [items.length]); // Only depend on items length to avoid re-running on same items
 
   // Countdown after all items are complete
   useEffect(() => {
