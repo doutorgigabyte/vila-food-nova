@@ -147,7 +147,7 @@ export const useUserRole = () => {
           .from('establishments')
           .select('id, slug')
           .eq('owner_id', user.id)
-          .single();
+          .maybeSingle();
 
         if (ownedEstablishment) {
           setRoleInfo({
@@ -170,7 +170,7 @@ export const useUserRole = () => {
           `)
           .eq('user_id', user.id)
           .eq('is_active', true)
-          .single();
+          .maybeSingle();
 
         if (estUser) {
           setRoleInfo({
