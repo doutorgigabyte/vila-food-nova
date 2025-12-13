@@ -51,6 +51,15 @@ export const useCreateOrder = () => {
     setLoading(true);
 
     try {
+      // DEBUG: Log authentication state
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      console.log('[useCreateOrder] Auth state:', {
+        hasSession: !!sessionData?.session,
+        userId: sessionData?.session?.user?.id || 'anonymous',
+        sessionError: sessionError?.message || null,
+        role: sessionData?.session?.user?.role || 'anon',
+      });
+
       // Get the order source from session storage if not provided
       const orderSource = orderData.order_source || getOrderSourceDirect();
       
@@ -88,7 +97,12 @@ export const useCreateOrder = () => {
         payment_method: orderPayload.payment_method,
         total: orderPayload.total,
         items_count: orderPayload.items?.length || 0,
+        customer_id: orderPayload.customer_id,
+        has_delivery_address: !!orderPayload.delivery_address,
       });
+
+      // DEBUG: Log full payload for debugging
+      console.log('[useCreateOrder] Full payload:', JSON.stringify(orderPayload, null, 2));
 
       // Insert the order
       const { data: order, error } = await supabase
@@ -103,6 +117,7 @@ export const useCreateOrder = () => {
           message: error.message,
           details: error.details,
           hint: error.hint,
+          fullError: JSON.stringify(error),
         });
         throw new Error(error.message || 'Falha ao criar pedido');
       }
