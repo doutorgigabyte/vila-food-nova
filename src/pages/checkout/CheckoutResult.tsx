@@ -83,19 +83,21 @@ export default function CheckoutResult() {
   // Update order status based on payment result
   useEffect(() => {
     if (orderId && status === 'success') {
+      console.log('[CheckoutResult] Updating order status to confirmed:', orderId);
+      
       supabase
         .from('orders')
-        .update({ 
-          status: 'confirmed',
-          payment_status: 'paid',
-          mp_payment_id: paymentId || undefined
-        })
+        .update({ status: 'confirmed' })
         .eq('id', orderId)
-        .then(({ error }) => {
-          if (error) console.error('Error updating order:', error);
+        .then(({ error, data }) => {
+          if (error) {
+            console.error('[CheckoutResult] Error updating order status:', error);
+          } else {
+            console.log('[CheckoutResult] Order status updated successfully to confirmed');
+          }
         });
     }
-  }, [orderId, status, paymentId]);
+  }, [orderId, status]);
 
   const getStatusConfig = () => {
     switch (status) {
