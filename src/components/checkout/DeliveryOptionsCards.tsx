@@ -57,11 +57,16 @@ export const DeliveryOptionsCards = ({
   // Use turboFee if provided, otherwise calculate a higher fee
   const actualTurboFee = turboFee !== undefined ? turboFee : Math.max(deliveryFee * 1.5, deliveryFee + 5);
   
+  // Build options with fixed times that don't change based on selection
+  const turboDescription = `${turboTime.min}-${turboTime.max} min`;
+  const deliveryDescription = `${estimatedTime.min}-${estimatedTime.max} min`;
+  const pickupDescription = pickupDistance || "No local";
+
   const options: DeliveryOption[] = [
     {
       id: "turbo",
       label: "Turbo",
-      description: `${turboTime.min}-${turboTime.max} min`,
+      description: turboDescription,
       price: actualTurboFee,
       icon: <Zap className="w-5 h-5" />,
       badge: "Rápido",
@@ -77,7 +82,7 @@ export const DeliveryOptionsCards = ({
     {
       id: "delivery",
       label: "Entrega",
-      description: `${estimatedTime.min}-${estimatedTime.max} min`,
+      description: deliveryDescription,
       price: deliveryFee,
       icon: <Bike className="w-5 h-5" />,
       badge: isFreeZone ? "Grátis" : undefined,
@@ -93,7 +98,7 @@ export const DeliveryOptionsCards = ({
     {
       id: "pickup",
       label: "Retirada",
-      description: pickupDistance || "No local",
+      description: pickupDescription,
       price: 0,
       icon: <Store className="w-5 h-5" />,
       disabled: !acceptsPickup,

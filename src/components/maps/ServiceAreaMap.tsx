@@ -155,7 +155,7 @@ const ServiceAreaMap = ({
         max_delivery_radius_km: data.max_delivery_radius_km || 10,
         turbo_fee: data.turbo_fee || 15,
         turbo_radius_km: data.turbo_radius_km || 15,
-        delivery_calculation_mode: data.delivery_calculation_mode || 'distance',
+        delivery_calculation_mode: (data.delivery_calculation_mode || 'distance') as CalculationMode,
       });
     }
   };
