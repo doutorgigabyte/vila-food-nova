@@ -245,6 +245,9 @@ export const useNotifications = (establishmentId?: string) => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
+  // Verificar se é um cliente comum (sem role de estabelecimento)
+  const isCustomer = !establishmentRole && appRole !== 'super_admin';
+
   // Buscar notificações iniciais
   const fetchNotifications = useCallback(async () => {
     if (!user) return;
@@ -257,7 +260,11 @@ export const useNotifications = (establishmentId?: string) => {
         .order('created_at', { ascending: false })
         .limit(50);
 
-      if (establishmentId) {
+      // Clientes comuns só veem suas próprias notificações (user_id específico)
+      if (isCustomer) {
+        query = query.eq('user_id', user.id);
+      } else if (establishmentId) {
+        // Staff do estabelecimento vê notificações do estabelecimento
         query = query.eq('establishment_id', establishmentId);
       }
 
@@ -265,12 +272,18 @@ export const useNotifications = (establishmentId?: string) => {
 
       if (error) throw error;
 
-      // Filtrar por role do usuário
+      // Filtrar por role do usuário (só aplica para staff, não clientes)
       const filteredNotifications = (data || []).filter((n: any) => {
+        // Clientes só veem notificações destinadas a eles (já filtrado pela query)
+        if (isCustomer) {
+          // Verificar se é uma notificação para cliente
+          return n.target_roles?.includes('customer') || !n.target_roles?.length;
+        }
+        
         // Super admin vê tudo
         if (appRole === 'super_admin') return true;
         
-        // Se não tem target_roles, é para todos
+        // Se não tem target_roles, é para todos do estabelecimento
         if (!n.target_roles || n.target_roles.length === 0) return true;
         
         // Verificar se o role do usuário está nos target_roles
@@ -289,7 +302,7 @@ export const useNotifications = (establishmentId?: string) => {
     } finally {
       setLoading(false);
     }
-  }, [user, establishmentId, appRole, establishmentRole]);
+  }, [user, establishmentId, appRole, establishmentRole, isCustomer]);
 
   // Marcar como lida
   const markAsRead = useCallback(async (notificationId: string) => {
@@ -371,6 +384,14 @@ export const useNotifications = (establishmentId?: string) => {
 
     fetchNotifications();
 
+    // Definir filtro baseado no tipo de usuário
+    let realtimeFilter: string | undefined;
+    if (isCustomer) {
+      realtimeFilter = `user_id=eq.${user.id}`;
+    } else if (establishmentId) {
+      realtimeFilter = `establishment_id=eq.${establishmentId}`;
+    }
+
     // Criar canal para realtime
     const channel = supabase
       .channel('notifications-changes')
@@ -380,17 +401,25 @@ export const useNotifications = (establishmentId?: string) => {
           event: 'INSERT',
           schema: 'public',
           table: 'notifications',
-          filter: establishmentId ? `establishment_id=eq.${establishmentId}` : undefined,
+          filter: realtimeFilter,
         },
         (payload: RealtimePostgresChangesPayload<Notification>) => {
           const newNotification = payload.new as Notification;
           
           // Verificar se o usuário deve receber esta notificação
-          const shouldReceive = 
-            appRole === 'super_admin' ||
-            !newNotification.target_roles?.length ||
-            (establishmentRole && newNotification.target_roles.includes(establishmentRole)) ||
-            establishmentRole === 'manager';
+          let shouldReceive = false;
+          
+          if (isCustomer) {
+            // Cliente só recebe notificações direcionadas a ele
+            shouldReceive = newNotification.user_id === user.id && 
+              (newNotification.target_roles?.includes('customer') || !newNotification.target_roles?.length);
+          } else {
+            shouldReceive = 
+              appRole === 'super_admin' ||
+              !newNotification.target_roles?.length ||
+              (establishmentRole && newNotification.target_roles.includes(establishmentRole)) ||
+              establishmentRole === 'manager';
+          }
 
           if (shouldReceive) {
             setNotifications(prev => [newNotification, ...prev]);
@@ -403,7 +432,7 @@ export const useNotifications = (establishmentId?: string) => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, establishmentId, appRole, establishmentRole, fetchNotifications]);
+  }, [user, establishmentId, appRole, establishmentRole, isCustomer, fetchNotifications]);
 
   return {
     notifications,
