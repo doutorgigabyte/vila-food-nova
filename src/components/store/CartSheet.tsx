@@ -275,7 +275,6 @@ export const CartSheet = ({
               {uniqueEstablishments.map((estId) => {
                 const estInfo = establishments.get(estId);
                 const estSubtotal = getEstablishmentSubtotal(estId);
-                const estDeliveryFee = estInfo?.delivery_base_fee || 0;
                 return (
                   <div key={estId} className="space-y-1">
                     {uniqueEstablishments.length > 1 && (
@@ -292,7 +291,7 @@ export const CartSheet = ({
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Taxa de entrega</span>
-                      <Price value={estDeliveryFee} size="sm" />
+                      <span className="text-sm text-muted-foreground italic">A calcular</span>
                     </div>
                   </div>
                 );
@@ -300,7 +299,7 @@ export const CartSheet = ({
               <Separator />
               <div className="flex justify-between text-base font-semibold">
                 <span>Total</span>
-                <Price value={totalPrice + Array.from(establishments.values()).reduce((sum, e) => sum + (e.delivery_base_fee || 0), 0)} size="base" />
+                <Price value={totalPrice} size="base" />
               </div>
             </div>
 
