@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -92,6 +92,7 @@ interface Establishment {
 
 const PDV = () => {
   const { slug } = useParams<{ slug: string }>();
+  const navigate = useNavigate();
   const isMobile = useIsMobile();
   
   const [establishment, setEstablishment] = useState<Establishment | null>(null);
@@ -167,11 +168,72 @@ const PDV = () => {
 
   const { dragState, dropZoneRef, handlers } = useDragToCart(addToCart);
 
+  // Fetch user's establishment if no slug provided
   useEffect(() => {
-    if (slug) {
-      fetchData();
-    }
-  }, [slug]);
+    const fetchUserEstablishment = async () => {
+      if (slug) {
+        fetchData(slug);
+        return;
+      }
+
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          navigate('/auth');
+          return;
+        }
+
+        // Check if super_admin - they need to select an establishment
+        const { data: isSuperAdmin } = await supabase.rpc('has_role', {
+          _user_id: user.id,
+          _role: 'super_admin'
+        });
+
+        if (isSuperAdmin) {
+          // Super admin without slug - redirect to admin dashboard
+          toast.error('Selecione um estabelecimento para acessar o PDV');
+          navigate('/admin');
+          return;
+        }
+
+        // Try to find user's establishment as owner
+        let { data: estData } = await supabase
+          .from('establishments')
+          .select('slug')
+          .eq('owner_id', user.id)
+          .single();
+
+        // If not owner, check establishment_users
+        if (!estData) {
+          const { data: estUser } = await supabase
+            .from('establishment_users')
+            .select('establishments(slug)')
+            .eq('user_id', user.id)
+            .eq('is_active', true)
+            .limit(1)
+            .single();
+          
+          if (estUser?.establishments) {
+            estData = estUser.establishments as { slug: string };
+          }
+        }
+
+        if (estData?.slug) {
+          // Redirect to the correct URL with slug
+          navigate(`/painel/${estData.slug}/pdv`, { replace: true });
+        } else {
+          toast.error('Nenhum estabelecimento encontrado');
+          navigate('/painel');
+        }
+      } catch (error) {
+        console.error('Error fetching user establishment:', error);
+        toast.error('Erro ao carregar estabelecimento');
+        setLoading(false);
+      }
+    };
+
+    fetchUserEstablishment();
+  }, [slug, navigate]);
 
   // Auto-detect touch device for token mode
   useEffect(() => {
@@ -181,15 +243,13 @@ const PDV = () => {
     }
   }, [isMobile]);
 
-  const fetchData = async () => {
-    if (!slug) return;
-    
+  const fetchData = async (establishmentSlug: string) => {
     try {
       // Fetch establishment by slug
       const { data: estData, error: estError } = await supabase
         .from('establishments')
         .select('id, name, whatsapp, pix_key, mercado_pago_token, delivery_base_fee, delivery_fee_per_km, point_terminal_id, point_device_name')
-        .eq('slug', slug)
+        .eq('slug', establishmentSlug)
         .single();
 
       if (estError) throw estError;
