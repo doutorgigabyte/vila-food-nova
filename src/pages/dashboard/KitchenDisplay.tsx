@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ChefHat, Clock, CheckCircle, AlertCircle, Utensils, Package, Cog, Bell, VolumeX, Volume2 } from "lucide-react";
+import { ChefHat, Clock, CheckCircle, AlertCircle, Utensils, Package, Cog, Bell, VolumeX, Volume2, ArrowLeft, Truck, Timer } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useNotificationSound } from "@/hooks/useNotificationSound";
@@ -60,16 +60,25 @@ const getDisplayConfig = (segmentSlug: string | null) => {
 
 const KitchenDisplay = () => {
   const { slug } = useParams();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [segmentSlug, setSegmentSlug] = useState<string | null>(null);
   const [establishmentId, setEstablishmentId] = useState<string | null>(null);
+  const [establishmentSlug, setEstablishmentSlug] = useState<string | null>(null);
   const [showNewOrderSplash, setShowNewOrderSplash] = useState(false);
   const [newOrderNumber, setNewOrderNumber] = useState<number | null>(null);
   const previousOrdersRef = useRef<string[]>([]);
   
   const { playNotification, stopSound, isPlaying } = useNotificationSound();
+
+  // Stats for summary
+  const confirmedOrders = orders.filter(o => o.status === 'confirmed');
+  const preparingOrders = orders.filter(o => o.status === 'preparing');
+  const avgPrepTime = orders.length > 0 
+    ? Math.round(orders.reduce((sum, o) => sum + Math.floor((Date.now() - new Date(o.created_at).getTime()) / 60000), 0) / orders.length)
+    : 0;
 
   // Buscar estabelecimento considerando super admin
   const fetchEstablishment = useCallback(async () => {
@@ -88,32 +97,35 @@ const KitchenDisplay = () => {
       if (isSuperAdmin && slug) {
         const { data } = await supabase
           .from("establishments")
-          .select("id, segment_id")
+          .select("id, segment_id, slug")
           .eq("slug", slug)
           .single();
         establishment = data;
+        if (data) setEstablishmentSlug(data.slug);
       } 
       // Se não é super admin ou não tem slug, buscar pelo owner_id
       else if (!isSuperAdmin) {
         const { data } = await supabase
           .from("establishments")
-          .select("id, segment_id")
+          .select("id, segment_id, slug")
           .eq("owner_id", user.id)
           .single();
         establishment = data;
+        if (data) setEstablishmentSlug(data.slug);
       }
       // Se é super admin sem slug, tentar buscar via establishment_users
       else {
         const { data: estUsers } = await supabase
           .from("establishment_users")
-          .select("establishment_id, establishments(id, segment_id)")
+          .select("establishment_id, establishments(id, segment_id, slug)")
           .eq("user_id", user.id)
           .eq("is_active", true)
           .limit(1)
           .single();
         
         if (estUsers?.establishments) {
-          establishment = estUsers.establishments;
+          establishment = estUsers.establishments as { id: string; segment_id: string | null; slug: string };
+          setEstablishmentSlug(establishment.slug);
         }
       }
 
@@ -303,8 +315,17 @@ const KitchenDisplay = () => {
         </div>
       )}
 
+      {/* Header com botão voltar */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={() => navigate(establishmentSlug ? `/painel/${establishmentSlug}` : '/painel')}
+            className="shrink-0"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
           <DisplayIcon className="w-8 h-8 text-primary" />
           <h1 className="text-2xl font-bold">{displayConfig.title}</h1>
         </div>
@@ -323,6 +344,54 @@ const KitchenDisplay = () => {
             {orders.length} pedidos
           </Badge>
         </div>
+      </div>
+
+      {/* Stats Summary */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <Card className="bg-yellow-500/10 border-yellow-500/30">
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-yellow-500/20">
+              <Bell className="w-5 h-5 text-yellow-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold">{confirmedOrders.length}</p>
+              <p className="text-xs text-muted-foreground">Aguardando</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-blue-500/10 border-blue-500/30">
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-blue-500/20">
+              <ChefHat className="w-5 h-5 text-blue-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold">{preparingOrders.length}</p>
+              <p className="text-xs text-muted-foreground">Preparando</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-green-500/10 border-green-500/30">
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-green-500/20">
+              <CheckCircle className="w-5 h-5 text-green-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold">{orders.length}</p>
+              <p className="text-xs text-muted-foreground">Total Ativos</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-muted/50">
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-muted">
+              <Timer className="w-5 h-5 text-muted-foreground" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold">{avgPrepTime}min</p>
+              <p className="text-xs text-muted-foreground">Tempo Médio</p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {loading ? (
@@ -369,14 +438,14 @@ const KitchenDisplay = () => {
               <CardContent className="space-y-3">
                 <div className="space-y-2 max-h-48 overflow-y-auto">
                   {order.items.map((item, idx) => (
-                    <div key={idx} className="p-2 bg-muted/50 rounded">
+                    <div key={idx} className={`p-2 rounded ${item.observations ? 'bg-yellow-500/10 border border-yellow-500/30' : 'bg-muted/50'}`}>
                       <div className="flex items-center justify-between">
-                        <span className="font-bold text-lg">{item.quantity}x</span>
-                        <span className="font-medium flex-1 ml-2">{item.name}</span>
+                        <span className="font-bold text-xl bg-primary/10 px-2 py-0.5 rounded">{item.quantity}x</span>
+                        <span className="font-medium flex-1 ml-2 text-base">{item.name}</span>
                       </div>
                       {item.observations && (
-                        <p className="text-sm text-yellow-600 mt-1 flex items-center gap-1">
-                          <AlertCircle className="w-3 h-3" />
+                        <p className="text-sm text-yellow-600 mt-2 flex items-start gap-1 font-medium bg-yellow-500/5 p-1.5 rounded">
+                          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
                           {item.observations}
                         </p>
                       )}
@@ -384,24 +453,24 @@ const KitchenDisplay = () => {
                   ))}
                 </div>
 
-                <div className="flex gap-2">
+                <div className="flex gap-2 pt-2">
                   {order.status === "confirmed" && (
                     <Button
                       onClick={() => updateStatus(order.id, "preparing")}
                       variant="outline"
-                      className="flex-1"
+                      className="flex-1 h-12"
                     >
-                      <ChefHat className="w-4 h-4 mr-2" />
-                      Iniciar
+                      <ChefHat className="w-5 h-5 mr-2" />
+                      Iniciar Preparo
                     </Button>
                   )}
                   <Button
                     onClick={() => updateStatus(order.id, "ready")}
-                    className="flex-1"
+                    className="flex-1 h-12"
                     variant={order.status === "preparing" ? "default" : "outline"}
                   >
-                    <CheckCircle className="w-4 h-4 mr-2" />
-                    Pronto
+                    <CheckCircle className="w-5 h-5 mr-2" />
+                    Marcar Pronto
                   </Button>
                 </div>
               </CardContent>
