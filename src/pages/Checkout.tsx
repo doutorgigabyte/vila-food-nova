@@ -1267,8 +1267,8 @@ const Checkout = () => {
                     <p className="text-xs text-muted-foreground">
                       Receba atualizações sobre seu pedido
                     </p>
-                    {/* Show pre-filled phone if from profile */}
-                    {whatsappTracking && customerPhone && user?.id && (
+                    {/* Show pre-filled phone if from profile - only if phone is complete (at least 10 digits) */}
+                    {whatsappTracking && customerPhone && customerPhone.replace(/\D/g, '').length >= 10 && (
                       <p className="text-xs text-green-600 flex items-center gap-1 mt-1">
                         <CheckCircle className="w-3 h-3" />
                         Notificações para: {customerPhone}
