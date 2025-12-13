@@ -85,6 +85,11 @@ export default {
           "0%, 100%": { opacity: "1" },
           "50%": { opacity: "0.5" },
         },
+        wiggle: {
+          "0%, 100%": { transform: "rotate(0deg)" },
+          "25%": { transform: "rotate(-15deg)" },
+          "75%": { transform: "rotate(15deg)" },
+        },
         "rubber-band": {
           "0%": { transform: "scale(0.3)", opacity: "0" },
           "40%": { transform: "scale(1.1)" },

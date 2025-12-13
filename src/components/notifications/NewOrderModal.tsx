@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ShoppingBag, X, Check, Clock, MapPin, CreditCard, User } from "lucide-react";
+import { ShoppingBag, X, Check, Clock, MapPin, User, VolumeX } from "lucide-react";
 import { Notification } from "@/hooks/useNotifications";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -117,19 +117,6 @@ const NewOrderModal = ({ notification, onClose, onConfirm }: NewOrderModalProps)
               </div>
             )}
 
-            {/* Pagamento */}
-            {orderData.payment_method && (
-              <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-xl">
-                <div className="w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center">
-                  <CreditCard className="w-5 h-5 text-green-500" />
-                </div>
-                <div>
-                  <span className="text-xs text-muted-foreground">Pagamento</span>
-                  <p className="font-medium capitalize">{orderData.payment_method}</p>
-                </div>
-              </div>
-            )}
-
             {/* Total */}
             {orderData.total && (
               <div className="flex items-center justify-between p-4 bg-primary/10 rounded-xl">
@@ -169,7 +156,7 @@ const NewOrderModal = ({ notification, onClose, onConfirm }: NewOrderModalProps)
             className="flex-1"
             onClick={onClose}
           >
-            <Clock className="w-4 h-4 mr-2" />
+            <VolumeX className="w-4 h-4 mr-2" />
             Ver Depois
           </Button>
           <Button

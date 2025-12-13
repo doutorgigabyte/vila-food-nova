@@ -176,17 +176,25 @@ const OrdersManagement = () => {
       // Buscar o pedido atualizado para obter order_number
       const order = orders.find(o => o.id === orderId);
       
-      // Criar notificação quando status muda para confirmed (pedido aceito vai para cozinha)
+      // Quando aceita o pedido (pending → preparing), pula o "confirmed" e vai direto para cozinha
       if (newStatus === 'confirmed' && establishmentId) {
+        // Na verdade, vamos mudar para preparing direto
+        await supabase.from('orders').update({ status: 'preparing' }).eq('id', orderId);
+        
         await supabase.from('notifications').insert({
           establishment_id: establishmentId,
           type: 'order_confirmed',
           priority: 'high',
-          title: `Pedido #${order?.order_number || ''} confirmado!`,
-          message: 'Novo pedido para preparação na cozinha',
+          title: `Pedido #${order?.order_number || ''} em preparo!`,
+          message: 'Novo pedido enviado para a cozinha',
           target_roles: ['manager', 'kitchen'],
           data: { order_id: orderId, order_number: order?.order_number }
         });
+        
+        toast.success(`Pedido #${order?.order_number} enviado para cozinha!`);
+        setShowOrderModal(false);
+        fetchOrders();
+        return;
       }
 
       // Criar notificação quando status muda para ready
@@ -322,14 +330,6 @@ const OrdersManagement = () => {
                 </Button>
                 <Button variant="outline" size="icon" onClick={fetchOrders} className="sm:hidden">
                   <RefreshCw className="w-4 h-4" />
-                </Button>
-                <Button variant="ghost" size="icon" className="relative">
-                  <Bell className="w-5 h-5" />
-                  {orderCounts.pending > 0 && (
-                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-destructive text-destructive-foreground text-xs rounded-full flex items-center justify-center">
-                      {orderCounts.pending}
-                    </span>
-                  )}
                 </Button>
               </div>
             </div>
