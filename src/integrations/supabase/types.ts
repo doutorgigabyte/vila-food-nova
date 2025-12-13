@@ -1648,6 +1648,7 @@ export type Database = {
         Row: {
           coordinates: Json | null
           created_at: string | null
+          delivery_mode: string | null
           establishment_id: string
           fee: number
           id: string
@@ -1657,12 +1658,15 @@ export type Database = {
           name: string
           neighborhoods: string[] | null
           radius_km: number | null
+          turbo_max_time: number | null
+          turbo_min_time: number | null
           type: string | null
           zip_codes: string[] | null
         }
         Insert: {
           coordinates?: Json | null
           created_at?: string | null
+          delivery_mode?: string | null
           establishment_id: string
           fee?: number
           id?: string
@@ -1672,12 +1676,15 @@ export type Database = {
           name: string
           neighborhoods?: string[] | null
           radius_km?: number | null
+          turbo_max_time?: number | null
+          turbo_min_time?: number | null
           type?: string | null
           zip_codes?: string[] | null
         }
         Update: {
           coordinates?: Json | null
           created_at?: string | null
+          delivery_mode?: string | null
           establishment_id?: string
           fee?: number
           id?: string
@@ -1687,6 +1694,8 @@ export type Database = {
           name?: string
           neighborhoods?: string[] | null
           radius_km?: number | null
+          turbo_max_time?: number | null
+          turbo_min_time?: number | null
           type?: string | null
           zip_codes?: string[] | null
         }
@@ -2255,6 +2264,7 @@ export type Database = {
           city_id: string | null
           created_at: string | null
           delivery_base_fee: number | null
+          delivery_calculation_mode: string | null
           delivery_fee_per_km: number | null
           description: string | null
           driver_default_commission_type: string | null
@@ -2263,6 +2273,7 @@ export type Database = {
           email: string | null
           evolution_api_token: string | null
           facebook_url: string | null
+          free_delivery_radius_km: number | null
           gemini_api_key: string | null
           id: string
           instagram_url: string | null
@@ -2280,6 +2291,8 @@ export type Database = {
           meta_image: string | null
           meta_title: string | null
           min_order_value: number | null
+          minimum_delivery_fee: number | null
+          minimum_delivery_radius_km: number | null
           mp_public_key: string | null
           mp_refresh_token: string | null
           mp_token_expires_at: string | null
@@ -2311,6 +2324,8 @@ export type Database = {
           tracking_enabled: boolean | null
           turbo_delivery_enabled: boolean | null
           turbo_delivery_fee: number | null
+          turbo_fee: number | null
+          turbo_radius_km: number | null
           twitter_url: string | null
           updated_at: string | null
           vila_id: string | null
@@ -2331,6 +2346,7 @@ export type Database = {
           city_id?: string | null
           created_at?: string | null
           delivery_base_fee?: number | null
+          delivery_calculation_mode?: string | null
           delivery_fee_per_km?: number | null
           description?: string | null
           driver_default_commission_type?: string | null
@@ -2339,6 +2355,7 @@ export type Database = {
           email?: string | null
           evolution_api_token?: string | null
           facebook_url?: string | null
+          free_delivery_radius_km?: number | null
           gemini_api_key?: string | null
           id?: string
           instagram_url?: string | null
@@ -2356,6 +2373,8 @@ export type Database = {
           meta_image?: string | null
           meta_title?: string | null
           min_order_value?: number | null
+          minimum_delivery_fee?: number | null
+          minimum_delivery_radius_km?: number | null
           mp_public_key?: string | null
           mp_refresh_token?: string | null
           mp_token_expires_at?: string | null
@@ -2387,6 +2406,8 @@ export type Database = {
           tracking_enabled?: boolean | null
           turbo_delivery_enabled?: boolean | null
           turbo_delivery_fee?: number | null
+          turbo_fee?: number | null
+          turbo_radius_km?: number | null
           twitter_url?: string | null
           updated_at?: string | null
           vila_id?: string | null
@@ -2407,6 +2428,7 @@ export type Database = {
           city_id?: string | null
           created_at?: string | null
           delivery_base_fee?: number | null
+          delivery_calculation_mode?: string | null
           delivery_fee_per_km?: number | null
           description?: string | null
           driver_default_commission_type?: string | null
@@ -2415,6 +2437,7 @@ export type Database = {
           email?: string | null
           evolution_api_token?: string | null
           facebook_url?: string | null
+          free_delivery_radius_km?: number | null
           gemini_api_key?: string | null
           id?: string
           instagram_url?: string | null
@@ -2432,6 +2455,8 @@ export type Database = {
           meta_image?: string | null
           meta_title?: string | null
           min_order_value?: number | null
+          minimum_delivery_fee?: number | null
+          minimum_delivery_radius_km?: number | null
           mp_public_key?: string | null
           mp_refresh_token?: string | null
           mp_token_expires_at?: string | null
@@ -2463,6 +2488,8 @@ export type Database = {
           tracking_enabled?: boolean | null
           turbo_delivery_enabled?: boolean | null
           turbo_delivery_fee?: number | null
+          turbo_fee?: number | null
+          turbo_radius_km?: number | null
           twitter_url?: string | null
           updated_at?: string | null
           vila_id?: string | null
