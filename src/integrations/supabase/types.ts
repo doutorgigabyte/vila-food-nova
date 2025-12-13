@@ -4303,8 +4303,10 @@ export type Database = {
           id: string
           priority: string | null
           status: string | null
+          tester_assigned: string | null
           title: string
           updated_at: string | null
+          version_phase: string | null
         }
         Insert: {
           category: string
@@ -4315,8 +4317,10 @@ export type Database = {
           id?: string
           priority?: string | null
           status?: string | null
+          tester_assigned?: string | null
           title: string
           updated_at?: string | null
+          version_phase?: string | null
         }
         Update: {
           category?: string
@@ -4327,8 +4331,10 @@ export type Database = {
           id?: string
           priority?: string | null
           status?: string | null
+          tester_assigned?: string | null
           title?: string
           updated_at?: string | null
+          version_phase?: string | null
         }
         Relationships: []
       }
