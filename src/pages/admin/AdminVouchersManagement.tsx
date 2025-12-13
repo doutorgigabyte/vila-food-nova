@@ -125,8 +125,17 @@ const AdminVouchersManagement = () => {
   };
 
   const handleSave = async () => {
-    if (!formData.code || !formData.establishment_id || formData.discount_value <= 0) {
-      toast.error('Preencha os campos obrigatórios');
+    // Validação detalhada
+    if (!formData.code.trim()) {
+      toast.error('O código do cupom é obrigatório');
+      return;
+    }
+    if (!formData.establishment_id) {
+      toast.error('Selecione um estabelecimento');
+      return;
+    }
+    if (!formData.discount_value || formData.discount_value <= 0) {
+      toast.error('Informe um valor de desconto maior que zero');
       return;
     }
 

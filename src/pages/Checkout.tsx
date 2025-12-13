@@ -938,6 +938,7 @@ const Checkout = () => {
             onContinue={() => setStep("delivery")}
             subtotal={subtotal}
             freeDeliveryThreshold={50}
+            acceptsDelivery={firstEstablishment?.accepts_delivery !== false}
           />
         )}
 

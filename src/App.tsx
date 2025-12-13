@@ -4,7 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "next-themes";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation, useNavigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation, useNavigate, Navigate } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { AuthProvider, useAuth } from "./hooks/useAuth";
 import { AdminAccessProvider } from "./contexts/AdminAccessContext";
@@ -129,6 +129,7 @@ const SystemBroadcastCRM = lazy(() => import("./pages/admin/SystemBroadcastCRM")
 const SecurityDocumentation = lazy(() => import("./pages/admin/SecurityDocumentation"));
 const TermsOfUse = lazy(() => import("./pages/TermsOfUse"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
+import { LojistaToPanel } from "./components/LegacyRedirects";
 
 const AffiliateReferrals = lazy(() => import("./pages/affiliate/AffiliateReferrals"));
 const AffiliateCommissions = lazy(() => import("./pages/affiliate/AffiliateCommissions"));
@@ -347,6 +348,10 @@ const AppRoutes = () => {
               {/* Public display routes */}
               <Route path="/display/tv/:token" element={<TVSlidePlayer />} />
               <Route path="/display/cozinha/:token" element={<PublicKitchenDisplay />} />
+              {/* Legacy redirects - /lojista → /painel */}
+              <Route path="/lojista" element={<Navigate to="/painel" replace />} />
+              <Route path="/lojista/:slug/*" element={<LojistaToPanel />} />
+              <Route path="/lojista/:slug" element={<LojistaToPanel />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
         </Routes>
