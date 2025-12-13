@@ -28,66 +28,79 @@ export interface UserOrder {
   };
 }
 
+interface RpcOrderResult {
+  id: string;
+  order_number: number;
+  establishment_id: string;
+  customer_id: string;
+  status: string;
+  delivery_type: string;
+  payment_method: string;
+  items: Json;
+  subtotal: number;
+  delivery_fee: number | null;
+  discount: number | null;
+  total: number;
+  delivery_address: Json | null;
+  table_number: string | null;
+  observations: string | null;
+  created_at: string;
+  estimated_time: number | null;
+  establishment_name: string;
+  establishment_slug: string;
+  establishment_logo_url: string | null;
+}
+
 export const useUserOrders = () => {
   const [orders, setOrders] = useState<UserOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
 
   const fetchOrders = useCallback(async () => {
-    console.log('[useUserOrders] Fetching orders for user:', user?.id);
-    
     if (!user) {
-      console.log('[useUserOrders] No user, clearing orders');
       setOrders([]);
       setLoading(false);
       return;
     }
 
     try {
-      // First get customer record for this user
-      const { data: customer, error: customerError } = await supabase
-        .from('customers')
-        .select('id')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      console.log('[useUserOrders] Customer lookup result:', { customer, customerError });
-
-      if (!customer) {
-        console.log('[useUserOrders] No customer record found for user:', user.id);
-        setOrders([]);
-        setLoading(false);
-        return;
-      }
-
-      // Fetch orders for this customer
-      const { data, error } = await supabase
-        .from('orders')
-        .select(`
-          *,
-          establishments (
-            name,
-            slug,
-            logo_url
-          )
-        `)
-        .eq('customer_id', customer.id)
-        .order('created_at', { ascending: false });
-
-      console.log('[useUserOrders] Orders query result:', { 
-        ordersCount: data?.length || 0, 
-        customerId: customer.id,
-        error 
-      });
+      // Use RPC function that bypasses RLS issues
+      const { data, error } = await supabase.rpc('get_user_orders');
 
       if (error) {
-        console.error('[useUserOrders] Error fetching orders:', error);
+        console.error('[useUserOrders] RPC error:', error);
         throw error;
       }
-      
-      setOrders((data as UserOrder[]) || []);
+
+      // Transform RPC result to match UserOrder interface
+      const transformedOrders: UserOrder[] = (data as RpcOrderResult[] || []).map(order => ({
+        id: order.id,
+        order_number: order.order_number,
+        establishment_id: order.establishment_id,
+        customer_id: order.customer_id,
+        status: order.status as UserOrder['status'],
+        delivery_type: order.delivery_type as UserOrder['delivery_type'],
+        payment_method: order.payment_method as UserOrder['payment_method'],
+        items: order.items,
+        subtotal: order.subtotal,
+        delivery_fee: order.delivery_fee,
+        discount: order.discount,
+        total: order.total,
+        delivery_address: order.delivery_address,
+        table_number: order.table_number,
+        observations: order.observations,
+        created_at: order.created_at,
+        estimated_time: order.estimated_time,
+        establishments: {
+          name: order.establishment_name,
+          slug: order.establishment_slug,
+          logo_url: order.establishment_logo_url,
+        },
+      }));
+
+      setOrders(transformedOrders);
     } catch (error) {
-      console.error('[useUserOrders] Error in fetchOrders:', error);
+      console.error('[useUserOrders] Error:', error);
       setOrders([]);
     } finally {
       setLoading(false);
