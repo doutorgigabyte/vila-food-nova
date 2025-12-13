@@ -33,44 +33,48 @@ verify_jwt = false
 [functions.generate-menu-json]
 verify_jwt = false
 
+# Payment functions - PIX/Checkout public (require order_id validation)
+# OAuth and Webhook functions - public (signature validation)
+# Sensitive operations (refund, affiliate-payout) validate JWT internally
+
 [functions.mercadopago-pix]
-verify_jwt = false
+verify_jwt = false  # Public - validates order_id internally
 
 [functions.mercadopago-oauth]
-verify_jwt = false
+verify_jwt = false  # OAuth flow - no JWT possible
 
 [functions.mercadopago-subscription]
-verify_jwt = false
+verify_jwt = true  # Sensitive - requires auth
 
 [functions.mercadopago-sale]
-verify_jwt = false
+verify_jwt = false  # Public - validates order_id internally, refund validates JWT
 
 [functions.mercadopago-webhook]
-verify_jwt = false
+verify_jwt = false  # Webhook - validates MP signature
 
 [functions.mercadopago-affiliate-payout]
-verify_jwt = false
+verify_jwt = true  # Sensitive - requires auth
 
 [functions.mercadopago-multi-split]
-verify_jwt = false
+verify_jwt = true  # Sensitive - requires auth
 
 [functions.mercadopago-point]
-verify_jwt = false
+verify_jwt = true  # Sensitive - requires auth
 
 [functions.mercadopago-checkout-pro]
-verify_jwt = false
+verify_jwt = false  # Public - validates order_id internally
 
 [functions.pagseguro-oauth]
-verify_jwt = false
+verify_jwt = false  # OAuth flow - no JWT possible
 
 [functions.pagseguro-pix]
-verify_jwt = false
+verify_jwt = false  # Public - validates order_id internally
 
 [functions.pagseguro-webhook]
-verify_jwt = false
+verify_jwt = false  # Webhook - validates signature
 
 [functions.pagseguro-card]
-verify_jwt = false
+verify_jwt = true  # Sensitive - card operations require auth
 
 [functions.s3-upload]
 verify_jwt = false
@@ -87,35 +91,36 @@ verify_jwt = true
 [functions.migrate-external-data]
 verify_jwt = true
 
+# AI functions - require auth to prevent abuse
 [functions.ai-recommendations]
-verify_jwt = false
+verify_jwt = true  # Requires auth
 
 [functions.generate-image]
-verify_jwt = false
+verify_jwt = true  # Requires auth - costly operation
 
 [functions.analyze-establishment]
-verify_jwt = false
+verify_jwt = true  # Requires auth
 
 [functions.enhance-product-photo]
-verify_jwt = false
+verify_jwt = true  # Requires auth - costly operation
 
 [functions.apply-ai-improvements]
-verify_jwt = false
+verify_jwt = true  # Requires auth
 
 [functions.ai-health-check]
-verify_jwt = false
+verify_jwt = true  # Requires auth
 
 [functions.ai-product-assistant]
-verify_jwt = false
+verify_jwt = true  # Requires auth
 
 [functions.fix-broken-images]
-verify_jwt = false
+verify_jwt = true  # Requires auth - admin operation
 
 [functions.evolution-api]
 verify_jwt = false
 
 [functions.security-anomaly-alert]
-verify_jwt = false
+verify_jwt = true  # Sensitive - requires auth
 
 [functions.whatsapp-human-takeover]
 verify_jwt = false
@@ -148,4 +153,4 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.reset-test-passwords]
-verify_jwt = false
+verify_jwt = true  # Sensitive - admin operation
