@@ -105,46 +105,50 @@ export function SignupRequiredModal({
     try {
       const phoneDigits = phone.replace(/\D/g, "");
 
-      // Verify code in database
-      const { data: authCode, error: verifyError } = await supabase
-        .from("auth_codes")
-        .select("*")
-        .eq("phone", phoneDigits)
-        .eq("code", code)
-        .eq("type", "verification")
-        .eq("used", false)
-        .gt("expires_at", new Date().toISOString())
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      // Call Edge Function to verify code and create session
+      const { data, error } = await supabase.functions.invoke("whatsapp-auth-session", {
+        body: { phone: phoneDigits, code },
+      });
 
-      if (verifyError || !authCode) {
-        toast.error("Código inválido ou expirado");
+      if (error) {
+        console.error("Session error:", error);
+        toast.error("Erro ao verificar código. Tente novamente.");
         setLoading(false);
         return;
       }
 
-      // Mark code as used
-      await supabase
-        .from("auth_codes")
-        .update({ used: true, used_at: new Date().toISOString() })
-        .eq("id", authCode.id);
+      // Check if name is required (new user)
+      if (data?.error === "name_required" || data?.requires_name) {
+        setStep("name");
+        setLoading(false);
+        return;
+      }
 
-      // Check if user exists with this phone
-      const { data: existingProfile } = await supabase
-        .from("profiles")
-        .select("id, full_name")
-        .eq("phone", phoneDigits)
-        .maybeSingle();
+      if (!data?.success) {
+        toast.error(data?.error || "Código inválido ou expirado");
+        setLoading(false);
+        return;
+      }
 
-      if (existingProfile) {
-        // User exists, sign them in
-        // For now, we'll just proceed - in production you'd use a proper auth flow
-        toast.success(`Bem-vindo de volta, ${existingProfile.full_name}!`);
+      // Use the token to verify OTP and create session
+      const { data: otpData, error: otpError } = await supabase.auth.verifyOtp({
+        email: data.email,
+        token: data.token,
+        type: 'magiclink',
+      });
+
+      if (otpError) {
+        console.error("OTP verification error:", otpError);
+        toast.error("Erro ao criar sessão. Tente novamente.");
+        setLoading(false);
+        return;
+      }
+
+      if (otpData?.user) {
+        toast.success(`Bem-vindo de volta, ${data.name || 'usuário'}!`);
         onSuccess();
       } else {
-        // New user, ask for name
-        setStep("name");
+        toast.error("Erro ao fazer login. Tente novamente.");
       }
     } catch (error: any) {
       console.error("Error verifying code:", error);
@@ -163,38 +167,45 @@ export function SignupRequiredModal({
     setLoading(true);
     try {
       const phoneDigits = phone.replace(/\D/g, "");
-      
-      // Generate a random password for the user (they can reset later)
-      const randomPassword = Math.random().toString(36).slice(-12) + "Aa1!";
-      const tempEmail = `${phoneDigits}@whatsapp.vilafood.delivery`;
 
-      // Create user account
-      const { data: authData, error: signUpError } = await supabase.auth.signUp({
-        email: tempEmail,
-        password: randomPassword,
-        options: {
-          data: {
-            full_name: name.trim(),
-            phone: phoneDigits,
-          },
-        },
+      // Call Edge Function with name to create account and session
+      const { data, error } = await supabase.functions.invoke("whatsapp-auth-session", {
+        body: { phone: phoneDigits, code, name: name.trim() },
       });
 
-      if (signUpError) throw signUpError;
-
-      // Update profile with phone
-      if (authData.user) {
-        await supabase
-          .from("profiles")
-          .update({ 
-            phone: phoneDigits,
-            full_name: name.trim(),
-          })
-          .eq("id", authData.user.id);
+      if (error) {
+        console.error("Session error:", error);
+        toast.error("Erro ao criar conta. Tente novamente.");
+        setLoading(false);
+        return;
       }
 
-      toast.success(`Conta criada! Bem-vindo, ${name}!`);
-      onSuccess();
+      if (!data?.success) {
+        toast.error(data?.error || "Erro ao criar conta");
+        setLoading(false);
+        return;
+      }
+
+      // Use the token to verify OTP and create session
+      const { data: otpData, error: otpError } = await supabase.auth.verifyOtp({
+        email: data.email,
+        token: data.token,
+        type: 'magiclink',
+      });
+
+      if (otpError) {
+        console.error("OTP verification error:", otpError);
+        toast.error("Erro ao criar sessão. Tente novamente.");
+        setLoading(false);
+        return;
+      }
+
+      if (otpData?.user) {
+        toast.success(`Conta criada! Bem-vindo, ${name}!`);
+        onSuccess();
+      } else {
+        toast.error("Erro ao fazer login. Tente novamente.");
+      }
     } catch (error: any) {
       console.error("Error creating account:", error);
       toast.error("Erro ao criar conta. Tente novamente.");
