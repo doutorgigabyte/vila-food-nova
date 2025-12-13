@@ -46,9 +46,10 @@ export const useUserOrders = () => {
         .from('customers')
         .select('id')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
       if (!customer) {
+        // No customer record yet - user hasn't made any orders
         setOrders([]);
         setLoading(false);
         return;
@@ -68,10 +69,16 @@ export const useUserOrders = () => {
         .eq('customer_id', customer.id)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching user orders:', error);
+        throw error;
+      }
+      
+      console.log('[useUserOrders] Fetched orders:', data?.length || 0, 'for customer:', customer.id);
       setOrders((data as UserOrder[]) || []);
     } catch (error) {
       console.error('Error fetching user orders:', error);
+      setOrders([]);
     } finally {
       setLoading(false);
     }

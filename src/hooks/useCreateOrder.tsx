@@ -63,8 +63,46 @@ export const useCreateOrder = () => {
       // Get the order source from session storage if not provided
       const orderSource = orderData.order_source || getOrderSourceDirect();
       
-      // First, try to find or create customer
-      const customerId = orderData.customer_id;
+      // Find or create customer based on authenticated user
+      let customerId = orderData.customer_id;
+      
+      if (!customerId && sessionData?.session?.user) {
+        const userId = sessionData.session.user.id;
+        const userEmail = sessionData.session.user.email;
+        const userName = sessionData.session.user.user_metadata?.full_name || 'Cliente';
+        
+        // Try to find existing customer for this user
+        const { data: existingCustomer } = await supabase
+          .from('customers')
+          .select('id')
+          .eq('user_id', userId)
+          .maybeSingle();
+        
+        if (existingCustomer) {
+          customerId = existingCustomer.id;
+          console.log('[useCreateOrder] Found existing customer:', customerId);
+        } else {
+          // Create new customer linked to this user
+          const { data: newCustomer, error: createError } = await supabase
+            .from('customers')
+            .insert({
+              user_id: userId,
+              name: userName,
+              email: userEmail,
+              phone: orderData.customer_phone || null,
+              establishment_id: orderData.establishment_id,
+            })
+            .select('id')
+            .single();
+          
+          if (newCustomer) {
+            customerId = newCustomer.id;
+            console.log('[useCreateOrder] Created new customer:', customerId);
+          } else {
+            console.warn('[useCreateOrder] Failed to create customer:', createError);
+          }
+        }
+      }
 
       // DEBUG: Log the order data being sent
       const orderPayload = {
