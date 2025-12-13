@@ -6251,6 +6251,31 @@ export type Database = {
           zip_code: string
         }[]
       }
+      get_user_orders: {
+        Args: never
+        Returns: {
+          created_at: string
+          customer_id: string
+          delivery_address: Json
+          delivery_fee: number
+          delivery_type: string
+          discount: number
+          establishment_id: string
+          establishment_logo_url: string
+          establishment_name: string
+          establishment_slug: string
+          estimated_time: number
+          id: string
+          items: Json
+          observations: string
+          order_number: number
+          payment_method: string
+          status: string
+          subtotal: number
+          table_number: string
+          total: number
+        }[]
+      }
       has_establishment_permission: {
         Args: {
           p_establishment_id: string
