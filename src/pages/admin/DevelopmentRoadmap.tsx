@@ -166,8 +166,8 @@ const DevelopmentRoadmap = () => {
 
   const getTesterStats = () => {
     const betaItems = items.filter(i => i.version_phase === 'beta');
-    const tester1 = betaItems.filter(i => i.tester_assigned === 'testador_1');
-    const tester2 = betaItems.filter(i => i.tester_assigned === 'testador_2');
+    const tester1 = betaItems.filter(i => i.tester_assigned === 'tester_1');
+    const tester2 = betaItems.filter(i => i.tester_assigned === 'tester_2');
     return {
       tester1: { total: tester1.length, done: tester1.filter(i => i.status === 'done').length },
       tester2: { total: tester2.length, done: tester2.filter(i => i.status === 'done').length },
@@ -339,7 +339,7 @@ const DevelopmentRoadmap = () => {
                               {item.tester_assigned && (
                                 <Badge variant="outline" className="text-xs">
                                   <Users className="w-3 h-3 mr-1" />
-                                  {item.tester_assigned === 'testador_1' ? 'T1' : 'T2'}
+                                  {item.tester_assigned === 'tester_1' ? 'T1' : 'T2'}
                                 </Badge>
                               )}
                               
