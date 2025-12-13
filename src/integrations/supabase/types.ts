@@ -6011,6 +6011,31 @@ export type Database = {
         Args: { p_vila_id: string }
         Returns: number
       }
+      create_order: {
+        Args: {
+          p_change_for?: number
+          p_cpf?: string
+          p_customer_id?: string
+          p_customer_phone?: string
+          p_delivery_address?: Json
+          p_delivery_fee?: number
+          p_delivery_type?: string
+          p_discount?: number
+          p_establishment_id: string
+          p_items?: Json
+          p_observations?: string
+          p_order_source?: string
+          p_out_of_stock_action?: string
+          p_payment_method?: string
+          p_platform_fee?: number
+          p_scheduled_for?: string
+          p_subtotal?: number
+          p_table_number?: string
+          p_total?: number
+          p_whatsapp_tracking_enabled?: boolean
+        }
+        Returns: Json
+      }
       generate_menu_json: { Args: { est_id: string }; Returns: Json }
       get_customer_by_phone_and_establishment: {
         Args: { p_establishment_id: string; p_phone: string }
