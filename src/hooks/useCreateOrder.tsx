@@ -71,35 +71,50 @@ export const useCreateOrder = () => {
         const userEmail = sessionData.session.user.email;
         const userName = sessionData.session.user.user_metadata?.full_name || 'Cliente';
         
-        // Try to find existing customer for this user
-        const { data: existingCustomer } = await supabase
+        // Try to find existing customer for this user AND establishment
+        // First, try to find a customer with matching user_id (global customer)
+        const { data: existingCustomerByUser } = await supabase
           .from('customers')
-          .select('id')
+          .select('id, establishment_id')
           .eq('user_id', userId)
+          .is('establishment_id', null)
           .maybeSingle();
         
-        if (existingCustomer) {
-          customerId = existingCustomer.id;
-          console.log('[useCreateOrder] Found existing customer:', customerId);
+        if (existingCustomerByUser) {
+          customerId = existingCustomerByUser.id;
+          console.log('[useCreateOrder] Found global customer for user:', customerId);
         } else {
-          // Create new customer linked to this user
-          const { data: newCustomer, error: createError } = await supabase
+          // Try to find customer by user_id without establishment filter (for backwards compatibility)
+          const { data: anyExistingCustomer } = await supabase
             .from('customers')
-            .insert({
-              user_id: userId,
-              name: userName,
-              email: userEmail,
-              phone: orderData.customer_phone || null,
-              establishment_id: orderData.establishment_id,
-            })
             .select('id')
-            .single();
+            .eq('user_id', userId)
+            .limit(1)
+            .maybeSingle();
           
-          if (newCustomer) {
-            customerId = newCustomer.id;
-            console.log('[useCreateOrder] Created new customer:', customerId);
+          if (anyExistingCustomer) {
+            customerId = anyExistingCustomer.id;
+            console.log('[useCreateOrder] Found existing customer by user_id:', customerId);
           } else {
-            console.warn('[useCreateOrder] Failed to create customer:', createError);
+            // Create new global customer linked to this user (no establishment_id)
+            const { data: newCustomer, error: createError } = await supabase
+              .from('customers')
+              .insert({
+                user_id: userId,
+                name: userName,
+                email: userEmail,
+                phone: orderData.customer_phone || null,
+                establishment_id: null, // Global customer, not tied to one establishment
+              })
+              .select('id')
+              .single();
+            
+            if (newCustomer) {
+              customerId = newCustomer.id;
+              console.log('[useCreateOrder] Created new global customer:', customerId);
+            } else {
+              console.warn('[useCreateOrder] Failed to create customer:', createError);
+            }
           }
         }
       }
