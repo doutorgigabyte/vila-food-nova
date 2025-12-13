@@ -3,6 +3,7 @@ import AdminLayout from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { Skeleton } from '@/components/ui/skeleton';
 import { 
@@ -16,7 +17,16 @@ import {
   MessageSquare,
   Truck,
   Shield,
-  LayoutDashboard
+  LayoutDashboard,
+  Bug,
+  FileText,
+  Server,
+  Zap,
+  Rocket,
+  Target,
+  Users,
+  Activity,
+  Package
 } from 'lucide-react';
 
 interface RoadmapItem {
@@ -28,7 +38,20 @@ interface RoadmapItem {
   status: string;
   estimated_hours: number;
   completion_percentage: number;
+  version_phase: string;
+  tester_assigned: string | null;
 }
+
+type VersionPhase = 'alfa' | 'beta' | 'rc' | 'final' | 'legacy' | 'all';
+
+const versionPhases: { key: VersionPhase; title: string; icon: React.ReactNode; color: string }[] = [
+  { key: 'all', title: 'Todas as Fases', icon: <LayoutDashboard className="w-4 h-4" />, color: 'bg-primary/10 text-primary border-primary/20' },
+  { key: 'alfa', title: 'Alfa v0.9.0', icon: <Bug className="w-4 h-4" />, color: 'bg-red-500/10 text-red-500 border-red-500/20' },
+  { key: 'beta', title: 'Beta v0.95.0', icon: <TestTube className="w-4 h-4" />, color: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' },
+  { key: 'rc', title: 'RC v0.99.0', icon: <Target className="w-4 h-4" />, color: 'bg-blue-500/10 text-blue-500 border-blue-500/20' },
+  { key: 'final', title: 'Final v1.0.0', icon: <Rocket className="w-4 h-4" />, color: 'bg-green-500/10 text-green-500 border-green-500/20' },
+  { key: 'legacy', title: 'Legacy (Concluído)', icon: <CheckCircle2 className="w-4 h-4" />, color: 'bg-muted text-muted-foreground border-muted' },
+];
 
 const categoryIcons: Record<string, React.ReactNode> = {
   payments: <CreditCard className="w-4 h-4" />,
@@ -37,6 +60,15 @@ const categoryIcons: Record<string, React.ReactNode> = {
   whatsapp: <MessageSquare className="w-4 h-4" />,
   delivery: <Truck className="w-4 h-4" />,
   admin: <Shield className="w-4 h-4" />,
+  bugfix: <Bug className="w-4 h-4" />,
+  security: <Shield className="w-4 h-4" />,
+  testing: <TestTube className="w-4 h-4" />,
+  docs: <FileText className="w-4 h-4" />,
+  infra: <Server className="w-4 h-4" />,
+  performance: <Zap className="w-4 h-4" />,
+  deploy: <Rocket className="w-4 h-4" />,
+  monitoring: <Activity className="w-4 h-4" />,
+  marketing: <Package className="w-4 h-4" />,
 };
 
 const categoryColors: Record<string, string> = {
@@ -46,6 +78,15 @@ const categoryColors: Record<string, string> = {
   whatsapp: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
   delivery: 'bg-orange-500/10 text-orange-500 border-orange-500/20',
   admin: 'bg-purple-500/10 text-purple-500 border-purple-500/20',
+  bugfix: 'bg-red-500/10 text-red-500 border-red-500/20',
+  security: 'bg-rose-500/10 text-rose-500 border-rose-500/20',
+  testing: 'bg-cyan-500/10 text-cyan-500 border-cyan-500/20',
+  docs: 'bg-slate-500/10 text-slate-500 border-slate-500/20',
+  infra: 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20',
+  performance: 'bg-amber-500/10 text-amber-500 border-amber-500/20',
+  deploy: 'bg-teal-500/10 text-teal-500 border-teal-500/20',
+  monitoring: 'bg-sky-500/10 text-sky-500 border-sky-500/20',
+  marketing: 'bg-pink-500/10 text-pink-500 border-pink-500/20',
 };
 
 const priorityColors: Record<string, string> = {
@@ -66,6 +107,7 @@ const statusColumns = [
 const DevelopmentRoadmap = () => {
   const [items, setItems] = useState<RoadmapItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedPhase, setSelectedPhase] = useState<VersionPhase>('all');
 
   useEffect(() => {
     fetchItems();
@@ -87,19 +129,30 @@ const DevelopmentRoadmap = () => {
     }
   };
 
-  const getItemsByStatus = (status: string) => {
-    return items.filter(item => item.status === status);
+  const getFilteredItems = () => {
+    if (selectedPhase === 'all') return items.filter(i => i.version_phase !== 'legacy');
+    return items.filter(item => item.version_phase === selectedPhase);
   };
 
-  const calculateOverallProgress = () => {
-    if (items.length === 0) return 0;
-    const totalCompletion = items.reduce((acc, item) => acc + item.completion_percentage, 0);
-    return Math.round(totalCompletion / items.length);
+  const getItemsByStatus = (status: string) => {
+    return getFilteredItems().filter(item => item.status === status);
+  };
+
+  const getPhaseStats = (phase: VersionPhase) => {
+    const phaseItems = phase === 'all' 
+      ? items.filter(i => i.version_phase !== 'legacy')
+      : items.filter(i => i.version_phase === phase);
+    const total = phaseItems.length;
+    const done = phaseItems.filter(i => i.status === 'done').length;
+    const inProgress = phaseItems.filter(i => i.status === 'in_progress').length;
+    const percentage = total > 0 ? Math.round((done / total) * 100) : 0;
+    return { total, done, inProgress, percentage };
   };
 
   const getCategoryStats = () => {
+    const filteredItems = getFilteredItems();
     const stats: Record<string, { total: number; done: number }> = {};
-    items.forEach(item => {
+    filteredItems.forEach(item => {
       if (!stats[item.category]) {
         stats[item.category] = { total: 0, done: 0 };
       }
@@ -111,8 +164,18 @@ const DevelopmentRoadmap = () => {
     return stats;
   };
 
+  const getTesterStats = () => {
+    const betaItems = items.filter(i => i.version_phase === 'beta');
+    const tester1 = betaItems.filter(i => i.tester_assigned === 'testador_1');
+    const tester2 = betaItems.filter(i => i.tester_assigned === 'testador_2');
+    return {
+      tester1: { total: tester1.length, done: tester1.filter(i => i.status === 'done').length },
+      tester2: { total: tester2.length, done: tester2.filter(i => i.status === 'done').length },
+    };
+  };
+
   const categoryStats = getCategoryStats();
-  const overallProgress = calculateOverallProgress();
+  const testerStats = getTesterStats();
 
   if (loading) {
     return (
@@ -132,102 +195,180 @@ const DevelopmentRoadmap = () => {
   return (
     <AdminLayout title="Roadmap de Desenvolvimento">
       <div className="space-y-6">
-        {/* Progresso Geral */}
-        <Card>
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
-                <LayoutDashboard className="w-5 h-5" />
-                Progresso Geral
-              </CardTitle>
-              <span className="text-2xl font-bold text-primary">{overallProgress}%</span>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <Progress value={overallProgress} className="h-3 mb-4" />
-            
-            {/* Stats por categoria */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-              {Object.entries(categoryStats).map(([category, stats]) => (
-                <div 
-                  key={category}
-                  className={`p-3 rounded-lg border ${categoryColors[category] || 'bg-muted'}`}
-                >
-                  <div className="flex items-center gap-2 mb-1">
-                    {categoryIcons[category]}
-                    <span className="text-xs font-medium capitalize">{category}</span>
+        {/* Cards de Progresso por Fase */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          {versionPhases.filter(p => p.key !== 'all' && p.key !== 'legacy').map(phase => {
+            const stats = getPhaseStats(phase.key);
+            return (
+              <Card 
+                key={phase.key}
+                className={`cursor-pointer transition-all hover:shadow-md ${selectedPhase === phase.key ? 'ring-2 ring-primary' : ''}`}
+                onClick={() => setSelectedPhase(phase.key)}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className={`p-2 rounded-lg ${phase.color}`}>
+                      {phase.icon}
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Fase</p>
+                      <p className="font-semibold text-sm">{phase.title}</p>
+                    </div>
                   </div>
-                  <p className="text-lg font-bold">{stats.done}/{stats.total}</p>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+                  <Progress value={stats.percentage} className="h-2 mb-2" />
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>{stats.done}/{stats.total} itens</span>
+                    <span className="font-semibold text-foreground">{stats.percentage}%</span>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
 
-        {/* Kanban Board */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {statusColumns.map(column => (
-            <div key={column.key} className="space-y-3">
-              <div className="flex items-center gap-2 px-2 py-1">
-                {column.icon}
-                <h3 className="font-semibold">{column.title}</h3>
-                <Badge variant="secondary" className="ml-auto">
-                  {getItemsByStatus(column.key).length}
-                </Badge>
-              </div>
-              
-              <div className="space-y-2 min-h-[200px]">
-                {getItemsByStatus(column.key).map(item => (
-                  <Card 
-                    key={item.id} 
-                    className="hover:shadow-md transition-shadow"
-                  >
-                    <CardContent className="p-3 space-y-2">
-                      <div className="flex items-start justify-between gap-2">
-                        <h4 className="font-medium text-sm leading-tight">
-                          {item.title}
-                        </h4>
-                        <div className={`w-2 h-2 rounded-full ${priorityColors[item.priority]}`} />
+        {/* Tabs de Navegação */}
+        <Tabs value={selectedPhase} onValueChange={(v) => setSelectedPhase(v as VersionPhase)}>
+          <TabsList className="grid w-full grid-cols-3 md:grid-cols-6">
+            {versionPhases.map(phase => (
+              <TabsTrigger key={phase.key} value={phase.key} className="text-xs">
+                {phase.icon}
+                <span className="ml-1 hidden sm:inline">{phase.key === 'all' ? 'Todas' : phase.key.toUpperCase()}</span>
+              </TabsTrigger>
+            ))}
+          </TabsList>
+
+          {versionPhases.map(phase => (
+            <TabsContent key={phase.key} value={phase.key} className="space-y-6">
+              {/* Stats do Testador (apenas na fase Beta) */}
+              {phase.key === 'beta' && (
+                <div className="grid grid-cols-2 gap-4">
+                  <Card className="border-cyan-500/20">
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Users className="w-5 h-5 text-cyan-500" />
+                        <h3 className="font-semibold">Testador 1</h3>
+                        <Badge variant="outline" className="ml-auto">Cliente + Admin</Badge>
                       </div>
-                      
-                      {item.description && (
-                        <p className="text-xs text-muted-foreground line-clamp-2">
-                          {item.description}
-                        </p>
-                      )}
-                      
-                      <div className="flex items-center justify-between">
-                        <Badge 
-                          variant="outline" 
-                          className={`text-xs ${categoryColors[item.category] || ''}`}
-                        >
-                          {categoryIcons[item.category]}
-                          <span className="ml-1 capitalize">{item.category}</span>
-                        </Badge>
-                        
-                        {item.estimated_hours && (
-                          <span className="text-xs text-muted-foreground">
-                            {item.estimated_hours}h
-                          </span>
-                        )}
-                      </div>
-                      
-                      {item.completion_percentage > 0 && item.status !== 'done' && (
-                        <Progress value={item.completion_percentage} className="h-1" />
-                      )}
+                      <Progress value={testerStats.tester1.total > 0 ? (testerStats.tester1.done / testerStats.tester1.total) * 100 : 0} className="h-2 mb-1" />
+                      <p className="text-xs text-muted-foreground">{testerStats.tester1.done}/{testerStats.tester1.total} testes concluídos</p>
                     </CardContent>
                   </Card>
-                ))}
-                
-                {getItemsByStatus(column.key).length === 0 && (
-                  <div className="text-center py-8 text-muted-foreground text-sm">
-                    Nenhum item
+                  <Card className="border-purple-500/20">
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Users className="w-5 h-5 text-purple-500" />
+                        <h3 className="font-semibold">Testador 2</h3>
+                        <Badge variant="outline" className="ml-auto">Lojista + Delivery</Badge>
+                      </div>
+                      <Progress value={testerStats.tester2.total > 0 ? (testerStats.tester2.done / testerStats.tester2.total) * 100 : 0} className="h-2 mb-1" />
+                      <p className="text-xs text-muted-foreground">{testerStats.tester2.done}/{testerStats.tester2.total} testes concluídos</p>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
+
+              {/* Stats por categoria */}
+              {Object.keys(categoryStats).length > 0 && (
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <LayoutDashboard className="w-4 h-4" />
+                      Progresso por Categoria
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                      {Object.entries(categoryStats).map(([category, stats]) => (
+                        <div 
+                          key={category}
+                          className={`p-3 rounded-lg border ${categoryColors[category] || 'bg-muted'}`}
+                        >
+                          <div className="flex items-center gap-2 mb-1">
+                            {categoryIcons[category]}
+                            <span className="text-xs font-medium capitalize">{category}</span>
+                          </div>
+                          <p className="text-lg font-bold">{stats.done}/{stats.total}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Kanban Board */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {statusColumns.map(column => (
+                  <div key={column.key} className="space-y-3">
+                    <div className="flex items-center gap-2 px-2 py-1">
+                      {column.icon}
+                      <h3 className="font-semibold">{column.title}</h3>
+                      <Badge variant="secondary" className="ml-auto">
+                        {getItemsByStatus(column.key).length}
+                      </Badge>
+                    </div>
+                    
+                    <div className="space-y-2 min-h-[200px] max-h-[500px] overflow-y-auto">
+                      {getItemsByStatus(column.key).map(item => (
+                        <Card 
+                          key={item.id} 
+                          className="hover:shadow-md transition-shadow"
+                        >
+                          <CardContent className="p-3 space-y-2">
+                            <div className="flex items-start justify-between gap-2">
+                              <h4 className="font-medium text-sm leading-tight">
+                                {item.title}
+                              </h4>
+                              <div className={`w-2 h-2 rounded-full shrink-0 ${priorityColors[item.priority]}`} />
+                            </div>
+                            
+                            {item.description && (
+                              <p className="text-xs text-muted-foreground line-clamp-2">
+                                {item.description}
+                              </p>
+                            )}
+                            
+                            <div className="flex items-center justify-between flex-wrap gap-1">
+                              <Badge 
+                                variant="outline" 
+                                className={`text-xs ${categoryColors[item.category] || ''}`}
+                              >
+                                {categoryIcons[item.category]}
+                                <span className="ml-1 capitalize">{item.category}</span>
+                              </Badge>
+                              
+                              {item.tester_assigned && (
+                                <Badge variant="outline" className="text-xs">
+                                  <Users className="w-3 h-3 mr-1" />
+                                  {item.tester_assigned === 'testador_1' ? 'T1' : 'T2'}
+                                </Badge>
+                              )}
+                              
+                              {item.estimated_hours && (
+                                <span className="text-xs text-muted-foreground">
+                                  {item.estimated_hours}h
+                                </span>
+                              )}
+                            </div>
+                            
+                            {item.completion_percentage > 0 && item.status !== 'done' && (
+                              <Progress value={item.completion_percentage} className="h-1" />
+                            )}
+                          </CardContent>
+                        </Card>
+                      ))}
+                      
+                      {getItemsByStatus(column.key).length === 0 && (
+                        <div className="text-center py-8 text-muted-foreground text-sm">
+                          Nenhum item
+                        </div>
+                      )}
+                    </div>
                   </div>
-                )}
+                ))}
               </div>
-            </div>
+            </TabsContent>
           ))}
-        </div>
+        </Tabs>
 
         {/* Legenda */}
         <Card>
@@ -240,6 +381,32 @@ const DevelopmentRoadmap = () => {
                   <span>{priority}</span>
                 </div>
               ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Resumo Total */}
+        <Card className="border-primary/20">
+          <CardContent className="p-4">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <h3 className="font-semibold flex items-center gap-2">
+                  <Rocket className="w-5 h-5 text-primary" />
+                  Progresso para v1.0.0
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  {items.filter(i => i.version_phase !== 'legacy' && i.status === 'done').length} de {items.filter(i => i.version_phase !== 'legacy').length} itens concluídos
+                </p>
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="text-right">
+                  <p className="text-3xl font-bold text-primary">
+                    {getPhaseStats('all').percentage}%
+                  </p>
+                  <p className="text-xs text-muted-foreground">Completo</p>
+                </div>
+                <Progress value={getPhaseStats('all').percentage} className="w-32 h-3" />
+              </div>
             </div>
           </CardContent>
         </Card>
