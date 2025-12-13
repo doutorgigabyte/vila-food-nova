@@ -27,6 +27,34 @@ const PLATFORM_ACCESS_TOKEN = Deno.env.get('MERCADOPAGO_ACCESS_TOKEN');
 const PLATFORM_FEE_PERCENT = 0; // 5% platform fee DISABLED - set to 5 to reactivate (only on PRODUCTS, not delivery)
 const PLATFORM_SERVICE_FEE = 0; // Service fee DISABLED - subscription-only model
 
+// Mapeamento de categorias do sistema para categorias do MP
+const MP_CATEGORIES: Record<string, string> = {
+  'pizza': 'pizza', 'pizzas': 'pizza', 'sushi': 'sushi', 'japones': 'sushi',
+  'lanche': 'fast_food', 'lanches': 'fast_food', 'hamburguer': 'fast_food', 'burger': 'fast_food',
+  'doce': 'sweets', 'doces': 'sweets', 'sobremesa': 'sweets', 'bolo': 'sweets', 'torta': 'sweets',
+  'sorvete': 'ice_cream', 'açaí': 'ice_cream', 'acai': 'ice_cream',
+  'bebida': 'drinks', 'bebidas': 'drinks', 'cafe': 'coffee', 'café': 'coffee',
+  'padaria': 'bakery', 'default': 'food',
+};
+
+function getMPCategory(categoryName?: string): string {
+  if (!categoryName) return 'food';
+  const normalized = categoryName.toLowerCase().trim();
+  for (const [key, value] of Object.entries(MP_CATEGORIES)) {
+    if (normalized.includes(key)) return value;
+  }
+  return 'food';
+}
+
+interface PixItem {
+  id: string;
+  title: string;
+  description?: string;
+  category_id?: string;
+  quantity: number;
+  unit_price: number;
+}
+
 interface PixRequest {
   establishment_id: string;
   order_id: string;
@@ -37,6 +65,17 @@ interface PixRequest {
   payer_email?: string;
   payer_name?: string;
   payer_cpf?: string;
+  payer_phone?: string;
+  payer_address?: {
+    zip_code?: string;
+    street_name?: string;
+    street_number?: string;
+    neighborhood?: string;
+    city?: string;
+    federal_unit?: string;
+  };
+  items?: PixItem[];
+  device_id?: string; // Device fingerprint
   external_reference?: string;
 }
 
@@ -65,6 +104,10 @@ serve(async (req) => {
       payer_email, 
       payer_name,
       payer_cpf,
+      payer_phone,
+      payer_address,
+      items,
+      device_id,
       external_reference 
     } = body;
 
@@ -254,31 +297,107 @@ serve(async (req) => {
       note: '100% do frete vai para a loja - loja paga entregador',
     });
 
-    // Build Mercado Pago payment payload
+    // Build payer object with ALL recommended fields
+    const payerData: Record<string, unknown> = {
+      email: payerEmail,
+      first_name: payerFirstName,
+      last_name: payerLastName,
+    };
+
+    // Add CPF if provided (BOA PRÁTICA)
+    if (payer_cpf) {
+      const cleanCpf = payer_cpf.replace(/\D/g, '');
+      payerData.identification = {
+        type: cleanCpf.length > 11 ? 'CNPJ' : 'CPF',
+        number: cleanCpf,
+      };
+    }
+
+    // Add phone if provided (BOA PRÁTICA)
+    if (payer_phone) {
+      const cleanPhone = payer_phone.replace(/\D/g, '');
+      if (cleanPhone.length >= 10) {
+        payerData.phone = {
+          area_code: cleanPhone.substring(0, 2),
+          number: cleanPhone.substring(2),
+        };
+      }
+    }
+
+    // Add address if provided (BOA PRÁTICA)
+    if (payer_address) {
+      const address: Record<string, string> = {};
+      if (payer_address.zip_code) address.zip_code = payer_address.zip_code.replace(/\D/g, '');
+      if (payer_address.street_name) address.street_name = payer_address.street_name;
+      if (payer_address.street_number) address.street_number = payer_address.street_number;
+      if (payer_address.neighborhood) address.neighborhood = payer_address.neighborhood;
+      if (payer_address.city) address.city = payer_address.city;
+      if (payer_address.federal_unit) address.federal_unit = payer_address.federal_unit;
+      if (Object.keys(address).length > 0) {
+        payerData.address = address;
+      }
+    }
+
+    // Build items array with ALL recommended fields
+    const paymentItems = items && items.length > 0
+      ? items.map(item => ({
+          id: item.id || `item-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          title: item.title.substring(0, 256),
+          description: (item.description || item.title).substring(0, 256),
+          category_id: item.category_id || getMPCategory(item.title),
+          quantity: item.quantity,
+          unit_price: Number(item.unit_price.toFixed(2)),
+        }))
+      : [{
+          id: `order-${order_id}`,
+          title: (description || `Pedido ${establishment.name}`).substring(0, 256),
+          description: (description || `Pedido #${order_id.slice(-8)}`).substring(0, 256),
+          category_id: 'food',
+          quantity: 1,
+          unit_price: Number(amount.toFixed(2)),
+        }];
+
+    // Build Mercado Pago payment payload with ALL required and recommended fields
     const mpPayload: Record<string, unknown> = {
       transaction_amount: Number(amount.toFixed(2)),
       description: description || `Pedido ${establishment.name} #${order_id.slice(-8)}`,
       payment_method_id: 'pix',
-      payer: {
-        email: payerEmail,
-        first_name: payerFirstName,
-        last_name: payerLastName,
+      payer: payerData,
+      // RECOMENDADO: Items para melhor aprovação
+      additional_info: {
+        items: paymentItems,
+        payer: {
+          first_name: payerFirstName,
+          last_name: payerLastName,
+          ...(payer_phone && {
+            phone: {
+              area_code: payer_phone.replace(/\D/g, '').substring(0, 2),
+              number: payer_phone.replace(/\D/g, '').substring(2),
+            }
+          }),
+          ...(payer_address && {
+            address: {
+              zip_code: payer_address.zip_code?.replace(/\D/g, ''),
+              street_name: payer_address.street_name,
+              street_number: payer_address.street_number,
+            }
+          }),
+        },
       },
+      // RECOMENDADO: Nome na fatura
+      statement_descriptor: 'VILA FOOD',
       external_reference: external_reference || order_id,
       notification_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/mercadopago-webhook`,
+      // Metadados
+      metadata: {
+        order_id,
+        establishment_id,
+        platform: 'vilafood',
+        ...(device_id && { device_id }),
+      },
     };
 
-    // Add CPF if provided
-    if (payer_cpf) {
-      (mpPayload.payer as Record<string, unknown>).identification = {
-        type: 'CPF',
-        number: payer_cpf.replace(/\D/g, ''),
-      };
-    }
-
     // Add split payment configuration if using platform token
-    // Note: For PIX, split payments are handled differently via bank transfers after payment
-    // application_fee doesn't work with PIX, so we'll handle splits in the webhook
     if (useSplit && sellerId) {
       console.log('[mercadopago-pix] MODELO BLINDADO - Split will be processed after payment via webhook:', {
         platform_fee: totalPlatformFee,
@@ -291,7 +410,8 @@ serve(async (req) => {
 
     console.log('[mercadopago-pix] Creating MP payment with payload:', JSON.stringify({
       ...mpPayload,
-      payer: { ...mpPayload.payer as object, email: '***@***' }
+      payer: { ...mpPayload.payer as object, email: '***@***' },
+      additional_info: '...',
     }, null, 2));
 
     // Generate idempotency key
@@ -300,14 +420,23 @@ serve(async (req) => {
     console.log('[mercadopago-pix] Calling Mercado Pago API...');
     console.log('[mercadopago-pix] Token type:', useSplit ? 'PLATFORM' : 'ESTABLISHMENT');
     console.log('[mercadopago-pix] Token prefix:', accessToken?.substring(0, 20) + '...');
+    console.log('[mercadopago-pix] Device ID:', device_id ? 'present' : 'missing');
+
+    // Headers com Device ID se disponível
+    const mpHeaders: Record<string, string> = {
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+      'X-Idempotency-Key': idempotencyKey,
+    };
+
+    // OBRIGATÓRIO: Device ID para prevenção de fraudes
+    if (device_id) {
+      mpHeaders['X-meli-session-id'] = device_id;
+    }
     
     const mpResponse = await fetch('https://api.mercadopago.com/v1/payments', {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-        'X-Idempotency-Key': idempotencyKey,
-      },
+      headers: mpHeaders,
       body: JSON.stringify(mpPayload),
     });
 
