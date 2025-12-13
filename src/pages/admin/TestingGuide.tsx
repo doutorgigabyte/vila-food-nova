@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import TestCredentialsCard from '@/components/admin/TestCredentialsCard';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { 
   FileText, 
   CreditCard, 
@@ -16,7 +17,12 @@ import {
   Store,
   Truck,
   Shield,
-  Bug
+  Bug,
+  AlertTriangle,
+  Database,
+  Clock,
+  Target,
+  XCircle
 } from 'lucide-react';
 
 const vilaFoodCredentials = [
@@ -52,12 +58,44 @@ const paymentStatuses = [
   { code: 'FORM', status: 'Recusado', description: 'Erro no formulário' },
 ];
 
+const testPrerequisites = {
+  establishment: 'Doces e Tortas (ID: 4c9b12fb-a4c6-453d-87c2-6a9c9b6b1491)',
+  products: ['Bolo de Chocolate - R$ 45,00', 'Torta de Limão - R$ 38,00', 'Brigadeiro (10un) - R$ 25,00'],
+  deliveryZone: 'Centro, Tirol, Petrópolis - Natal/RN',
+  deliveryFee: 'R$ 5,00 - R$ 12,00 dependendo do bairro',
+  operatingHours: 'Seg-Sex: 08:00-18:00 | Sáb: 08:00-14:00 | Dom: Fechado',
+  testCoupon: 'TESTE10 (10% desconto, min R$ 30)',
+  testAddress: 'Rua Apodi, 123 - Centro, Natal/RN - CEP 59025-000',
+};
+
+const expectedErrors = [
+  { scenario: 'Login inválido', expected: 'Toast: "Email ou senha incorretos"', httpCode: '401' },
+  { scenario: 'Produto indisponível', expected: 'Toast: "Produto fora de estoque"', httpCode: '400' },
+  { scenario: 'Endereço fora da zona', expected: 'Toast: "Endereço fora da área de entrega"', httpCode: '400' },
+  { scenario: 'Cupom expirado', expected: 'Toast: "Cupom não é mais válido"', httpCode: '400' },
+  { scenario: 'Pagamento recusado', expected: 'Modal: "Pagamento não autorizado"', httpCode: '402' },
+  { scenario: 'Sessão expirada', expected: 'Redirect para /auth', httpCode: '401' },
+  { scenario: 'Permissão negada', expected: 'Redirect para /marketplace', httpCode: '403' },
+  { scenario: 'Pedido não encontrado', expected: 'Página 404 ou toast de erro', httpCode: '404' },
+];
+
 const TestingGuide = () => {
   const [activeTab, setActiveTab] = useState('tester1');
 
   return (
     <AdminLayout title="Guia de Testes">
       <div className="space-y-6">
+        {/* Aviso de Confidencialidade */}
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>DOCUMENTO CONFIDENCIAL - RESTRITO À EQUIPE DE QA</AlertTitle>
+          <AlertDescription>
+            Este documento contém credenciais sensíveis. Não compartilhe externamente. 
+            Todas as credenciais devem ser atualizadas antes do lançamento em produção.
+            Data de expiração: 30 dias após criação.
+          </AlertDescription>
+        </Alert>
+
         {/* Credenciais */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <TestCredentialsCard
@@ -71,6 +109,53 @@ const TestingGuide = () => {
             credentials={mercadoPagoCredentials}
           />
         </div>
+
+        {/* Pré-requisitos de Dados */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Database className="h-5 w-5" />
+              Pré-requisitos de Dados de Teste
+            </CardTitle>
+            <CardDescription>Dados necessários para execução consistente dos testes</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="p-3 bg-muted/50 rounded-lg">
+                <p className="text-xs font-medium text-muted-foreground mb-1">Estabelecimento</p>
+                <p className="text-sm font-medium">{testPrerequisites.establishment}</p>
+              </div>
+              <div className="p-3 bg-muted/50 rounded-lg">
+                <p className="text-xs font-medium text-muted-foreground mb-1">Horários</p>
+                <p className="text-sm">{testPrerequisites.operatingHours}</p>
+              </div>
+              <div className="p-3 bg-muted/50 rounded-lg">
+                <p className="text-xs font-medium text-muted-foreground mb-1">Zona de Entrega</p>
+                <p className="text-sm">{testPrerequisites.deliveryZone}</p>
+              </div>
+              <div className="p-3 bg-muted/50 rounded-lg">
+                <p className="text-xs font-medium text-muted-foreground mb-1">Taxa de Entrega</p>
+                <p className="text-sm">{testPrerequisites.deliveryFee}</p>
+              </div>
+              <div className="p-3 bg-muted/50 rounded-lg">
+                <p className="text-xs font-medium text-muted-foreground mb-1">Cupom de Teste</p>
+                <p className="text-sm font-mono">{testPrerequisites.testCoupon}</p>
+              </div>
+              <div className="p-3 bg-muted/50 rounded-lg">
+                <p className="text-xs font-medium text-muted-foreground mb-1">Endereço de Teste</p>
+                <p className="text-sm">{testPrerequisites.testAddress}</p>
+              </div>
+            </div>
+            <div className="mt-4 p-3 bg-primary/5 rounded-lg">
+              <p className="text-xs font-medium text-muted-foreground mb-2">Produtos Disponíveis para Teste:</p>
+              <div className="flex flex-wrap gap-2">
+                {testPrerequisites.products.map((product, i) => (
+                  <Badge key={i} variant="outline">{product}</Badge>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Cartões de Teste */}
         <Card>
@@ -107,6 +192,39 @@ const TestingGuide = () => {
                 ))}
               </div>
               <p className="text-xs text-muted-foreground mt-2">CPF para pagamentos aprovados: 12345678909</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Tratamento de Erros Esperados */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <XCircle className="h-5 w-5" />
+              Comportamento Esperado em Caso de Erro
+            </CardTitle>
+            <CardDescription>Referência para validação de cenários de falha</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left py-2 px-3">Cenário</th>
+                    <th className="text-left py-2 px-3">Resultado Esperado</th>
+                    <th className="text-left py-2 px-3">HTTP</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {expectedErrors.map((error, i) => (
+                    <tr key={i} className="border-b">
+                      <td className="py-2 px-3">{error.scenario}</td>
+                      <td className="py-2 px-3 text-muted-foreground">{error.expected}</td>
+                      <td className="py-2 px-3"><Badge variant="outline">{error.httpCode}</Badge></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </CardContent>
         </Card>
@@ -148,10 +266,11 @@ const TestingGuide = () => {
                           <ul className="space-y-2 text-sm">
                             <li><code className="bg-muted px-1 rounded">/</code> - Home/Marketplace</li>
                             <li><code className="bg-muted px-1 rounded">/marketplace</code> - Lista de lojas</li>
-                            <li><code className="bg-muted px-1 rounded">/[slug]</code> - Cardápio digital</li>
-                            <li><code className="bg-muted px-1 rounded">/[slug]/checkout</code> - Checkout</li>
-                            <li><code className="bg-muted px-1 rounded">/acompanhar/[id]</code> - Rastreio</li>
-                            <li><code className="bg-muted px-1 rounded">/perfil</code> - Perfil do cliente</li>
+                            <li><code className="bg-muted px-1 rounded">/loja/doces-e-tortas</code> - Cardápio digital</li>
+                            <li><code className="bg-muted px-1 rounded">/checkout</code> - Checkout</li>
+                            <li><code className="bg-muted px-1 rounded">/pedidos</code> - Meus pedidos</li>
+                            <li><code className="bg-muted px-1 rounded">/pedidos/:id/rastreamento</code> - Rastreio</li>
+                            <li><code className="bg-muted px-1 rounded">/conta</code> - Perfil do cliente</li>
                             <li><code className="bg-muted px-1 rounded">/auth</code> - Login/Cadastro</li>
                           </ul>
                         </AccordionContent>
@@ -160,7 +279,7 @@ const TestingGuide = () => {
                         <AccordionTrigger>
                           <div className="flex items-center gap-2">
                             <Shield className="h-4 w-4" />
-                            Área Admin
+                            Área Admin (requer super_admin)
                           </div>
                         </AccordionTrigger>
                         <AccordionContent>
@@ -193,40 +312,71 @@ const TestingGuide = () => {
                   <ScrollArea className="h-[400px]">
                     <div className="space-y-4">
                       <div>
-                        <h4 className="font-semibold text-sm mb-2">Fluxo de Compra</h4>
-                        <ul className="space-y-1 text-sm text-muted-foreground">
-                          <li>☐ Retirada no local (sem pagamento online)</li>
-                          <li>☐ Delivery com PIX</li>
-                          <li>☐ Delivery com Cartão</li>
-                          <li>☐ Delivery com Dinheiro</li>
-                          <li>☐ Aplicar cupom de desconto</li>
-                          <li>☐ Rastrear pedido</li>
+                        <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
+                          <Target className="h-4 w-4" /> Fluxo de Compra
+                        </h4>
+                        <ul className="space-y-2 text-sm text-muted-foreground">
+                          <li className="flex justify-between">
+                            <span>☐ Retirada no local</span>
+                            <span className="text-xs">→ Status: confirmed</span>
+                          </li>
+                          <li className="flex justify-between">
+                            <span>☐ Delivery com PIX</span>
+                            <span className="text-xs">→ QR Code gerado</span>
+                          </li>
+                          <li className="flex justify-between">
+                            <span>☐ Delivery com Cartão</span>
+                            <span className="text-xs">→ Redirect MP</span>
+                          </li>
+                          <li className="flex justify-between">
+                            <span>☐ Delivery com Dinheiro</span>
+                            <span className="text-xs">→ Troco calculado</span>
+                          </li>
+                          <li className="flex justify-between">
+                            <span>☐ Cupom TESTE10</span>
+                            <span className="text-xs">→ 10% desconto</span>
+                          </li>
+                          <li className="flex justify-between">
+                            <span>☐ Rastrear pedido</span>
+                            <span className="text-xs">→ Timeline atualiza</span>
+                          </li>
                         </ul>
                       </div>
                       <div>
-                        <h4 className="font-semibold text-sm mb-2">Admin - Dashboard</h4>
-                        <ul className="space-y-1 text-sm text-muted-foreground">
-                          <li>☐ Métricas carregando</li>
-                          <li>☐ Gráficos funcionais</li>
-                          <li>☐ Filtros de data</li>
+                        <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
+                          <Clock className="h-4 w-4" /> Admin - Dashboard
+                        </h4>
+                        <ul className="space-y-2 text-sm text-muted-foreground">
+                          <li className="flex justify-between">
+                            <span>☐ Métricas carregando</span>
+                            <span className="text-xs">→ Números &gt; 0</span>
+                          </li>
+                          <li className="flex justify-between">
+                            <span>☐ Gráficos funcionais</span>
+                            <span className="text-xs">→ Recharts render</span>
+                          </li>
+                          <li className="flex justify-between">
+                            <span>☐ Filtros de data</span>
+                            <span className="text-xs">→ Dados atualizam</span>
+                          </li>
                         </ul>
                       </div>
                       <div>
                         <h4 className="font-semibold text-sm mb-2">Admin - Gestão</h4>
                         <ul className="space-y-1 text-sm text-muted-foreground">
-                          <li>☐ Listar estabelecimentos</li>
-                          <li>☐ Acessar painel de loja</li>
-                          <li>☐ Criar/editar usuário</li>
+                          <li>☐ Listar estabelecimentos (filtro por status)</li>
+                          <li>☐ Acessar painel de loja (admin_access_logs)</li>
+                          <li>☐ Criar/editar usuário (roles table)</li>
                           <li>☐ Criar voucher plataforma</li>
-                          <li>☐ Visualizar relatórios</li>
+                          <li>☐ Visualizar relatórios (exportar CSV)</li>
                         </ul>
                       </div>
                       <div>
                         <h4 className="font-semibold text-sm mb-2">Segurança</h4>
                         <ul className="space-y-1 text-sm text-muted-foreground">
                           <li>☐ Central de segurança OK</li>
-                          <li>☐ Acesso não autorizado bloqueado</li>
-                          <li>☐ Logout funcionando</li>
+                          <li>☐ Cliente tentando /admin → 403</li>
+                          <li>☐ Logout limpa sessão</li>
                         </ul>
                       </div>
                     </div>
@@ -258,17 +408,17 @@ const TestingGuide = () => {
                         </AccordionTrigger>
                         <AccordionContent>
                           <ul className="space-y-2 text-sm">
-                            <li><code className="bg-muted px-1 rounded">/painel/[slug]</code> - Dashboard</li>
-                            <li><code className="bg-muted px-1 rounded">/painel/[slug]/pedidos</code> - Pedidos</li>
-                            <li><code className="bg-muted px-1 rounded">/painel/[slug]/produtos</code> - Produtos</li>
-                            <li><code className="bg-muted px-1 rounded">/painel/[slug]/categorias</code> - Categorias</li>
-                            <li><code className="bg-muted px-1 rounded">/painel/[slug]/stories</code> - VilaTok Stories</li>
-                            <li><code className="bg-muted px-1 rounded">/painel/[slug]/tv</code> - VilaTok TV</li>
-                            <li><code className="bg-muted px-1 rounded">/painel/[slug]/equipe</code> - Equipe</li>
-                            <li><code className="bg-muted px-1 rounded">/painel/[slug]/entregadores</code> - Entregadores</li>
-                            <li><code className="bg-muted px-1 rounded">/painel/[slug]/financeiro</code> - Financeiro</li>
-                            <li><code className="bg-muted px-1 rounded">/painel/[slug]/cupons</code> - Cupons</li>
-                            <li><code className="bg-muted px-1 rounded">/painel/[slug]/configuracoes</code> - Config</li>
+                            <li><code className="bg-muted px-1 rounded">/painel/doces-e-tortas</code> - Dashboard</li>
+                            <li><code className="bg-muted px-1 rounded">/painel/doces-e-tortas/pedidos</code> - Pedidos</li>
+                            <li><code className="bg-muted px-1 rounded">/painel/doces-e-tortas/produtos</code> - Produtos</li>
+                            <li><code className="bg-muted px-1 rounded">/painel/doces-e-tortas/categorias</code> - Categorias</li>
+                            <li><code className="bg-muted px-1 rounded">/painel/doces-e-tortas/stories</code> - VilaTok Stories</li>
+                            <li><code className="bg-muted px-1 rounded">/painel/doces-e-tortas/vilatok-tv</code> - VilaTok TV</li>
+                            <li><code className="bg-muted px-1 rounded">/painel/doces-e-tortas/equipe</code> - Equipe</li>
+                            <li><code className="bg-muted px-1 rounded">/painel/doces-e-tortas/entregadores</code> - Entregadores</li>
+                            <li><code className="bg-muted px-1 rounded">/painel/doces-e-tortas/financeiro</code> - Financeiro</li>
+                            <li><code className="bg-muted px-1 rounded">/painel/doces-e-tortas/cupons</code> - Cupons</li>
+                            <li><code className="bg-muted px-1 rounded">/painel/doces-e-tortas/configuracoes</code> - Config</li>
                           </ul>
                         </AccordionContent>
                       </AccordionItem>
@@ -281,8 +431,8 @@ const TestingGuide = () => {
                         </AccordionTrigger>
                         <AccordionContent>
                           <ul className="space-y-2 text-sm">
-                            <li><code className="bg-muted px-1 rounded">/kds/[token]</code> - Display público</li>
-                            <li><code className="bg-muted px-1 rounded">/painel/[slug]/kds</code> - KDS autenticado</li>
+                            <li><code className="bg-muted px-1 rounded">/display/cozinha/:token</code> - Display público</li>
+                            <li><code className="bg-muted px-1 rounded">/painel/doces-e-tortas/cozinha</code> - KDS autenticado</li>
                           </ul>
                         </AccordionContent>
                       </AccordionItem>
@@ -296,8 +446,7 @@ const TestingGuide = () => {
                         <AccordionContent>
                           <ul className="space-y-2 text-sm">
                             <li><code className="bg-muted px-1 rounded">/entregador</code> - Fila de entregas</li>
-                            <li><code className="bg-muted px-1 rounded">/entregador/entrega/[id]</code> - Entrega ativa</li>
-                            <li><code className="bg-muted px-1 rounded">/entregador/historico</code> - Histórico</li>
+                            <li><code className="bg-muted px-1 rounded">/entregador</code> - Entrega ativa</li>
                           </ul>
                         </AccordionContent>
                       </AccordionItem>
@@ -319,48 +468,107 @@ const TestingGuide = () => {
                     <div className="space-y-4">
                       <div>
                         <h4 className="font-semibold text-sm mb-2">Painel Lojista</h4>
-                        <ul className="space-y-1 text-sm text-muted-foreground">
-                          <li>☐ Login como lojista</li>
-                          <li>☐ Dashboard com métricas</li>
-                          <li>☐ Receber pedido em tempo real</li>
-                          <li>☐ Confirmar → Preparando → Pronto</li>
-                          <li>☐ CRUD de produtos</li>
-                          <li>☐ Upload de imagens S3</li>
+                        <ul className="space-y-2 text-sm text-muted-foreground">
+                          <li className="flex justify-between">
+                            <span>☐ Login como lojista</span>
+                            <span className="text-xs">→ Redirect /painel</span>
+                          </li>
+                          <li className="flex justify-between">
+                            <span>☐ Dashboard com métricas</span>
+                            <span className="text-xs">→ Números corretos</span>
+                          </li>
+                          <li className="flex justify-between">
+                            <span>☐ Receber pedido realtime</span>
+                            <span className="text-xs">→ Toast + som</span>
+                          </li>
+                          <li className="flex justify-between">
+                            <span>☐ Confirmar → Pronto</span>
+                            <span className="text-xs">→ Status atualiza</span>
+                          </li>
+                          <li className="flex justify-between">
+                            <span>☐ CRUD de produtos</span>
+                            <span className="text-xs">→ Lista atualiza</span>
+                          </li>
+                          <li className="flex justify-between">
+                            <span>☐ Upload imagem S3</span>
+                            <span className="text-xs">→ CloudFront URL</span>
+                          </li>
                         </ul>
                       </div>
                       <div>
                         <h4 className="font-semibold text-sm mb-2">VilaTok</h4>
-                        <ul className="space-y-1 text-sm text-muted-foreground">
-                          <li>☐ Criar story com imagem</li>
-                          <li>☐ Criar slide TV com template</li>
-                          <li>☐ Visualizar no display público</li>
+                        <ul className="space-y-2 text-sm text-muted-foreground">
+                          <li className="flex justify-between">
+                            <span>☐ Criar story</span>
+                            <span className="text-xs">→ Aparece em /vilatok</span>
+                          </li>
+                          <li className="flex justify-between">
+                            <span>☐ Criar slide TV</span>
+                            <span className="text-xs">→ Preview correto</span>
+                          </li>
+                          <li className="flex justify-between">
+                            <span>☐ Display público</span>
+                            <span className="text-xs">→ Token funciona</span>
+                          </li>
                         </ul>
                       </div>
                       <div>
                         <h4 className="font-semibold text-sm mb-2">KDS</h4>
-                        <ul className="space-y-1 text-sm text-muted-foreground">
-                          <li>☐ Gerar token público</li>
-                          <li>☐ Pedidos aparecem em tempo real</li>
-                          <li>☐ Som de notificação</li>
-                          <li>☐ Marcar como pronto</li>
+                        <ul className="space-y-2 text-sm text-muted-foreground">
+                          <li className="flex justify-between">
+                            <span>☐ Gerar token público</span>
+                            <span className="text-xs">→ URL copiável</span>
+                          </li>
+                          <li className="flex justify-between">
+                            <span>☐ Pedidos realtime</span>
+                            <span className="text-xs">→ Splash + som</span>
+                          </li>
+                          <li className="flex justify-between">
+                            <span>☐ Marcar como pronto</span>
+                            <span className="text-xs">→ delivery_request cria</span>
+                          </li>
                         </ul>
                       </div>
                       <div>
                         <h4 className="font-semibold text-sm mb-2">Entregador</h4>
-                        <ul className="space-y-1 text-sm text-muted-foreground">
-                          <li>☐ Ver fila de entregas</li>
-                          <li>☐ Aceitar entrega</li>
-                          <li>☐ Atualizar status (coletado, entregue)</li>
-                          <li>☐ Histórico de entregas</li>
+                        <ul className="space-y-2 text-sm text-muted-foreground">
+                          <li className="flex justify-between">
+                            <span>☐ Ver fila de entregas</span>
+                            <span className="text-xs">→ Pedidos pendentes</span>
+                          </li>
+                          <li className="flex justify-between">
+                            <span>☐ Aceitar entrega</span>
+                            <span className="text-xs">→ Status: assigned</span>
+                          </li>
+                          <li className="flex justify-between">
+                            <span>☐ Marcar coletado</span>
+                            <span className="text-xs">→ Status: picked_up</span>
+                          </li>
+                          <li className="flex justify-between">
+                            <span>☐ Marcar entregue</span>
+                            <span className="text-xs">→ Status: delivered</span>
+                          </li>
                         </ul>
                       </div>
                       <div>
                         <h4 className="font-semibold text-sm mb-2">WhatsApp IA (N8N)</h4>
-                        <ul className="space-y-1 text-sm text-muted-foreground">
-                          <li>☐ Enviar mensagem de texto</li>
-                          <li>☐ Buscar produto</li>
-                          <li>☐ Adicionar ao carrinho</li>
-                          <li>☐ Finalizar pedido PIX</li>
+                        <ul className="space-y-2 text-sm text-muted-foreground">
+                          <li className="flex justify-between">
+                            <span>☐ Enviar mensagem</span>
+                            <span className="text-xs">→ IA responde</span>
+                          </li>
+                          <li className="flex justify-between">
+                            <span>☐ Buscar produto</span>
+                            <span className="text-xs">→ Lista retorna</span>
+                          </li>
+                          <li className="flex justify-between">
+                            <span>☐ Add carrinho</span>
+                            <span className="text-xs">→ Redis atualiza</span>
+                          </li>
+                          <li className="flex justify-between">
+                            <span>☐ Finalizar PIX</span>
+                            <span className="text-xs">→ QR Code enviado</span>
+                          </li>
                         </ul>
                       </div>
                     </div>
@@ -397,21 +605,24 @@ const TestingGuide = () => {
 3. [Passo 3]
 
 ### Resultado Esperado
-[O que deveria acontecer]
+[O que deveria acontecer - use a tabela de erros acima]
 
 ### Resultado Atual
 [O que realmente acontece]
 
 ### Evidências
 - Screenshot: [link]
-- Console: [erros]
-- Network: [requisições]
+- Console: [erros específicos]
+- Network: [status code + endpoint]
 
 ### Prioridade
 [ ] Crítico (bloqueia uso)
-[ ] Alto (afeta funcionalidade)
-[ ] Médio (inconveniente)
-[ ] Baixo (cosmético)`}
+[ ] Alto (afeta funcionalidade principal)
+[ ] Médio (inconveniente mas tem workaround)
+[ ] Baixo (cosmético)
+
+### Cleanup Necessário
+[Dados criados que precisam ser removidos após teste]`}
               </pre>
             </div>
           </CardContent>
