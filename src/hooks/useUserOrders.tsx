@@ -34,7 +34,10 @@ export const useUserOrders = () => {
   const { user } = useAuth();
 
   const fetchOrders = useCallback(async () => {
+    console.log('[useUserOrders] Fetching orders for user:', user?.id);
+    
     if (!user) {
+      console.log('[useUserOrders] No user, clearing orders');
       setOrders([]);
       setLoading(false);
       return;
@@ -42,14 +45,16 @@ export const useUserOrders = () => {
 
     try {
       // First get customer record for this user
-      const { data: customer } = await supabase
+      const { data: customer, error: customerError } = await supabase
         .from('customers')
         .select('id')
         .eq('user_id', user.id)
         .maybeSingle();
 
+      console.log('[useUserOrders] Customer lookup result:', { customer, customerError });
+
       if (!customer) {
-        // No customer record yet - user hasn't made any orders
+        console.log('[useUserOrders] No customer record found for user:', user.id);
         setOrders([]);
         setLoading(false);
         return;
@@ -69,15 +74,20 @@ export const useUserOrders = () => {
         .eq('customer_id', customer.id)
         .order('created_at', { ascending: false });
 
+      console.log('[useUserOrders] Orders query result:', { 
+        ordersCount: data?.length || 0, 
+        customerId: customer.id,
+        error 
+      });
+
       if (error) {
-        console.error('Error fetching user orders:', error);
+        console.error('[useUserOrders] Error fetching orders:', error);
         throw error;
       }
       
-      console.log('[useUserOrders] Fetched orders:', data?.length || 0, 'for customer:', customer.id);
       setOrders((data as UserOrder[]) || []);
     } catch (error) {
-      console.error('Error fetching user orders:', error);
+      console.error('[useUserOrders] Error in fetchOrders:', error);
       setOrders([]);
     } finally {
       setLoading(false);
