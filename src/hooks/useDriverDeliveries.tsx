@@ -161,6 +161,9 @@ export const useDriverDeliveries = () => {
     status: DeliveryStatus,
     additionalData?: Partial<DeliveryTracking>
   ) => {
+    // Buscar o delivery para pegar o order_id
+    const delivery = deliveries.find(d => d.id === deliveryId);
+    
     const updateData: any = { 
       status,
       ...additionalData
@@ -182,8 +185,31 @@ export const useDriverDeliveries = () => {
       return false;
     }
 
-    // Note: Payment split removed - establishment pays driver directly (Modelo Blindado)
-    // Driver earnings are managed by the establishment, not the platform
+    // Sincronizar status do pedido (orders) com o delivery_tracking
+    if (delivery?.order_id) {
+      const orderStatusMap: Record<DeliveryStatus, string | null> = {
+        assigned: null, // Não atualiza orders
+        accepted: 'delivering',
+        picked_up: 'delivering',
+        in_transit: 'delivering',
+        delivered: 'delivered',
+        cancelled: 'cancelled',
+        problem: null
+      };
+
+      const newOrderStatus = orderStatusMap[status];
+      if (newOrderStatus) {
+        const orderUpdateData: any = { status: newOrderStatus };
+        if (status === 'delivered') {
+          orderUpdateData.delivered_at = new Date().toISOString();
+        }
+        
+        await supabase
+          .from('orders')
+          .update(orderUpdateData)
+          .eq('id', delivery.order_id);
+      }
+    }
 
     await fetchDeliveries();
     
