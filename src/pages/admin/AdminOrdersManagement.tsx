@@ -70,7 +70,7 @@ const AdminOrdersManagement = () => {
 
   // Update status mutation
   const updateStatusMutation = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+    mutationFn: async ({ id, status, order }: { id: string; status: string; order?: any }) => {
       const updateData: any = { status };
       if (status === 'delivered') {
         updateData.delivered_at = new Date().toISOString();
@@ -83,6 +83,51 @@ const AdminOrdersManagement = () => {
         .update(updateData)
         .eq('id', id);
       if (error) throw error;
+
+      // Criar notificações quando status muda
+      if (status === 'confirmed' && order?.establishment_id) {
+        await supabase.from('notifications').insert({
+          establishment_id: order.establishment_id,
+          type: 'order_confirmed',
+          priority: 'high',
+          title: `Pedido #${order.order_number} confirmado!`,
+          message: 'Novo pedido para preparação na cozinha',
+          target_roles: ['manager', 'kitchen'],
+          data: { order_id: id, order_number: order.order_number }
+        });
+      }
+
+      if (status === 'ready' && order?.establishment_id) {
+        await supabase.from('notifications').insert({
+          establishment_id: order.establishment_id,
+          type: 'order_ready',
+          priority: 'high',
+          title: `Pedido #${order.order_number} pronto!`,
+          message: 'Pedido pronto para entrega/retirada',
+          target_roles: ['manager', 'cashier', 'waiter', 'delivery'],
+          data: { order_id: id, order_number: order.order_number }
+        });
+
+        // Se for delivery, criar solicitação de entrega para motoristas
+        if (order.delivery_type === 'delivery') {
+          const expiresAt = new Date();
+          expiresAt.setMinutes(expiresAt.getMinutes() + 5);
+
+          await supabase.from('delivery_requests').insert({
+            order_id: id,
+            establishment_id: order.establishment_id,
+            status: 'pending',
+            calculated_fee: order.delivery_fee || 0,
+            driver_earnings: order.delivery_fee || 0,
+            expires_at: expiresAt.toISOString(),
+            pickup_address: order.establishments?.address || '',
+            delivery_address: order.delivery_address 
+              ? `${order.delivery_address.street}, ${order.delivery_address.number} - ${order.delivery_address.neighborhood}`
+              : '',
+            customer_name: order.delivery_address?.name || 'Cliente'
+          });
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
@@ -317,7 +362,7 @@ const AdminOrdersManagement = () => {
                 <Select 
                   value={selectedOrder.status} 
                   onValueChange={(status) => {
-                    updateStatusMutation.mutate({ id: selectedOrder.id, status });
+                    updateStatusMutation.mutate({ id: selectedOrder.id, status, order: selectedOrder });
                     setSelectedOrder({ ...selectedOrder, status });
                   }}
                 >
