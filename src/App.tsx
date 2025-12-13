@@ -166,13 +166,15 @@ const AppRoutes = () => {
       if (loading) return;
       
       // Skip check for public routes
-      const publicRoutes = ['/auth', '/', '/marketplace', '/conheca', '/recuperar-senha', '/termos', '/privacidade'];
+      const publicRoutes = ['/auth', '/', '/marketplace', '/conheca', '/recuperar-senha', '/termos', '/privacidade', '/checkout'];
       const isPublicRoute = publicRoutes.includes(location.pathname) || 
         location.pathname.startsWith('/loja/') || 
         location.pathname.startsWith('/vila/') || 
         location.pathname.startsWith('/vilas') || 
         location.pathname.startsWith('/vilatok') || 
-        location.pathname.startsWith('/categoria/');
+        location.pathname.startsWith('/categoria/') ||
+        location.pathname.startsWith('/checkout/') ||
+        location.pathname.startsWith('/pedidos/');
       
       if (isPublicRoute) {
         return;
