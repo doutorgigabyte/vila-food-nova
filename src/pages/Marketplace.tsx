@@ -18,6 +18,7 @@ import TopOffersSection from "@/components/marketplace/TopOffersSection";
 import BestStoresSection from "@/components/marketplace/BestStoresSection";
 import NewPartnersSection from "@/components/marketplace/NewPartnersSection";
 import JustForYouCarousel from "@/components/marketplace/JustForYouCarousel";
+import MarketplaceKitsSection from "@/components/marketplace/MarketplaceKitsSection";
 import Footer from "@/components/landing/Footer";
 
 const Marketplace = () => {
@@ -82,6 +83,9 @@ const Marketplace = () => {
 
         {/* Top Offers - filtered by category */}
         <TopOffersSection mainCategory={selectedMainCategory} />
+
+        {/* Combos & Kits - filtered by category */}
+        <MarketplaceKitsSection mainCategory={selectedMainCategory} />
 
         {/* Vilas Gastronômicas - only show when no category selected or food category */}
         {(!selectedMainCategory || selectedMainCategory === 'comida') && (

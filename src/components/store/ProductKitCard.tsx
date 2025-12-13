@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import { Package, Plus, Tag } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -9,11 +10,19 @@ interface ProductKitCardProps {
 }
 
 export const ProductKitCard = ({ kit, onAddToCart }: ProductKitCardProps) => {
+  const navigate = useNavigate();
   const savings = kit.original_price - kit.kit_price;
   const savingsPercent = Math.round((savings / kit.original_price) * 100);
 
+  const handleCardClick = () => {
+    navigate(`/kit/${kit.id}`);
+  };
+
   return (
-    <div className="bg-card rounded-xl border shadow-sm overflow-hidden min-w-[280px] max-w-[320px] flex-shrink-0">
+    <div 
+      className="bg-card rounded-xl border shadow-sm overflow-hidden min-w-[280px] max-w-[320px] flex-shrink-0 cursor-pointer hover:shadow-md transition-shadow"
+      onClick={handleCardClick}
+    >
       {/* Image */}
       <div className="relative h-40 bg-muted">
         {kit.image_url ? (
@@ -93,7 +102,10 @@ export const ProductKitCard = ({ kit, onAddToCart }: ProductKitCardProps) => {
 
           <Button
             size="sm"
-            onClick={() => onAddToCart(kit)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onAddToCart(kit);
+            }}
             className="rounded-full"
           >
             <Plus className="w-4 h-4 mr-1" />
