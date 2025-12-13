@@ -27,6 +27,37 @@ serve(async (req) => {
       });
     }
 
+    // Action: reset-driver - Reset driver password only
+    if (action === 'reset-driver') {
+      const driverEmail = 'entregador.teste@vilafood.delivery';
+      const driverPassword = 'Teste@123';
+      
+      const { data: userData } = await supabaseAdmin.auth.admin.listUsers();
+      const foundUser = userData?.users.find(u => u.email === driverEmail);
+      
+      if (!foundUser) {
+        return new Response(JSON.stringify({ error: 'Driver user not found' }), {
+          status: 404,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      
+      const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
+        foundUser.id,
+        { password: driverPassword }
+      );
+      
+      if (updateError) throw updateError;
+      
+      return new Response(JSON.stringify({
+        success: true,
+        message: 'Driver password reset',
+        credentials: { email: driverEmail, password: driverPassword }
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // Action: create-driver - Create a test delivery driver
     if (action === 'create-driver') {
       const driverEmail = 'entregador.teste@vilafood.delivery';
