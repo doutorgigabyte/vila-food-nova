@@ -3,11 +3,15 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ChefHat, Clock, CheckCircle, AlertCircle, Utensils, Package, Cog, Bell, VolumeX, Volume2, ArrowLeft, Truck, Timer } from "lucide-react";
+import { 
+  ChefHat, Clock, CheckCircle, AlertCircle, Utensils, Package, Cog, Bell, 
+  VolumeX, ArrowLeft, Timer, TrendingUp, TrendingDown, History, RotateCcw
+} from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useNotificationSound } from "@/hooks/useNotificationSound";
 import { useAuth } from "@/hooks/useAuth";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface OrderItem {
   name: string;
@@ -23,6 +27,14 @@ interface Order {
   table_number?: string;
   created_at: string;
   status: string;
+  observations?: string;
+}
+
+interface DailyStats {
+  delivered: number;
+  returned: number;
+  cancelled: number;
+  yesterdayDelivered: number;
 }
 
 // Mapeamento de segmentos para tipo de display
@@ -63,29 +75,35 @@ const KitchenDisplay = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
+  const [deliveredOrders, setDeliveredOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [segmentSlug, setSegmentSlug] = useState<string | null>(null);
   const [establishmentId, setEstablishmentId] = useState<string | null>(null);
   const [establishmentSlug, setEstablishmentSlug] = useState<string | null>(null);
   const [showNewOrderSplash, setShowNewOrderSplash] = useState(false);
   const [newOrderNumber, setNewOrderNumber] = useState<number | null>(null);
+  const [showHistory, setShowHistory] = useState(false);
+  const [dailyStats, setDailyStats] = useState<DailyStats>({ 
+    delivered: 0, returned: 0, cancelled: 0, yesterdayDelivered: 0 
+  });
   const previousOrdersRef = useRef<string[]>([]);
   
   const { playNotification, stopSound, isPlaying } = useNotificationSound();
 
   // Stats for summary
-  const confirmedOrders = orders.filter(o => o.status === 'confirmed');
   const preparingOrders = orders.filter(o => o.status === 'preparing');
+  const readyOrders = orders.filter(o => o.status === 'ready');
   const avgPrepTime = orders.length > 0 
     ? Math.round(orders.reduce((sum, o) => sum + Math.floor((Date.now() - new Date(o.created_at).getTime()) / 60000), 0) / orders.length)
     : 0;
+  
+  const deliveredDiff = dailyStats.delivered - dailyStats.yesterdayDelivered;
 
   // Buscar estabelecimento considerando super admin
   const fetchEstablishment = useCallback(async () => {
     if (!user) return null;
 
     try {
-      // Check if super_admin
       const { data: isSuperAdmin } = await supabase.rpc('has_role', {
         _user_id: user.id,
         _role: 'super_admin'
@@ -93,7 +111,6 @@ const KitchenDisplay = () => {
 
       let establishment = null;
 
-      // Se super admin e tem slug, buscar pelo slug
       if (isSuperAdmin && slug) {
         const { data } = await supabase
           .from("establishments")
@@ -102,9 +119,7 @@ const KitchenDisplay = () => {
           .single();
         establishment = data;
         if (data) setEstablishmentSlug(data.slug);
-      } 
-      // Se não é super admin ou não tem slug, buscar pelo owner_id
-      else if (!isSuperAdmin) {
+      } else if (!isSuperAdmin) {
         const { data } = await supabase
           .from("establishments")
           .select("id, segment_id, slug")
@@ -112,9 +127,7 @@ const KitchenDisplay = () => {
           .single();
         establishment = data;
         if (data) setEstablishmentSlug(data.slug);
-      }
-      // Se é super admin sem slug, tentar buscar via establishment_users
-      else {
+      } else {
         const { data: estUsers } = await supabase
           .from("establishment_users")
           .select("establishment_id, establishments(id, segment_id, slug)")
@@ -132,7 +145,6 @@ const KitchenDisplay = () => {
       if (establishment) {
         setEstablishmentId(establishment.id);
         
-        // Buscar slug do segmento
         if (establishment.segment_id) {
           const { data: segment } = await supabase
             .from("segments")
@@ -153,6 +165,69 @@ const KitchenDisplay = () => {
     }
   }, [user, slug]);
 
+  // Buscar estatísticas do dia
+  const fetchDailyStats = useCallback(async () => {
+    if (!establishmentId) return;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    try {
+      // Pedidos entregues hoje
+      const { count: deliveredToday } = await supabase
+        .from("orders")
+        .select("*", { count: 'exact', head: true })
+        .eq("establishment_id", establishmentId)
+        .eq("status", "delivered")
+        .gte("created_at", today.toISOString());
+
+      // Pedidos cancelados hoje
+      const { count: cancelledToday } = await supabase
+        .from("orders")
+        .select("*", { count: 'exact', head: true })
+        .eq("establishment_id", establishmentId)
+        .eq("status", "cancelled")
+        .gte("created_at", today.toISOString());
+
+      // Pedidos entregues ontem
+      const { count: deliveredYesterday } = await supabase
+        .from("orders")
+        .select("*", { count: 'exact', head: true })
+        .eq("establishment_id", establishmentId)
+        .eq("status", "delivered")
+        .gte("created_at", yesterday.toISOString())
+        .lt("created_at", today.toISOString());
+
+      // Buscar últimos pedidos entregues para histórico
+      const { data: recentDelivered } = await supabase
+        .from("orders")
+        .select("*")
+        .eq("establishment_id", establishmentId)
+        .in("status", ["delivered", "cancelled"])
+        .gte("created_at", today.toISOString())
+        .order("created_at", { ascending: false })
+        .limit(20);
+
+      setDailyStats({
+        delivered: deliveredToday || 0,
+        returned: 0,
+        cancelled: cancelledToday || 0,
+        yesterdayDelivered: deliveredYesterday || 0
+      });
+
+      if (recentDelivered) {
+        setDeliveredOrders(recentDelivered.map(o => ({
+          ...o,
+          items: (o.items as unknown as OrderItem[]) || []
+        })));
+      }
+    } catch (error) {
+      console.error("Error fetching daily stats:", error);
+    }
+  }, [establishmentId]);
+
   const fetchOrders = useCallback(async () => {
     if (!establishmentId) return;
 
@@ -161,7 +236,7 @@ const KitchenDisplay = () => {
         .from("orders")
         .select("*")
         .eq("establishment_id", establishmentId)
-        .in("status", ["confirmed", "preparing"])
+        .in("status", ["preparing", "ready"])
         .order("created_at", { ascending: true });
 
       if (data) {
@@ -175,14 +250,12 @@ const KitchenDisplay = () => {
         const newIds = currentIds.filter(id => !previousOrdersRef.current.includes(id));
         
         if (newIds.length > 0 && previousOrdersRef.current.length > 0) {
-          // Há novos pedidos - mostrar splash e tocar som
           const newOrder = newOrders.find(o => o.id === newIds[0]);
           if (newOrder) {
             setNewOrderNumber(newOrder.order_number);
             setShowNewOrderSplash(true);
             playNotification('new_order');
             
-            // Criar notificação no banco
             await supabase.from('notifications').insert({
               establishment_id: establishmentId,
               type: 'new_order',
@@ -193,7 +266,6 @@ const KitchenDisplay = () => {
               data: { order_id: newOrder.id, order_number: newOrder.order_number }
             });
             
-            // Fechar splash após 3 segundos
             setTimeout(() => {
               setShowNewOrderSplash(false);
               setNewOrderNumber(null);
@@ -217,13 +289,13 @@ const KitchenDisplay = () => {
     fetchEstablishment();
   }, [fetchEstablishment]);
 
-  // Buscar pedidos e configurar realtime quando tiver establishmentId
+  // Buscar pedidos e estatísticas quando tiver establishmentId
   useEffect(() => {
     if (!establishmentId) return;
 
     fetchOrders();
+    fetchDailyStats();
     
-    // Real-time subscription com filtro de establishment_id
     const channel = supabase
       .channel(`kitchen-orders-${establishmentId}`)
       .on(
@@ -234,9 +306,9 @@ const KitchenDisplay = () => {
           table: 'orders',
           filter: `establishment_id=eq.${establishmentId}`
         },
-        (payload) => {
-          console.log('Kitchen order change:', payload);
+        () => {
           fetchOrders();
+          fetchDailyStats();
         }
       )
       .subscribe();
@@ -244,9 +316,9 @@ const KitchenDisplay = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [establishmentId, fetchOrders]);
+  }, [establishmentId, fetchOrders, fetchDailyStats]);
 
-  const updateStatus = async (orderId: string, newStatus: "pending" | "confirmed" | "preparing" | "ready" | "delivering" | "delivered" | "cancelled") => {
+  const updateStatus = async (orderId: string, newStatus: "preparing" | "ready" | "delivered") => {
     try {
       const { error } = await supabase
         .from("orders")
@@ -258,7 +330,6 @@ const KitchenDisplay = () => {
       if (newStatus === "ready") {
         toast.success("Pedido pronto para entrega!");
         
-        // Criar notificação de pedido pronto
         await supabase.from('notifications').insert({
           establishment_id: establishmentId,
           type: 'order_ready',
@@ -268,11 +339,10 @@ const KitchenDisplay = () => {
           target_roles: ['manager', 'cashier', 'waiter', 'delivery'],
           data: { order_id: orderId }
         });
-      } else if (newStatus === "preparing") {
-        toast.info("Pedido em preparo");
       }
 
       fetchOrders();
+      fetchDailyStats();
     } catch (error) {
       toast.error("Erro ao atualizar status");
     }
@@ -315,7 +385,7 @@ const KitchenDisplay = () => {
         </div>
       )}
 
-      {/* Header com botão voltar */}
+      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <Button 
@@ -340,29 +410,28 @@ const KitchenDisplay = () => {
               <VolumeX className="w-5 h-5" />
             </Button>
           )}
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => {
+              fetchOrders();
+              fetchDailyStats();
+            }}
+          >
+            <RotateCcw className="w-5 h-5" />
+          </Button>
           <Badge variant="outline" className="text-lg px-4 py-2">
             {orders.length} pedidos
           </Badge>
         </div>
       </div>
 
-      {/* Stats Summary */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <Card className="bg-yellow-500/10 border-yellow-500/30">
+      {/* Stats Summary - Métricas do Dia */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+        <Card className="bg-orange-500/10 border-orange-500/30">
           <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-yellow-500/20">
-              <Bell className="w-5 h-5 text-yellow-600" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold">{confirmedOrders.length}</p>
-              <p className="text-xs text-muted-foreground">Aguardando</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-blue-500/10 border-blue-500/30">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-blue-500/20">
-              <ChefHat className="w-5 h-5 text-blue-600" />
+            <div className="p-2 rounded-lg bg-orange-500/20">
+              <ChefHat className="w-5 h-5 text-orange-600" />
             </div>
             <div>
               <p className="text-2xl font-bold">{preparingOrders.length}</p>
@@ -373,11 +442,37 @@ const KitchenDisplay = () => {
         <Card className="bg-green-500/10 border-green-500/30">
           <CardContent className="p-4 flex items-center gap-3">
             <div className="p-2 rounded-lg bg-green-500/20">
-              <CheckCircle className="w-5 h-5 text-green-600" />
+              <Package className="w-5 h-5 text-green-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold">{orders.length}</p>
-              <p className="text-xs text-muted-foreground">Total Ativos</p>
+              <p className="text-2xl font-bold">{readyOrders.length}</p>
+              <p className="text-xs text-muted-foreground">Prontos</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-blue-500/10 border-blue-500/30">
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-blue-500/20">
+              <CheckCircle className="w-5 h-5 text-blue-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold">{dailyStats.delivered}</p>
+              <p className="text-xs text-muted-foreground">Entregues Hoje</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className={deliveredDiff >= 0 ? "bg-emerald-500/10 border-emerald-500/30" : "bg-red-500/10 border-red-500/30"}>
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className={`p-2 rounded-lg ${deliveredDiff >= 0 ? "bg-emerald-500/20" : "bg-red-500/20"}`}>
+              {deliveredDiff >= 0 ? (
+                <TrendingUp className="w-5 h-5 text-emerald-600" />
+              ) : (
+                <TrendingDown className="w-5 h-5 text-red-600" />
+              )}
+            </div>
+            <div>
+              <p className="text-2xl font-bold">{deliveredDiff >= 0 ? `+${deliveredDiff}` : deliveredDiff}</p>
+              <p className="text-xs text-muted-foreground">vs Ontem</p>
             </div>
           </CardContent>
         </Card>
@@ -410,41 +505,58 @@ const KitchenDisplay = () => {
               key={order.id} 
               className={`${
                 order.status === "preparing" 
-                  ? "border-yellow-500 border-2" 
-                  : "border-border"
+                  ? "border-orange-500 border-2" 
+                  : order.status === "ready"
+                    ? "border-green-500 border-2"
+                    : "border-border"
               }`}
             >
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-2xl font-bold">
+                  <CardTitle className="text-3xl font-bold">
                     #{order.order_number}
                   </CardTitle>
                   <div className={`flex items-center gap-1 ${getTimeColor(order.created_at)}`}>
-                    <Clock className="w-4 h-4" />
-                    <span className="font-bold">{getTimeElapsed(order.created_at)}</span>
+                    <Clock className="w-5 h-5" />
+                    <span className="font-bold text-lg">{getTimeElapsed(order.created_at)}</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge variant={order.delivery_type === "delivery" ? "default" : "secondary"}>
-                    {order.delivery_type === "delivery" ? "Delivery" : 
-                     order.delivery_type === "pickup" ? "Retirada" : 
-                     `Mesa ${order.table_number}`}
+                    {order.delivery_type === "delivery" ? "🚚 Delivery" : 
+                     order.delivery_type === "pickup" ? "🏪 Retirada" : 
+                     `🍽️ Mesa ${order.table_number}`}
                   </Badge>
-                  <Badge variant={order.status === "preparing" ? "default" : "outline"}>
-                    {order.status === "preparing" ? "Preparando" : "Aguardando"}
+                  <Badge variant={order.status === "preparing" ? "default" : "secondary"} 
+                    className={order.status === "ready" ? "bg-green-500 text-white" : ""}>
+                    {order.status === "preparing" ? "Preparando" : "Pronto"}
                   </Badge>
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
+                {/* Observação geral do pedido em destaque */}
+                {order.observations && (
+                  <div className="p-3 rounded-lg bg-yellow-500/20 border-2 border-yellow-500/50">
+                    <div className="flex items-start gap-2">
+                      <AlertCircle className="w-5 h-5 text-yellow-600 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-bold text-yellow-700 dark:text-yellow-400 text-sm">OBSERVAÇÃO DO CLIENTE:</p>
+                        <p className="text-base font-medium">{order.observations}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Itens do pedido */}
                 <div className="space-y-2 max-h-48 overflow-y-auto">
                   {order.items.map((item, idx) => (
-                    <div key={idx} className={`p-2 rounded ${item.observations ? 'bg-yellow-500/10 border border-yellow-500/30' : 'bg-muted/50'}`}>
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-xl bg-primary/10 px-2 py-0.5 rounded">{item.quantity}x</span>
-                        <span className="font-medium flex-1 ml-2 text-base">{item.name}</span>
+                    <div key={idx} className={`p-3 rounded-lg ${item.observations ? 'bg-yellow-500/10 border border-yellow-500/30' : 'bg-muted/50'}`}>
+                      <div className="flex items-center gap-3">
+                        <span className="font-bold text-2xl bg-primary/10 px-3 py-1 rounded">{item.quantity}x</span>
+                        <span className="font-medium text-lg flex-1">{item.name}</span>
                       </div>
                       {item.observations && (
-                        <p className="text-sm text-yellow-600 mt-2 flex items-start gap-1 font-medium bg-yellow-500/5 p-1.5 rounded">
+                        <p className="text-sm text-yellow-600 mt-2 flex items-start gap-2 font-medium bg-yellow-500/5 p-2 rounded">
                           <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
                           {item.observations}
                         </p>
@@ -453,31 +565,80 @@ const KitchenDisplay = () => {
                   ))}
                 </div>
 
+                {/* Ações */}
                 <div className="flex gap-2 pt-2">
-                  {order.status === "confirmed" && (
+                  {order.status === "preparing" && (
                     <Button
-                      onClick={() => updateStatus(order.id, "preparing")}
-                      variant="outline"
-                      className="flex-1 h-12"
+                      onClick={() => updateStatus(order.id, "ready")}
+                      className="flex-1 h-14 text-lg"
                     >
-                      <ChefHat className="w-5 h-5 mr-2" />
-                      Iniciar Preparo
+                      <CheckCircle className="w-6 h-6 mr-2" />
+                      Marcar Pronto
                     </Button>
                   )}
-                  <Button
-                    onClick={() => updateStatus(order.id, "ready")}
-                    className="flex-1 h-12"
-                    variant={order.status === "preparing" ? "default" : "outline"}
-                  >
-                    <CheckCircle className="w-5 h-5 mr-2" />
-                    Marcar Pronto
-                  </Button>
+                  {order.status === "ready" && (
+                    <Button
+                      onClick={() => updateStatus(order.id, "delivered")}
+                      variant="outline"
+                      className="flex-1 h-14 text-lg border-green-500 text-green-600 hover:bg-green-500/10"
+                    >
+                      <CheckCircle className="w-6 h-6 mr-2" />
+                      Entregue
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>
           ))}
         </div>
       )}
+
+      {/* Histórico de Entregas do Dia */}
+      <Collapsible open={showHistory} onOpenChange={setShowHistory} className="mt-8">
+        <CollapsibleTrigger asChild>
+          <Button variant="outline" className="w-full justify-between">
+            <div className="flex items-center gap-2">
+              <History className="w-4 h-4" />
+              <span>Histórico do Dia ({dailyStats.delivered + dailyStats.cancelled} pedidos)</span>
+            </div>
+            <Badge variant="secondary">
+              ✅ {dailyStats.delivered} entregues | ❌ {dailyStats.cancelled} cancelados
+            </Badge>
+          </Button>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="mt-4">
+          <Card>
+            <CardContent className="p-4">
+              {deliveredOrders.length === 0 ? (
+                <p className="text-center text-muted-foreground py-4">
+                  Nenhum pedido finalizado hoje
+                </p>
+              ) : (
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {deliveredOrders.map((order) => (
+                    <div 
+                      key={order.id} 
+                      className={`flex items-center justify-between p-3 rounded-lg ${
+                        order.status === 'delivered' ? 'bg-green-500/10' : 'bg-red-500/10'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="text-lg font-bold">#{order.order_number}</span>
+                        <Badge variant={order.status === 'delivered' ? 'default' : 'destructive'}>
+                          {order.status === 'delivered' ? '✅ Entregue' : '❌ Cancelado'}
+                        </Badge>
+                      </div>
+                      <span className="text-sm text-muted-foreground">
+                        {new Date(order.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </CollapsibleContent>
+      </Collapsible>
     </div>
   );
 };
