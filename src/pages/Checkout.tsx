@@ -35,6 +35,7 @@ import { useScheduledOrders } from "@/hooks/useScheduledOrders";
 import { useAuth } from "@/hooks/useAuth";
 import { useSavedAddresses, SavedAddress } from "@/hooks/useSavedAddresses";
 import { useOrderSource } from "@/hooks/useOrderSource";
+import { useDeliveryCalculation } from "@/hooks/useDeliveryCalculation";
 import { SmartAddressInput } from "@/components/address";
 import { SavedAddressSelector } from "@/components/checkout/SavedAddressSelector";
 import { SaveAddressDialog } from "@/components/checkout/SaveAddressDialog";
@@ -137,6 +138,21 @@ const Checkout = () => {
   const [selectedSavedAddressId, setSelectedSavedAddressId] = useState<string | undefined>();
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [saveAddressDialogOpen, setSaveAddressDialogOpen] = useState(false);
+  
+  // Delivery validation
+  const [deliveryValidation, setDeliveryValidation] = useState<{
+    checked: boolean;
+    canDeliver: boolean;
+    distance?: number;
+    fee?: number;
+    message?: string;
+  }>({ checked: false, canDeliver: true });
+  
+  // Get first establishment ID for delivery calculation
+  const firstEstablishmentId = items[0]?.product?.establishment_id || "";
+  const { calculateLocal, loading: validatingDelivery } = useDeliveryCalculation({ 
+    establishment_id: firstEstablishmentId 
+  });
 
   // Pre-fill phone from user profile
   useEffect(() => {
@@ -233,6 +249,35 @@ const Checkout = () => {
       setDeliveryType("pickup");
     }
   }, [isMultiStore]);
+
+  // Validate delivery address when coordinates are available
+  useEffect(() => {
+    const validateDeliveryArea = async () => {
+      // Only validate if delivery is selected and we have coordinates
+      if (deliveryType !== "delivery" || !addressData.lat || !addressData.lng) {
+        setDeliveryValidation({ checked: false, canDeliver: true });
+        return;
+      }
+      
+      if (!firstEstablishmentId) return;
+      
+      try {
+        const result = await calculateLocal(addressData.lat, addressData.lng);
+        setDeliveryValidation({
+          checked: true,
+          canDeliver: result.can_deliver,
+          distance: 'distance_km' in result ? result.distance_km : undefined,
+          fee: 'delivery_fee' in result ? result.delivery_fee : undefined,
+          message: 'message' in result ? result.message : undefined,
+        });
+      } catch {
+        // If validation fails, allow proceeding (backend will validate again)
+        setDeliveryValidation({ checked: true, canDeliver: true });
+      }
+    };
+    
+    validateDeliveryArea();
+  }, [deliveryType, addressData.lat, addressData.lng, firstEstablishmentId, calculateLocal]);
 
   // Redirect if cart is empty (only after cart is loaded from localStorage)
   useEffect(() => {
@@ -381,6 +426,18 @@ const Checkout = () => {
     if (deliveryType === "delivery") {
       if (!addressData.address || !addressData.number || !addressData.neighborhood) {
         toast.error("Preencha todos os campos obrigatórios do endereço");
+        return;
+      }
+      
+      // Validate delivery area
+      if (deliveryValidation.checked && !deliveryValidation.canDeliver) {
+        toast.error("Endereço fora da área de entrega. Escolha retirada no local ou altere o endereço.");
+        return;
+      }
+      
+      // Check if address has coordinates for validation
+      if (!addressData.lat || !addressData.lng) {
+        toast.error("Confirme o endereço no mapa para validar a entrega");
         return;
       }
     }
@@ -963,6 +1020,41 @@ const Checkout = () => {
               onSaved={() => setShowAddressForm(false)}
             />
 
+            {/* Delivery area validation alert */}
+            {deliveryType === "delivery" && deliveryValidation.checked && !deliveryValidation.canDeliver && (
+              <Card className="border-destructive bg-destructive/10">
+                <CardContent className="p-4 flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-medium text-destructive">
+                      Endereço fora da área de entrega
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {deliveryValidation.message || "Este endereço está além do raio de entrega do estabelecimento. Escolha a opção de retirada ou altere o endereço."}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Delivery validation success */}
+            {deliveryType === "delivery" && deliveryValidation.checked && deliveryValidation.canDeliver && addressData.lat && (
+              <Card className="border-green-500 bg-green-50 dark:bg-green-950/20">
+                <CardContent className="p-4 flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-medium text-green-700 dark:text-green-300">
+                      Entrega disponível
+                    </p>
+                    <p className="text-sm text-green-600 dark:text-green-400">
+                      {deliveryValidation.distance && `Distância: ${deliveryValidation.distance.toFixed(1)} km`}
+                      {deliveryValidation.fee && ` • Taxa: R$ ${deliveryValidation.fee.toFixed(2)}`}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Pickup locations for multi-establishment */}
             {deliveryType === "pickup" && isMultiStore && (
               <Card>
@@ -999,8 +1091,12 @@ const Checkout = () => {
               </Card>
             )}
 
-            <Button onClick={handleSubmitDelivery} className="w-full h-12 text-base font-semibold">
-              Continuar para pagamento
+            <Button 
+              onClick={handleSubmitDelivery} 
+              className="w-full h-12 text-base font-semibold"
+              disabled={validatingDelivery || (deliveryType === "delivery" && deliveryValidation.checked && !deliveryValidation.canDeliver)}
+            >
+              {validatingDelivery ? "Validando endereço..." : "Continuar para pagamento"}
               <ChevronRight className="w-5 h-5 ml-2" />
             </Button>
           </div>
