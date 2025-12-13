@@ -154,3 +154,6 @@ verify_jwt = false
 
 [functions.reset-test-passwords]
 verify_jwt = true  # Sensitive - admin operation
+
+[functions.whatsapp-auth-session]
+verify_jwt = false  # Public - validates code internally
