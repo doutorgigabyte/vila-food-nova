@@ -6271,6 +6271,24 @@ export type Database = {
           zip_code: string
         }[]
       }
+      get_public_reviews: {
+        Args: { p_establishment_id: string; p_limit?: number }
+        Returns: {
+          comment: string
+          created_at: string
+          customer_id: string
+          delivery_rating: number
+          food_rating: number
+          id: string
+          is_verified_purchase: boolean
+          overall_rating: number
+          owner_response: string
+          owner_response_at: string
+          photos: Json
+          selected_tags: Json
+          service_rating: number
+        }[]
+      }
       get_user_orders: {
         Args: never
         Returns: {
