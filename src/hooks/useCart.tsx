@@ -87,6 +87,12 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [currentVilaId, setCurrentVilaId] = useState<string | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
 
+  // Helper to validate if string is a valid UUID
+  const isValidUUID = (str: string): boolean => {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(str);
+  };
+
   // Load cart from localStorage on mount
   useEffect(() => {
     try {
@@ -94,16 +100,24 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       const storedEstablishments = safeLocalStorage.getItem(ESTABLISHMENTS_STORAGE_KEY);
       
       if (storedItems) {
-        setItems(JSON.parse(storedItems));
+        const parsedItems = JSON.parse(storedItems) as CartItem[];
+        // Filter out items with invalid establishment_id (slug instead of UUID)
+        const validItems = parsedItems.filter(item => isValidUUID(item.product.establishment_id));
+        if (validItems.length !== parsedItems.length) {
+          console.warn('[Cart] Removed items with invalid establishment_id (slug instead of UUID)');
+        }
+        setItems(validItems);
       }
       if (storedEstablishments) {
-        const estArr = JSON.parse(storedEstablishments);
-        const estMap = new Map<string, EstablishmentInfo>(estArr);
+        const estArr = JSON.parse(storedEstablishments) as [string, EstablishmentInfo][];
+        // Filter out establishments with invalid IDs
+        const validEstArr = estArr.filter(([key, value]) => isValidUUID(key) && isValidUUID(value.id));
+        const estMap = new Map<string, EstablishmentInfo>(validEstArr);
         setEstablishments(estMap);
         
         // Set current vila from first establishment
-        if (estArr.length > 0) {
-          setCurrentVilaId(estArr[0][1].vila_id);
+        if (validEstArr.length > 0) {
+          setCurrentVilaId(validEstArr[0][1].vila_id);
         }
       }
     } catch (error) {
