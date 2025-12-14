@@ -1,7 +1,18 @@
 import { Clock } from "lucide-react";
 
+interface OperatingHoursInput {
+  // New format
+  open?: boolean;
+  start?: string;
+  end?: string;
+  // Old format (for backwards compatibility)
+  enabled?: boolean;
+  close?: string;
+  isOpen?: boolean;
+}
+
 interface OperatingHoursProps {
-  operatingHours: Record<string, { open: boolean; start: string; end: string }> | null;
+  operatingHours: Record<string, OperatingHoursInput> | null;
   compact?: boolean;
 }
 
@@ -17,6 +28,15 @@ const dayNames: Record<string, string> = {
 
 const dayOrder = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
 
+// Normalize hours to handle old formats
+function normalizeHours(hours: OperatingHoursInput): { open: boolean; start: string; end: string } {
+  const isOpen = hours.enabled ?? hours.isOpen ?? hours.open ?? false;
+  const start = hours.start ?? (typeof hours.open === 'string' ? hours.open : "08:00");
+  const end = hours.end ?? hours.close ?? "22:00";
+  
+  return { open: isOpen, start, end };
+}
+
 export const OperatingHoursDisplay = ({ operatingHours, compact = false }: OperatingHoursProps) => {
   if (!operatingHours) {
     return (
@@ -27,7 +47,8 @@ export const OperatingHoursDisplay = ({ operatingHours, compact = false }: Opera
   }
 
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
-  const todayHours = operatingHours[today];
+  const rawTodayHours = operatingHours[today];
+  const todayHours = rawTodayHours ? normalizeHours(rawTodayHours) : null;
 
   if (compact) {
     return (
@@ -52,7 +73,8 @@ export const OperatingHoursDisplay = ({ operatingHours, compact = false }: Opera
       </div>
       <div className="space-y-1.5">
         {dayOrder.map((day) => {
-          const hours = operatingHours[day];
+          const rawHours = operatingHours[day];
+          const hours = rawHours ? normalizeHours(rawHours) : { open: false, start: "08:00", end: "22:00" };
           const isToday = day === today;
           
           return (
@@ -66,7 +88,7 @@ export const OperatingHoursDisplay = ({ operatingHours, compact = false }: Opera
                 {dayNames[day]}
                 {isToday && " (hoje)"}
               </span>
-              {hours?.open ? (
+              {hours.open ? (
                 <span>{hours.start} - {hours.end}</span>
               ) : (
                 <span className="text-muted-foreground">Fechado</span>

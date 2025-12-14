@@ -43,7 +43,7 @@ export interface OnboardingData {
   acceptsDelivery: boolean;
   acceptsPickup: boolean;
   acceptsTable: boolean;
-  operatingHours: Record<string, { open: string; close: string; isOpen: boolean }>;
+  operatingHours: Record<string, { open: boolean; start: string; end: string }>;
 }
 
 const initialData: OnboardingData = {
@@ -62,13 +62,13 @@ const initialData: OnboardingData = {
   acceptsPickup: true,
   acceptsTable: false,
   operatingHours: {
-    monday: { open: "08:00", close: "18:00", isOpen: true },
-    tuesday: { open: "08:00", close: "18:00", isOpen: true },
-    wednesday: { open: "08:00", close: "18:00", isOpen: true },
-    thursday: { open: "08:00", close: "18:00", isOpen: true },
-    friday: { open: "08:00", close: "18:00", isOpen: true },
-    saturday: { open: "08:00", close: "14:00", isOpen: true },
-    sunday: { open: "08:00", close: "14:00", isOpen: false },
+    monday: { open: true, start: "08:00", end: "18:00" },
+    tuesday: { open: true, start: "08:00", end: "18:00" },
+    wednesday: { open: true, start: "08:00", end: "18:00" },
+    thursday: { open: true, start: "08:00", end: "18:00" },
+    friday: { open: true, start: "08:00", end: "18:00" },
+    saturday: { open: true, start: "08:00", end: "14:00" },
+    sunday: { open: false, start: "08:00", end: "14:00" },
   },
 };
 

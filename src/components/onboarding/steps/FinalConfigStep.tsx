@@ -40,12 +40,12 @@ export const FinalConfigStep = ({ data, updateData, onComplete, onBack, isSubmit
     updateData({
       operatingHours: {
         ...data.operatingHours,
-        [day]: { ...current, isOpen: !current.isOpen }
+        [day]: { ...current, open: !current.open }
       }
     });
   };
 
-  const updateHours = (day: string, field: "open" | "close", value: string) => {
+  const updateHours = (day: string, field: "start" | "end", value: string) => {
     const current = data.operatingHours[day];
     updateData({
       operatingHours: {
@@ -132,38 +132,38 @@ export const FinalConfigStep = ({ data, updateData, onComplete, onBack, isSubmit
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 className={`flex items-center justify-between p-3 rounded-lg transition-colors ${
-                  hours.isOpen ? "bg-muted/50" : "bg-muted/20"
+                  hours.open ? "bg-muted/50" : "bg-muted/20"
                 }`}
               >
                 <div className="flex items-center gap-3">
                   <Switch
-                    checked={hours.isOpen}
+                    checked={hours.open}
                     onCheckedChange={() => toggleDay(day)}
                   />
-                  <span className={`font-medium w-20 ${!hours.isOpen && "text-muted-foreground"}`}>
+                  <span className={`font-medium w-20 ${!hours.open && "text-muted-foreground"}`}>
                     {label}
                   </span>
                 </div>
 
-                {hours.isOpen && (
+                {hours.open && (
                   <div className="flex items-center gap-2 text-sm">
                     <input
                       type="time"
-                      value={hours.open}
-                      onChange={(e) => updateHours(day, "open", e.target.value)}
+                      value={hours.start}
+                      onChange={(e) => updateHours(day, "start", e.target.value)}
                       className="bg-background border rounded px-2 py-1 text-sm"
                     />
                     <span className="text-muted-foreground">às</span>
                     <input
                       type="time"
-                      value={hours.close}
-                      onChange={(e) => updateHours(day, "close", e.target.value)}
+                      value={hours.end}
+                      onChange={(e) => updateHours(day, "end", e.target.value)}
                       className="bg-background border rounded px-2 py-1 text-sm"
                     />
                   </div>
                 )}
 
-                {!hours.isOpen && (
+                {!hours.open && (
                   <span className="text-sm text-muted-foreground">Fechado</span>
                 )}
               </motion.div>

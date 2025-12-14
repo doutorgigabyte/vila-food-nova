@@ -231,14 +231,14 @@ const EstablishmentSettings = () => {
     lat: undefined,
     lng: undefined,
   });
-  const [operatingHours, setOperatingHours] = useState<Record<string, { open: string; close: string; enabled: boolean }>>({
-    monday: { open: "08:00", close: "22:00", enabled: true },
-    tuesday: { open: "08:00", close: "22:00", enabled: true },
-    wednesday: { open: "08:00", close: "22:00", enabled: true },
-    thursday: { open: "08:00", close: "22:00", enabled: true },
-    friday: { open: "08:00", close: "22:00", enabled: true },
-    saturday: { open: "08:00", close: "22:00", enabled: true },
-    sunday: { open: "08:00", close: "22:00", enabled: false },
+  const [operatingHours, setOperatingHours] = useState<Record<string, { open: boolean; start: string; end: string }>>({
+    monday: { open: true, start: "08:00", end: "22:00" },
+    tuesday: { open: true, start: "08:00", end: "22:00" },
+    wednesday: { open: true, start: "08:00", end: "22:00" },
+    thursday: { open: true, start: "08:00", end: "22:00" },
+    friday: { open: true, start: "08:00", end: "22:00" },
+    saturday: { open: true, start: "08:00", end: "22:00" },
+    sunday: { open: false, start: "08:00", end: "22:00" },
   });
   
   // Notification settings state
@@ -321,7 +321,19 @@ const EstablishmentSettings = () => {
         lng: data.longitude ?? undefined,
       });
       if (data.operating_hours) {
-        setOperatingHours(data.operating_hours as any);
+        // Normalizar dados antigos para o novo formato
+        const normalizedHours: Record<string, { open: boolean; start: string; end: string }> = {};
+        const rawHours = data.operating_hours as Record<string, any>;
+        
+        for (const [day, dayData] of Object.entries(rawHours)) {
+          normalizedHours[day] = {
+            open: dayData.enabled ?? dayData.open ?? false,
+            start: dayData.start ?? (typeof dayData.open === 'string' ? dayData.open : "08:00"),
+            end: dayData.end ?? dayData.close ?? "22:00"
+          };
+        }
+        
+        setOperatingHours(normalizedHours);
       }
     } catch (error) {
       console.error("Error fetching establishment:", error);
@@ -601,11 +613,11 @@ const EstablishmentSettings = () => {
                     {Object.entries(operatingHours).map(([day, hours]) => (
                       <div key={day} className="flex items-center gap-4 p-3 rounded-lg border">
                         <Switch
-                          checked={hours.enabled}
+                          checked={hours.open}
                           onCheckedChange={(checked) => 
                             setOperatingHours({
                               ...operatingHours,
-                              [day]: { ...hours, enabled: checked }
+                              [day]: { ...hours, open: checked }
                             })
                           }
                         />
@@ -613,31 +625,31 @@ const EstablishmentSettings = () => {
                         <div className="flex items-center gap-2">
                           <Input
                             type="time"
-                            value={hours.open}
+                            value={hours.start}
                             onChange={(e) =>
                               setOperatingHours({
                                 ...operatingHours,
-                                [day]: { ...hours, open: e.target.value }
+                                [day]: { ...hours, start: e.target.value }
                               })
                             }
-                            disabled={!hours.enabled}
+                            disabled={!hours.open}
                             className="w-32"
                           />
                           <span className="text-muted-foreground">às</span>
                           <Input
                             type="time"
-                            value={hours.close}
+                            value={hours.end}
                             onChange={(e) =>
                               setOperatingHours({
                                 ...operatingHours,
-                                [day]: { ...hours, close: e.target.value }
+                                [day]: { ...hours, end: e.target.value }
                               })
                             }
-                            disabled={!hours.enabled}
+                            disabled={!hours.open}
                             className="w-32"
                           />
                         </div>
-                        {!hours.enabled && (
+                        {!hours.open && (
                           <Badge variant="secondary">Fechado</Badge>
                         )}
                       </div>
