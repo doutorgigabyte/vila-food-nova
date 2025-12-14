@@ -86,6 +86,14 @@ const SupportManagement = lazy(() => import("./pages/dashboard/SupportManagement
 const UpgradePage = lazy(() => import("./pages/dashboard/UpgradePage"));
 const TeamManagement = lazy(() => import("./pages/dashboard/TeamManagement"));
 const TVSlideManagement = lazy(() => import("./pages/dashboard/TVSlideManagement"));
+const MarketingHub = lazy(() => import("./pages/dashboard/MarketingHub"));
+const DeliveryHub = lazy(() => import("./pages/dashboard/DeliveryHub"));
+const IntelligenceHub = lazy(() => import("./pages/dashboard/IntelligenceHub"));
+const AdminHub = lazy(() => import("./pages/dashboard/AdminHub"));
+const ABCAnalysis = lazy(() => import("./pages/dashboard/ABCAnalysis"));
+const DREReport = lazy(() => import("./pages/dashboard/DREReport"));
+const LoyaltyManagement = lazy(() => import("./pages/dashboard/LoyaltyManagement"));
+const BirthdayList = lazy(() => import("./pages/dashboard/BirthdayList"));
 const TVSlidePlayer = lazy(() => import("./pages/display/TVSlidePlayer"));
 const PublicKitchenDisplay = lazy(() => import("./pages/display/PublicKitchenDisplay"));
 
@@ -311,6 +319,19 @@ const AppRoutes = () => {
               <Route path="/painel/suporte" element={<SupportManagement />} />
               <Route path="/painel/upgrade" element={<UpgradePage />} />
               <Route path="/painel/equipe" element={<TeamManagement />} />
+              
+              {/* Hub pages */}
+              <Route path="/painel/marketing" element={<MarketingHub />} />
+              <Route path="/painel/entregas" element={<DeliveryHub />} />
+              <Route path="/painel/inteligencia" element={<IntelligenceHub />} />
+              <Route path="/painel/administracao" element={<AdminHub />} />
+              
+              {/* Financial analysis pages */}
+              <Route path="/painel/curva-abc" element={<ABCAnalysis />} />
+              <Route path="/painel/dre" element={<DREReport />} />
+              <Route path="/painel/fidelidade" element={<LoyaltyManagement />} />
+              <Route path="/painel/aniversariantes" element={<BirthdayList />} />
+              
               <Route path="/dashboard/mercadopago/callback" element={<MercadoPagoCallback />} />
               {/* Admin routes */}
               <Route path="/admin" element={<ProtectedAdminRoute><AdminDashboard /></ProtectedAdminRoute>} />
