@@ -29,29 +29,29 @@ export const useAdminAuth = () => {
         });
 
         if (error) {
-          console.error('Error checking admin role:', error);
+          console.error('[useAdminAuth] Error checking admin role:', error);
           setIsAdmin(false);
           setLoading(false);
-          navigate('/marketplace');
+          // NÃO fazer navegação automática - deixar o componente decidir
           return;
         }
 
         if (!data) {
-          console.log('User is not super_admin');
+          console.log('[useAdminAuth] User is not super_admin, user_id:', user.id);
           setIsAdmin(false);
           setLoading(false);
-          navigate('/marketplace');
+          // NÃO fazer navegação automática - deixar o componente decidir
           return;
         }
 
-        console.log('User is super_admin');
+        console.log('[useAdminAuth] User is super_admin');
         setIsAdmin(true);
         setLoading(false);
       } catch (error) {
-        console.error('Error checking admin role:', error);
+        console.error('[useAdminAuth] Error checking admin role:', error);
         setIsAdmin(false);
         setLoading(false);
-        navigate('/marketplace');
+        // NÃO fazer navegação automática - deixar o componente decidir
       }
     };
 
