@@ -90,6 +90,7 @@ const Checkout = () => {
   const [currentEstablishmentId, setCurrentEstablishmentId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [completedOrders, setCompletedOrders] = useState<string[]>([]);
+  const [successTotal, setSuccessTotal] = useState<number>(0);
   
   // Coupon
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discountValue: number; discountType: string } | null>(null);
@@ -633,6 +634,7 @@ const Checkout = () => {
         }
         
         setCompletedOrders(orderNumbers);
+        setSuccessTotal(total); // Save total before clearing cart
         clearCart();
         setStep("success");
         toast.success("Pedido realizado com sucesso!");
@@ -701,6 +703,7 @@ const Checkout = () => {
       console.error('[Analytics] Error tracking purchase:', err);
     }
     
+    setSuccessTotal(total); // Save total before clearing cart
     clearCart();
     const estInfo = currentEstablishmentId ? establishments.get(currentEstablishmentId) : null;
     setCompletedOrders([`${estInfo?.name || 'Loja'}: Pedido confirmado`]);
@@ -899,7 +902,7 @@ const Checkout = () => {
               <Separator />
               <div className="flex justify-between items-center">
                 <span className="text-muted-foreground">Total</span>
-                <Price value={total} size="lg" />
+                <Price value={successTotal} size="lg" />
               </div>
             </CardContent>
           </Card>
