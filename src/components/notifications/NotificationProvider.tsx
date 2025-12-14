@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react";
 import { useNotifications, Notification, NotificationType, NOTIFICATION_CONFIG } from "@/hooks/useNotifications";
 import { useNotificationSound } from "@/hooks/useNotificationSound";
-import { useParams } from "react-router-dom";
+import { useParams, useLocation } from "react-router-dom";
 import NotificationToast from "./NotificationToast";
 import NewOrderModal from "./NewOrderModal";
 
@@ -39,7 +39,12 @@ interface NotificationProviderProps {
 
 export const NotificationProvider = ({ children, establishmentId }: NotificationProviderProps) => {
   const params = useParams();
+  const location = useLocation();
   const estId = establishmentId || params.slug;
+  
+  // Determine context based on current route
+  const isInAdminContext = location.pathname.startsWith('/admin');
+  const isInEstablishmentContext = location.pathname.startsWith('/painel/');
   
   const {
     notifications,
@@ -49,7 +54,7 @@ export const NotificationProvider = ({ children, establishmentId }: Notification
     markAllAsRead,
     dismissNotification,
     createNotification,
-  } = useNotifications(estId);
+  } = useNotifications(estId, { isInAdminContext, isInEstablishmentContext });
 
   const { playNotification, stopSound } = useNotificationSound();
 
