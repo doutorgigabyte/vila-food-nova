@@ -4,6 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { MapPin, Navigation, Check, Loader2 } from "lucide-react";
+import { useActiveRegion } from "@/hooks/useActiveRegion";
 
 interface AddressData {
   cep: string;
@@ -31,9 +32,13 @@ const GOOGLE_MAPS_API_KEY = "AIzaSyAIl_jZHOswjHwpXwHpDlnyacOUcRYXVco";
 const AddressAutocomplete = ({ 
   value, 
   onChange, 
-  establishmentLat = -8.7576, 
-  establishmentLng = -35.1031 
+  establishmentLat, 
+  establishmentLng 
 }: AddressAutocompleteProps) => {
+  // Use active region for defaults and location bias
+  const { region } = useActiveRegion();
+  const defaultLat = establishmentLat ?? region.center_lat;
+  const defaultLng = establishmentLng ?? region.center_lng;
   const [isMapLoaded, setIsMapLoaded] = useState(false);
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
   const [showMap, setShowMap] = useState(false);
@@ -74,8 +79,8 @@ const AddressAutocomplete = ({
       const { Map } = await google.maps.importLibrary("maps") as google.maps.MapsLibrary;
       const { AdvancedMarkerElement } = await google.maps.importLibrary("marker") as google.maps.MarkerLibrary;
 
-      const initialLat = value.lat || establishmentLat;
-      const initialLng = value.lng || establishmentLng;
+      const initialLat = value.lat || defaultLat;
+      const initialLng = value.lng || defaultLng;
 
       const map = new Map(mapRef.current!, {
         center: { lat: initialLat, lng: initialLng },
@@ -122,7 +127,7 @@ const AddressAutocomplete = ({
     };
 
     initMap();
-  }, [isMapLoaded, showMap, value.lat, value.lng, establishmentLat, establishmentLng]);
+  }, [isMapLoaded, showMap, value.lat, value.lng, defaultLat, defaultLng]);
 
   // Reverse geocode to get address from coordinates
   const reverseGeocode = useCallback(async (lat: number, lng: number) => {
@@ -155,7 +160,7 @@ const AddressAutocomplete = ({
     }
   }, [onChange, value]);
 
-  // Handle search input
+  // Handle search input with location bias for active region
   const handleSearchChange = useCallback((query: string) => {
     setSearchQuery(query);
     
@@ -164,11 +169,16 @@ const AddressAutocomplete = ({
       return;
     }
 
+    // Apply location bias to prioritize results from active region (Tamandaré)
     autocompleteServiceRef.current.getPlacePredictions(
       {
         input: query,
         componentRestrictions: { country: "br" },
         types: ["address"],
+        locationBias: {
+          center: { lat: region.center_lat, lng: region.center_lng },
+          radius: region.bias_radius_meters,
+        },
       },
       (predictions, status) => {
         if (status === google.maps.places.PlacesServiceStatus.OK && predictions) {
@@ -178,7 +188,7 @@ const AddressAutocomplete = ({
         }
       }
     );
-  }, []);
+  }, [region.center_lat, region.center_lng, region.bias_radius_meters]);
 
   // Handle suggestion selection
   const handleSelectSuggestion = useCallback((placeId: string, description: string) => {
