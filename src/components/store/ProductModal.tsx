@@ -1,17 +1,20 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { Separator } from "@/components/ui/separator";
 import { Plus, Minus, Package, Clock, ZoomIn, Wrench, Download, Leaf, ThermometerSnowflake, Calendar } from "lucide-react";
 import type { StoreProduct } from "@/hooks/useStoreData";
 import { TouchImageViewer } from "./TouchImageViewer";
 import { ProductNutritionalInfo } from "./ProductNutritionalInfo";
+import { ProductVariationSelector, VariationGroup } from "./ProductVariationSelector";
+import { ProductAdditionalsSelector, AdditionalGroup, SelectedAdditional } from "./ProductAdditionalsSelector";
 
 interface ProductModalProps {
   product: StoreProduct | null;
   onClose: () => void;
-  onAddToCart: (product: StoreProduct, quantity: number, observation: string) => void;
+  onAddToCart: (product: StoreProduct, quantity: number, observation: string, selectedVariations?: Record<string, string>, selectedAdditionals?: SelectedAdditional[]) => void;
   onRequestService?: (product: StoreProduct) => void;
 }
 
@@ -20,6 +23,8 @@ export const ProductModal = ({ product, onClose, onAddToCart, onRequestService }
   const [observation, setObservation] = useState("");
   const [imageError, setImageError] = useState(false);
   const [showImageViewer, setShowImageViewer] = useState(false);
+  const [selectedVariations, setSelectedVariations] = useState<Record<string, string>>({});
+  const [selectedAdditionals, setSelectedAdditionals] = useState<SelectedAdditional[]>([]);
 
   if (!product) return null;
 
@@ -43,18 +48,67 @@ export const ProductModal = ({ product, onClose, onAddToCart, onRequestService }
   const isGlutenFree = (product as any).is_gluten_free;
   const isLactoseFree = (product as any).is_lactose_free;
 
+  // Variations and Additionals from product
+  const productVariations = (product as any).variations as VariationGroup[] | null;
+  const productAdditionals = (product as any).additionals as AdditionalGroup[] | null;
+
+  // Calculate additionals total
+  const additionalsTotal = useMemo(() => {
+    return selectedAdditionals.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  }, [selectedAdditionals]);
+
+  // Calculate variation price modifier
+  const variationPriceModifier = useMemo(() => {
+    if (!productVariations) return 0;
+    let modifier = 0;
+    for (const group of productVariations) {
+      const selectedId = selectedVariations[group.name];
+      if (selectedId) {
+        const option = group.options.find(o => o.id === selectedId);
+        if (option?.price_modifier) {
+          modifier += option.price_modifier;
+        }
+      }
+    }
+    return modifier;
+  }, [productVariations, selectedVariations]);
+
   // Safe discount calculation
   const hasPromo = Boolean(
     product.promotional_price && 
     product.promotional_price > 0 && 
     product.promotional_price < product.price
   );
-  const displayPrice = hasPromo ? product.promotional_price! : product.price;
-  const total = displayPrice * quantity;
+  const basePrice = hasPromo ? product.promotional_price! : product.price;
+  const displayPrice = basePrice + variationPriceModifier;
+  const total = (displayPrice * quantity) + (additionalsTotal * quantity);
   const discount = hasPromo
     ? Math.round(((product.price - product.promotional_price!) / product.price) * 100)
     : 0;
   const showImage = product.image_url && !imageError;
+
+  // Check if required selections are complete
+  const hasRequiredVariations = useMemo(() => {
+    if (!productVariations) return true;
+    return productVariations
+      .filter(g => g.required)
+      .every(g => selectedVariations[g.name]);
+  }, [productVariations, selectedVariations]);
+
+  const hasRequiredAdditionals = useMemo(() => {
+    if (!productAdditionals) return true;
+    return productAdditionals
+      .filter(g => g.required && g.min_selection && g.min_selection > 0)
+      .every(g => {
+        const count = g.items.reduce((sum, item) => {
+          const sel = selectedAdditionals.find(a => a.id === item.id);
+          return sum + (sel?.quantity || 0);
+        }, 0);
+        return count >= (g.min_selection || 0);
+      });
+  }, [productAdditionals, selectedAdditionals]);
+
+  const canAddToCart = hasRequiredVariations && hasRequiredAdditionals;
 
   const handleAdd = () => {
     if (isService && onRequestService) {
@@ -62,9 +116,11 @@ export const ProductModal = ({ product, onClose, onAddToCart, onRequestService }
       onClose();
       return;
     }
-    onAddToCart(product, quantity, observation);
+    onAddToCart(product, quantity, observation, selectedVariations, selectedAdditionals);
     setQuantity(1);
     setObservation("");
+    setSelectedVariations({});
+    setSelectedAdditionals([]);
     onClose();
   };
 
@@ -217,6 +273,32 @@ export const ProductModal = ({ product, onClose, onAddToCart, onRequestService }
               isLactoseFree={isLactoseFree}
             />
 
+            {/* Product Variations */}
+            {productVariations && productVariations.length > 0 && !isService && (
+              <>
+                <Separator />
+                <ProductVariationSelector
+                  variations={productVariations}
+                  selectedVariations={selectedVariations}
+                  onVariationChange={(groupName, variationId) => 
+                    setSelectedVariations(prev => ({ ...prev, [groupName]: variationId }))
+                  }
+                />
+              </>
+            )}
+
+            {/* Product Additionals */}
+            {productAdditionals && productAdditionals.length > 0 && !isService && (
+              <>
+                <Separator />
+                <ProductAdditionalsSelector
+                  additionals={productAdditionals}
+                  selectedAdditionals={selectedAdditionals}
+                  onAdditionalsChange={setSelectedAdditionals}
+                />
+              </>
+            )}
+
             {/* Price */}
             <div className="flex items-center gap-3">
               <span className="text-2xl font-bold text-primary">
@@ -225,6 +307,11 @@ export const ProductModal = ({ product, onClose, onAddToCart, onRequestService }
               {hasPromo && (
                 <span className="text-lg text-muted-foreground line-through">
                   R$ {product.price.toFixed(2)}
+                </span>
+              )}
+              {additionalsTotal > 0 && (
+                <span className="text-sm text-muted-foreground">
+                  + R$ {additionalsTotal.toFixed(2)} adicionais
                 </span>
               )}
             </div>
@@ -270,12 +357,15 @@ export const ProductModal = ({ product, onClose, onAddToCart, onRequestService }
               <Button 
                 className={`h-12 text-base font-semibold touch-manipulation ${isService ? 'w-full' : 'flex-1'}`}
                 onClick={handleAdd}
+                disabled={!isService && !canAddToCart}
               >
                 {isService ? (
                   <>
                     <Wrench className="w-4 h-4 mr-2" />
                     Solicitar Serviço
                   </>
+                ) : !canAddToCart ? (
+                  "Selecione as opções obrigatórias"
                 ) : (
                   <>Adicionar • R$ {total.toFixed(2)}</>
                 )}
