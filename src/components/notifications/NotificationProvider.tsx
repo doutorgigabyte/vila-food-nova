@@ -1,7 +1,6 @@
-import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react";
+import { createContext, useContext, useEffect, useState, ReactNode, useCallback, useMemo } from "react";
 import { useNotifications, Notification, NotificationType, NOTIFICATION_CONFIG } from "@/hooks/useNotifications";
 import { useNotificationSound } from "@/hooks/useNotificationSound";
-import { useParams, useLocation } from "react-router-dom";
 import NotificationToast from "./NotificationToast";
 import NewOrderModal from "./NewOrderModal";
 
@@ -38,13 +37,25 @@ interface NotificationProviderProps {
 }
 
 export const NotificationProvider = ({ children, establishmentId }: NotificationProviderProps) => {
-  const params = useParams();
-  const location = useLocation();
-  const estId = establishmentId || params.slug;
-  
-  // Determine context based on current route
-  const isInAdminContext = location.pathname.startsWith('/admin');
-  const isInEstablishmentContext = location.pathname.startsWith('/painel/');
+  // Get context from URL using window.location (safe approach that doesn't require Router hooks)
+  const getContextFromUrl = useMemo(() => {
+    const pathname = typeof window !== 'undefined' ? window.location.pathname : '/';
+    const isInAdminContext = pathname.startsWith('/admin');
+    const isInEstablishmentContext = pathname.startsWith('/painel/');
+    
+    // Extract establishment slug from URL if in establishment context
+    let estSlug: string | undefined;
+    if (isInEstablishmentContext) {
+      const match = pathname.match(/^\/painel\/([^/]+)/);
+      estSlug = match ? match[1] : undefined;
+    }
+    
+    return {
+      isInAdminContext,
+      isInEstablishmentContext,
+      estSlug: establishmentId || estSlug
+    };
+  }, [establishmentId]);
   
   const {
     notifications,
@@ -54,7 +65,10 @@ export const NotificationProvider = ({ children, establishmentId }: Notification
     markAllAsRead,
     dismissNotification,
     createNotification,
-  } = useNotifications(estId, { isInAdminContext, isInEstablishmentContext });
+  } = useNotifications(getContextFromUrl.estSlug, { 
+    isInAdminContext: getContextFromUrl.isInAdminContext, 
+    isInEstablishmentContext: getContextFromUrl.isInEstablishmentContext 
+  });
 
   const { playNotification, stopSound } = useNotificationSound();
 
