@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -7,36 +7,22 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { ArrowLeft, Loader2, Copy, ExternalLink, Facebook, ShoppingCart, Check, Globe } from "lucide-react";
+import { Loader2, Copy, ExternalLink, Facebook, ShoppingCart, Check, Globe } from "lucide-react";
+import DashboardLayout from "@/components/dashboard/DashboardLayout";
+import { useEstablishment } from "@/hooks/useEstablishment";
 
 const IntegrationsManagement = () => {
-  const { user } = useAuth();
-  const [loading, setLoading] = useState(true);
-  const [establishmentSlug, setEstablishmentSlug] = useState<string | null>(null);
+  const { slug } = useParams<{ slug: string }>();
+  const { establishment, loading } = useEstablishment(slug);
   const [copied, setCopied] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (user) fetchEstablishment();
-  }, [user]);
-
-  const fetchEstablishment = async () => {
-    setLoading(true);
-    const { data } = await supabase
-      .from("establishments")
-      .select("slug")
-      .eq("owner_id", user?.id)
-      .maybeSingle();
-    if (data) setEstablishmentSlug(data.slug);
-    setLoading(false);
-  };
 
   const getXmlFeedUrl = () => {
     const projectId = "gyagfsjbdaacgmmofqip";
-    return `https://${projectId}.supabase.co/functions/v1/product-feeds?slug=${establishmentSlug}`;
+    return `https://${projectId}.supabase.co/functions/v1/product-feeds?slug=${slug}`;
   };
 
   const getStoreUrl = () => {
-    return `${window.location.origin}/loja/${establishmentSlug}`;
+    return `${window.location.origin}/loja/${slug}`;
   };
 
   const handleCopy = async (text: string, type: string) => {
@@ -48,28 +34,17 @@ const IntegrationsManagement = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-      </div>
+      <DashboardLayout title="Integrações">
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+        </div>
+      </DashboardLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b border-border">
-        <div className="flex items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-3">
-            <Link to="/painel">
-              <Button variant="ghost" size="icon">
-                <ArrowLeft className="w-5 h-5" />
-              </Button>
-            </Link>
-            <h1 className="text-lg font-semibold">Integrações</h1>
-          </div>
-        </div>
-      </header>
-
-      <div className="p-4 md:p-6 space-y-6">
+    <DashboardLayout title="Integrações" establishment={establishment}>
+      <div className="space-y-6">
         {/* Store Link */}
         <Card>
           <CardHeader>
@@ -246,7 +221,7 @@ const IntegrationsManagement = () => {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </DashboardLayout>
   );
 };
 
