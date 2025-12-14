@@ -1,5 +1,7 @@
 import { MessageCircle, MapPin, Bike, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { ShareButton } from "@/components/store/ShareButton";
+import { FavoriteButton } from "@/components/store/FavoriteButton";
 import type { StoreEstablishment } from "@/hooks/useStoreData";
 
 interface StoreHeroProps {
@@ -148,19 +150,30 @@ export const StoreHero = ({ establishment, cashbackPercentage, hasStories = fals
                 )}
               </div>
 
-              {/* Social Links - only show if establishment has the URL */}
-              <div className="flex items-center gap-2 mt-2">
+              {/* Action Buttons */}
+              <div className="flex items-center gap-1 mt-2">
                 {establishment.address && (
                   <a 
                     href={`https://maps.google.com/?q=${encodeURIComponent(establishment.address)}`} 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="text-muted-foreground hover:text-primary transition-colors"
+                    className="inline-flex items-center justify-center w-8 h-8 rounded-full text-muted-foreground hover:text-primary hover:bg-muted transition-colors"
                     title="Ver no mapa"
                   >
                     <MapPin className="w-4 h-4" />
                   </a>
                 )}
+                <ShareButton 
+                  title={establishment.name}
+                  text={`Confira ${establishment.name} no VilaFood!`}
+                  className="w-8 h-8 rounded-full"
+                />
+                <FavoriteButton 
+                  id={establishment.id}
+                  type="establishment"
+                  name={establishment.name}
+                  className="w-8 h-8 rounded-full"
+                />
               </div>
             </div>
           </div>
