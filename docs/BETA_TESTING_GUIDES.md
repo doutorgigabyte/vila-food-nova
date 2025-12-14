@@ -1,10 +1,12 @@
 # 📋 Guias de Teste Beta - VilaFood v0.95.0
 
+> ⚠️ **DOCUMENTO CONFIDENCIAL** - Não compartilhe externamente
+> 
+> 📌 **NOTA**: Este documento é mantido como referência rápida. Para o guia completo e atualizado, consulte `docs/MASTER_TESTING_GUIDE.md`
+
 **Data de Criação:** 14/12/2024  
 **Validade das Credenciais:** 30 dias  
 **Ambiente:** Staging/Preview  
-
-> ⚠️ **DOCUMENTO CONFIDENCIAL** - Não compartilhe externamente
 
 ---
 
@@ -27,10 +29,12 @@
 
 | Bandeira | Número | CVV | Validade | Nome do Titular |
 |----------|--------|-----|----------|-----------------|
-| Mastercard | `5031 4332 1540 6351` | `123` | `11/25` | `APRO` |
-| Visa | `4235 6477 2802 5682` | `123` | `11/25` | `APRO` |
-| American Express | `3753 651535 56885` | `1234` | `11/25` | `APRO` |
-| Elo Débito | `5067 2686 5051 7446` | `123` | `11/25` | `APRO` |
+| Mastercard | `5031 4332 1540 6351` | `[Ver MP Docs]` | `11/25` | `APRO` |
+| Visa | `4235 6477 2802 5682` | `[Ver MP Docs]` | `11/25` | `APRO` |
+| American Express | `3753 651535 56885` | `[Ver MP Docs]` | `11/25` | `APRO` |
+| Elo Débito | `5067 2686 5051 7446` | `[Ver MP Docs]` | `11/25` | `APRO` |
+
+> 📚 **CVVs**: Consulte [Documentação Oficial Mercado Pago](https://www.mercadopago.com.br/developers/pt/docs/checkout-api/additional-content/test-cards)
 
 ### Códigos de Simulação (Nome do Titular)
 
