@@ -26,31 +26,29 @@ export const ProductModal = ({ product, onClose, onAddToCart, onRequestService }
   const [selectedVariations, setSelectedVariations] = useState<Record<string, string>>({});
   const [selectedAdditionals, setSelectedAdditionals] = useState<SelectedAdditional[]>([]);
 
-  if (!product) return null;
-
-  // Extended product properties
-  const productCategory = (product as any).product_category;
-  const productType = (product as any).product_type;
+  // Extended product properties - safe access with fallbacks
+  const productCategory = (product as any)?.product_category;
+  const productType = (product as any)?.product_type;
   const isService = productCategory === 'service' || productType === 'service';
   const isDigital = productCategory === 'digital' || productType === 'digital';
   const isPerishable = productCategory === 'perishable' || productType === 'perishable';
-  const serviceDuration = (product as any).service_duration;
-  const requiresBooking = (product as any).requires_booking;
-  const expirationDays = (product as any).expiration_days;
-  const requiresRefrigeration = (product as any).requires_refrigeration;
-  const digitalInstructions = (product as any).digital_instructions;
+  const serviceDuration = (product as any)?.service_duration;
+  const requiresBooking = (product as any)?.requires_booking;
+  const expirationDays = (product as any)?.expiration_days;
+  const requiresRefrigeration = (product as any)?.requires_refrigeration;
+  const digitalInstructions = (product as any)?.digital_instructions;
   
   // Nutritional info
-  const nutritionalInfo = (product as any).nutritional_info;
-  const allergens = (product as any).allergens as string[] | null;
-  const isVegan = (product as any).is_vegan;
-  const isVegetarian = (product as any).is_vegetarian;
-  const isGlutenFree = (product as any).is_gluten_free;
-  const isLactoseFree = (product as any).is_lactose_free;
+  const nutritionalInfo = (product as any)?.nutritional_info;
+  const allergens = (product as any)?.allergens as string[] | null;
+  const isVegan = (product as any)?.is_vegan;
+  const isVegetarian = (product as any)?.is_vegetarian;
+  const isGlutenFree = (product as any)?.is_gluten_free;
+  const isLactoseFree = (product as any)?.is_lactose_free;
 
   // Variations and Additionals from product
-  const productVariations = (product as any).variations as VariationGroup[] | null;
-  const productAdditionals = (product as any).additionals as AdditionalGroup[] | null;
+  const productVariations = (product as any)?.variations as VariationGroup[] | null;
+  const productAdditionals = (product as any)?.additionals as AdditionalGroup[] | null;
 
   // Calculate additionals total
   const additionalsTotal = useMemo(() => {
@@ -72,20 +70,6 @@ export const ProductModal = ({ product, onClose, onAddToCart, onRequestService }
     }
     return modifier;
   }, [productVariations, selectedVariations]);
-
-  // Safe discount calculation
-  const hasPromo = Boolean(
-    product.promotional_price && 
-    product.promotional_price > 0 && 
-    product.promotional_price < product.price
-  );
-  const basePrice = hasPromo ? product.promotional_price! : product.price;
-  const displayPrice = basePrice + variationPriceModifier;
-  const total = (displayPrice * quantity) + (additionalsTotal * quantity);
-  const discount = hasPromo
-    ? Math.round(((product.price - product.promotional_price!) / product.price) * 100)
-    : 0;
-  const showImage = product.image_url && !imageError;
 
   // Check if required selections are complete
   const hasRequiredVariations = useMemo(() => {
@@ -109,6 +93,23 @@ export const ProductModal = ({ product, onClose, onAddToCart, onRequestService }
   }, [productAdditionals, selectedAdditionals]);
 
   const canAddToCart = hasRequiredVariations && hasRequiredAdditionals;
+
+  // Early return AFTER all hooks
+  if (!product) return null;
+
+  // Safe discount calculation
+  const hasPromo = Boolean(
+    product.promotional_price && 
+    product.promotional_price > 0 && 
+    product.promotional_price < product.price
+  );
+  const basePrice = hasPromo ? product.promotional_price! : product.price;
+  const displayPrice = basePrice + variationPriceModifier;
+  const total = (displayPrice * quantity) + (additionalsTotal * quantity);
+  const discount = hasPromo
+    ? Math.round(((product.price - product.promotional_price!) / product.price) * 100)
+    : 0;
+  const showImage = product.image_url && !imageError;
 
   const handleAdd = () => {
     if (isService && onRequestService) {
