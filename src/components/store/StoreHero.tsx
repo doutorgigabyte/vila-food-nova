@@ -1,6 +1,5 @@
-import { MessageCircle, MapPin } from "lucide-react";
+import { MessageCircle, MapPin, Bike, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import type { StoreEstablishment } from "@/hooks/useStoreData";
 
 interface StoreHeroProps {
@@ -114,18 +113,28 @@ export const StoreHero = ({ establishment, cashbackPercentage, hasStories = fals
             <div className="flex-1 min-w-0">
               <h1 className="font-bold text-lg leading-tight truncate">{establishment.name}</h1>
               
-              <div className="flex items-center gap-2 mt-1 flex-wrap">
-                {establishment.min_order_value && establishment.min_order_value > 0 && (
-                  <span className="text-xs text-muted-foreground">
-                    <span className="text-primary font-semibold">$</span> Pedido Min: R$ {establishment.min_order_value.toFixed(2)}
+              {/* Delivery Info Preview */}
+              <div className="flex items-center gap-3 mt-1 flex-wrap text-xs text-muted-foreground">
+                {establishment.accepts_delivery && (
+                  <span className="flex items-center gap-1">
+                    <Bike className="w-3.5 h-3.5" />
+                    R$ {(establishment.delivery_base_fee || 5).toFixed(2)}
                   </span>
                 )}
-                {cashbackPercentage && cashbackPercentage > 0 && (
-                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-green-600 border-green-600">
-                    💰 Cashback de {cashbackPercentage.toFixed(0)}%
-                  </Badge>
+                <span className="flex items-center gap-1">
+                  <Clock className="w-3.5 h-3.5" />
+                  {establishment.avg_delivery_time || 45} min
+                </span>
+                {establishment.min_order_value && establishment.min_order_value > 0 && (
+                  <span>Mín: R$ {establishment.min_order_value.toFixed(2)}</span>
                 )}
               </div>
+              
+              {cashbackPercentage && cashbackPercentage > 0 && (
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-green-600 border-green-600 mt-1">
+                  💰 Cashback de {cashbackPercentage.toFixed(0)}%
+                </Badge>
+              )}
 
               <div className="flex items-center gap-1 mt-2">
                 {establishment.is_open ? (
