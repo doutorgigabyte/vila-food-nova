@@ -6052,6 +6052,26 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_customer_public_info: {
+        Args: { p_customer_id: string }
+        Returns: {
+          created_at: string
+          id: string
+          masked_phone: string
+          name: string
+        }[]
+      }
+      get_driver_public_info: {
+        Args: { p_driver_id: string }
+        Returns: {
+          id: string
+          is_available: boolean
+          name: string
+          rating_average: number
+          total_deliveries: number
+          vehicle_type: string
+        }[]
+      }
       get_establishment_by_instance: {
         Args: { p_instance_name: string }
         Returns: {
