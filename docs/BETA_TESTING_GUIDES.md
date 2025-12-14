@@ -91,8 +91,8 @@ CEP: 59025-000
 
 | Perfil | Email | Senha |
 |--------|-------|-------|
-| **Super Admin** | `doutorgigabyte.ti@gmail.com` | `Master@2025!` |
-| **Cliente Teste** | `cliente@teste.com` | `Teste@2025!` |
+| **Super Admin** | `doutorgigabyte.ti@gmail.com` | `[Solicitar ao QA Lead]` |
+| **Cliente Teste** | `cliente@teste.com` | `[Solicitar ao QA Lead]` |
 
 ## Escopo de Testes
 
@@ -184,9 +184,9 @@ CEP: 59025-000
 
 | Perfil | Email | Senha |
 |--------|-------|-------|
-| **Lojista (Doces e Tortas)** | `docestortas@teste.com` | `Teste@2025!` |
-| **Entregador** | `entregador@teste.com` | `Teste@2025!` |
-| **Super Admin** (backup) | `doutorgigabyte.ti@gmail.com` | `Master@2025!` |
+| **Lojista (Doces e Tortas)** | `docestortas@teste.com` | `[Solicitar ao QA Lead]` |
+| **Entregador** | `entregador@teste.com` | `[Solicitar ao QA Lead]` |
+| **Super Admin** (backup) | `doutorgigabyte.ti@gmail.com` | `[Solicitar ao QA Lead]` |
 
 ## Escopo de Testes
 
