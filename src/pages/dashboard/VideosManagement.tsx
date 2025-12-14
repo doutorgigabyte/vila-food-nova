@@ -236,10 +236,10 @@ export default function VideosManagement() {
                 </div>
                 <div>
                   <Label>Vincular Produto</Label>
-                  <Select value={formData.product_id} onValueChange={(value) => setFormData({ ...formData, product_id: value })}>
+                  <Select value={formData.product_id || 'none'} onValueChange={(value) => setFormData({ ...formData, product_id: value === 'none' ? '' : value })}>
                     <SelectTrigger className="mt-1"><SelectValue placeholder="Selecione (opcional)" /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Nenhum</SelectItem>
+                      <SelectItem value="none">Nenhum</SelectItem>
                       {products?.map((p) => (<SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>))}
                     </SelectContent>
                   </Select>
