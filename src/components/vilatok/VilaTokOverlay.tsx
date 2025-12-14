@@ -46,7 +46,7 @@ export function VilaTokOverlay({
   };
 
   return (
-    <div className="absolute bottom-0 left-0 right-16 p-4 pb-8 pointer-events-none">
+    <div className="absolute bottom-0 left-0 right-16 p-4 pb-8 pointer-events-none" data-vilatok-overlay>
       {/* Establishment Info */}
       <div className="flex items-center gap-3 mb-3 pointer-events-auto">
         <Avatar 

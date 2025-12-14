@@ -149,14 +149,14 @@ export function VilaTokPlayer({
 
   const handleTouchStart = useCallback((e: React.TouchEvent | React.MouseEvent) => {
     const target = e.target as HTMLElement;
-    // Ignorar se o clique foi em um botão, elemento interativo ou área da sidebar
+    // Ignorar se o clique foi em um botão, elemento interativo ou área da sidebar/overlay
     if (
       target.closest('button') || 
       target.closest('[role="button"]') || 
       target.closest('a') ||
       target.closest('[data-vilatok-sidebar]') ||
-      window.getComputedStyle(target).zIndex === '60' ||
-      parseInt(window.getComputedStyle(target).zIndex || '0') >= 60
+      target.closest('[data-vilatok-overlay]') ||
+      target.closest('.pointer-events-auto')
     ) {
       return;
     }
@@ -183,14 +183,14 @@ export function VilaTokPlayer({
 
   const handleTouchEnd = useCallback((e: React.TouchEvent | React.MouseEvent) => {
     const target = e.target as HTMLElement;
-    // Ignorar se o clique foi em um botão, elemento interativo ou área da sidebar
+    // Ignorar se o clique foi em um botão, elemento interativo ou área da sidebar/overlay
     if (
       target.closest('button') || 
       target.closest('[role="button"]') || 
       target.closest('a') ||
       target.closest('[data-vilatok-sidebar]') ||
-      window.getComputedStyle(target).zIndex === '60' ||
-      parseInt(window.getComputedStyle(target).zIndex || '0') >= 60
+      target.closest('[data-vilatok-overlay]') ||
+      target.closest('.pointer-events-auto')
     ) {
       return;
     }
