@@ -67,11 +67,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       (event, session) => {
         console.log('Auth state changed:', event, session?.user?.id);
         
-        // Handle SIGNED_OUT event explicitly
-        if (event === 'SIGNED_OUT' || !session) {
+        // CRITICAL: Only clear storage on EXPLICIT SIGNED_OUT event
+        // Do NOT clear on !session as this can happen during page transitions
+        if (event === 'SIGNED_OUT') {
+          console.log('Explicit SIGNED_OUT event - clearing storage');
           setSession(null);
           setUser(null);
-          // Clear all storage on sign out
+          // Clear all storage on explicit sign out only
           safeLocalStorage.clear();
           safeSessionStorage.clear();
           // Clear Supabase-related storage
@@ -85,10 +87,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               safeLocalStorage.removeItem(key);
             }
           });
-        } else {
+        } else if (session) {
+          // Only update state if we have a valid session
           setSession(session);
-          setUser(session?.user ?? null);
+          setUser(session.user ?? null);
+        } else if (!session && event === 'INITIAL_SESSION') {
+          // Initial load with no session - just update state, don't clear storage
+          setSession(null);
+          setUser(null);
         }
+        // For other events without session (TOKEN_REFRESHED failure, etc), 
+        // don't clear storage - let the next getSession() handle it
         setLoading(false);
       }
     );
