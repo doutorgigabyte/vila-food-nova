@@ -84,9 +84,10 @@ const Account = () => {
         .from("profiles")
         .upsert({
           id: user.id,
+          full_name: formData.full_name || null,
           phone: formData.phone || null,
           updated_at: new Date().toISOString(),
-        });
+        }, { onConflict: 'id' });
 
       if (profileError) throw profileError;
 
