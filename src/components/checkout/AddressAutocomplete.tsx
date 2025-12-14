@@ -44,6 +44,7 @@ const AddressAutocomplete = ({
   const [showMap, setShowMap] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [suggestions, setSuggestions] = useState<google.maps.places.AutocompletePrediction[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
@@ -166,6 +167,7 @@ const AddressAutocomplete = ({
     
     if (!autocompleteServiceRef.current || query.length < 3) {
       setSuggestions([]);
+      setShowSuggestions(false);
       return;
     }
 
@@ -183,8 +185,10 @@ const AddressAutocomplete = ({
       (predictions, status) => {
         if (status === google.maps.places.PlacesServiceStatus.OK && predictions) {
           setSuggestions(predictions);
+          setShowSuggestions(true);
         } else {
           setSuggestions([]);
+          setShowSuggestions(false);
         }
       }
     );
@@ -226,6 +230,7 @@ const AddressAutocomplete = ({
 
           setSearchQuery(description);
           setSuggestions([]);
+          setShowSuggestions(false);
           setShowMap(true);
         }
       }
@@ -276,17 +281,20 @@ const AddressAutocomplete = ({
             placeholder="Digite seu endereço..."
             value={searchQuery}
             onChange={(e) => handleSearchChange(e.target.value)}
+            onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+            onBlur={() => setTimeout(() => setShowSuggestions(false), 300)}
             className="pl-10"
           />
           
           {/* Suggestions dropdown - now inside relative container */}
-          {suggestions.length > 0 && (
+          {showSuggestions && suggestions.length > 0 && (
             <Card className="absolute left-0 right-0 z-50 mt-1 max-h-60 overflow-auto shadow-lg">
               <CardContent className="p-0">
                 {suggestions.map((suggestion) => (
                   <button
                     key={suggestion.place_id}
                     type="button"
+                    onMouseDown={(e) => e.preventDefault()}
                     onClick={() => handleSelectSuggestion(suggestion.place_id, suggestion.description)}
                     className="w-full px-4 py-3 text-left hover:bg-muted transition-colors border-b last:border-0 flex items-start gap-3"
                   >

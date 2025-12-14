@@ -289,7 +289,7 @@ export const LocationSelector = ({ onLocationChange }: LocationSelectorProps) =>
         {/* Add Address Link */}
         {user ? (
           <DropdownMenuItem asChild>
-            <a href="/checkout" className="cursor-pointer">
+            <a href="/enderecos" className="cursor-pointer">
               <Plus className="w-4 h-4 mr-2" />
               <span>Adicionar endereço</span>
             </a>
