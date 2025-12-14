@@ -15,13 +15,15 @@ import {
   Building2,
   Check,
   X,
-  MapPin
+  MapPin,
+  AlertTriangle
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useVilas } from "@/hooks/useVilas";
 import { OnboardingData } from "../OnboardingWizard";
 import { ImageUpload } from "@/components/ImageUpload";
 import { CepAutocomplete, CepData } from "@/components/address/CepAutocomplete";
+import { useServiceCities, validateServiceCity } from "@/hooks/useActiveRegion";
 
 interface BasicDataStepProps {
   data: OnboardingData;
@@ -32,9 +34,11 @@ interface BasicDataStepProps {
 
 export const BasicDataStep = ({ data, updateData, onNext, onBack }: BasicDataStepProps) => {
   const { vilas } = useVilas();
+  const { cities: serviceCities, loading: loadingCities } = useServiceCities();
   const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null);
   const [checkingSlug, setCheckingSlug] = useState(false);
   const [cep, setCep] = useState("");
+  const [cityValidation, setCityValidation] = useState<{ valid: boolean; message: string } | null>(null);
   const [addressData, setAddressData] = useState({
     address: "",
     neighborhood: "",
@@ -75,9 +79,31 @@ export const BasicDataStep = ({ data, updateData, onNext, onBack }: BasicDataSte
       city: cepData.city,
       state: cepData.state,
     });
+    
+    // Validate if city is in service area
+    if (serviceCities.length > 0) {
+      const matchedCity = validateServiceCity(cepData.city, serviceCities);
+      if (matchedCity) {
+        setCityValidation({ 
+          valid: true, 
+          message: `${matchedCity.name} está na nossa área de atendimento!` 
+        });
+      } else {
+        const availableCities = serviceCities.map(c => c.name).join(", ");
+        setCityValidation({ 
+          valid: false, 
+          message: `No momento, atendemos apenas: ${availableCities}. Em breve expandiremos para sua região!` 
+        });
+      }
+    }
   };
 
   const isValid = 
+    data.establishmentName.trim().length >= 3 &&
+    data.phone.length >= 10 &&
+    data.subdomain.length >= 3 &&
+    slugAvailable === true &&
+    (cityValidation === null || cityValidation.valid);
     data.establishmentName.trim().length >= 3 &&
     data.phone.length >= 10 &&
     data.subdomain.length >= 3 &&
@@ -135,6 +161,24 @@ export const BasicDataStep = ({ data, updateData, onNext, onBack }: BasicDataSte
                 <Label className="text-xs">Cidade/Estado</Label>
                 <Input value={`${addressData.city}/${addressData.state}`} readOnly className="bg-muted/50 h-9 text-sm" />
               </div>
+              {cityValidation && (
+                <motion.div 
+                  initial={{ opacity: 0, y: -10 }} 
+                  animate={{ opacity: 1, y: 0 }} 
+                  className={`col-span-2 flex items-start gap-2 text-sm p-3 rounded-lg ${
+                    cityValidation.valid 
+                      ? "bg-green-500/10 text-green-600 border border-green-500/20" 
+                      : "bg-destructive/10 text-destructive border border-destructive/20"
+                  }`}
+                >
+                  {cityValidation.valid ? (
+                    <Check className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                  ) : (
+                    <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                  )}
+                  <span>{cityValidation.message}</span>
+                </motion.div>
+              )}
             </motion.div>
           )}
         </div>
