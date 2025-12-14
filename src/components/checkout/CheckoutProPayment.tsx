@@ -10,6 +10,7 @@ import { Loader2, CreditCard, ExternalLink, AlertCircle, CheckCircle } from 'luc
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { getCardRejectionInfo } from '@/lib/payment/errors';
+import { useMercadoPagoSDK } from '@/hooks/useMercadoPagoSDK';
 
 interface CheckoutItem {
   id: string;
@@ -19,6 +20,15 @@ interface CheckoutItem {
   quantity: number;
   unit_price: number;
   picture_url?: string;
+}
+
+interface PayerAddress {
+  zip_code?: string;
+  street_name?: string;
+  street_number?: string;
+  neighborhood?: string;
+  city?: string;
+  federal_unit?: string;
 }
 
 interface CheckoutProPaymentProps {
@@ -31,6 +41,7 @@ interface CheckoutProPaymentProps {
   payerName?: string;
   payerPhone?: string;
   payerCpf?: string;
+  payerAddress?: PayerAddress;
   deliveryFee?: number;
   onPaymentComplete?: (paymentId: string) => void;
   onPaymentFailed?: (error: string) => void;
@@ -48,6 +59,7 @@ export function CheckoutProPayment({
   payerName,
   payerPhone,
   payerCpf,
+  payerAddress,
   deliveryFee,
   onPaymentComplete,
   onPaymentFailed
@@ -55,6 +67,9 @@ export function CheckoutProPayment({
   const [status, setStatus] = useState<PaymentStatus>('idle');
   const [error, setError] = useState<string | null>(null);
   const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
+  
+  // Hook do SDK para capturar Device ID (obrigatório para homologação MP)
+  const { deviceId, isLoaded: sdkLoaded } = useMercadoPagoSDK();
 
   // Verificar se retornou do checkout
   useEffect(() => {
@@ -87,6 +102,10 @@ export function CheckoutProPayment({
       const firstName = nameParts[0] || '';
       const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
 
+      // Log de dados enviados para debugging
+      console.log('[CheckoutPro] Device ID:', deviceId ? 'captured' : 'missing');
+      console.log('[CheckoutPro] Payer address:', payerAddress ? 'present' : 'missing');
+      
       const { data, error: fnError } = await supabase.functions.invoke('mercadopago-checkout-pro', {
         body: {
           order_id: orderId,
@@ -104,12 +123,16 @@ export function CheckoutProPayment({
                 type: 'CPF',
                 number: payerCpf.replace(/\D/g, '')
               }
-            })
+            }),
+            // Endereço do comprador (BOA PRÁTICA MP)
+            ...(payerAddress && { address: payerAddress })
           },
           shipments: deliveryFee && deliveryFee > 0 ? {
             cost: deliveryFee,
             mode: 'not_specified'
-          } : undefined
+          } : undefined,
+          // Device ID para prevenção de fraudes (OBRIGATÓRIO para homologação)
+          device_id: deviceId || undefined
         }
       });
 
