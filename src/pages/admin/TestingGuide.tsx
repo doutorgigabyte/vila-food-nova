@@ -26,25 +26,25 @@ import {
 } from 'lucide-react';
 
 const vilaFoodCredentials = [
-  { role: 'Super Admin', email: 'doutorgigabyte.ti@gmail.com', password: 'Master@2025!', badge: 'Admin', badgeVariant: 'destructive' as const },
-  { role: 'Lojista (Doces e Tortas)', email: 'docestortas@teste.com', password: 'Teste@2025!', badge: 'Lojista', badgeVariant: 'default' as const },
-  { role: 'Cliente Teste', email: 'cliente@teste.com', password: 'Teste@2025!', badge: 'Cliente', badgeVariant: 'secondary' as const },
-  { role: 'Entregador Teste', email: 'entregador@teste.com', password: 'Teste@2025!', badge: 'Entregador', badgeVariant: 'outline' as const },
+  { role: 'Super Admin', email: 'doutorgigabyte.ti@gmail.com', password: '[Solicitar ao QA Lead]', badge: 'Admin', badgeVariant: 'destructive' as const },
+  { role: 'Lojista (Doces e Tortas)', email: 'docestortas@teste.com', password: '[Solicitar ao QA Lead]', badge: 'Lojista', badgeVariant: 'default' as const },
+  { role: 'Cliente Teste', email: 'cliente@teste.com', password: '[Solicitar ao QA Lead]', badge: 'Cliente', badgeVariant: 'secondary' as const },
+  { role: 'Entregador Teste', email: 'entregador@teste.com', password: '[Solicitar ao QA Lead]', badge: 'Entregador', badgeVariant: 'outline' as const },
 ];
 
 const mercadoPagoCredentials = [
-  { role: 'Marketplace (Plataforma)', email: 'TESTUSER2002566892', password: 'N7H1GRCAAA', badge: 'Vendedor' },
-  { role: 'Cliente Comprador', email: 'TESTUSER348aborador49', password: 'Z43r5aCFmV', badge: 'Comprador' },
-  { role: 'Afiliado', email: 'TESTUSER1698564750', password: 'Wm1hL55kpf', badge: 'Integrador' },
-  { role: 'Lojista Vendedor', email: 'TESTUSER1509698498', password: 'zWYNY05Xen', badge: 'Vendedor' },
-  { role: 'Admin Teste', email: 'TESTUSER403316095', password: 'CdlMp35uaS', badge: 'Vendedor' },
+  { role: 'Marketplace (Plataforma)', email: 'TESTUSER2002566892', password: '[Solicitar ao QA Lead]', badge: 'Vendedor' },
+  { role: 'Cliente Comprador', email: 'TESTUSER34849', password: '[Solicitar ao QA Lead]', badge: 'Comprador' },
+  { role: 'Afiliado', email: 'TESTUSER1698564750', password: '[Solicitar ao QA Lead]', badge: 'Integrador' },
+  { role: 'Lojista Vendedor', email: 'TESTUSER1509698498', password: '[Solicitar ao QA Lead]', badge: 'Vendedor' },
+  { role: 'Admin Teste', email: 'TESTUSER403316095', password: '[Solicitar ao QA Lead]', badge: 'Vendedor' },
 ];
 
 const testCards = [
-  { brand: 'Mastercard', number: '5031 4332 1540 6351', cvv: '123', expiry: '11/25', holder: 'APRO' },
-  { brand: 'Visa', number: '4235 6477 2802 5682', cvv: '123', expiry: '11/25', holder: 'APRO' },
-  { brand: 'American Express', number: '3753 651535 56885', cvv: '1234', expiry: '11/25', holder: 'APRO' },
-  { brand: 'Elo Débito', number: '5067 2686 5051 7446', cvv: '123', expiry: '11/25', holder: 'APRO' },
+  { brand: 'Mastercard', number: '5031 4332 1540 6351', cvv: '[Ver MP Docs]', expiry: '11/25', holder: 'APRO' },
+  { brand: 'Visa', number: '4235 6477 2802 5682', cvv: '[Ver MP Docs]', expiry: '11/25', holder: 'APRO' },
+  { brand: 'American Express', number: '3753 651535 56885', cvv: '[Ver MP Docs]', expiry: '11/25', holder: 'APRO' },
+  { brand: 'Elo Débito', number: '5067 2686 5051 7446', cvv: '[Ver MP Docs]', expiry: '11/25', holder: 'APRO' },
 ];
 
 const paymentStatuses = [
