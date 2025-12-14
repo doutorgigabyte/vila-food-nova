@@ -858,8 +858,8 @@ const Checkout = () => {
               items={items.map(item => ({
                 id: item.product.id,
                 title: item.product.name,
-                description: item.product.name,
-                category_id: 'food',
+                description: item.product.name, // Usando name como fallback
+                category_id: 'food', // Categoria padrão - items já estão categorizados no backend
                 quantity: item.quantity,
                 unit_price: item.product.promotional_price || item.product.price,
                 picture_url: item.product.image_url
@@ -867,6 +867,16 @@ const Checkout = () => {
               payerEmail={user?.email}
               payerName={user?.user_metadata?.full_name}
               payerPhone={customerPhone.replace(/\D/g, '')}
+              payerCpf={cpf}
+              // Endereço do comprador para homologação MP
+              payerAddress={deliveryType === 'delivery' || deliveryType === 'turbo' ? {
+                zip_code: addressData.cep?.replace(/\D/g, ''),
+                street_name: addressData.address,
+                street_number: addressData.number,
+                neighborhood: addressData.neighborhood,
+                city: addressData.city,
+                federal_unit: addressData.state
+              } : undefined}
               deliveryFee={deliveryFee}
               onPaymentComplete={(paymentId) => {
                 console.log('Card payment completed:', paymentId);
