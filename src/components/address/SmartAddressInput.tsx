@@ -365,7 +365,7 @@ export const SmartAddressInput = ({
             value={searchQuery}
             onChange={(e) => handleSearchChange(e.target.value)}
             onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
-            onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+            onBlur={() => setTimeout(() => setShowSuggestions(false), 300)}
             className="pl-10"
           />
         </div>
@@ -376,6 +376,8 @@ export const SmartAddressInput = ({
               {suggestions.map((suggestion) => (
                 <button
                   key={suggestion.place_id}
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
                   onClick={() => handleSelectSuggestion(suggestion.place_id, suggestion.description)}
                   className="w-full px-4 py-3 text-left hover:bg-muted transition-colors border-b last:border-0 flex items-start gap-3"
                 >
