@@ -254,20 +254,45 @@ export const useUserEstablishment = () => {
         }
 
         // First check if user owns an establishment
-        const { data: owned, error: ownedError } = await supabase
+        let ownedQuery = supabase
           .from('establishments')
           .select('*')
-          .eq('owner_id', user.id)
-          .limit(1)
-          .maybeSingle();
+          .eq('owner_id', user.id);
+        
+        // If slug is provided, also match by slug to ensure access to correct establishment
+        if (slug) {
+          ownedQuery = ownedQuery.eq('slug', slug);
+        }
+        
+        const { data: owned, error: ownedError } = await ownedQuery.limit(1).maybeSingle();
 
-        console.log('[useUserEstablishment] Owner check result:', owned?.name || 'null', 'error:', ownedError);
+        console.log('[useUserEstablishment] Owner check result:', owned?.name || 'null', 'slug:', slug, 'error:', ownedError);
 
         if (owned) {
           setEstablishment(owned);
           setEstablishmentId(owned.id);
           setLoading(false);
           return;
+        }
+        
+        // If slug was provided but didn't match owner's establishment, check if user owns any establishment
+        if (slug) {
+          const { data: anyOwned, error: anyOwnedError } = await supabase
+            .from('establishments')
+            .select('*')
+            .eq('owner_id', user.id)
+            .limit(1)
+            .maybeSingle();
+            
+          console.log('[useUserEstablishment] Any owned check:', anyOwned?.name || 'null', 'error:', anyOwnedError);
+          
+          if (anyOwned) {
+            // User owns an establishment but is trying to access wrong slug
+            setEstablishment(null);
+            setEstablishmentId(null);
+            setLoading(false);
+            return;
+          }
         }
 
         // Check establishment_users table

@@ -209,11 +209,11 @@ export const LocationSelector = ({ onLocationChange }: LocationSelectorProps) =>
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button className="flex items-center gap-2 text-sm text-primary hover:text-primary/80 transition-colors">
+        <button className="flex items-center gap-2 text-sm bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded-full border border-white/30 backdrop-blur-sm transition-all shadow-sm">
           <MapPin className="w-4 h-4" />
           <span className="font-medium max-w-[180px] truncate">{currentLocation || "Selecionar cidade"}</span>
           {isInServiceArea === false && (
-            <AlertTriangle className="w-3 h-3 text-amber-500" />
+            <AlertTriangle className="w-3 h-3 text-amber-400" />
           )}
           <ChevronDown className="w-4 h-4" />
         </button>

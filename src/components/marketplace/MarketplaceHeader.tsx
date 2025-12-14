@@ -73,43 +73,50 @@ const MarketplaceHeader = ({ searchTerm, onSearchChange, onSearchClick }: Market
 
   return (
     <header className="bg-card shadow-sm">
-        {/* Top Bar - Only visible for logged-in users */}
-        {user && (
-          <div className="bg-primary text-white">
-            <div className="container mx-auto px-4 py-2">
-              <div className="flex items-center justify-between">
-                <LocationSelector />
+        {/* Top Bar - Location always visible, user features for logged-in only */}
+        <div className="bg-primary text-white">
+          <div className="container mx-auto px-4 py-2">
+            <div className="flex items-center justify-between">
+              <LocationSelector />
+              
+              <div className="flex items-center gap-4">
+                <Link 
+                  to="/conheca" 
+                  className="hidden sm:flex items-center gap-2 text-sm font-medium hover:text-accent transition-colors"
+                >
+                  <Store className="w-4 h-4" />
+                  Seja um Parceiro
+                </Link>
                 
-                <div className="flex items-center gap-4">
-                  <Link 
-                    to="/conheca" 
-                    className="hidden sm:flex items-center gap-2 text-sm font-medium hover:text-accent transition-colors"
-                  >
-                    <Store className="w-4 h-4" />
-                    Seja um Parceiro
-                  </Link>
-                  
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button className="flex items-center gap-1.5 text-sm text-white/80 hover:text-white transition-colors">
-                        <Globe className="w-4 h-4" />
-                        <span className="hidden sm:inline">PT</span>
-                        <ChevronDown className="w-3 h-3" />
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                      <DropdownMenuItem>Português</DropdownMenuItem>
-                      <DropdownMenuItem>English</DropdownMenuItem>
-                      <DropdownMenuItem>Español</DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                  
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="flex items-center gap-1.5 text-sm text-white/80 hover:text-white transition-colors">
+                      <Globe className="w-4 h-4" />
+                      <span className="hidden sm:inline">PT</span>
+                      <ChevronDown className="w-3 h-3" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem>Português</DropdownMenuItem>
+                    <DropdownMenuItem>English</DropdownMenuItem>
+                    <DropdownMenuItem>Español</DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                
+                {user ? (
                   <UserMenu />
-                </div>
+                ) : (
+                  <Link 
+                    to="/auth" 
+                    className="text-sm font-medium bg-white/20 hover:bg-white/30 px-3 py-1 rounded-full transition-colors"
+                  >
+                    Entrar
+                  </Link>
+                )}
               </div>
             </div>
           </div>
-        )}
+        </div>
 
         {/* Main Header */}
         <div className="container mx-auto px-4 py-3">
