@@ -59,7 +59,7 @@ const QRCodeManagement = lazy(() => import("./pages/dashboard/QRCodeManagement")
 const ReportsManagement = lazy(() => import("./pages/dashboard/ReportsManagement"));
 const WhatsAppManagement = lazy(() => import("./pages/dashboard/WhatsAppManagement"));
 const IntegrationsManagement = lazy(() => import("./pages/dashboard/IntegrationsManagement"));
-const ServiceAreaManagement = lazy(() => import("./pages/dashboard/ServiceAreaManagement"));
+const ServiceAreaManagement = lazy(() => import("./pages/dashboard/ServiceAreaManagementNew"));
 const MercadoPagoManagement = lazy(() => import("./pages/dashboard/MercadoPagoManagement"));
 const MercadoPagoCallback = lazy(() => import("./pages/dashboard/MercadoPagoCallback"));
 const WaiterApp = lazy(() => import("./pages/dashboard/WaiterApp"));

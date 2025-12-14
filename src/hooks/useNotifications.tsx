@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { useUserRole, EstablishmentRole } from "./useUserRole";
 import { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
+import { useLocation } from "react-router-dom";
 
 export type NotificationType = 
   | 'new_order'
@@ -22,7 +23,15 @@ export type NotificationType =
   | 'maintenance'
   | 'new_review'
   | 'new_customer'
-  | 'table_call';
+  | 'table_call'
+  // Admin-only notification types
+  | 'admin_support_request'
+  | 'admin_payment_alert'
+  | 'admin_system_maintenance'
+  | 'admin_new_establishment'
+  // Customer-only notification types  
+  | 'customer_order_update'
+  | 'customer_delivery_update';
 
 export type NotificationPriority = 'critical' | 'high' | 'medium' | 'low';
 
@@ -236,14 +245,95 @@ export const NOTIFICATION_CONFIG: Record<NotificationType, NotificationConfig> =
     showModal: true,
     vibrate: true,
   },
+  // Admin-only notifications
+  admin_support_request: {
+    type: 'admin_support_request',
+    title: 'Nova Solicitação de Suporte',
+    hasSound: true,
+    soundFile: 'notification.mp3',
+    priority: 'high',
+    targetRoles: [],
+    showModal: false,
+    vibrate: false,
+  },
+  admin_payment_alert: {
+    type: 'admin_payment_alert',
+    title: 'Alerta de Pagamento',
+    hasSound: true,
+    soundFile: 'alert.mp3',
+    priority: 'high',
+    targetRoles: [],
+    showModal: true,
+    vibrate: true,
+  },
+  admin_system_maintenance: {
+    type: 'admin_system_maintenance',
+    title: 'Manutenção do Sistema',
+    hasSound: false,
+    soundFile: '',
+    priority: 'medium',
+    targetRoles: [],
+    showModal: false,
+    vibrate: false,
+  },
+  admin_new_establishment: {
+    type: 'admin_new_establishment',
+    title: 'Novo Estabelecimento',
+    hasSound: true,
+    soundFile: 'success.mp3',
+    priority: 'low',
+    targetRoles: [],
+    showModal: false,
+    vibrate: false,
+  },
+  // Customer-only notifications
+  customer_order_update: {
+    type: 'customer_order_update',
+    title: 'Atualização do Pedido',
+    hasSound: true,
+    soundFile: 'notification.mp3',
+    priority: 'high',
+    targetRoles: [],
+    showModal: false,
+    vibrate: true,
+  },
+  customer_delivery_update: {
+    type: 'customer_delivery_update',
+    title: 'Atualização da Entrega',
+    hasSound: true,
+    soundFile: 'delivery.mp3',
+    priority: 'high',
+    targetRoles: [],
+    showModal: false,
+    vibrate: true,
+  },
 };
+
+// Admin-only notification types for filtering
+const ADMIN_NOTIFICATION_TYPES: NotificationType[] = [
+  'admin_support_request',
+  'admin_payment_alert', 
+  'admin_system_maintenance',
+  'admin_new_establishment',
+];
+
+// Customer-only notification types
+const CUSTOMER_NOTIFICATION_TYPES: NotificationType[] = [
+  'customer_order_update',
+  'customer_delivery_update',
+];
 
 export const useNotifications = (establishmentId?: string) => {
   const { user } = useAuth();
   const { establishmentRole, appRole } = useUserRole();
+  const location = useLocation();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
+
+  // Determine current context based on route
+  const isInAdminContext = location.pathname.startsWith('/admin');
+  const isInEstablishmentContext = location.pathname.startsWith('/painel/');
 
   // Verificar se é um cliente comum (sem role de estabelecimento)
   const isCustomer = !establishmentRole && appRole !== 'super_admin';
@@ -363,15 +453,15 @@ export const useNotifications = (establishmentId?: string) => {
     
     const { error } = await supabase
       .from('notifications')
-      .insert({
+      .insert([{
         establishment_id: targetEstablishmentId || establishmentId,
-        type,
+        type: type as any,
         priority: config.priority,
         title,
         message,
         data: data || {},
         target_roles: config.targetRoles,
-      });
+      }]);
 
     if (error) {
       console.error('Error creating notification:', error);
