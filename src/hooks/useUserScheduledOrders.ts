@@ -45,13 +45,9 @@ export const useUserScheduledOrders = () => {
         .eq('user_id', user.id)
         .maybeSingle();
 
-      if (!customer) {
-        setScheduledOrders([]);
-        setLoading(false);
-        return;
-      }
-
-      const { data, error } = await supabase
+      // Build query conditions - check both customer_id and direct user_id match
+      // (some scheduled orders might have user_id stored in customer_id field)
+      let query = supabase
         .from('scheduled_orders')
         .select(`
           *,
@@ -61,8 +57,22 @@ export const useUserScheduledOrders = () => {
             logo_url
           )
         `)
-        .eq('customer_id', customer.id)
         .order('scheduled_for', { ascending: true });
+
+      if (customer) {
+        // Check for both: proper customer_id OR user_id stored in customer_id field
+        query = query.or(`customer_id.eq.${customer.id},customer_id.eq.${user.id}`);
+      } else {
+        // No customer record, but might have user_id stored directly
+        query = query.eq('customer_id', user.id);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error('[useUserScheduledOrders] Error:', error);
+        throw error;
+      }
 
       const transformedOrders: UserScheduledOrder[] = (data || []).map(order => ({
         ...order,
