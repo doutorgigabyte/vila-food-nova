@@ -26,7 +26,7 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const { order_id, establishment_id, notification_type } = await req.json() as OrderNotification;
 
-    // Get establishment data with owner contact
+    // Get establishment data
     const { data: establishment, error: estError } = await supabase
       .from('establishments')
       .select('name, phone, whatsapp, owner_id')
@@ -41,7 +41,15 @@ serve(async (req) => {
       );
     }
 
-    // Get owner profile for phone
+    // Get WhatsApp instance for this establishment
+    const { data: whatsappInstance } = await supabase
+      .from('whatsapp_instances')
+      .select('instance_name, api_key, status')
+      .eq('establishment_id', establishment_id)
+      .eq('status', 'connected')
+      .single();
+
+    // Get owner profile for phone (to send notification TO)
     const { data: profile } = await supabase
       .from('profiles')
       .select('phone')
@@ -53,8 +61,8 @@ serve(async (req) => {
     if (!merchantPhone) {
       console.error('No phone found for merchant');
       return new Response(
-        JSON.stringify({ error: 'Merchant phone not found' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ success: true, message: 'Notification skipped (no merchant phone)', skipped: true }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -112,21 +120,14 @@ serve(async (req) => {
         message = `📢 *${storeName}*\n\nVocê tem uma nova notificação. Acesse o painel para mais detalhes.`;
     }
 
-    // Send via Evolution API using system instance (Doutorgigabyte)
-    const instanceName = 'Doutorgigabyte';
+    // Use establishment's WhatsApp instance if available, otherwise use system instance
+    const instanceName = whatsappInstance?.instance_name || 'Doutorgigabyte';
+    const instanceApiKey = whatsappInstance?.api_key || evolutionApiKey;
+    
     const formattedPhone = merchantPhone.replace(/\D/g, '');
     const phoneWithCountry = formattedPhone.startsWith('55') ? formattedPhone : `55${formattedPhone}`;
 
-    // Validate phone is not a test/placeholder number
-    const isTestNumber = phoneWithCountry.includes('999999') || phoneWithCountry.length < 12;
-    
-    if (isTestNumber) {
-      console.log(`Skipping notification - test/invalid phone detected: ${phoneWithCountry}`);
-      return new Response(
-        JSON.stringify({ success: true, message: 'Notification skipped (test phone)', skipped: true }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    console.log(`Sending notification via instance: ${instanceName} to phone: ${phoneWithCountry}`);
 
     let notificationSent = false;
     let notificationError = null;
@@ -136,7 +137,7 @@ serve(async (req) => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'apikey': evolutionApiKey,
+          'apikey': instanceApiKey,
         },
         body: JSON.stringify({
           number: phoneWithCountry,
