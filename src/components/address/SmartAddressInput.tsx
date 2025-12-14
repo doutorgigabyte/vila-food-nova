@@ -8,6 +8,7 @@ import {
   MapPin, Navigation, Check, Loader2, Search, 
   Building2, Home, Hash 
 } from "lucide-react";
+import { useActiveRegion } from "@/hooks/useActiveRegion";
 
 const GOOGLE_MAPS_API_KEY = "AIzaSyAIl_jZHOswjHwpXwHpDlnyacOUcRYXVco";
 
@@ -40,10 +41,14 @@ export const SmartAddressInput = ({
   onChange,
   showMap = true,
   showGpsButton = true,
-  establishmentLat = -8.7576,
-  establishmentLng = -35.1031,
+  establishmentLat,
+  establishmentLng,
   compact = false,
 }: SmartAddressInputProps) => {
+  // Use active region for defaults and location bias
+  const { region } = useActiveRegion();
+  const defaultLat = establishmentLat ?? region.center_lat;
+  const defaultLng = establishmentLng ?? region.center_lng;
   const [isMapLoaded, setIsMapLoaded] = useState(false);
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
   const [mapVisible, setMapVisible] = useState(false);
@@ -95,8 +100,8 @@ export const SmartAddressInput = ({
       const { Map } = await google.maps.importLibrary("maps") as google.maps.MapsLibrary;
       const { AdvancedMarkerElement } = await google.maps.importLibrary("marker") as google.maps.MarkerLibrary;
 
-      const initialLat = value.lat || establishmentLat;
-      const initialLng = value.lng || establishmentLng;
+      const initialLat = value.lat || defaultLat;
+      const initialLng = value.lng || defaultLng;
 
       const map = new Map(mapRef.current!, {
         center: { lat: initialLat, lng: initialLng },
@@ -138,7 +143,7 @@ export const SmartAddressInput = ({
     };
 
     initMap();
-  }, [isMapLoaded, mapVisible, value.lat, value.lng, establishmentLat, establishmentLng]);
+  }, [isMapLoaded, mapVisible, value.lat, value.lng, defaultLat, defaultLng]);
 
   const reverseGeocode = useCallback(async (lat: number, lng: number) => {
     if (!geocoderRef.current) return;
@@ -221,11 +226,16 @@ export const SmartAddressInput = ({
       return;
     }
 
+    // Apply location bias to prioritize results from active region (Tamandaré)
     autocompleteServiceRef.current.getPlacePredictions(
       {
         input: query,
         componentRestrictions: { country: "br" },
         types: ["address"],
+        locationBias: {
+          center: { lat: region.center_lat, lng: region.center_lng },
+          radius: region.bias_radius_meters,
+        },
       },
       (predictions, status) => {
         if (status === google.maps.places.PlacesServiceStatus.OK && predictions) {
@@ -237,7 +247,7 @@ export const SmartAddressInput = ({
         }
       }
     );
-  }, []);
+  }, [region.center_lat, region.center_lng, region.bias_radius_meters]);
 
   const handleSelectSuggestion = useCallback((placeId: string, description: string) => {
     if (!placesServiceRef.current) return;
