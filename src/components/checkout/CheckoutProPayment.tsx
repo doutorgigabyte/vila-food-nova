@@ -119,15 +119,18 @@ export function CheckoutProPayment({
         throw new Error(data?.error || 'Erro ao criar checkout');
       }
 
-      // PRODUÇÃO: Priorizar init_point (produção), fallback para sandbox_init_point
-      const isProduction = import.meta.env.VITE_ENVIRONMENT === 'production' || !import.meta.env.DEV;
-      const redirectUrl = isProduction 
-        ? (data.init_point || data.sandbox_init_point)
-        : (data.sandbox_init_point || data.init_point);
+      // PRODUÇÃO: Sempre usar init_point (URL de produção)
+      // sandbox_init_point só deve ser usado em desenvolvimento com credenciais de teste
+      const redirectUrl = data.init_point;
       
       if (!redirectUrl) {
         throw new Error('URL de checkout não gerada');
       }
+      
+      console.log('Checkout Pro redirect:', { 
+        using: 'init_point (production)', 
+        url: redirectUrl.substring(0, 50) + '...' 
+      });
 
       setCheckoutUrl(redirectUrl);
       setStatus('redirecting');
