@@ -60,17 +60,33 @@ const AddressAutocomplete = ({
       return;
     }
 
+    const existingScript = document.querySelector(`script[src*="maps.googleapis.com"]`);
+    if (existingScript) {
+      existingScript.addEventListener("load", () => setIsMapLoaded(true));
+      return;
+    }
+
     const script = document.createElement("script");
     script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places,marker&v=weekly`;
     script.async = true;
     script.defer = true;
     script.onload = () => setIsMapLoaded(true);
     document.head.appendChild(script);
-
-    return () => {
-      // Cleanup if needed
-    };
   }, []);
+
+  // Initialize autocomplete and places services BEFORE map is visible
+  useEffect(() => {
+    if (!isMapLoaded) return;
+    
+    autocompleteServiceRef.current = new google.maps.places.AutocompleteService();
+    geocoderRef.current = new google.maps.Geocoder();
+    
+    // Create PlacesService with a temporary div - allows selection before map is shown
+    if (!placesServiceRef.current) {
+      const tempDiv = document.createElement('div');
+      placesServiceRef.current = new google.maps.places.PlacesService(tempDiv);
+    }
+  }, [isMapLoaded]);
 
   // Initialize map when loaded and showMap is true
   useEffect(() => {
@@ -120,11 +136,9 @@ const AddressAutocomplete = ({
 
       mapInstanceRef.current = map;
       markerRef.current = marker;
-
-      // Initialize services
-      autocompleteServiceRef.current = new google.maps.places.AutocompleteService();
+      
+      // Update PlacesService with map for better results (optional but recommended)
       placesServiceRef.current = new google.maps.places.PlacesService(map);
-      geocoderRef.current = new google.maps.Geocoder();
     };
 
     initMap();
