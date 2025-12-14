@@ -167,30 +167,56 @@ const Checkout = () => {
     establishment_id: firstEstablishmentId 
   });
 
-  // Pre-fill phone from user profile
+  // Profile data for payment gateway (CPF, nome, etc)
+  const [profileData, setProfileData] = useState<{
+    full_name?: string;
+    cpf?: string;
+    phone?: string;
+  }>({});
+
+  // Pre-fill phone and CPF from user profile
   useEffect(() => {
-    if (user?.id && !customerPhone) {
+    if (user?.id) {
       supabase
         .from('profiles')
-        .select('phone')
+        .select('phone, cpf, full_name')
         .eq('id', user.id)
         .single()
         .then(({ data }) => {
-          if (data?.phone) {
-            // Format phone number
-            const value = data.phone.replace(/\D/g, '');
-            let formatted = value;
-            if (value.length > 2) {
-              formatted = `(${value.slice(0, 2)}) ${value.slice(2)}`;
+          if (data) {
+            setProfileData({
+              full_name: data.full_name || undefined,
+              cpf: data.cpf || undefined,
+              phone: data.phone || undefined
+            });
+            
+            // Pre-fill CPF if not already set
+            if (data.cpf && !cpf) {
+              // Format CPF
+              const value = data.cpf.replace(/\D/g, '');
+              let formatted = value;
+              if (value.length > 3) formatted = `${value.slice(0, 3)}.${value.slice(3)}`;
+              if (value.length > 6) formatted = `${value.slice(0, 3)}.${value.slice(3, 6)}.${value.slice(6)}`;
+              if (value.length > 9) formatted = `${value.slice(0, 3)}.${value.slice(3, 6)}.${value.slice(6, 9)}-${value.slice(9)}`;
+              setCpf(formatted);
             }
-            if (value.length > 7) {
-              formatted = `(${value.slice(0, 2)}) ${value.slice(2, 7)}-${value.slice(7)}`;
+            
+            // Pre-fill phone if not already set
+            if (data.phone && !customerPhone) {
+              const value = data.phone.replace(/\D/g, '');
+              let formatted = value;
+              if (value.length > 2) {
+                formatted = `(${value.slice(0, 2)}) ${value.slice(2)}`;
+              }
+              if (value.length > 7) {
+                formatted = `(${value.slice(0, 2)}) ${value.slice(2, 7)}-${value.slice(7)}`;
+              }
+              setCustomerPhone(formatted);
             }
-            setCustomerPhone(formatted);
           }
         });
     }
-  }, [user?.id, customerPhone]);
+  }, [user?.id]);
 
   // Scroll to top on step change
   useEffect(() => {
@@ -865,9 +891,9 @@ const Checkout = () => {
                 picture_url: item.product.image_url
               }))}
               payerEmail={user?.email}
-              payerName={user?.user_metadata?.full_name}
-              payerPhone={customerPhone.replace(/\D/g, '')}
-              payerCpf={cpf}
+              payerName={profileData.full_name || user?.user_metadata?.full_name}
+              payerPhone={customerPhone.replace(/\D/g, '') || profileData.phone?.replace(/\D/g, '')}
+              payerCpf={cpf || profileData.cpf}
               // Endereço do comprador para homologação MP
               payerAddress={deliveryType === 'delivery' || deliveryType === 'turbo' ? {
                 zip_code: addressData.cep?.replace(/\D/g, ''),
