@@ -39,6 +39,7 @@ import { ImageUpload } from "@/components/ImageUpload";
 import { NotificationSoundSelector } from "@/components/settings/NotificationSoundSelector";
 import { WhatsAppNotificationsConfig } from "@/components/settings/WhatsAppNotificationsConfig";
 import { AssociatedDriversList } from "@/components/settings/AssociatedDriversList";
+import { OperatingHoursEditor } from "@/components/settings/OperatingHoursEditor";
 
 // Component to show available platform gateways
 const AvailableGatewaysCard = () => {
@@ -606,55 +607,16 @@ const EstablishmentSettings = () => {
               <Card>
                 <CardHeader>
                   <CardTitle>Horário de Funcionamento</CardTitle>
-                  <CardDescription>Configure os horários de abertura e fechamento</CardDescription>
+                  <CardDescription>
+                    Configure os horários de abertura e fechamento. 
+                    Você pode criar blocos de horário para vários dias de uma vez.
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    {Object.entries(operatingHours).map(([day, hours]) => (
-                      <div key={day} className="flex items-center gap-4 p-3 rounded-lg border">
-                        <Switch
-                          checked={hours.open}
-                          onCheckedChange={(checked) => 
-                            setOperatingHours({
-                              ...operatingHours,
-                              [day]: { ...hours, open: checked }
-                            })
-                          }
-                        />
-                        <span className="w-32 font-medium">{dayNames[day]}</span>
-                        <div className="flex items-center gap-2">
-                          <Input
-                            type="time"
-                            value={hours.start}
-                            onChange={(e) =>
-                              setOperatingHours({
-                                ...operatingHours,
-                                [day]: { ...hours, start: e.target.value }
-                              })
-                            }
-                            disabled={!hours.open}
-                            className="w-32"
-                          />
-                          <span className="text-muted-foreground">às</span>
-                          <Input
-                            type="time"
-                            value={hours.end}
-                            onChange={(e) =>
-                              setOperatingHours({
-                                ...operatingHours,
-                                [day]: { ...hours, end: e.target.value }
-                              })
-                            }
-                            disabled={!hours.open}
-                            className="w-32"
-                          />
-                        </div>
-                        {!hours.open && (
-                          <Badge variant="secondary">Fechado</Badge>
-                        )}
-                      </div>
-                    ))}
-                  </div>
+                  <OperatingHoursEditor
+                    value={operatingHours}
+                    onChange={setOperatingHours}
+                  />
                 </CardContent>
               </Card>
             </TabsContent>

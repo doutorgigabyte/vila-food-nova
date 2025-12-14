@@ -2,6 +2,7 @@ import { MessageCircle, MapPin, Bike, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { ShareButton } from "@/components/store/ShareButton";
 import { FavoriteButton } from "@/components/store/FavoriteButton";
+import { OperatingHoursPopover } from "@/components/store/OperatingHoursPopover";
 import type { StoreEstablishment } from "@/hooks/useStoreData";
 
 interface StoreHeroProps {
@@ -152,6 +153,11 @@ export const StoreHero = ({ establishment, cashbackPercentage, hasStories = fals
 
               {/* Action Buttons */}
               <div className="flex items-center gap-1 mt-2">
+                {/* Operating Hours Popover */}
+                <OperatingHoursPopover 
+                  operatingHours={establishment.operating_hours as any} 
+                  isOpen={establishment.is_open ?? false}
+                />
                 {establishment.address && (
                   <a 
                     href={`https://maps.google.com/?q=${encodeURIComponent(establishment.address)}`} 

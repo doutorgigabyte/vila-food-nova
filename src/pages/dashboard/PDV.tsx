@@ -55,6 +55,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useDragToCart } from "@/hooks/useDragToCart";
 import { PDVPaymentModal } from "@/components/pdv/PDVPaymentModal";
+import { StoreClosedModal } from "@/components/pdv/StoreClosedModal";
+import { useStoreOpenStatus } from "@/hooks/useStoreOpenStatus";
 import type { Json } from "@/integrations/supabase/types";
 
 interface Category {
@@ -134,8 +136,16 @@ const PDV = () => {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showCustomerModal, setShowCustomerModal] = useState(false);
   const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
+  const [showStoreClosedModal, setShowStoreClosedModal] = useState(false);
   const [processingOrder, setProcessingOrder] = useState(false);
   const [generatingPix, setGeneratingPix] = useState(false);
+
+  // Store open status hook
+  const { 
+    isOpen: storeIsOpen, 
+    loading: storeStatusLoading, 
+    openStore 
+  } = useStoreOpenStatus(establishment?.id);
 
   // Drag and drop
   const addToCart = useCallback((product: Product) => {
@@ -561,6 +571,27 @@ const PDV = () => {
     setPaymentMethod('cash');
   }, []);
 
+  // Handle initiating a sale - check if store is open
+  const handleInitiateSale = useCallback(() => {
+    if (storeIsOpen === false) {
+      setShowStoreClosedModal(true);
+      return;
+    }
+    setShowPaymentModal(true);
+  }, [storeIsOpen]);
+
+  // Handle opening store and continuing with sale
+  const handleOpenStoreAndContinue = useCallback(async () => {
+    try {
+      await openStore();
+      setShowStoreClosedModal(false);
+      setShowPaymentModal(true);
+      toast.success("Loja aberta com sucesso!");
+    } catch (error) {
+      toast.error("Erro ao abrir a loja");
+    }
+  }, [openStore]);
+
   // Process order
   const processOrder = useCallback(async (paymentId?: string) => {
     if (!establishment) {
@@ -979,7 +1010,7 @@ const PDV = () => {
                 <MessageCircle className="w-4 h-4 mr-1" />
                 WhatsApp
               </Button>
-              <Button className="h-10 text-xs" disabled={cart.length === 0} onClick={() => setShowPaymentModal(true)}>
+              <Button className="h-10 text-xs" disabled={cart.length === 0} onClick={handleInitiateSale}>
                 <Receipt className="w-4 h-4 mr-1" />
                 Finalizar
               </Button>
@@ -1288,7 +1319,7 @@ const PDV = () => {
                   <Button 
                     className="h-10 text-xs" 
                     disabled={cart.length === 0}
-                    onClick={() => setShowPaymentModal(true)}
+                    onClick={handleInitiateSale}
                   >
                     <Receipt className="w-4 h-4 mr-1" />
                     Finalizar
@@ -1520,6 +1551,15 @@ const PDV = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Store Closed Modal */}
+      <StoreClosedModal
+        isOpen={showStoreClosedModal}
+        onClose={() => setShowStoreClosedModal(false)}
+        onOpenStore={handleOpenStoreAndContinue}
+        loading={storeStatusLoading}
+        storeName={establishment?.name}
+      />
     </div>
   );
 };
