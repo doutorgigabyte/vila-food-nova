@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -9,9 +9,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { ArrowLeft, Plus, Trash2, Download, QrCode, Loader2, Utensils, Truck, Table2 } from "lucide-react";
+import { Plus, Trash2, Download, QrCode, Loader2, Utensils, Truck, Table2 } from "lucide-react";
 import { StyledQRCode } from "@/components/ui/StyledQRCode";
-
+import DashboardLayout from "@/components/dashboard/DashboardLayout";
+import { useEstablishment } from "@/hooks/useEstablishment";
 interface QRCodeEntry {
   id: string;
   type: string;
@@ -23,6 +24,7 @@ interface QRCodeEntry {
 const QRCodeManagement = () => {
   const { user } = useAuth();
   const { slug } = useParams<{ slug: string }>();
+  const { establishment } = useEstablishment(slug);
   const [qrcodes, setQrcodes] = useState<QRCodeEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -227,25 +229,15 @@ const QRCodeManagement = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b border-border">
-        <div className="flex items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-3">
-            <Link to={`/painel/${slug}`}>
-              <Button variant="ghost" size="icon">
-                <ArrowLeft className="w-5 h-5" />
-              </Button>
-            </Link>
-            <h1 className="text-lg font-semibold">QR Codes</h1>
-          </div>
-          <Button onClick={() => setIsDialogOpen(true)}>
-            <Plus className="w-4 h-4 mr-2" />
-            Novo QR Code
-          </Button>
-        </div>
-      </header>
+    <DashboardLayout title="QR Codes" establishment={establishment}>
+      <div className="flex justify-end mb-4">
+        <Button onClick={() => setIsDialogOpen(true)}>
+          <Plus className="w-4 h-4 mr-2" />
+          Novo QR Code
+        </Button>
+      </div>
 
-      <div className="p-4 md:p-6 space-y-6">
+      <div className="space-y-6">
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
@@ -364,7 +356,7 @@ const QRCodeManagement = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </DashboardLayout>
   );
 };
 
