@@ -194,35 +194,6 @@ const Addresses = () => {
                     showMap={true}
                   />
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Número *</Label>
-                      <Input
-                        value={formData.number}
-                        onChange={(e) => setFormData({ ...formData, number: e.target.value })}
-                        placeholder="123"
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Complemento</Label>
-                      <Input
-                        value={formData.complement}
-                        onChange={(e) => setFormData({ ...formData, complement: e.target.value })}
-                        placeholder="Apto, Bloco, etc"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Ponto de Referência</Label>
-                    <Input
-                      value={formData.reference}
-                      onChange={(e) => setFormData({ ...formData, reference: e.target.value })}
-                      placeholder="Ex: Próximo ao mercado"
-                    />
-                  </div>
-
                   <div className="flex items-center space-x-2">
                     <input
                       type="checkbox"
