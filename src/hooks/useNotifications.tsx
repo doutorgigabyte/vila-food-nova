@@ -3,7 +3,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { useUserRole, EstablishmentRole } from "./useUserRole";
 import { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
-import { useLocation } from "react-router-dom";
 
 export type NotificationType = 
   | 'new_order'
@@ -323,17 +322,21 @@ const CUSTOMER_NOTIFICATION_TYPES: NotificationType[] = [
   'customer_delivery_update',
 ];
 
-export const useNotifications = (establishmentId?: string) => {
+export interface NotificationContextOptions {
+  isInAdminContext?: boolean;
+  isInEstablishmentContext?: boolean;
+}
+
+export const useNotifications = (establishmentId?: string, contextOptions?: NotificationContextOptions) => {
   const { user } = useAuth();
   const { establishmentRole, appRole } = useUserRole();
-  const location = useLocation();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  // Determine current context based on route
-  const isInAdminContext = location.pathname.startsWith('/admin');
-  const isInEstablishmentContext = location.pathname.startsWith('/painel/');
+  // Context passed from provider (which has access to Router)
+  const isInAdminContext = contextOptions?.isInAdminContext ?? false;
+  const isInEstablishmentContext = contextOptions?.isInEstablishmentContext ?? false;
 
   // Verificar se é um cliente comum (sem role de estabelecimento)
   const isCustomer = !establishmentRole && appRole !== 'super_admin';
