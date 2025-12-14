@@ -17,12 +17,28 @@ import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 
+interface OperatingHoursDay {
+  // New format
+  open?: boolean;
+  start?: string;
+  end?: string;
+  // Old format (for backwards compatibility)
+  enabled?: boolean;
+  close?: string;
+  isOpen?: boolean;
+}
+
 interface OperatingHours {
-  [key: string]: {
-    open: boolean;
-    start: string;
-    end: string;
-  };
+  [key: string]: OperatingHoursDay;
+}
+
+// Normalize hours to handle old formats
+function normalizeHours(hours: OperatingHoursDay): { open: boolean; start: string; end: string } {
+  const isOpen = hours.enabled ?? hours.isOpen ?? hours.open ?? false;
+  const start = hours.start ?? (typeof hours.open === 'string' ? hours.open : "08:00");
+  const end = hours.end ?? hours.close ?? "22:00";
+  
+  return { open: isOpen, start, end };
 }
 
 interface RecurrenceConfig {
@@ -115,7 +131,8 @@ export function ScheduledOrderModal({
     }
 
     const dayKey = dayMapping[selectedDate.getDay()];
-    const dayHours = operatingHours[dayKey];
+    const rawDayHours = operatingHours[dayKey];
+    const dayHours = rawDayHours ? normalizeHours(rawDayHours) : null;
 
     if (!dayHours?.open) return [];
 
@@ -180,7 +197,8 @@ export function ScheduledOrderModal({
     for (let i = 0; i < 14; i++) {
       const checkDate = addDays(startOfToday(), i);
       const dayKey = dayMapping[checkDate.getDay()];
-      const dayHours = operatingHours[dayKey];
+      const rawDayHours = operatingHours[dayKey];
+      const dayHours = rawDayHours ? normalizeHours(rawDayHours) : null;
 
       if (dayHours?.open) {
         const [startH, startM] = dayHours.start.split(':').map(Number);
@@ -209,7 +227,8 @@ export function ScheduledOrderModal({
     if (!operatingHours) return false;
 
     const dayKey = dayMapping[date.getDay()];
-    const dayHours = operatingHours[dayKey];
+    const rawDayHours = operatingHours[dayKey];
+    const dayHours = rawDayHours ? normalizeHours(rawDayHours) : null;
     return !dayHours?.open;
   };
 
