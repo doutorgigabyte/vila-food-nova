@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import AdminLayout from '@/components/admin/AdminLayout';
-import { Building2, Plus, Edit, Trash2, Search, Filter } from 'lucide-react';
+import { Building2, Plus, Edit, Trash2, Search, Filter, MapPin, Navigation } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -22,6 +22,10 @@ interface City {
   slug: string | null;
   state_id: string | null;
   is_active: boolean | null;
+  is_service_area: boolean | null;
+  center_lat: number | null;
+  center_lng: number | null;
+  radius_km: number | null;
   created_at: string | null;
   state?: {
     id: string;
@@ -41,6 +45,7 @@ const CitiesManagement = () => {
   const { logAction } = useAuditLog();
   const [searchTerm, setSearchTerm] = useState('');
   const [stateFilter, setStateFilter] = useState<string>('all');
+  const [serviceAreaFilter, setServiceAreaFilter] = useState<string>('all');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedCity, setSelectedCity] = useState<City | null>(null);
@@ -48,7 +53,11 @@ const CitiesManagement = () => {
     name: '',
     slug: '',
     state_id: '',
-    is_active: true
+    is_active: true,
+    is_service_area: false,
+    center_lat: '',
+    center_lng: '',
+    radius_km: '30'
   });
 
   // Fetch cities with state info
@@ -92,7 +101,11 @@ const CitiesManagement = () => {
           name: data.name,
           slug,
           state_id: data.state_id || null,
-          is_active: data.is_active
+          is_active: data.is_active,
+          is_service_area: data.is_service_area,
+          center_lat: data.center_lat ? parseFloat(data.center_lat) : null,
+          center_lng: data.center_lng ? parseFloat(data.center_lng) : null,
+          radius_km: data.radius_km ? parseFloat(data.radius_km) : 30
         })
         .select()
         .single();
@@ -122,7 +135,11 @@ const CitiesManagement = () => {
           name: data.name,
           slug,
           state_id: data.state_id || null,
-          is_active: data.is_active
+          is_active: data.is_active,
+          is_service_area: data.is_service_area,
+          center_lat: data.center_lat ? parseFloat(data.center_lat) : null,
+          center_lng: data.center_lng ? parseFloat(data.center_lng) : null,
+          radius_km: data.radius_km ? parseFloat(data.radius_km) : 30
         })
         .eq('id', id)
         .select()
@@ -191,7 +208,11 @@ const CitiesManagement = () => {
       name: '',
       slug: '',
       state_id: '',
-      is_active: true
+      is_active: true,
+      is_service_area: false,
+      center_lat: '',
+      center_lng: '',
+      radius_km: '30'
     });
     setSelectedCity(null);
   };
@@ -202,7 +223,11 @@ const CitiesManagement = () => {
       name: city.name,
       slug: city.slug || '',
       state_id: city.state_id || '',
-      is_active: city.is_active ?? true
+      is_active: city.is_active ?? true,
+      is_service_area: city.is_service_area ?? false,
+      center_lat: city.center_lat?.toString() || '',
+      center_lng: city.center_lng?.toString() || '',
+      radius_km: city.radius_km?.toString() || '30'
     });
     setIsDialogOpen(true);
   };
@@ -229,7 +254,10 @@ const CitiesManagement = () => {
     const matchesSearch = city.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       city.slug?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesState = stateFilter === 'all' || city.state_id === stateFilter;
-    return matchesSearch && matchesState;
+    const matchesServiceArea = serviceAreaFilter === 'all' || 
+      (serviceAreaFilter === 'service' && city.is_service_area) ||
+      (serviceAreaFilter === 'non-service' && !city.is_service_area);
+    return matchesSearch && matchesState && matchesServiceArea;
   });
 
   return (
@@ -268,6 +296,17 @@ const CitiesManagement = () => {
                 ))}
               </SelectContent>
             </Select>
+            <Select value={serviceAreaFilter} onValueChange={setServiceAreaFilter}>
+              <SelectTrigger className="w-[200px]">
+                <MapPin className="h-4 w-4 mr-2" />
+                <SelectValue placeholder="Área de serviço" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas</SelectItem>
+                <SelectItem value="service">Áreas de serviço</SelectItem>
+                <SelectItem value="non-service">Não atendidas</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Table */}
@@ -280,6 +319,7 @@ const CitiesManagement = () => {
                   <TableHead>Nome</TableHead>
                   <TableHead>Slug</TableHead>
                   <TableHead>Estado</TableHead>
+                  <TableHead>Área de Serviço</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
@@ -292,6 +332,16 @@ const CitiesManagement = () => {
                     <TableCell>
                       {city.state ? (
                         <Badge variant="outline">{city.state.uf}</Badge>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {city.is_service_area ? (
+                        <Badge className="bg-green-500/10 text-green-600 border-green-500/20">
+                          <MapPin className="w-3 h-3 mr-1" />
+                          Ativa ({city.radius_km}km)
+                        </Badge>
                       ) : (
                         <span className="text-muted-foreground">-</span>
                       )}
@@ -318,7 +368,7 @@ const CitiesManagement = () => {
                 ))}
                 {filteredCities?.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                    <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
                       Nenhuma cidade encontrada
                     </TableCell>
                   </TableRow>
@@ -372,6 +422,61 @@ const CitiesManagement = () => {
                 </SelectContent>
               </Select>
             </div>
+            
+            {/* Service Area Configuration */}
+            <div className="space-y-4 p-4 rounded-lg bg-muted/30 border">
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="is_service_area"
+                  checked={formData.is_service_area}
+                  onCheckedChange={(checked) => setFormData({ ...formData, is_service_area: checked })}
+                />
+                <Label htmlFor="is_service_area" className="flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-primary" />
+                  Área de serviço ativa
+                </Label>
+              </div>
+              
+              {formData.is_service_area && (
+                <div className="space-y-3 pt-2">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="center_lat">Latitude central</Label>
+                      <Input
+                        id="center_lat"
+                        type="number"
+                        step="any"
+                        value={formData.center_lat}
+                        onChange={(e) => setFormData({ ...formData, center_lat: e.target.value })}
+                        placeholder="-8.7576"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="center_lng">Longitude central</Label>
+                      <Input
+                        id="center_lng"
+                        type="number"
+                        step="any"
+                        value={formData.center_lng}
+                        onChange={(e) => setFormData({ ...formData, center_lng: e.target.value })}
+                        placeholder="-35.1031"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="radius_km">Raio de cobertura (km)</Label>
+                    <Input
+                      id="radius_km"
+                      type="number"
+                      value={formData.radius_km}
+                      onChange={(e) => setFormData({ ...formData, radius_km: e.target.value })}
+                      placeholder="30"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
             <div className="flex items-center gap-2">
               <Switch
                 id="is_active"
