@@ -217,27 +217,33 @@ export const useUserEstablishment = () => {
 
   useEffect(() => {
     const fetchUserEstablishment = async () => {
+      console.log('[useUserEstablishment] Starting fetch, user.id:', user?.id, 'slug:', slug);
+      
       if (!user?.id) {
+        console.log('[useUserEstablishment] No user, exiting');
         setLoading(false);
         return;
       }
 
       try {
         // Check if user is super_admin
-        const { data: isAdmin } = await supabase.rpc('has_role', {
+        const { data: isAdmin, error: adminError } = await supabase.rpc('has_role', {
           _user_id: user.id,
           _role: 'super_admin'
         });
 
+        console.log('[useUserEstablishment] super_admin check:', isAdmin, 'error:', adminError);
         setIsSuperAdmin(!!isAdmin);
 
         // If super_admin and slug is provided, load that establishment
         if (isAdmin && slug) {
-          const { data: estBySlug } = await supabase
+          const { data: estBySlug, error: slugError } = await supabase
             .from('establishments')
             .select('*')
             .eq('slug', slug)
             .single();
+
+          console.log('[useUserEstablishment] Super admin slug lookup:', estBySlug?.name, 'error:', slugError);
 
           if (estBySlug) {
             setEstablishment(estBySlug);
@@ -248,12 +254,14 @@ export const useUserEstablishment = () => {
         }
 
         // First check if user owns an establishment
-        const { data: owned } = await supabase
+        const { data: owned, error: ownedError } = await supabase
           .from('establishments')
           .select('*')
           .eq('owner_id', user.id)
           .limit(1)
           .maybeSingle();
+
+        console.log('[useUserEstablishment] Owner check result:', owned?.name || 'null', 'error:', ownedError);
 
         if (owned) {
           setEstablishment(owned);
@@ -263,7 +271,7 @@ export const useUserEstablishment = () => {
         }
 
         // Check establishment_users table
-        const { data: userEst } = await supabase
+        const { data: userEst, error: userEstError } = await supabase
           .from('establishment_users')
           .select(`
             establishment_id,
@@ -275,12 +283,16 @@ export const useUserEstablishment = () => {
           .limit(1)
           .maybeSingle();
 
+        console.log('[useUserEstablishment] Establishment user check:', userEst?.role || 'null', 'error:', userEstError);
+
         if (userEst) {
           setEstablishment(userEst.establishments);
           setEstablishmentId(userEst.establishment_id);
+        } else {
+          console.log('[useUserEstablishment] No establishment found for user');
         }
       } catch (error) {
-        console.error('Error fetching user establishment:', error);
+        console.error('[useUserEstablishment] Error fetching user establishment:', error);
       } finally {
         setLoading(false);
       }

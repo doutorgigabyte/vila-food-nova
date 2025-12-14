@@ -134,6 +134,18 @@ const EstablishmentDashboard = () => {
     }
   };
 
+  // Debug logging
+  useEffect(() => {
+    console.log('[EstablishmentDashboard] Debug:', {
+      user_id: user?.id,
+      user_email: user?.email,
+      estLoading,
+      establishmentId,
+      establishment_name: establishment?.name,
+      isSuperAdmin
+    });
+  }, [user, estLoading, establishmentId, establishment, isSuperAdmin]);
+
   if (estLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -143,6 +155,7 @@ const EstablishmentDashboard = () => {
   }
 
   if (!establishmentId) {
+    console.log('[EstablishmentDashboard] No establishment found for user:', user?.id, user?.email);
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="max-w-md w-full">
@@ -151,6 +164,9 @@ const EstablishmentDashboard = () => {
             <h2 className="text-xl font-bold mb-2">Nenhum estabelecimento vinculado</h2>
             <p className="text-muted-foreground mb-4">
               Você não possui um estabelecimento cadastrado ou não tem permissão de acesso.
+            </p>
+            <p className="text-xs text-muted-foreground mb-4">
+              ID do usuário: {user?.id?.slice(0, 8)}...
             </p>
             <Button asChild>
               <Link to="/cadastrar-estabelecimento">Cadastrar estabelecimento</Link>
