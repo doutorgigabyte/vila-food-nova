@@ -299,7 +299,10 @@ const AppRoutes = () => {
               <Route path="/painel/financeiro" element={<AdvancedFinanceManagement />} />
               
               <Route path="/painel/pagamentos" element={<PaymentsManagement />} />
+              <Route path="/painel/videos" element={<VideosManagement />} />
               <Route path="/painel/stories" element={<StoriesManagement />} />
+              <Route path="/painel/vilatok-tv" element={<TVSlideManagement />} />
+              <Route path="/painel/comissoes" element={<CommissionDebtManagement />} />
               <Route path="/painel/analise-ia" element={<AIAnalysisDashboard />} />
               <Route path="/painel/configuracoes" element={<EstablishmentSettings />} />
               <Route path="/painel/kits" element={<ProductKitsManagement />} />
