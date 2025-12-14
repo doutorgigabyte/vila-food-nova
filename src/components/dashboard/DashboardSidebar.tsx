@@ -165,10 +165,12 @@ const DashboardSidebar = ({
 }: DashboardSidebarProps) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { slug } = useParams();
+  const { slug: routeSlug } = useParams();
   const { user, signOut } = useAuth();
   const { appRole } = useUserRole();
   
+  // Priorizar o slug do establishment passado via prop
+  const slug = establishment?.slug || routeSlug;
   const baseUrl = slug ? `/painel/${slug}` : '/painel';
   const menuGroups = getMenuGroups(baseUrl);
   const isSuperAdmin = appRole === 'super_admin';
