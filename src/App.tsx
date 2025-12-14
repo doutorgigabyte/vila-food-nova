@@ -403,16 +403,16 @@ const App = () => {
               <AdminAccessProvider>
                 <OrderSourceProvider>
                   <CartProvider>
-                    <NotificationProvider>
-                      <TooltipProvider>
-                        <Toaster />
-                        <Sonner />
-                        <PWAInstallPrompt />
-                        <BrowserRouter>
+                    <TooltipProvider>
+                      <Toaster />
+                      <Sonner />
+                      <PWAInstallPrompt />
+                      <BrowserRouter>
+                        <NotificationProvider>
                           <AppRoutes />
-                        </BrowserRouter>
-                      </TooltipProvider>
-                    </NotificationProvider>
+                        </NotificationProvider>
+                      </BrowserRouter>
+                    </TooltipProvider>
                   </CartProvider>
                 </OrderSourceProvider>
               </AdminAccessProvider>
