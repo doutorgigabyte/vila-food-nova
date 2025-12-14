@@ -1122,26 +1122,38 @@ export type Database = {
       }
       cities: {
         Row: {
+          center_lat: number | null
+          center_lng: number | null
           created_at: string | null
           id: string
           is_active: boolean | null
+          is_service_area: boolean | null
           name: string
+          radius_km: number | null
           slug: string | null
           state_id: string | null
         }
         Insert: {
+          center_lat?: number | null
+          center_lng?: number | null
           created_at?: string | null
           id?: string
           is_active?: boolean | null
+          is_service_area?: boolean | null
           name: string
+          radius_km?: number | null
           slug?: string | null
           state_id?: string | null
         }
         Update: {
+          center_lat?: number | null
+          center_lng?: number | null
           created_at?: string | null
           id?: string
           is_active?: boolean | null
+          is_service_area?: boolean | null
           name?: string
+          radius_km?: number | null
           slug?: string | null
           state_id?: string | null
         }
@@ -6037,6 +6049,7 @@ export type Database = {
         Returns: Json
       }
       generate_menu_json: { Args: { est_id: string }; Returns: Json }
+      get_active_region: { Args: never; Returns: Json }
       get_customer_by_phone_and_establishment: {
         Args: { p_establishment_id: string; p_phone: string }
         Returns: {
@@ -6287,6 +6300,18 @@ export type Database = {
           photos: Json
           selected_tags: Json
           service_rating: number
+        }[]
+      }
+      get_service_cities: {
+        Args: never
+        Returns: {
+          center_lat: number
+          center_lng: number
+          id: string
+          name: string
+          radius_km: number
+          slug: string
+          state_name: string
         }[]
       }
       get_user_orders: {
