@@ -14,6 +14,7 @@ export interface Product {
   establishment_id: string;
   category_id: string | null;
   establishment?: {
+    id: string;
     name: string;
     slug: string;
     segment_id: string | null;
@@ -72,7 +73,7 @@ export const useProductsByMainCategory = (mainCategorySlug: string | null, limit
             .select(`
               id, name, description, price, promotional_price, image_url,
               is_featured, is_active, establishment_id, category_id,
-              establishments (name, slug, segment_id)
+              establishments (id, name, slug, segment_id)
             `)
             .eq("is_active", true)
             .limit(fetchLimit);
@@ -138,7 +139,7 @@ export const useProductsByMainCategory = (mainCategorySlug: string | null, limit
           .select(`
             id, name, description, price, promotional_price, image_url,
             is_featured, is_active, establishment_id, category_id,
-            establishments (name, slug, segment_id)
+            establishments (id, name, slug, segment_id)
           `)
           .eq("is_active", true)
           .in("establishment_id", establishmentIds)
@@ -207,7 +208,7 @@ export const useProductsBySubcategory = (segmentId: string | null, limit?: numbe
           .select(`
             id, name, description, price, promotional_price, image_url,
             is_featured, is_active, establishment_id, category_id,
-            establishments (name, slug, segment_id)
+            establishments (id, name, slug, segment_id)
           `)
           .eq("is_active", true)
           .in("establishment_id", establishmentIds)

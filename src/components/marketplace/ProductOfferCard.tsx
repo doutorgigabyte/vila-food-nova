@@ -18,6 +18,7 @@ interface Product {
   image_url?: string | null;
   is_active?: boolean | null;
   establishment?: {
+    id: string;
     name: string;
     slug: string;
     is_open?: boolean | null;
@@ -67,11 +68,11 @@ const ProductOfferCard = memo(({ product, variant = "default", className }: Prod
       price: product.price,
       promotional_price: product.promotional_price,
       image_url: product.image_url,
-      establishment_id: product.establishment.slug,
+      establishment_id: product.establishment.id,
     };
     
     const establishmentInfo = {
-      id: product.establishment.slug,
+      id: product.establishment.id,
       name: product.establishment.name,
       slug: product.establishment.slug,
       logo_url: null,

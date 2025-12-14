@@ -15,6 +15,7 @@ export interface Product {
   establishment_id: string;
   category_id: string | null;
   establishment?: {
+    id: string;
     name: string;
     slug: string;
     segment_id: string | null;
@@ -79,6 +80,7 @@ export const useProducts = (limit?: number) => {
             establishment_id,
             category_id,
             establishments (
+              id,
               name,
               slug,
               segment_id
@@ -135,6 +137,7 @@ export const useFeaturedProducts = () => {
             establishment_id,
             category_id,
             establishments (
+              id,
               name,
               slug,
               segment_id
@@ -253,6 +256,7 @@ export const useProductsByMainCategory = (
             establishment_id,
             category_id,
             establishments (
+              id,
               name,
               slug,
               segment_id
