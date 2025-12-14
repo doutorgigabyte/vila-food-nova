@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Package, Clock, CheckCircle, XCircle, Truck, ChefHat, Loader2, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Package, Clock, CheckCircle, XCircle, Truck, ChefHat, Loader2, RefreshCw, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useUserOrders, UserOrder } from '@/hooks/useUserOrders';
+import { useUserScheduledOrders, UserScheduledOrder } from '@/hooks/useUserScheduledOrders';
 import { useAuth } from '@/hooks/useAuth';
 import MobileBottomNav from '@/components/marketplace/MobileBottomNav';
 import { format } from 'date-fns';
@@ -20,6 +21,7 @@ const statusConfig: Record<string, { label: string; color: string; icon: React.R
   delivering: { label: 'Em entrega', color: 'bg-purple-500', icon: <Truck className="h-4 w-4" /> },
   delivered: { label: 'Entregue', color: 'bg-green-600', icon: <CheckCircle className="h-4 w-4" /> },
   cancelled: { label: 'Cancelado', color: 'bg-red-500', icon: <XCircle className="h-4 w-4" /> },
+  completed: { label: 'Concluído', color: 'bg-green-600', icon: <CheckCircle className="h-4 w-4" /> },
 };
 
 const Orders = () => {
@@ -27,6 +29,7 @@ const Orders = () => {
   const [activeTab, setActiveTab] = useState('active');
   const { user } = useAuth();
   const { orders, activeOrders, completedOrders, cancelledOrders, loading, refetch } = useUserOrders();
+  const { pendingScheduledOrders, loading: scheduledLoading, refetch: refetchScheduled } = useUserScheduledOrders();
 
   const getImageUrl = (url: string | null) => {
     if (!url) return '/placeholder.svg';
@@ -68,13 +71,64 @@ const Orders = () => {
     );
   }
 
-  if (loading) {
+  if (loading || scheduledLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
+
+  const renderScheduledOrderCard = (order: UserScheduledOrder) => {
+    const status = statusConfig[order.status] || statusConfig.pending;
+    const items = getOrderItems(order.items);
+    const scheduledDate = new Date(order.scheduled_for);
+
+    return (
+      <Card key={order.id} className="overflow-hidden border-l-4 border-l-primary">
+        <CardContent className="p-4">
+          <div className="flex items-start gap-3">
+            <div className="w-16 h-16 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Calendar className="h-8 w-8 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-start justify-between">
+                <div>
+                  <h3 className="font-semibold">{order.establishments?.name || 'Estabelecimento'}</h3>
+                  <p className="text-sm text-primary font-medium">
+                    Agendado para {format(scheduledDate, "dd/MM 'às' HH:mm", { locale: ptBR })}
+                  </p>
+                </div>
+                <Badge className={`${status.color} text-white shrink-0`}>
+                  <span className="flex items-center gap-1">
+                    {status.icon}
+                    {status.label}
+                  </span>
+                </Badge>
+              </div>
+
+              <div className="mt-2 text-sm text-muted-foreground">
+                {items.slice(0, 2).map((item: any, idx: number) => (
+                  <span key={idx}>
+                    {item.quantity}x {item.name}
+                    {idx < Math.min(items.length, 2) - 1 && ', '}
+                  </span>
+                ))}
+                {items.length > 2 && ` +${items.length - 2} itens`}
+              </div>
+
+              <div className="flex items-center justify-between mt-3">
+                <span className="text-sm text-muted-foreground">
+                  {order.delivery_type === 'delivery' ? 'Delivery' : 'Retirada'}
+                </span>
+                <Price value={order.total} size="sm" className="text-primary" />
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
 
   const renderOrderCard = (order: UserOrder) => {
     const status = statusConfig[order.status] || statusConfig.pending;
@@ -151,7 +205,12 @@ const Orders = () => {
     );
   };
 
-  const isEmpty = orders.length === 0;
+  const handleRefresh = () => {
+    refetch();
+    refetchScheduled();
+  };
+
+  const isEmpty = orders.length === 0 && pendingScheduledOrders.length === 0;
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -163,7 +222,7 @@ const Orders = () => {
             </Button>
             <h1 className="text-xl font-bold">Meus Pedidos</h1>
           </div>
-          <Button variant="ghost" size="icon" onClick={refetch}>
+          <Button variant="ghost" size="icon" onClick={handleRefresh}>
             <RefreshCw className="h-5 w-5" />
           </Button>
         </div>
@@ -183,8 +242,16 @@ const Orders = () => {
       ) : (
         <div className="p-4">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-3 mb-4">
-              <TabsTrigger value="active" className="relative">
+            <TabsList className="grid w-full grid-cols-4 mb-4">
+              <TabsTrigger value="scheduled" className="relative text-xs sm:text-sm">
+                Agendados
+                {pendingScheduledOrders.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                    {pendingScheduledOrders.length}
+                  </span>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="active" className="relative text-xs sm:text-sm">
                 Ativos
                 {activeOrders.length > 0 && (
                   <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">
@@ -192,9 +259,19 @@ const Orders = () => {
                   </span>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="completed">Concluídos</TabsTrigger>
-              <TabsTrigger value="cancelled">Cancelados</TabsTrigger>
+              <TabsTrigger value="completed" className="text-xs sm:text-sm">Concluídos</TabsTrigger>
+              <TabsTrigger value="cancelled" className="text-xs sm:text-sm">Cancelados</TabsTrigger>
             </TabsList>
+
+            <TabsContent value="scheduled" className="space-y-4">
+              {pendingScheduledOrders.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  Nenhum pedido agendado
+                </div>
+              ) : (
+                pendingScheduledOrders.map(renderScheduledOrderCard)
+              )}
+            </TabsContent>
 
             <TabsContent value="active" className="space-y-4">
               {activeOrders.length === 0 ? (
