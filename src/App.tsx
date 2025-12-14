@@ -175,8 +175,9 @@ const AppRoutes = () => {
     const checkAuth = async () => {
       if (loading) return;
       
-      // Skip check for public routes
+      // Skip check for public routes and admin routes (admin has its own auth handling)
       const publicRoutes = ['/auth', '/', '/marketplace', '/conheca', '/recuperar-senha', '/termos', '/privacidade', '/checkout'];
+      const adminRoutes = location.pathname.startsWith('/admin');
       const isPublicRoute = publicRoutes.includes(location.pathname) || 
         location.pathname.startsWith('/loja/') || 
         location.pathname.startsWith('/vila/') || 
@@ -186,7 +187,9 @@ const AppRoutes = () => {
         location.pathname.startsWith('/checkout/') ||
         location.pathname.startsWith('/pedidos/');
       
-      if (isPublicRoute) {
+      // Skip global auth check for public routes and admin routes
+      // Admin routes have their own ProtectedAdminRoute component handling auth
+      if (isPublicRoute || adminRoutes) {
         return;
       }
 
