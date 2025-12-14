@@ -117,43 +117,68 @@ serve(async (req) => {
     const formattedPhone = merchantPhone.replace(/\D/g, '');
     const phoneWithCountry = formattedPhone.startsWith('55') ? formattedPhone : `55${formattedPhone}`;
 
-    const sendResponse = await fetch(`${evolutionApiUrl}/message/sendText/${instanceName}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': evolutionApiKey,
-      },
-      body: JSON.stringify({
-        number: phoneWithCountry,
-        text: message,
-      }),
-    });
-
-    if (!sendResponse.ok) {
-      const errorData = await sendResponse.text();
-      console.error('Evolution API error:', errorData);
+    // Validate phone is not a test/placeholder number
+    const isTestNumber = phoneWithCountry.includes('999999') || phoneWithCountry.length < 12;
+    
+    if (isTestNumber) {
+      console.log(`Skipping notification - test/invalid phone detected: ${phoneWithCountry}`);
       return new Response(
-        JSON.stringify({ error: 'Failed to send WhatsApp message', details: errorData }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ success: true, message: 'Notification skipped (test phone)', skipped: true }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Log the notification
+    let notificationSent = false;
+    let notificationError = null;
+
+    try {
+      const sendResponse = await fetch(`${evolutionApiUrl}/message/sendText/${instanceName}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': evolutionApiKey,
+        },
+        body: JSON.stringify({
+          number: phoneWithCountry,
+          text: message,
+        }),
+      });
+
+      if (!sendResponse.ok) {
+        const errorData = await sendResponse.text();
+        console.error('Evolution API error (non-blocking):', errorData);
+        notificationError = errorData;
+      } else {
+        notificationSent = true;
+        console.log(`Merchant notification sent to ${phoneWithCountry} for ${notification_type}`);
+      }
+    } catch (whatsappError) {
+      console.error('WhatsApp send failed (non-blocking):', whatsappError);
+      notificationError = whatsappError instanceof Error ? whatsappError.message : 'Unknown error';
+    }
+
+    // Log the notification attempt (success or failure)
     await supabase.from('audit_logs').insert({
-      action: 'merchant_notification_sent',
+      action: notificationSent ? 'merchant_notification_sent' : 'merchant_notification_failed',
       entity_type: 'order',
       entity_id: order_id,
       metadata: { 
         establishment_id, 
         notification_type, 
-        phone: phoneWithCountry 
+        phone: phoneWithCountry,
+        success: notificationSent,
+        error: notificationError,
       },
     });
 
-    console.log(`Merchant notification sent to ${phoneWithCountry} for ${notification_type}`);
-
+    // Always return success - notification failure should not block order flow
     return new Response(
-      JSON.stringify({ success: true, message: 'Notification sent' }),
+      JSON.stringify({ 
+        success: true, 
+        message: notificationSent ? 'Notification sent' : 'Notification failed but order continues',
+        notification_sent: notificationSent,
+        notification_error: notificationError,
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
