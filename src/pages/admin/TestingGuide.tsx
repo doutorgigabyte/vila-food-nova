@@ -96,6 +96,23 @@ const TestingGuide = () => {
           </AlertDescription>
         </Alert>
 
+        {/* Link para Checklist Consolidado */}
+        <Alert>
+          <FileText className="h-4 w-4" />
+          <AlertTitle>Checklist Consolidado de Testes Manuais</AlertTitle>
+          <AlertDescription className="flex flex-col gap-2">
+            <span>
+              O documento completo com todos os testes e ações manuais está disponível em:
+            </span>
+            <code className="bg-muted px-2 py-1 rounded text-sm w-fit">
+              docs/MANUAL_TESTING_CHECKLIST.md
+            </code>
+            <span className="text-xs text-muted-foreground">
+              Inclui: Deploy, Infraestrutura, Segurança, Testes E2E Cliente/Lojista, Pagamentos e Monitoramento.
+            </span>
+          </AlertDescription>
+        </Alert>
+
         {/* Credenciais */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <TestCredentialsCard
