@@ -310,11 +310,46 @@ const Checkout = () => {
     }
   }, [isLoaded, items.length, step, storeSlug, navigate]);
 
-  // Check if any establishment is closed and get operating hours
+  // Fetch fresh is_open status from database on mount
+  const [freshOpenStatus, setFreshOpenStatus] = useState<Map<string, boolean>>(new Map());
+  
+  useEffect(() => {
+    const fetchFreshStatus = async () => {
+      const estIds = getUniqueEstablishments();
+      if (estIds.length === 0) return;
+
+      try {
+        const { data, error } = await supabase
+          .from('establishments')
+          .select('id, is_open, operating_hours')
+          .in('id', estIds);
+
+        if (error) throw error;
+
+        const statusMap = new Map<string, boolean>();
+        data?.forEach((est) => {
+          statusMap.set(est.id, est.is_open ?? false);
+        });
+        setFreshOpenStatus(statusMap);
+      } catch (error) {
+        console.error('[Checkout] Error fetching fresh status:', error);
+      }
+    };
+
+    if (isLoaded && items.length > 0) {
+      fetchFreshStatus();
+    }
+  }, [isLoaded, items.length, getUniqueEstablishments]);
+
+  // Check if any establishment is closed and get operating hours (use fresh status)
   const checkIfStoreOpen = () => {
     for (const estId of uniqueEstablishments) {
       const estInfo = establishments.get(estId);
-      if (!estInfo?.is_open) {
+      // Prioritize fresh status from database
+      const isOpenFromDb = freshOpenStatus.get(estId);
+      const isOpenFinal = isOpenFromDb !== undefined ? isOpenFromDb : estInfo?.is_open;
+      
+      if (!isOpenFinal) {
         return { 
           isOpen: false, 
           storeName: estInfo?.name || 'Estabelecimento',
