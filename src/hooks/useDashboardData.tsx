@@ -253,43 +253,43 @@ export const useUserEstablishment = () => {
           }
         }
 
-        // First check if user owns an establishment
-        let ownedQuery = supabase
+        // First check if user owns ANY establishment (without slug filter)
+        const { data: ownedEstablishments, error: ownedError } = await supabase
           .from('establishments')
           .select('*')
           .eq('owner_id', user.id);
-        
-        // If slug is provided, also match by slug to ensure access to correct establishment
-        if (slug) {
-          ownedQuery = ownedQuery.eq('slug', slug);
-        }
-        
-        const { data: owned, error: ownedError } = await ownedQuery.limit(1).maybeSingle();
 
-        console.log('[useUserEstablishment] Owner check result:', owned?.name || 'null', 'slug:', slug, 'error:', ownedError);
+        console.log('[useUserEstablishment] Owner check result:', 
+          ownedEstablishments?.length || 0, 'establishments found',
+          'names:', ownedEstablishments?.map(e => e.name).join(', ') || 'none',
+          'slugs:', ownedEstablishments?.map(e => e.slug).join(', ') || 'none',
+          'error:', ownedError
+        );
 
-        if (owned) {
-          setEstablishment(owned);
-          setEstablishmentId(owned.id);
-          setLoading(false);
-          return;
-        }
-        
-        // If slug was provided but didn't match owner's establishment, check if user owns any establishment
-        if (slug) {
-          const { data: anyOwned, error: anyOwnedError } = await supabase
-            .from('establishments')
-            .select('*')
-            .eq('owner_id', user.id)
-            .limit(1)
-            .maybeSingle();
-            
-          console.log('[useUserEstablishment] Any owned check:', anyOwned?.name || 'null', 'error:', anyOwnedError);
-          
-          if (anyOwned) {
-            // User owns an establishment but is trying to access wrong slug
-            setEstablishment(null);
-            setEstablishmentId(null);
+        if (ownedEstablishments && ownedEstablishments.length > 0) {
+          // User owns at least one establishment
+          if (slug) {
+            // If slug is provided, find the matching establishment
+            const matchingEst = ownedEstablishments.find(e => e.slug === slug);
+            if (matchingEst) {
+              console.log('[useUserEstablishment] Found matching establishment by slug:', matchingEst.name);
+              setEstablishment(matchingEst);
+              setEstablishmentId(matchingEst.id);
+              setLoading(false);
+              return;
+            } else {
+              // Slug doesn't match any owned establishment - use the first one anyway
+              console.log('[useUserEstablishment] Slug mismatch, using first owned:', ownedEstablishments[0].name);
+              setEstablishment(ownedEstablishments[0]);
+              setEstablishmentId(ownedEstablishments[0].id);
+              setLoading(false);
+              return;
+            }
+          } else {
+            // No slug provided, use the first owned establishment
+            console.log('[useUserEstablishment] No slug, using first owned:', ownedEstablishments[0].name);
+            setEstablishment(ownedEstablishments[0]);
+            setEstablishmentId(ownedEstablishments[0].id);
             setLoading(false);
             return;
           }
