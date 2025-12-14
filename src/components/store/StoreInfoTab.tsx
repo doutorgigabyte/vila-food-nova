@@ -2,7 +2,6 @@ import {
   MapPin,
   Phone,
   MessageCircle,
-  Clock,
   Bike,
   Package,
   Store,
@@ -14,12 +13,12 @@ import {
   Youtube,
   Globe,
   Navigation,
-  Mail,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import type { StoreEstablishment } from "@/hooks/useStoreData";
+import { OperatingHoursDisplay } from "./OperatingHoursDisplay";
 
 interface StoreInfoTabProps {
   establishment: StoreEstablishment;
@@ -137,6 +136,13 @@ export const StoreInfoTab = ({ establishment }: StoreInfoTabProps) => {
 
       <Separator />
 
+      {/* Operating Hours */}
+      <OperatingHoursDisplay
+        operatingHours={establishment.operating_hours as Record<string, { open: boolean; start: string; end: string }> | null}
+      />
+
+      <Separator />
+
       {/* Delivery Info */}
       <div className="space-y-3">
         <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
@@ -145,16 +151,16 @@ export const StoreInfoTab = ({ establishment }: StoreInfoTabProps) => {
 
         <div className="grid grid-cols-2 gap-3">
           <div className="bg-muted/50 rounded-xl p-3 text-center">
-            <Clock className="w-5 h-5 mx-auto text-primary mb-1" />
-            <p className="text-lg font-bold">{establishment.avg_delivery_time || 45} min</p>
-            <p className="text-xs text-muted-foreground">Tempo médio</p>
-          </div>
-          <div className="bg-muted/50 rounded-xl p-3 text-center">
             <Bike className="w-5 h-5 mx-auto text-primary mb-1" />
             <p className="text-lg font-bold">
               R$ {(establishment.delivery_base_fee || 5).toFixed(2)}
             </p>
             <p className="text-xs text-muted-foreground">Taxa de entrega</p>
+          </div>
+          <div className="bg-muted/50 rounded-xl p-3 text-center">
+            <Package className="w-5 h-5 mx-auto text-primary mb-1" />
+            <p className="text-lg font-bold">{establishment.avg_delivery_time || 45} min</p>
+            <p className="text-xs text-muted-foreground">Tempo médio</p>
           </div>
         </div>
 

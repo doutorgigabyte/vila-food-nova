@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Plus, Minus, Package, Clock, ZoomIn, Wrench, Download, Leaf, ThermometerSnowflake, Calendar } from "lucide-react";
 import type { StoreProduct } from "@/hooks/useStoreData";
 import { TouchImageViewer } from "./TouchImageViewer";
+import { ProductNutritionalInfo } from "./ProductNutritionalInfo";
 
 interface ProductModalProps {
   product: StoreProduct | null;
@@ -33,6 +34,14 @@ export const ProductModal = ({ product, onClose, onAddToCart, onRequestService }
   const expirationDays = (product as any).expiration_days;
   const requiresRefrigeration = (product as any).requires_refrigeration;
   const digitalInstructions = (product as any).digital_instructions;
+  
+  // Nutritional info
+  const nutritionalInfo = (product as any).nutritional_info;
+  const allergens = (product as any).allergens as string[] | null;
+  const isVegan = (product as any).is_vegan;
+  const isVegetarian = (product as any).is_vegetarian;
+  const isGlutenFree = (product as any).is_gluten_free;
+  const isLactoseFree = (product as any).is_lactose_free;
 
   // Safe discount calculation
   const hasPromo = Boolean(
@@ -197,6 +206,16 @@ export const ProductModal = ({ product, onClose, onAddToCart, onRequestService }
                 )}
               </div>
             )}
+
+            {/* Nutritional Info and Allergens */}
+            <ProductNutritionalInfo
+              nutritionalInfo={nutritionalInfo}
+              allergens={allergens}
+              isVegan={isVegan}
+              isVegetarian={isVegetarian}
+              isGlutenFree={isGlutenFree}
+              isLactoseFree={isLactoseFree}
+            />
 
             {/* Price */}
             <div className="flex items-center gap-3">
