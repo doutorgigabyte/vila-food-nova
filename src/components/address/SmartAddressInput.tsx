@@ -90,6 +90,13 @@ export const SmartAddressInput = ({
     
     autocompleteServiceRef.current = new google.maps.places.AutocompleteService();
     geocoderRef.current = new google.maps.Geocoder();
+    
+    // Create a temporary div to initialize PlacesService without needing the map
+    // This allows address selection to work before map is visible
+    if (!placesServiceRef.current) {
+      const tempDiv = document.createElement('div');
+      placesServiceRef.current = new google.maps.places.PlacesService(tempDiv);
+    }
   }, [isMapLoaded]);
 
   // Initialize map when visible
