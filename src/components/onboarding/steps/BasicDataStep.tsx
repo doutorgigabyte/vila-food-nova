@@ -161,62 +161,36 @@ export const BasicDataStep = ({ data, updateData, onNext, onBack }: BasicDataSte
     <div className="space-y-6">
       {/* Seção 1: Imagens */}
       <Card className="p-6">
-        <div className="flex items-center gap-2 mb-4">
+        <div className="flex items-center gap-2 mb-6">
           <Image className="w-5 h-5 text-primary" />
           <h3 className="font-semibold">Identidade Visual</h3>
         </div>
         
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="flex flex-col md:flex-row gap-8 items-start">
           {/* Logo */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Label>Logo do estabelecimento</Label>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger>
-                    <HelpCircle className="w-4 h-4 text-muted-foreground" />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Imagem quadrada, mínimo 360x360px</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-            <div className="flex justify-center">
-              <ImageUpload 
-                currentImage={data.logoUrl} 
-                onUpload={(url) => updateData({ logoUrl: url })} 
-                bucket="establishments" 
-                aspectRatio="square" 
-                className="w-32 h-32 rounded-xl border-2 border-dashed border-muted-foreground/30 hover:border-primary/50 transition-colors" 
-              />
-            </div>
-            <p className="text-xs text-muted-foreground text-center">PNG ou JPG, máx. 2MB</p>
+          <div className="flex flex-col items-center gap-3">
+            <Label className="text-sm font-medium">Logo</Label>
+            <ImageUpload 
+              currentImage={data.logoUrl} 
+              onUpload={(url) => updateData({ logoUrl: url })} 
+              bucket="establishments" 
+              aspectRatio="square" 
+              className="w-28 h-28" 
+            />
+            <span className="text-xs text-muted-foreground">Quadrada, máx 2MB</span>
           </div>
 
           {/* Banner */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Label>Banner da loja (opcional)</Label>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger>
-                    <HelpCircle className="w-4 h-4 text-muted-foreground" />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Imagem 16:9, mínimo 1200x675px</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
+          <div className="flex-1 w-full space-y-3">
+            <Label className="text-sm font-medium">Banner (opcional)</Label>
             <ImageUpload 
               currentImage={data.bannerUrl} 
               onUpload={(url) => updateData({ bannerUrl: url })} 
               bucket="establishments" 
               aspectRatio="video" 
-              className="w-full h-24 rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-primary/50 transition-colors" 
+              className="w-full" 
             />
-            <p className="text-xs text-muted-foreground text-center">Aparece no topo do seu cardápio digital</p>
+            <span className="text-xs text-muted-foreground">Aparece no topo do cardápio • 16:9, máx 5MB</span>
           </div>
         </div>
       </Card>
@@ -416,19 +390,24 @@ export const BasicDataStep = ({ data, updateData, onNext, onBack }: BasicDataSte
           <h3 className="font-semibold">Link da sua loja</h3>
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-3">
           <Label htmlFor="subdomain">Escolha seu endereço web *</Label>
-          <div className="flex items-center gap-2">
-            <div className="relative flex-1">
-              <Input 
-                id="subdomain" 
-                placeholder="minhaloja" 
-                value={data.subdomain} 
-                onChange={(e) => handleSubdomainChange(e.target.value)} 
-              />
-            </div>
-            <span className="text-sm text-muted-foreground whitespace-nowrap">.vilafood.delivery</span>
+          <div className="flex items-center rounded-lg border bg-muted/30 overflow-hidden">
+            <span className="px-3 py-2.5 text-sm text-muted-foreground bg-muted/50 border-r whitespace-nowrap">
+              https://
+            </span>
+            <Input 
+              id="subdomain" 
+              placeholder="minhaloja" 
+              value={data.subdomain} 
+              onChange={(e) => handleSubdomainChange(e.target.value)}
+              className="border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
+            />
+            <span className="px-3 py-2.5 text-sm text-muted-foreground bg-muted/50 border-l whitespace-nowrap">
+              .vilafood.delivery
+            </span>
           </div>
+          
           {data.subdomain.length >= 3 && (
             <motion.div 
               initial={{ opacity: 0 }} 
@@ -438,70 +417,79 @@ export const BasicDataStep = ({ data, updateData, onNext, onBack }: BasicDataSte
               }`}
             >
               {checkingSlug ? (
-                <span>Verificando...</span>
+                <span>Verificando disponibilidade...</span>
               ) : slugAvailable ? (
                 <>
                   <Check className="w-4 h-4" />
-                  <span>Link disponível!</span>
+                  <span>Disponível! Seu link será: <strong>{data.subdomain}.vilafood.delivery</strong></span>
                 </>
               ) : (
                 <>
                   <X className="w-4 h-4" />
-                  <span>Este link já está em uso</span>
+                  <span>Este link já está em uso, tente outro</span>
                 </>
               )}
             </motion.div>
-          )}
-          {data.subdomain && slugAvailable && (
-            <p className="text-xs text-muted-foreground">
-              Seu cardápio ficará em: <span className="font-medium text-primary">{data.subdomain}.vilafood.delivery</span>
-            </p>
           )}
         </div>
       </Card>
 
       {/* Seção 6: Vilas */}
       {vilas.length > 0 && (
-        <Card className="p-6 space-y-4 border-primary/20 bg-primary/5">
-          <div className="flex items-center gap-2 mb-2">
+        <Card className="p-6 space-y-5 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+          <div className="flex items-center gap-2">
             <Users className="w-5 h-5 text-primary" />
             <h3 className="font-semibold">Faz parte de uma Vila?</h3>
           </div>
 
-          <div className="rounded-lg bg-background/80 p-4 space-y-3">
+          <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Uma <strong className="text-foreground">Vila</strong> é um espaço físico que reúne vários estabelecimentos no mesmo local:
+              Uma <strong className="text-foreground">Vila</strong> é um espaço físico que reúne vários estabelecimentos no mesmo local.
             </p>
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              <div className="flex items-center gap-2">
-                <span className="text-lg">🍔</span>
-                <span><strong>Food Parks</strong> - Praças de alimentação ao ar livre</span>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="flex items-start gap-3 p-3 rounded-lg bg-background/60 border border-border/50">
+                <span className="text-xl">🍔</span>
+                <div>
+                  <p className="font-medium text-sm">Food Parks</p>
+                  <p className="text-xs text-muted-foreground">Praças de alimentação ao ar livre</p>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="text-lg">🏢</span>
-                <span><strong>Galerias</strong> - Centros comerciais</span>
+              <div className="flex items-start gap-3 p-3 rounded-lg bg-background/60 border border-border/50">
+                <span className="text-xl">🏢</span>
+                <div>
+                  <p className="font-medium text-sm">Galerias</p>
+                  <p className="text-xs text-muted-foreground">Centros comerciais</p>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="text-lg">🌳</span>
-                <span><strong>Praças</strong> - Áreas públicas com quiosques</span>
+              <div className="flex items-start gap-3 p-3 rounded-lg bg-background/60 border border-border/50">
+                <span className="text-xl">🌳</span>
+                <div>
+                  <p className="font-medium text-sm">Praças</p>
+                  <p className="text-xs text-muted-foreground">Áreas públicas com quiosques</p>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="text-lg">🏪</span>
-                <span><strong>Food Courts</strong> - Praças de shopping</span>
+              <div className="flex items-start gap-3 p-3 rounded-lg bg-background/60 border border-border/50">
+                <span className="text-xl">🏪</span>
+                <div>
+                  <p className="font-medium text-sm">Food Courts</p>
+                  <p className="text-xs text-muted-foreground">Praças de shopping</p>
+                </div>
               </div>
             </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              Se seu negócio está dentro de um desses locais, selecione abaixo. Isso ajuda clientes a encontrarem você!
+
+            <p className="text-xs text-muted-foreground">
+              Se seu negócio está dentro de um desses locais, marque abaixo. Isso ajuda clientes a encontrarem você!
             </p>
           </div>
 
-          <div className="flex items-center space-x-3 pt-2">
+          <div className="flex items-center space-x-3 pt-2 border-t border-border/50">
             <Checkbox 
               id="belongs-to-vila" 
               checked={data.belongsToVila} 
               onCheckedChange={(checked) => updateData({ belongsToVila: checked as boolean, vilaId: checked ? data.vilaId : "" })} 
             />
-            <Label htmlFor="belongs-to-vila" className="cursor-pointer">
+            <Label htmlFor="belongs-to-vila" className="cursor-pointer text-sm">
               Sim, meu estabelecimento faz parte de uma Vila
             </Label>
           </div>
