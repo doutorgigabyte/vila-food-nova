@@ -4,6 +4,7 @@ import { AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 import { DOMAIN } from "@/lib/constants";
+import { getContrastColor } from "@/lib/colorUtils";
 import { 
   GradientBackground, 
   WaveLines, 
