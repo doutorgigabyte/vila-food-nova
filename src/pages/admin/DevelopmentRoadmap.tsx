@@ -4,8 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { Skeleton } from '@/components/ui/skeleton';
+import { toast } from 'sonner';
 import { 
   CheckCircle2, 
   Circle, 
@@ -26,7 +28,9 @@ import {
   Target,
   Users,
   Activity,
-  Package
+  Package,
+  ChevronRight,
+  ChevronLeft
 } from 'lucide-react';
 
 interface RoadmapItem {
@@ -43,6 +47,8 @@ interface RoadmapItem {
 }
 
 type VersionPhase = 'alfa' | 'beta' | 'rc' | 'final' | 'legacy' | 'all';
+
+const STATUS_ORDER = ['backlog', 'in_progress', 'testing', 'done'];
 
 const versionPhases: { key: VersionPhase; title: string; icon: React.ReactNode; color: string }[] = [
   { key: 'all', title: 'Todas as Fases', icon: <LayoutDashboard className="w-4 h-4" />, color: 'bg-primary/10 text-primary border-primary/20' },
@@ -108,6 +114,7 @@ const DevelopmentRoadmap = () => {
   const [items, setItems] = useState<RoadmapItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPhase, setSelectedPhase] = useState<VersionPhase>('all');
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchItems();
@@ -126,6 +133,74 @@ const DevelopmentRoadmap = () => {
       console.error('Error fetching roadmap:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const advanceStatus = async (itemId: string, currentStatus: string) => {
+    const currentIndex = STATUS_ORDER.indexOf(currentStatus);
+    if (currentIndex >= STATUS_ORDER.length - 1) return;
+    
+    const nextStatus = STATUS_ORDER[currentIndex + 1];
+    const completion = nextStatus === 'done' ? 100 : (currentIndex + 1) * 33;
+    
+    setUpdatingId(itemId);
+    try {
+      const { error } = await supabase
+        .from('roadmap_items')
+        .update({ 
+          status: nextStatus,
+          completion_percentage: completion,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', itemId);
+      
+      if (error) throw error;
+      
+      setItems(prev => prev.map(item => 
+        item.id === itemId 
+          ? { ...item, status: nextStatus, completion_percentage: completion }
+          : item
+      ));
+      toast.success(`Avançado para: ${statusColumns.find(c => c.key === nextStatus)?.title}`);
+    } catch (error) {
+      console.error('Error advancing status:', error);
+      toast.error('Erro ao avançar status');
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  const revertStatus = async (itemId: string, currentStatus: string) => {
+    const currentIndex = STATUS_ORDER.indexOf(currentStatus);
+    if (currentIndex <= 0) return;
+    
+    const prevStatus = STATUS_ORDER[currentIndex - 1];
+    const completion = (currentIndex - 1) * 33;
+    
+    setUpdatingId(itemId);
+    try {
+      const { error } = await supabase
+        .from('roadmap_items')
+        .update({ 
+          status: prevStatus,
+          completion_percentage: completion,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', itemId);
+      
+      if (error) throw error;
+      
+      setItems(prev => prev.map(item => 
+        item.id === itemId 
+          ? { ...item, status: prevStatus, completion_percentage: completion }
+          : item
+      ));
+      toast.success(`Revertido para: ${statusColumns.find(c => c.key === prevStatus)?.title}`);
+    } catch (error) {
+      console.error('Error reverting status:', error);
+      toast.error('Erro ao reverter status');
+    } finally {
+      setUpdatingId(null);
     }
   };
 
@@ -353,6 +428,30 @@ const DevelopmentRoadmap = () => {
                             {item.completion_percentage > 0 && item.status !== 'done' && (
                               <Progress value={item.completion_percentage} className="h-1" />
                             )}
+                            
+                            {/* Botões de Avanço/Retorno */}
+                            <div className="flex items-center justify-between pt-1 border-t border-border/50">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 px-2 text-xs"
+                                disabled={item.status === 'backlog' || updatingId === item.id}
+                                onClick={() => revertStatus(item.id, item.status)}
+                              >
+                                <ChevronLeft className="w-3 h-3 mr-1" />
+                                Voltar
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 px-2 text-xs text-primary hover:text-primary"
+                                disabled={item.status === 'done' || updatingId === item.id}
+                                onClick={() => advanceStatus(item.id, item.status)}
+                              >
+                                Avançar
+                                <ChevronRight className="w-3 h-3 ml-1" />
+                              </Button>
+                            </div>
                           </CardContent>
                         </Card>
                       ))}
