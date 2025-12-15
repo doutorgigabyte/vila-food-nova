@@ -193,7 +193,7 @@ export function CategorySuggestionModal({
                     <SelectContent>
                       {segments?.map((segment) => (
                         <SelectItem key={segment.id} value={segment.id}>
-                          {segment.icon} {segment.name}
+                          {segment.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
