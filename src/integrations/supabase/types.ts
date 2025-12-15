@@ -1082,6 +1082,76 @@ export type Database = {
           },
         ]
       }
+      category_suggestions: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          establishment_id: string
+          icon: string | null
+          id: string
+          local_category_id: string | null
+          name: string
+          parent_segment_id: string | null
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          establishment_id: string
+          icon?: string | null
+          id?: string
+          local_category_id?: string | null
+          name: string
+          parent_segment_id?: string | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          establishment_id?: string
+          icon?: string | null
+          id?: string
+          local_category_id?: string | null
+          name?: string
+          parent_segment_id?: string | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "category_suggestions_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "category_suggestions_local_category_id_fkey"
+            columns: ["local_category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "category_suggestions_parent_segment_id_fkey"
+            columns: ["parent_segment_id"]
+            isOneToOne: false
+            referencedRelation: "segments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chatbot_responses: {
         Row: {
           category: string | null
