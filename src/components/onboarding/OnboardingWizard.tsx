@@ -32,8 +32,18 @@ export interface OnboardingData {
   subdomain: string;
   logoUrl: string | null;
   bannerUrl: string | null;
+  
+  // Address fields
+  address: string;
   addressNumber: string;
   addressComplement: string;
+  neighborhood: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  latitude: number | null;
+  longitude: number | null;
+  
   instagramUrl: string;
   belongsToVila: boolean;
   vilaId: string;
@@ -70,8 +80,15 @@ const initialData: OnboardingData = {
   subdomain: "",
   logoUrl: null,
   bannerUrl: null,
+  address: "",
   addressNumber: "",
   addressComplement: "",
+  neighborhood: "",
+  city: "",
+  state: "",
+  zipCode: "",
+  latitude: null,
+  longitude: null,
   instagramUrl: "",
   belongsToVila: false,
   vilaId: "",
@@ -162,8 +179,13 @@ export const OnboardingWizard = () => {
           cnpj_cpf: data.cnpjCpf,
           logo_url: data.logoUrl,
           banner_url: data.bannerUrl,
+          address: data.address,
           address_number: data.addressNumber,
           address_complement: data.addressComplement,
+          neighborhood: data.neighborhood,
+          zip_code: data.zipCode,
+          latitude: data.latitude,
+          longitude: data.longitude,
           instagram_url: data.instagramUrl,
           owner_id: user.id,
           segment_id: data.selectedSegments[0] || null,
