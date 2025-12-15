@@ -31,11 +31,21 @@ interface OrderEventData {
 }
 
 // Initialize Facebook Pixel
-// Security: Validate pixel IDs to prevent script injection
+// Security: Validate and sanitize pixel IDs to prevent script injection
 const PIXEL_ID_REGEX = /^[a-zA-Z0-9_-]+$/;
 
 function validatePixelId(id: string): boolean {
   return id && PIXEL_ID_REGEX.test(id) && id.length <= 50;
+}
+
+// Security: HTML entity encode to prevent XSS
+function encodeForHTML(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;');
 }
 
 export const initFacebookPixel = (pixelId: string) => {
@@ -44,6 +54,9 @@ export const initFacebookPixel = (pixelId: string) => {
     return;
   }
   if (typeof window === 'undefined') return;
+
+  // Security: Encode pixel ID before interpolation
+  const safePixelId = encodeForHTML(pixelId);
 
   const script = document.createElement('script');
   script.innerHTML = `
@@ -55,7 +68,7 @@ export const initFacebookPixel = (pixelId: string) => {
     t.src=v;s=b.getElementsByTagName(e)[0];
     s.parentNode.insertBefore(t,s)}(window, document,'script',
     'https://connect.facebook.net/en_US/fbevents.js');
-    fbq('init', '${pixelId}');
+    fbq('init', '${safePixelId}');
     fbq('track', 'PageView');
   `;
   document.head.appendChild(script);
@@ -69,9 +82,12 @@ export const initGoogleAnalytics = (measurementId: string) => {
   }
   if (typeof window === 'undefined') return;
 
+  // Security: Encode measurement ID before use in URL
+  const safeMeasurementId = encodeURIComponent(measurementId);
+
   const script = document.createElement('script');
   script.async = true;
-  script.src = `https://www.googletagmanager.com/gtag/js?id=${measurementId}`;
+  script.src = `https://www.googletagmanager.com/gtag/js?id=${safeMeasurementId}`;
   document.head.appendChild(script);
 
   window.dataLayer = window.dataLayer || [];
@@ -91,11 +107,14 @@ export const initTiktokPixel = (pixelId: string) => {
   }
   if (typeof window === 'undefined') return;
 
+  // Security: Encode pixel ID before interpolation
+  const safePixelId = encodeForHTML(pixelId);
+
   const script = document.createElement('script');
   script.innerHTML = `
     !function (w, d, t) {
       w.TiktokAnalyticsObject=t;var ttq=w[t]=w[t]||[];ttq.methods=["page","track","identify","instances","debug","on","off","once","ready","alias","group","enableCookie","disableCookie"],ttq.setAndDefer=function(t,e){t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}};for(var i=0;i<ttq.methods.length;i++)ttq.setAndDefer(ttq,ttq.methods[i]);ttq.instance=function(t){for(var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n]);return e},ttq.load=function(e,n){var i="https://analytics.tiktok.com/i18n/pixel/events.js";ttq._i=ttq._i||{},ttq._i[e]=[],ttq._i[e]._u=i,ttq._t=ttq._t||{},ttq._t[e]=+new Date,ttq._o=ttq._o||{},ttq._o[e]=n||{};var o=document.createElement("script");o.type="text/javascript",o.async=!0,o.src=i+"?sdkid="+e+"&lib="+t;var a=document.getElementsByTagName("script")[0];a.parentNode.insertBefore(o,a)};
-      ttq.load('${pixelId}');
+      ttq.load('${safePixelId}');
       ttq.page();
     }(window, document, 'ttq');
   `;
