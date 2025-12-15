@@ -1068,17 +1068,30 @@ const Checkout = () => {
 
         {/* Cart Confirmation Step (NEW) */}
         {step === "cart" && (
-          <CartConfirmationStep
-            items={items}
-            establishments={establishments}
-            onUpdateQuantity={updateQuantity}
-            onRemove={removeFromCart}
-            onTemperatureChange={updateItemTemperature}
-            onContinue={() => setStep("delivery")}
-            subtotal={subtotal}
-            freeDeliveryThreshold={50}
-            acceptsDelivery={firstEstablishment?.accepts_delivery !== false}
-          />
+          <div className="space-y-4">
+            <CartConfirmationStep
+              items={items}
+              establishments={establishments}
+              onUpdateQuantity={updateQuantity}
+              onRemove={removeFromCart}
+              onTemperatureChange={updateItemTemperature}
+              onContinue={() => setStep("delivery")}
+              subtotal={subtotal}
+              freeDeliveryThreshold={50}
+              acceptsDelivery={firstEstablishment?.accepts_delivery !== false}
+            />
+            
+            {/* Coupon in cart step */}
+            {firstEstablishment && (
+              <CouponInput
+                establishmentId={firstEstablishment.id}
+                subtotal={subtotal}
+                onCouponApplied={setAppliedCoupon}
+                onCouponRemoved={() => setAppliedCoupon(null)}
+                appliedCoupon={appliedCoupon}
+              />
+            )}
+          </div>
         )}
 
         {/* Delivery Step */}
@@ -1253,6 +1266,17 @@ const Checkout = () => {
                   })}
                 </CardContent>
               </Card>
+            )}
+
+            {/* Coupon in delivery step */}
+            {firstEstablishment && (
+              <CouponInput
+                establishmentId={firstEstablishment.id}
+                subtotal={subtotal}
+                onCouponApplied={setAppliedCoupon}
+                onCouponRemoved={() => setAppliedCoupon(null)}
+                appliedCoupon={appliedCoupon}
+              />
             )}
 
             <Button 
@@ -1472,6 +1496,18 @@ const Checkout = () => {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Privacy Policy Link */}
+            <p className="text-xs text-muted-foreground text-center">
+              Ao fazer o pedido, você concorda com nossa{" "}
+              <Link to="/politica-de-privacidade" className="text-primary underline hover:no-underline">
+                Política de Privacidade
+              </Link>{" "}
+              e{" "}
+              <Link to="/termos-de-uso" className="text-primary underline hover:no-underline">
+                Termos de Uso
+              </Link>
+            </p>
 
             {/* Submit Button */}
             <Button 
