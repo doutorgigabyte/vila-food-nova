@@ -356,6 +356,9 @@ export const useNotifications = (establishmentId?: string, contextOptions?: Noti
       // Clientes comuns só veem suas próprias notificações (user_id específico)
       if (isCustomer) {
         query = query.eq('user_id', user.id);
+      } else if (isInAdminContext && appRole === 'super_admin') {
+        // Super admin em contexto admin - filtragem por tipo será feita client-side
+        // Não aplicamos filtro de establishment_id para ver notificações admin globais
       } else if (establishmentId) {
         // Staff do estabelecimento vê notificações do estabelecimento
         query = query.eq('establishment_id', establishmentId);
@@ -373,8 +376,13 @@ export const useNotifications = (establishmentId?: string, contextOptions?: Noti
           return n.target_roles?.includes('customer') || !n.target_roles?.length;
         }
         
-        // Super admin vê tudo
-        if (appRole === 'super_admin') return true;
+        // Super admin em contexto admin só vê notificações admin
+        if (isInAdminContext && appRole === 'super_admin') {
+          return ADMIN_NOTIFICATION_TYPES.includes(n.type);
+        }
+        
+        // Super admin em contexto de estabelecimento vê tudo do estabelecimento
+        if (appRole === 'super_admin' && isInEstablishmentContext) return true;
         
         // Se não tem target_roles, é para todos do estabelecimento
         if (!n.target_roles || n.target_roles.length === 0) return true;
@@ -395,7 +403,7 @@ export const useNotifications = (establishmentId?: string, contextOptions?: Noti
     } finally {
       setLoading(false);
     }
-  }, [user, establishmentId, appRole, establishmentRole, isCustomer]);
+  }, [user, establishmentId, appRole, establishmentRole, isCustomer, isInAdminContext, isInEstablishmentContext]);
 
   // Marcar como lida
   const markAsRead = useCallback(async (notificationId: string) => {
@@ -506,9 +514,14 @@ export const useNotifications = (establishmentId?: string, contextOptions?: Noti
             // Cliente só recebe notificações direcionadas a ele
             shouldReceive = newNotification.user_id === user.id && 
               (newNotification.target_roles?.includes('customer') || !newNotification.target_roles?.length);
+          } else if (isInAdminContext && appRole === 'super_admin') {
+            // Super admin em contexto admin só recebe notificações admin
+            shouldReceive = ADMIN_NOTIFICATION_TYPES.includes(newNotification.type);
+          } else if (isInEstablishmentContext && appRole === 'super_admin') {
+            // Super admin em contexto de estabelecimento recebe notificações do estabelecimento
+            shouldReceive = newNotification.establishment_id === establishmentId;
           } else {
             shouldReceive = 
-              appRole === 'super_admin' ||
               !newNotification.target_roles?.length ||
               (establishmentRole && newNotification.target_roles.includes(establishmentRole)) ||
               establishmentRole === 'manager';

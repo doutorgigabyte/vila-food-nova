@@ -3528,6 +3528,7 @@ export type Database = {
           cpf: string | null
           created_at: string | null
           customer_id: string | null
+          customer_name: string | null
           customer_phone: string | null
           delivered_at: string | null
           delivery_address: Json | null
@@ -3555,6 +3556,7 @@ export type Database = {
           table_number: string | null
           total: number
           updated_at: string | null
+          waiter_tab_id: string | null
           whatsapp_tracking_enabled: boolean | null
         }
         Insert: {
@@ -3565,6 +3567,7 @@ export type Database = {
           cpf?: string | null
           created_at?: string | null
           customer_id?: string | null
+          customer_name?: string | null
           customer_phone?: string | null
           delivered_at?: string | null
           delivery_address?: Json | null
@@ -3592,6 +3595,7 @@ export type Database = {
           table_number?: string | null
           total?: number
           updated_at?: string | null
+          waiter_tab_id?: string | null
           whatsapp_tracking_enabled?: boolean | null
         }
         Update: {
@@ -3602,6 +3606,7 @@ export type Database = {
           cpf?: string | null
           created_at?: string | null
           customer_id?: string | null
+          customer_name?: string | null
           customer_phone?: string | null
           delivered_at?: string | null
           delivery_address?: Json | null
@@ -3629,6 +3634,7 @@ export type Database = {
           table_number?: string | null
           total?: number
           updated_at?: string | null
+          waiter_tab_id?: string | null
           whatsapp_tracking_enabled?: boolean | null
         }
         Relationships: [
@@ -3644,6 +3650,13 @@ export type Database = {
             columns: ["establishment_id"]
             isOneToOne: false
             referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_waiter_tab_id_fkey"
+            columns: ["waiter_tab_id"]
+            isOneToOne: false
+            referencedRelation: "waiter_tabs"
             referencedColumns: ["id"]
           },
         ]

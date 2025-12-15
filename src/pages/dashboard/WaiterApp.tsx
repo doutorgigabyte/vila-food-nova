@@ -365,30 +365,99 @@ const WaiterApp = () => {
   };
 
   const sendToKitchen = async () => {
-    if (!selectedTab) return;
+    if (!selectedTab || !establishmentId) return;
 
-    const newItems = selectedTab.items.map(i => ({
-      ...i,
-      sent_to_kitchen: true
-    }));
+    const itemsToSend = selectedTab.items.filter(i => !i.sent_to_kitchen);
+    if (itemsToSend.length === 0) {
+      toast.warning("Nenhum item novo para enviar");
+      return;
+    }
 
-    const { error } = await supabase
-      .from("waiter_tabs")
-      .update({ items: newItems as unknown as any })
-      .eq("id", selectedTab.id);
+    try {
+      // 1. Criar pedido na tabela orders com status 'preparing'
+      const orderItems = itemsToSend.map(i => ({
+        product_id: i.product_id,
+        name: i.product_name,
+        quantity: i.quantity,
+        price: i.price,
+        notes: i.notes || null
+      }));
 
-    if (!error) {
+      const subtotal = itemsToSend.reduce((acc, i) => acc + (i.price * i.quantity), 0);
+
+      const { data: orderResult, error: orderError } = await supabase.rpc('create_order', {
+        p_establishment_id: establishmentId,
+        p_delivery_type: 'table',
+        p_payment_method: 'pending',
+        p_items: orderItems,
+        p_subtotal: subtotal,
+        p_total: subtotal,
+        p_table_number: selectedTab.table_number,
+        p_order_source: 'comanda'
+      });
+
+      const result = orderResult as { success: boolean; id?: string; order_number?: number; error?: string } | null;
+      
+      if (orderError || !result?.success) {
+        console.error("Erro ao criar pedido:", orderError || result?.error);
+        toast.error("Erro ao criar pedido para cozinha");
+        return;
+      }
+
+      // Atualizar status para 'preparing' (RPC cria com 'pending')
+      const { error: statusError } = await supabase
+        .from('orders')
+        .update({ status: 'preparing' })
+        .eq('id', result.id!);
+
+      if (statusError) {
+        console.error("Erro ao atualizar status:", statusError);
+      }
+
+      const order = { id: result.id!, order_number: result.order_number! };
+
+      // 2. Marcar itens como enviados na comanda
+      const newItems = selectedTab.items.map(i => ({
+        ...i,
+        sent_to_kitchen: true,
+        order_id: order.id
+      }));
+
+      const { error: updateError } = await supabase
+        .from("waiter_tabs")
+        .update({ items: newItems as unknown as any })
+        .eq("id", selectedTab.id);
+
+      if (updateError) {
+        console.error("Erro ao atualizar comanda:", updateError);
+      }
+
+      // 3. Criar notificação para cozinha
+      await supabase.from('notifications').insert({
+        establishment_id: establishmentId,
+        type: 'new_order',
+        priority: 'critical',
+        title: `Pedido #${order.order_number} - ${selectedTab.table_number}`,
+        message: `${itemsToSend.length} ${itemsToSend.length === 1 ? 'item' : 'itens'} para preparo`,
+        target_roles: ['manager', 'kitchen'],
+        data: { order_id: order.id, table_number: selectedTab.table_number }
+      });
+
       const updatedTab = { ...selectedTab, items: newItems };
       setSelectedTab(updatedTab);
       setTabs(tabs.map(t => t.id === selectedTab.id ? updatedTab : t));
-      toast.success("Pedido enviado para a cozinha!");
+      toast.success(`Pedido #${order.order_number} enviado para a cozinha!`);
       
       // Log history
-      const pendingItemsToSend = selectedTab.items.filter(i => !i.sent_to_kitchen);
       logTabHistory(selectedTab.id, 'sent_to_kitchen', {
-        items_count: pendingItemsToSend.length,
-        items: pendingItemsToSend.map(i => ({ name: i.product_name, quantity: i.quantity }))
+        order_id: order.id,
+        order_number: order.order_number,
+        items_count: itemsToSend.length,
+        items: itemsToSend.map(i => ({ name: i.product_name, quantity: i.quantity }))
       });
+    } catch (error) {
+      console.error("Erro ao enviar para cozinha:", error);
+      toast.error("Erro ao enviar pedido para cozinha");
     }
   };
 

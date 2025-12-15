@@ -46,7 +46,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 
-type OrderStatus = 'pending' | 'confirmed' | 'preparing' | 'ready' | 'delivering' | 'delivered' | 'cancelled';
+type OrderStatus = 'pending' | 'pending_payment' | 'confirmed' | 'preparing' | 'ready' | 'delivering' | 'delivered' | 'cancelled';
 
 interface Order {
   id: string;
@@ -66,10 +66,13 @@ interface Order {
   created_at: string;
   estimated_time: number | null;
   table_number: string | null;
+  customer_name: string | null;
+  customer_phone: string | null;
 }
 
 const statusConfig: Record<OrderStatus, { label: string; color: string; icon: any }> = {
   pending: { label: "Pendente", color: "bg-yellow-500", icon: Clock },
+  pending_payment: { label: "Aguardando Pagamento", color: "bg-amber-500", icon: Clock },
   confirmed: { label: "Confirmado", color: "bg-blue-500", icon: CheckCircle },
   preparing: { label: "Preparando", color: "bg-orange-500", icon: ChefHat },
   ready: { label: "Pronto", color: "bg-green-500", icon: Package },
@@ -308,6 +311,7 @@ const OrdersManagement = () => {
 
   const orderCounts = {
     pending: orders.filter(o => o.status === 'pending').length,
+    pending_payment: orders.filter(o => o.status === 'pending_payment').length,
     confirmed: orders.filter(o => o.status === 'confirmed').length,
     preparing: orders.filter(o => o.status === 'preparing').length,
     ready: orders.filter(o => o.status === 'ready').length,
@@ -319,6 +323,7 @@ const OrdersManagement = () => {
   const getNextStatus = (currentStatus: OrderStatus): OrderStatus | null => {
     const flow: Record<OrderStatus, OrderStatus | null> = {
       pending: 'confirmed',
+      pending_payment: null, // Aguardando pagamento - não avança manualmente
       confirmed: 'preparing',
       preparing: 'ready',
       ready: 'delivering',
@@ -327,6 +332,11 @@ const OrdersManagement = () => {
       cancelled: null,
     };
     return flow[currentStatus];
+  };
+
+  // Helpers para identificar tipo de pagamento
+  const isPaymentOnDelivery = (paymentMethod: string) => {
+    return ['cash', 'card_on_delivery', 'pix_on_delivery'].includes(paymentMethod);
   };
 
   const fetchOrderHistory = async (orderId: string) => {
@@ -447,6 +457,11 @@ const OrdersManagement = () => {
                     Pendentes
                     {orderCounts.pending > 0 && <Badge variant="destructive" className="ml-1">{orderCounts.pending}</Badge>}
                   </TabsTrigger>
+                  <TabsTrigger value="pending_payment" className="gap-1">
+                    <Clock className="w-4 h-4" />
+                    Aguardando Pgto
+                    {orderCounts.pending_payment > 0 && <Badge variant="secondary" className="ml-1 bg-amber-500 text-white">{orderCounts.pending_payment}</Badge>}
+                  </TabsTrigger>
                   <TabsTrigger value="confirmed" className="gap-1">
                     <CheckCircle className="w-4 h-4" />
                     Confirmados
@@ -552,15 +567,39 @@ const OrdersManagement = () => {
                         </div>
 
                         {/* Payment Method */}
-                        <div className="text-sm text-muted-foreground mb-4">
+                        <div className="text-sm text-muted-foreground mb-2">
                           💳 {order.payment_method === 'cash' ? 'Dinheiro' : 
                               order.payment_method === 'pix' ? 'PIX' : 
                               order.payment_method === 'credit_card' ? 'Cartão de Crédito' : 
-                              order.payment_method === 'debit_card' ? 'Cartão de Débito' : 'Online'}
+                              order.payment_method === 'debit_card' ? 'Cartão de Débito' :
+                              order.payment_method === 'card_on_delivery' ? 'Cartão na Entrega' :
+                              order.payment_method === 'pix_on_delivery' ? 'PIX na Entrega' :
+                              order.payment_method === 'pending' ? 'Pendente' : 'Online'}
                         </div>
 
+                        {/* Payment on Delivery Badge */}
+                        {isPaymentOnDelivery(order.payment_method) && order.status === 'pending' && (
+                          <Badge variant="outline" className="mb-4 bg-amber-100 text-amber-800 border-amber-300">
+                            💵 Pagamento na Entrega/Retirada
+                          </Badge>
+                        )}
+
+                        {/* Pending Payment Badge */}
+                        {order.status === 'pending_payment' && (
+                          <Badge variant="outline" className="mb-4 bg-yellow-100 text-yellow-800 border-yellow-300">
+                            ⏳ Aguardando Confirmação PIX
+                          </Badge>
+                        )}
+
+                        {/* Customer Name if available */}
+                        {order.customer_name && (
+                          <div className="text-sm text-muted-foreground mb-2">
+                            👤 {order.customer_name}
+                          </div>
+                        )}
+
                         {/* Actions */}
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 mt-4">
                           {order.status === 'pending' && (
                             <>
                               <Button 
@@ -583,7 +622,12 @@ const OrdersManagement = () => {
                               </Button>
                             </>
                           )}
-                          {nextStatus && order.status !== 'pending' && (
+                          {order.status === 'pending_payment' && (
+                            <div className="flex-1 text-center text-sm text-muted-foreground">
+                              Aguardando pagamento PIX...
+                            </div>
+                          )}
+                          {nextStatus && order.status !== 'pending' && order.status !== 'pending_payment' && (
                             <Button 
                               size="sm" 
                               className="flex-1"
@@ -606,7 +650,7 @@ const OrdersManagement = () => {
                           >
                             <Printer className="w-4 h-4" />
                           </Button>
-                          {order.status !== 'delivered' && order.status !== 'cancelled' && order.status !== 'pending' && (
+                          {order.status !== 'delivered' && order.status !== 'cancelled' && order.status !== 'pending' && order.status !== 'pending_payment' && (
                             <Button 
                               size="sm" 
                               variant="outline"
