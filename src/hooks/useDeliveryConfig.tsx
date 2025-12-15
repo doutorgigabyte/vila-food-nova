@@ -15,15 +15,23 @@ export interface DeliveryConfig {
   min_payout_amount: number;
 }
 
-const DEFAULT_CONFIG: Omit<DeliveryConfig, 'establishment_id'> = {
-  calculation_method: 'zone',
+// Recommended values for best practices
+export const RECOMMENDED_VALUES = {
+  driver_commission_percentage: 20,
   base_fee: 5.00,
   fee_per_km: 1.50,
+  min_payout_amount: 50,
+};
+
+const DEFAULT_CONFIG: Omit<DeliveryConfig, 'establishment_id'> = {
+  calculation_method: 'zone',
+  base_fee: RECOMMENDED_VALUES.base_fee,
+  fee_per_km: RECOMMENDED_VALUES.fee_per_km,
   driver_commission_type: 'percentage',
-  driver_commission_value: 70,
+  driver_commission_value: RECOMMENDED_VALUES.driver_commission_percentage,
   auto_payout: false,
   payout_frequency: 'weekly',
-  min_payout_amount: 50,
+  min_payout_amount: RECOMMENDED_VALUES.min_payout_amount,
 };
 
 interface RawDeliveryConfig {
