@@ -8,8 +8,6 @@ const corsHeaders = {
 };
 
 const IFOOD_API_BASE = 'https://merchant-api.ifood.com.br';
-const IFOOD_CLIENT_ID = Deno.env.get('IFOOD_CLIENT_ID') || '';
-const IFOOD_CLIENT_SECRET = Deno.env.get('IFOOD_CLIENT_SECRET') || '';
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -20,6 +18,9 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    const clientId = Deno.env.get('IFOOD_CLIENT_ID') || '';
+    const clientSecret = Deno.env.get('IFOOD_CLIENT_SECRET') || '';
 
     // Get auth header for user verification
     const authHeader = req.headers.get('Authorization');
@@ -36,7 +37,7 @@ serve(async (req) => {
       throw new Error('Unauthorized');
     }
 
-    const { action, establishmentId, authorizationCode, merchantId } = await req.json();
+    const { action, establishmentId, merchantId } = await req.json();
     console.log(`[iFood OAuth] Action: ${action}, Establishment: ${establishmentId}`);
 
     // Verify user owns this establishment
@@ -50,83 +51,15 @@ serve(async (req) => {
       throw new Error('Establishment not found or unauthorized');
     }
 
-    if (action === 'generate_user_code') {
-      // Step 1: Generate user code for authorization
-      console.log('[iFood OAuth] Generating user code...');
+    if (action === 'connect') {
+      // Use client_credentials flow for centralized apps
+      console.log('[iFood OAuth] Connecting with client_credentials flow...');
       
       const params = new URLSearchParams({
-        clientId: IFOOD_CLIENT_ID,
-        clientSecret: IFOOD_CLIENT_SECRET,
+        grant_type: 'client_credentials',
+        client_id: clientId,
+        client_secret: clientSecret,
       });
-
-      const response = await fetch(`${IFOOD_API_BASE}/authentication/v1.0/oauth/userCode`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'Accept': 'application/json',
-        },
-        body: params.toString(),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('[iFood OAuth] User code error:', errorText);
-
-        // IMPORTANT: return 200 so the client can read the error payload
-        return new Response(
-          JSON.stringify({
-            success: false,
-            error: `Falha ao gerar código de vínculo no iFood (${response.status}). ${errorText}`,
-          }),
-          {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          }
-        );
-      }
-
-      const data = await response.json();
-      console.log('[iFood OAuth] User code generated:', data.userCode);
-
-      // Save pending connection
-      await supabase
-        .from('ifood_merchant_connections')
-        .upsert({
-          establishment_id: establishmentId,
-          status: 'pending',
-          updated_at: new Date().toISOString(),
-        }, { onConflict: 'establishment_id' });
-
-      return new Response(JSON.stringify({
-        success: true,
-        userCode: data.userCode,
-        authorizationCodeVerifier: data.authorizationCodeVerifier,
-        verificationUrl: data.verificationUrl,
-        verificationUrlComplete: data.verificationUrlComplete,
-        expiresIn: data.expiresIn,
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-
-    } else if (action === 'exchange_token') {
-      // Step 2: Exchange authorization code for access token
-      console.log('[iFood OAuth] Exchanging authorization code for token...');
-      
-      if (!authorizationCode) {
-        throw new Error('Authorization code required');
-      }
-
-      const params = new URLSearchParams({
-        grantType: 'authorization_code',
-        clientId: IFOOD_CLIENT_ID,
-        clientSecret: IFOOD_CLIENT_SECRET,
-        authorizationCode: authorizationCode,
-      });
-
-      // iFood distributed flow requires the verifier received from userCode step
-      const { authorizationCodeVerifier } = await req.json().catch(() => ({} as any));
-      if (authorizationCodeVerifier) {
-        params.set('authorizationCodeVerifier', authorizationCodeVerifier);
-      }
 
       const response = await fetch(`${IFOOD_API_BASE}/authentication/v1.0/oauth/token`, {
         method: 'POST',
@@ -137,33 +70,41 @@ serve(async (req) => {
         body: params.toString(),
       });
 
+      const responseText = await response.text();
+      console.log('[iFood OAuth] Token response:', response.status, responseText);
+
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('[iFood OAuth] Token exchange error:', errorText);
         return new Response(
           JSON.stringify({
             success: false,
-            error: `Falha ao trocar token no iFood (${response.status}). ${errorText}`,
+            error: `Falha ao conectar com iFood (${response.status}). ${responseText}`,
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
-      const tokenData = await response.json();
-      console.log('[iFood OAuth] Token obtained successfully');
+      const tokenData = JSON.parse(responseText);
+      const accessToken = tokenData.accessToken || tokenData.access_token;
+      const expiresIn = tokenData.expiresIn || tokenData.expires_in || 3600;
+
+      if (!accessToken) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'No access token received from iFood' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
 
       // Calculate token expiration
       const expiresAt = new Date();
-      expiresAt.setSeconds(expiresAt.getSeconds() + (tokenData.expiresIn || 21600));
+      expiresAt.setSeconds(expiresAt.getSeconds() + expiresIn);
 
-      // Save connection with tokens (tokens are sensitive - stored as-is)
+      // Save connection with tokens
       const { error: saveError } = await supabase
         .from('ifood_merchant_connections')
         .upsert({
           establishment_id: establishmentId,
           merchant_id: merchantId || null,
-          access_token: tokenData.accessToken,
-          refresh_token: tokenData.refreshToken,
+          access_token: accessToken,
           token_expires_at: expiresAt.toISOString(),
           status: 'connected',
           updated_at: new Date().toISOString(),
@@ -176,31 +117,20 @@ serve(async (req) => {
 
       return new Response(JSON.stringify({
         success: true,
-        message: 'iFood connected successfully',
+        message: 'iFood conectado com sucesso',
         expiresAt: expiresAt.toISOString(),
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
 
     } else if (action === 'refresh_token') {
-      // Step 3: Refresh expired token
-      console.log('[iFood OAuth] Refreshing token...');
-
-      const { data: connection, error: connError } = await supabase
-        .from('ifood_merchant_connections')
-        .select('refresh_token')
-        .eq('establishment_id', establishmentId)
-        .single();
-
-      if (connError || !connection?.refresh_token) {
-        throw new Error('No refresh token available');
-      }
+      // For client_credentials, just get a new token
+      console.log('[iFood OAuth] Refreshing token (client_credentials)...');
 
       const params = new URLSearchParams({
-        grantType: 'refresh_token',
-        clientId: IFOOD_CLIENT_ID,
-        clientSecret: IFOOD_CLIENT_SECRET,
-        refreshToken: connection.refresh_token,
+        grant_type: 'client_credentials',
+        client_id: clientId,
+        client_secret: clientSecret,
       });
 
       const response = await fetch(`${IFOOD_API_BASE}/authentication/v1.0/oauth/token`, {
@@ -216,7 +146,6 @@ serve(async (req) => {
         const errorText = await response.text();
         console.error('[iFood OAuth] Refresh token error:', errorText);
 
-        // Token might be revoked, mark connection as expired
         await supabase
           .from('ifood_merchant_connections')
           .update({ status: 'expired', updated_at: new Date().toISOString() })
@@ -232,14 +161,15 @@ serve(async (req) => {
       }
 
       const tokenData = await response.json();
+      const accessToken = tokenData.accessToken || tokenData.access_token;
+      const expiresIn = tokenData.expiresIn || tokenData.expires_in || 3600;
       const expiresAt = new Date();
-      expiresAt.setSeconds(expiresAt.getSeconds() + (tokenData.expiresIn || 21600));
+      expiresAt.setSeconds(expiresAt.getSeconds() + expiresIn);
 
       await supabase
         .from('ifood_merchant_connections')
         .update({
-          access_token: tokenData.accessToken,
-          refresh_token: tokenData.refreshToken,
+          access_token: accessToken,
           token_expires_at: expiresAt.toISOString(),
           status: 'connected',
           updated_at: new Date().toISOString(),
@@ -248,13 +178,12 @@ serve(async (req) => {
 
       return new Response(JSON.stringify({
         success: true,
-        message: 'Token refreshed successfully',
+        message: 'Token renovado com sucesso',
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
 
     } else if (action === 'disconnect') {
-      // Disconnect iFood
       console.log('[iFood OAuth] Disconnecting...');
       
       await supabase
@@ -269,13 +198,12 @@ serve(async (req) => {
 
       return new Response(JSON.stringify({
         success: true,
-        message: 'iFood disconnected',
+        message: 'iFood desconectado',
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
 
     } else if (action === 'get_status') {
-      // Get connection status
       const { data: connection } = await supabase
         .from('ifood_merchant_connections')
         .select('status, merchant_id, last_sync_at, token_expires_at')
