@@ -12,6 +12,7 @@ interface IFoodConnectionStatus {
 
 interface UserCodeResponse {
   userCode: string;
+  authorizationCodeVerifier: string;
   verificationUrl: string;
   verificationUrlComplete: string;
   expiresIn: number;
@@ -96,6 +97,7 @@ export function useIFoodIntegration(establishmentId: string | undefined) {
       if (data.success) {
         setUserCodeData({
           userCode: data.userCode,
+          authorizationCodeVerifier: data.authorizationCodeVerifier,
           verificationUrl: data.verificationUrl,
           verificationUrlComplete: data.verificationUrlComplete,
           expiresIn: data.expiresIn,
@@ -113,18 +115,23 @@ export function useIFoodIntegration(establishmentId: string | undefined) {
     }
   }, [establishmentId]);
 
-  const exchangeToken = useCallback(async (authorizationCode: string, merchantId?: string) => {
+  const exchangeToken = useCallback(async (
+    authorizationCode: string,
+    authorizationCodeVerifier?: string,
+    merchantId?: string
+  ) => {
     if (!establishmentId) return;
-    
+
     setLoading(true);
     try {
       const { data: sessionData } = await supabase.auth.getSession();
-      
+
       const { data, error } = await supabase.functions.invoke('ifood-oauth', {
         body: {
           action: 'exchange_token',
           establishmentId,
           authorizationCode,
+          authorizationCodeVerifier,
           merchantId,
         },
         headers: {
