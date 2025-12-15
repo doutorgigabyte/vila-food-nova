@@ -2370,6 +2370,7 @@ export type Database = {
           pagseguro_scope: string | null
           pagseguro_token: string | null
           pagseguro_token_expires_at: string | null
+          payment_methods_config: Json | null
           phone: string | null
           pix_key: string | null
           plan_id: string | null
@@ -2456,6 +2457,7 @@ export type Database = {
           pagseguro_scope?: string | null
           pagseguro_token?: string | null
           pagseguro_token_expires_at?: string | null
+          payment_methods_config?: Json | null
           phone?: string | null
           pix_key?: string | null
           plan_id?: string | null
@@ -2542,6 +2544,7 @@ export type Database = {
           pagseguro_scope?: string | null
           pagseguro_token?: string | null
           pagseguro_token_expires_at?: string | null
+          payment_methods_config?: Json | null
           phone?: string | null
           pix_key?: string | null
           plan_id?: string | null
