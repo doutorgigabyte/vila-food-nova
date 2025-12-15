@@ -10,6 +10,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import { useUserEstablishment } from "@/hooks/useDashboardData";
 import { usePayments } from "@/hooks/usePayments";
+import { useAuditLog } from "@/hooks/useAuditLog";
 import { 
   Search,
   Bell,
@@ -81,6 +82,7 @@ const OrdersManagement = () => {
   const { slug } = useParams();
   const { establishmentId, establishment, loading: estLoading } = useUserEstablishment();
   const { processRefund, loading: refundLoading } = usePayments({ establishmentId: establishmentId || undefined, autoFetch: false });
+  const { logAction } = useAuditLog();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("pending");
@@ -165,6 +167,10 @@ const OrdersManagement = () => {
 
   const updateOrderStatus = async (orderId: string, newStatus: OrderStatus, reason?: string) => {
     try {
+      // Get old status before updating
+      const order = orders.find(o => o.id === orderId);
+      const oldStatus = order?.status;
+
       const updateData: any = { status: newStatus };
       if (reason) {
         updateData.cancellation_reason = reason;
@@ -181,13 +187,29 @@ const OrdersManagement = () => {
 
       if (error) throw error;
 
-      // Buscar o pedido atualizado para obter order_number
-      const order = orders.find(o => o.id === orderId);
+      // Log status change to audit_logs
+      await logAction({
+        action: 'status_change',
+        entityType: 'order',
+        entityId: orderId,
+        oldData: { status: oldStatus },
+        newData: { status: newStatus },
+        metadata: reason ? { cancellation_reason: reason } : {}
+      });
       
       // Quando aceita o pedido (pending → preparing), pula o "confirmed" e vai direto para cozinha
       if (newStatus === 'confirmed' && establishmentId) {
         // Na verdade, vamos mudar para preparing direto
         await supabase.from('orders').update({ status: 'preparing' }).eq('id', orderId);
+        
+        // Log the additional status change
+        await logAction({
+          action: 'status_change',
+          entityType: 'order',
+          entityId: orderId,
+          oldData: { status: 'confirmed' },
+          newData: { status: 'preparing' }
+        });
         
         await supabase.from('notifications').insert({
           establishment_id: establishmentId,
