@@ -326,13 +326,21 @@ const AppRoutes = () => {
               <Route path="/painel/upgrade" element={<UpgradePage />} />
               <Route path="/painel/equipe" element={<TeamManagement />} />
               
-              {/* Hub pages */}
+              {/* Hub pages - with and without slug */}
+              <Route path="/painel/:slug/marketing" element={<MarketingHub />} />
+              <Route path="/painel/:slug/entregas" element={<DeliveryHub />} />
+              <Route path="/painel/:slug/inteligencia" element={<IntelligenceHub />} />
+              <Route path="/painel/:slug/administracao" element={<AdminHub />} />
               <Route path="/painel/marketing" element={<MarketingHub />} />
               <Route path="/painel/entregas" element={<DeliveryHub />} />
               <Route path="/painel/inteligencia" element={<IntelligenceHub />} />
               <Route path="/painel/administracao" element={<AdminHub />} />
               
-              {/* Financial analysis pages */}
+              {/* Financial analysis pages - with and without slug */}
+              <Route path="/painel/:slug/curva-abc" element={<ABCAnalysis />} />
+              <Route path="/painel/:slug/dre" element={<DREReport />} />
+              <Route path="/painel/:slug/fidelidade" element={<LoyaltyManagement />} />
+              <Route path="/painel/:slug/aniversariantes" element={<BirthdayList />} />
               <Route path="/painel/curva-abc" element={<ABCAnalysis />} />
               <Route path="/painel/dre" element={<DREReport />} />
               <Route path="/painel/fidelidade" element={<LoyaltyManagement />} />
