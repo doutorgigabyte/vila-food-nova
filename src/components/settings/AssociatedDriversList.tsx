@@ -5,6 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
+import { DriverInviteModal } from "./DriverInviteModal";
 import { 
   Users, 
   Bike, 
@@ -35,7 +36,22 @@ export const AssociatedDriversList = ({ establishmentId }: AssociatedDriversList
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [loading, setLoading] = useState(true);
   const [todayDeliveries, setTodayDeliveries] = useState<Record<string, number>>({});
+  const [inviteModalOpen, setInviteModalOpen] = useState(false);
+  const [establishmentName, setEstablishmentName] = useState<string>("");
 
+  // Fetch establishment name for the modal
+  useEffect(() => {
+    if (establishmentId) {
+      supabase
+        .from("establishments")
+        .select("name")
+        .eq("id", establishmentId)
+        .single()
+        .then(({ data }) => {
+          if (data) setEstablishmentName(data.name);
+        });
+    }
+  }, [establishmentId]);
   useEffect(() => {
     if (establishmentId) {
       fetchDrivers();
@@ -146,7 +162,7 @@ export const AssociatedDriversList = ({ establishmentId }: AssociatedDriversList
             <p className="text-muted-foreground mb-4">
               Nenhum entregador associado ainda
             </p>
-            <Button variant="outline">
+            <Button variant="outline" onClick={() => setInviteModalOpen(true)}>
               <UserPlus className="w-4 h-4 mr-2" />
               Convidar Entregador
             </Button>
@@ -197,9 +213,29 @@ export const AssociatedDriversList = ({ establishmentId }: AssociatedDriversList
                 </div>
               </div>
             ))}
+            
+            {/* Invite button when there are drivers */}
+            <Button 
+              variant="outline" 
+              className="w-full mt-4"
+              onClick={() => setInviteModalOpen(true)}
+            >
+              <UserPlus className="w-4 h-4 mr-2" />
+              Convidar Entregador
+            </Button>
           </div>
         )}
       </CardContent>
+
+      {/* Invite Modal */}
+      {establishmentId && (
+        <DriverInviteModal
+          open={inviteModalOpen}
+          onOpenChange={setInviteModalOpen}
+          establishmentId={establishmentId}
+          establishmentName={establishmentName}
+        />
+      )}
     </Card>
   );
 };
