@@ -86,7 +86,7 @@ const IFoodIntegration = () => {
       return;
     }
     try {
-      await exchangeToken(authCode.trim(), merchantId.trim() || undefined);
+      await exchangeToken(authCode.trim(), userCodeData?.authorizationCodeVerifier, merchantId.trim() || undefined);
       setStep('idle');
       setAuthCode("");
       setMerchantId("");

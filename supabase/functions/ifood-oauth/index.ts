@@ -56,8 +56,9 @@ serve(async (req) => {
       
       const params = new URLSearchParams({
         clientId: IFOOD_CLIENT_ID,
+        clientSecret: IFOOD_CLIENT_SECRET,
       });
-      
+
       const response = await fetch(`${IFOOD_API_BASE}/authentication/v1.0/oauth/userCode`, {
         method: 'POST',
         headers: {
@@ -70,7 +71,17 @@ serve(async (req) => {
       if (!response.ok) {
         const errorText = await response.text();
         console.error('[iFood OAuth] User code error:', errorText);
-        throw new Error(`Failed to generate user code: ${response.status}`);
+
+        // IMPORTANT: return 200 so the client can read the error payload
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: `Falha ao gerar código de vínculo no iFood (${response.status}). ${errorText}`,
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
       }
 
       const data = await response.json();
@@ -105,11 +116,17 @@ serve(async (req) => {
       }
 
       const params = new URLSearchParams({
-        grant_type: 'authorization_code',
-        client_id: IFOOD_CLIENT_ID,
-        client_secret: IFOOD_CLIENT_SECRET,
+        grantType: 'authorization_code',
+        clientId: IFOOD_CLIENT_ID,
+        clientSecret: IFOOD_CLIENT_SECRET,
         authorizationCode: authorizationCode,
       });
+
+      // iFood distributed flow requires the verifier received from userCode step
+      const { authorizationCodeVerifier } = await req.json().catch(() => ({} as any));
+      if (authorizationCodeVerifier) {
+        params.set('authorizationCodeVerifier', authorizationCodeVerifier);
+      }
 
       const response = await fetch(`${IFOOD_API_BASE}/authentication/v1.0/oauth/token`, {
         method: 'POST',
@@ -123,7 +140,13 @@ serve(async (req) => {
       if (!response.ok) {
         const errorText = await response.text();
         console.error('[iFood OAuth] Token exchange error:', errorText);
-        throw new Error(`Failed to exchange token: ${response.status}`);
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: `Falha ao trocar token no iFood (${response.status}). ${errorText}`,
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
 
       const tokenData = await response.json();
@@ -174,10 +197,10 @@ serve(async (req) => {
       }
 
       const params = new URLSearchParams({
-        grant_type: 'refresh_token',
-        client_id: IFOOD_CLIENT_ID,
-        client_secret: IFOOD_CLIENT_SECRET,
-        refresh_token: connection.refresh_token,
+        grantType: 'refresh_token',
+        clientId: IFOOD_CLIENT_ID,
+        clientSecret: IFOOD_CLIENT_SECRET,
+        refreshToken: connection.refresh_token,
       });
 
       const response = await fetch(`${IFOOD_API_BASE}/authentication/v1.0/oauth/token`, {
@@ -190,13 +213,22 @@ serve(async (req) => {
       });
 
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('[iFood OAuth] Refresh token error:', errorText);
+
         // Token might be revoked, mark connection as expired
         await supabase
           .from('ifood_merchant_connections')
           .update({ status: 'expired', updated_at: new Date().toISOString() })
           .eq('establishment_id', establishmentId);
-        
-        throw new Error('Failed to refresh token - please reconnect');
+
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: `Falha ao renovar token do iFood (${response.status}). ${errorText}`,
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
 
       const tokenData = await response.json();
