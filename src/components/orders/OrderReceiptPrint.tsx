@@ -47,15 +47,15 @@ export const generateReceiptHTML = ({ order, establishment }: OrderReceiptProps)
   
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
-    return format(date, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR });
+    return format(date, "dd/MM/yyyy, HH:mm:ss", { locale: ptBR });
   };
 
   const getDeliveryTypeLabel = () => {
     switch (order.delivery_type) {
-      case 'delivery': return '🚚 ENTREGA';
-      case 'turbo': return '⚡ ENTREGA TURBO';
-      case 'pickup': return '🏪 RETIRADA';
-      case 'table': return `🍽️ MESA ${order.table_number || ''}`;
+      case 'delivery': return 'ENTREGA';
+      case 'turbo': return 'ENTREGA TURBO';
+      case 'pickup': return 'RETIRADA';
+      case 'table': return `MESA ${order.table_number || ''}`;
       default: return order.delivery_type.toUpperCase();
     }
   };
@@ -85,7 +85,7 @@ export const generateReceiptHTML = ({ order, establishment }: OrderReceiptProps)
       addr.city,
     ].filter(Boolean).join(' - ');
     
-    return `${parts}\n${location}\nCEP: ${addr.zip_code || ''}`;
+    return `${parts}<br>${location}<br>CEP: ${addr.zip_code || ''}`;
   };
 
   const itemsHTML = (order.items || []).map((item: OrderItem) => {
@@ -99,27 +99,27 @@ export const generateReceiptHTML = ({ order, establishment }: OrderReceiptProps)
     }
 
     const obsHTML = item.observations ? 
-      `<div class="item-obs">📝 ${item.observations}</div>` : '';
+      `<div class="item-obs">Obs: ${item.observations}</div>` : '';
 
     return `
-      <div class="item">
-        <div class="item-line">
-          <span class="item-qty">${item.quantity}x</span>
-          <span class="item-name">${item.name}</span>
-          <span class="item-price">${formatCurrency(itemTotal)}</span>
-        </div>
-        ${additionalsHTML}
-        ${obsHTML}
+      <div class="item-row">
+        <span class="item-left">${item.quantity}x ${item.name}</span>
+        <span class="item-right">${formatCurrency(itemTotal)}</span>
       </div>
+      ${additionalsHTML}
+      ${obsHTML}
     `;
   }).join('');
+
+  // Gerar linha de separação com caracteres
+  const separator = '-'.repeat(42);
 
   return `
     <!DOCTYPE html>
     <html>
     <head>
       <meta charset="UTF-8">
-      <title>Pedido #${order.order_number} - ${establishment.name}</title>
+      <title>Comanda #${order.order_number}</title>
       <style>
         @page { margin: 0; size: 80mm auto; }
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -129,223 +129,116 @@ export const generateReceiptHTML = ({ order, establishment }: OrderReceiptProps)
           font-size: 12px;
           width: 80mm;
           max-width: 80mm;
-          padding: 8mm;
-          line-height: 1.4;
+          padding: 5mm;
+          line-height: 1.5;
           color: #000;
           background: #fff;
         }
 
         .header {
           text-align: center;
-          border-bottom: 2px dashed #333;
-          padding-bottom: 10px;
-          margin-bottom: 10px;
+          margin-bottom: 8px;
         }
 
-        .logo-name {
-          font-size: 18px;
+        .title {
+          font-size: 16px;
           font-weight: bold;
-          text-transform: uppercase;
-          letter-spacing: 1px;
-          margin-bottom: 4px;
-        }
-
-        .order-number {
-          font-size: 24px;
-          font-weight: bold;
-          background: #000;
-          color: #fff;
-          padding: 6px 12px;
-          display: inline-block;
-          margin: 8px 0;
-          border-radius: 4px;
+          letter-spacing: 2px;
         }
 
         .datetime {
           font-size: 11px;
-          color: #444;
+          margin: 6px 0;
         }
 
         .delivery-type {
-          font-size: 14px;
-          font-weight: bold;
-          margin-top: 8px;
-          padding: 4px 8px;
-          background: #f0f0f0;
-          display: inline-block;
-          border-radius: 3px;
-        }
-
-        .section {
-          margin: 12px 0;
-          padding: 8px 0;
-          border-bottom: 1px dashed #aaa;
-        }
-
-        .section-title {
-          font-size: 11px;
-          font-weight: bold;
-          text-transform: uppercase;
-          color: #666;
-          margin-bottom: 6px;
-          letter-spacing: 0.5px;
-        }
-
-        .customer-info {
           font-size: 12px;
-        }
-
-        .customer-name {
           font-weight: bold;
-          font-size: 13px;
         }
 
-        .address-box {
-          background: #f8f8f8;
-          padding: 8px;
-          border-radius: 4px;
-          margin-top: 6px;
-          white-space: pre-line;
+        .separator {
+          text-align: center;
+          color: #999;
+          letter-spacing: -1px;
+          margin: 8px 0;
+        }
+
+        .info-row {
+          display: flex;
+          margin: 4px 0;
+        }
+
+        .info-label {
+          min-width: 70px;
         }
 
         .items-section {
-          margin: 12px 0;
+          margin: 8px 0;
         }
 
-        .item {
-          margin-bottom: 8px;
-          padding-bottom: 6px;
-          border-bottom: 1px dotted #ddd;
-        }
-
-        .item:last-child {
-          border-bottom: none;
-        }
-
-        .item-line {
+        .item-row {
           display: flex;
           justify-content: space-between;
-          align-items: flex-start;
+          margin: 3px 0;
         }
 
-        .item-qty {
-          font-weight: bold;
-          min-width: 24px;
-        }
-
-        .item-name {
+        .item-left {
           flex: 1;
-          padding: 0 8px;
         }
 
-        .item-price {
-          font-weight: bold;
+        .item-right {
           text-align: right;
-          min-width: 60px;
+          min-width: 70px;
         }
 
         .additional {
           font-size: 10px;
           color: #555;
-          padding-left: 24px;
-          margin-top: 2px;
+          padding-left: 16px;
         }
 
         .item-obs {
           font-size: 10px;
           color: #666;
-          padding-left: 24px;
-          margin-top: 4px;
+          padding-left: 16px;
           font-style: italic;
         }
 
-        .totals {
-          margin: 12px 0;
-          padding-top: 8px;
-          border-top: 2px dashed #333;
+        .totals-section {
+          margin: 8px 0;
         }
 
-        .total-line {
+        .total-row {
           display: flex;
           justify-content: space-between;
-          margin: 4px 0;
-          font-size: 12px;
+          margin: 3px 0;
         }
 
-        .total-line.discount {
-          color: #2a9d2a;
-        }
-
-        .total-line.final {
-          font-size: 16px;
+        .total-row.final {
           font-weight: bold;
-          margin-top: 8px;
-          padding-top: 8px;
-          border-top: 1px solid #333;
-        }
-
-        .payment-method {
-          text-align: center;
-          margin: 12px 0;
-          padding: 8px;
-          background: #f5f5f5;
-          border-radius: 4px;
-        }
-
-        .payment-label {
-          font-size: 10px;
-          color: #666;
-          text-transform: uppercase;
-        }
-
-        .payment-value {
           font-size: 14px;
-          font-weight: bold;
-          margin-top: 2px;
+          margin-top: 6px;
         }
 
-        .observations {
-          margin: 12px 0;
-          padding: 8px;
-          background: #fff8dc;
-          border-radius: 4px;
-          border-left: 3px solid #ffa500;
-        }
-
-        .obs-title {
-          font-size: 10px;
-          font-weight: bold;
-          text-transform: uppercase;
-          color: #666;
-        }
-
-        .obs-text {
-          margin-top: 4px;
-          font-size: 12px;
+        .payment-section {
+          margin: 8px 0;
         }
 
         .footer {
           text-align: center;
-          margin-top: 16px;
-          padding-top: 12px;
-          border-top: 2px dashed #333;
+          margin-top: 12px;
+          padding-top: 8px;
         }
 
         .thanks {
-          font-size: 14px;
-          font-weight: bold;
+          font-size: 11px;
+          color: #666;
           margin-bottom: 4px;
         }
 
-        .comeback {
-          font-size: 11px;
-          color: #666;
-        }
-
-        .establishment-contact {
-          font-size: 10px;
-          color: #888;
-          margin-top: 8px;
+        .establishment-name {
+          font-size: 12px;
+          font-weight: bold;
         }
 
         @media print {
@@ -355,78 +248,86 @@ export const generateReceiptHTML = ({ order, establishment }: OrderReceiptProps)
     </head>
     <body>
       <div class="header">
-        <div class="logo-name">${establishment.name}</div>
-        <div class="order-number">Pedido #${order.order_number}</div>
+        <div class="title">COMANDA #${order.order_number}</div>
         <div class="datetime">${formatDate(order.created_at)}</div>
         <div class="delivery-type">${getDeliveryTypeLabel()}</div>
       </div>
 
-      ${order.customer_name || order.customer_phone ? `
-        <div class="section">
-          <div class="section-title">👤 Cliente</div>
-          <div class="customer-info">
-            ${order.customer_name ? `<div class="customer-name">${order.customer_name}</div>` : ''}
-            ${order.customer_phone ? `<div>📱 ${order.customer_phone}</div>` : ''}
-          </div>
+      <div class="separator">${separator}</div>
+
+      ${order.customer_name ? `
+        <div class="info-row">
+          <span class="info-label">Cliente:</span>
+          <span>${order.customer_name}</span>
         </div>
       ` : ''}
 
-      ${order.delivery_type === 'delivery' || order.delivery_type === 'turbo' ? `
-        <div class="section">
-          <div class="section-title">📍 Endereço de Entrega</div>
-          <div class="address-box">${formatAddress()}</div>
+      ${order.customer_phone ? `
+        <div class="info-row">
+          <span class="info-label">Telefone:</span>
+          <span>${order.customer_phone}</span>
         </div>
       ` : ''}
+
+      ${(order.delivery_type === 'delivery' || order.delivery_type === 'turbo') && order.delivery_address ? `
+        <div class="separator">${separator}</div>
+        <div class="info-row">
+          <span class="info-label">Endereço:</span>
+        </div>
+        <div style="padding-left: 8px; font-size: 11px;">${formatAddress()}</div>
+      ` : ''}
+
+      <div class="separator">${separator}</div>
 
       <div class="items-section">
-        <div class="section-title">📋 Itens do Pedido</div>
         ${itemsHTML}
       </div>
 
-      <div class="totals">
-        <div class="total-line">
+      <div class="separator">${separator}</div>
+
+      <div class="totals-section">
+        <div class="total-row">
           <span>Subtotal:</span>
           <span>${formatCurrency(order.subtotal)}</span>
         </div>
         ${order.delivery_fee > 0 ? `
-          <div class="total-line">
+          <div class="total-row">
             <span>Taxa de entrega:</span>
             <span>${formatCurrency(order.delivery_fee)}</span>
           </div>
         ` : ''}
         ${order.discount > 0 ? `
-          <div class="total-line discount">
+          <div class="total-row">
             <span>Desconto:</span>
             <span>-${formatCurrency(order.discount)}</span>
           </div>
         ` : ''}
-        <div class="total-line final">
+        <div class="total-row final">
           <span>TOTAL:</span>
           <span>${formatCurrency(order.total)}</span>
         </div>
       </div>
 
-      <div class="payment-method">
-        <div class="payment-label">Forma de Pagamento</div>
-        <div class="payment-value">${getPaymentMethodLabel()}</div>
+      <div class="separator">${separator}</div>
+
+      <div class="payment-section">
+        <div class="info-row">
+          <span class="info-label">Pagamento:</span>
+          <span>${getPaymentMethodLabel()}</span>
+        </div>
       </div>
 
       ${order.observations ? `
-        <div class="observations">
-          <div class="obs-title">📝 Observações</div>
-          <div class="obs-text">${order.observations}</div>
+        <div class="separator">${separator}</div>
+        <div class="info-row">
+          <span class="info-label">Obs:</span>
+          <span>${order.observations}</span>
         </div>
       ` : ''}
 
       <div class="footer">
-        <div class="thanks">Obrigado pela preferência! ❤️</div>
-        <div class="comeback">Volte sempre!</div>
-        ${establishment.whatsapp || establishment.phone ? `
-          <div class="establishment-contact">
-            ${establishment.whatsapp ? `WhatsApp: ${establishment.whatsapp}` : ''}
-            ${establishment.phone && !establishment.whatsapp ? `Tel: ${establishment.phone}` : ''}
-          </div>
-        ` : ''}
+        <div class="thanks">Obrigado pela preferência!</div>
+        <div class="establishment-name">${establishment.name}</div>
       </div>
     </body>
     </html>
