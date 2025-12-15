@@ -214,13 +214,17 @@ const UsersManagement = () => {
   };
 
   const openEditDialog = (user: User) => {
+    if (!user) {
+      toast({ title: "Erro ao abrir usuário", variant: "destructive" });
+      return;
+    }
     setEditingUser(user);
     setFormData({
       full_name: user.full_name || "",
       phone: user.phone || "",
       role: user.role || "customer",
-      establishment_id: user.establishments[0]?.id || "",
-      establishment_role: user.establishments[0]?.role || "attendant",
+      establishment_id: user.establishments?.[0]?.id || "",
+      establishment_role: user.establishments?.[0]?.role || "attendant",
     });
     setDialogOpen(true);
   };

@@ -73,22 +73,32 @@ export const useDriverDeliveries = () => {
 
   // Fetch driver profile
   const fetchDriverProfile = useCallback(async () => {
-    if (!user?.id) return null;
-
-    const { data, error } = await supabase
-      .from('delivery_drivers')
-      .select('*')
-      .eq('user_id', user.id)
-      .single();
-
-    if (error) {
-      console.error('Error fetching driver profile:', error);
+    if (!user?.id) {
+      setIsLoading(false);
       return null;
     }
 
-    setDriverProfile(data);
-    setIsOnline(data?.is_available ?? false);
-    return data;
+    try {
+      const { data, error } = await supabase
+        .from('delivery_drivers')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (error) {
+        console.error('Error fetching driver profile:', error);
+        setIsLoading(false);
+        return null;
+      }
+
+      setDriverProfile(data);
+      setIsOnline(data?.is_available ?? false);
+      return data;
+    } catch (err) {
+      console.error('Error in fetchDriverProfile:', err);
+      setIsLoading(false);
+      return null;
+    }
   }, [user?.id]);
 
   // Fetch deliveries
