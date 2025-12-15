@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { useAuditLog } from '@/hooks/useAuditLog';
 
 const statusConfig: Record<string, { label: string; color: string; icon: any }> = {
   awaiting_payment: { label: 'Aguardando Pgto', color: 'bg-amber-500', icon: CreditCard },
@@ -30,6 +31,7 @@ const statusConfig: Record<string, { label: string; color: string; icon: any }> 
 
 const AdminOrdersManagement = () => {
   const queryClient = useQueryClient();
+  const { logAction } = useAuditLog();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterEstablishment, setFilterEstablishment] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -71,6 +73,7 @@ const AdminOrdersManagement = () => {
   // Update status mutation
   const updateStatusMutation = useMutation({
     mutationFn: async ({ id, status, order }: { id: string; status: string; order?: any }) => {
+      const oldStatus = order?.status;
       const updateData: any = { status };
       if (status === 'delivered') {
         updateData.delivered_at = new Date().toISOString();
@@ -83,6 +86,15 @@ const AdminOrdersManagement = () => {
         .update(updateData)
         .eq('id', id);
       if (error) throw error;
+
+      // Log status change to audit_logs
+      await logAction({
+        action: 'status_change',
+        entityType: 'order',
+        entityId: id,
+        oldData: { status: oldStatus },
+        newData: { status }
+      });
 
       // Criar notificações quando status muda
       if (status === 'confirmed' && order?.establishment_id) {
