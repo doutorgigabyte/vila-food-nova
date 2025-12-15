@@ -41,6 +41,7 @@ import { NotificationSoundSelector } from "@/components/settings/NotificationSou
 import { WhatsAppNotificationsConfig } from "@/components/settings/WhatsAppNotificationsConfig";
 import { AssociatedDriversList } from "@/components/settings/AssociatedDriversList";
 import { OperatingHoursEditor } from "@/components/settings/OperatingHoursEditor";
+import { useNotificationSound } from "@/hooks/useNotificationSound";
 
 // Component to show available platform gateways
 const AvailableGatewaysCard = () => {
@@ -209,17 +210,19 @@ const EstablishmentSettings = () => {
     pix_key: "",
     mercado_pago_token: "",
     mp_public_key: "",
-    // Social Media
-    instagram: "",
-    facebook: "",
-    tiktok: "",
-    twitter: "",
-    youtube: "",
-    website: "",
-    // AI Agent
-    ai_prompt: "",
-    ai_enabled: false,
+    // Social Media (using correct DB column names)
+    instagram_url: "",
+    facebook_url: "",
+    tiktok_url: "",
+    twitter_url: "",
+    youtube_url: "",
+    website_url: "",
   });
+  
+  // AI Agent state (stored in whatsapp_instances)
+  const [aiEnabled, setAiEnabled] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [whatsappInstanceId, setWhatsappInstanceId] = useState<string | null>(null);
   
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [bannerUrl, setBannerUrl] = useState<string | null>(null);
@@ -245,9 +248,13 @@ const EstablishmentSettings = () => {
     sunday: { open: false, start: "08:00", end: "22:00" },
   });
   
-  // Notification settings state
-  const [notificationSound, setNotificationSound] = useState("new-order");
-  const [notificationVolume, setNotificationVolume] = useState(80);
+  // Notification settings - use the hook
+  const { 
+    preferences: notificationPrefs, 
+    updatePreferences: updateNotificationPrefs,
+    testSound 
+  } = useNotificationSound();
+  
   const [whatsappNotificationsEnabled, setWhatsappNotificationsEnabled] = useState(false);
   const [whatsappNotifications, setWhatsappNotifications] = useState<Record<string, boolean>>({
     new_order: true,
@@ -300,18 +307,29 @@ const EstablishmentSettings = () => {
         pix_key: data.pix_key || "",
         mercado_pago_token: data.mercado_pago_token || "",
         mp_public_key: data.mp_public_key || "",
-        // Social Media (use optional chaining since columns may not exist yet)
-        instagram: (data as any).instagram || "",
-        facebook: (data as any).facebook || "",
-        tiktok: (data as any).tiktok || "",
-        twitter: (data as any).twitter || "",
-        youtube: (data as any).youtube || "",
-        website: (data as any).website || "",
-        // AI Agent
-        ai_prompt: (data as any).ai_prompt || "",
-        ai_enabled: (data as any).ai_enabled ?? false,
+        // Social Media
+        instagram_url: data.instagram_url || "",
+        facebook_url: data.facebook_url || "",
+        tiktok_url: data.tiktok_url || "",
+        twitter_url: data.twitter_url || "",
+        youtube_url: data.youtube_url || "",
+        website_url: data.website_url || "",
       });
       setLogoUrl(data.logo_url);
+      setBannerUrl(data.banner_url);
+      
+      // Fetch AI settings from whatsapp_instances
+      const { data: instanceData } = await supabase
+        .from("whatsapp_instances")
+        .select("id, ai_enabled, ai_prompt")
+        .eq("establishment_id", data.id)
+        .maybeSingle();
+      
+      if (instanceData) {
+        setWhatsappInstanceId(instanceData.id);
+        setAiEnabled(instanceData.ai_enabled ?? false);
+        setAiPrompt(instanceData.ai_prompt || "");
+      }
       setBannerUrl(data.banner_url);
       setAddressData({
         cep: data.zip_code || "",
@@ -353,6 +371,7 @@ const EstablishmentSettings = () => {
     
     setSaving(true);
     try {
+      // Save establishment data
       const { error } = await supabase
         .from("establishments")
         .update({
@@ -381,6 +400,13 @@ const EstablishmentSettings = () => {
           pix_key: formData.pix_key,
           mercado_pago_token: formData.mercado_pago_token,
           mp_public_key: formData.mp_public_key,
+          // Social Media
+          instagram_url: formData.instagram_url,
+          facebook_url: formData.facebook_url,
+          tiktok_url: formData.tiktok_url,
+          twitter_url: formData.twitter_url,
+          youtube_url: formData.youtube_url,
+          website_url: formData.website_url,
           logo_url: logoUrl,
           banner_url: bannerUrl,
           operating_hours: operatingHours,
@@ -389,6 +415,18 @@ const EstablishmentSettings = () => {
         .eq("id", establishment.id);
 
       if (error) throw error;
+
+      // Save AI settings to whatsapp_instances
+      if (whatsappInstanceId) {
+        await supabase
+          .from("whatsapp_instances")
+          .update({
+            ai_enabled: aiEnabled,
+            ai_prompt: aiPrompt,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", whatsappInstanceId);
+      }
 
       toast.success("Configurações salvas com sucesso!");
     } catch (error) {
@@ -921,66 +959,66 @@ const EstablishmentSettings = () => {
                 <CardContent className="space-y-4">
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-2">
-                      <Label htmlFor="instagram" className="flex items-center gap-2">
+                      <Label htmlFor="instagram_url" className="flex items-center gap-2">
                         <Instagram className="w-4 h-4 text-pink-500" />
                         Instagram
                       </Label>
                       <Input
-                        id="instagram"
+                        id="instagram_url"
                         placeholder="@seuinstagram"
-                        value={formData.instagram}
-                        onChange={(e) => setFormData({ ...formData, instagram: e.target.value })}
+                        value={formData.instagram_url}
+                        onChange={(e) => setFormData({ ...formData, instagram_url: e.target.value })}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="facebook" className="flex items-center gap-2">
+                      <Label htmlFor="facebook_url" className="flex items-center gap-2">
                         <Globe className="w-4 h-4 text-blue-600" />
                         Facebook
                       </Label>
                       <Input
-                        id="facebook"
+                        id="facebook_url"
                         placeholder="facebook.com/suapagina"
-                        value={formData.facebook}
-                        onChange={(e) => setFormData({ ...formData, facebook: e.target.value })}
+                        value={formData.facebook_url}
+                        onChange={(e) => setFormData({ ...formData, facebook_url: e.target.value })}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="tiktok">TikTok</Label>
+                      <Label htmlFor="tiktok_url">TikTok</Label>
                       <Input
-                        id="tiktok"
+                        id="tiktok_url"
                         placeholder="@seutiktok"
-                        value={formData.tiktok}
-                        onChange={(e) => setFormData({ ...formData, tiktok: e.target.value })}
+                        value={formData.tiktok_url}
+                        onChange={(e) => setFormData({ ...formData, tiktok_url: e.target.value })}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="youtube">YouTube</Label>
+                      <Label htmlFor="youtube_url">YouTube</Label>
                       <Input
-                        id="youtube"
+                        id="youtube_url"
                         placeholder="youtube.com/@seucanal"
-                        value={formData.youtube}
-                        onChange={(e) => setFormData({ ...formData, youtube: e.target.value })}
+                        value={formData.youtube_url}
+                        onChange={(e) => setFormData({ ...formData, youtube_url: e.target.value })}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="twitter">Twitter / X</Label>
+                      <Label htmlFor="twitter_url">Twitter / X</Label>
                       <Input
-                        id="twitter"
+                        id="twitter_url"
                         placeholder="@seutwitter"
-                        value={formData.twitter}
-                        onChange={(e) => setFormData({ ...formData, twitter: e.target.value })}
+                        value={formData.twitter_url}
+                        onChange={(e) => setFormData({ ...formData, twitter_url: e.target.value })}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="website" className="flex items-center gap-2">
+                      <Label htmlFor="website_url" className="flex items-center gap-2">
                         <Globe className="w-4 h-4" />
                         Website
                       </Label>
                       <Input
-                        id="website"
+                        id="website_url"
                         placeholder="https://seusite.com.br"
-                        value={formData.website}
-                        onChange={(e) => setFormData({ ...formData, website: e.target.value })}
+                        value={formData.website_url}
+                        onChange={(e) => setFormData({ ...formData, website_url: e.target.value })}
                       />
                     </div>
                   </div>
@@ -1000,14 +1038,20 @@ const EstablishmentSettings = () => {
                     <CardDescription>Configure o comportamento do seu assistente virtual via WhatsApp</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
+                    {!whatsappInstanceId && (
+                      <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg text-sm text-yellow-700 dark:text-yellow-400">
+                        ⚠️ Você precisa configurar uma instância WhatsApp primeiro para usar o Agente IA.
+                      </div>
+                    )}
                     <div className="flex items-center justify-between p-4 border rounded-lg">
                       <div>
                         <p className="font-medium">Ativar Agente IA</p>
                         <p className="text-sm text-muted-foreground">Permitir que o bot responda automaticamente no WhatsApp</p>
                       </div>
                       <Switch
-                        checked={formData.ai_enabled}
-                        onCheckedChange={(checked) => setFormData({ ...formData, ai_enabled: checked })}
+                        checked={aiEnabled}
+                        onCheckedChange={setAiEnabled}
+                        disabled={!whatsappInstanceId}
                       />
                     </div>
                     <div className="space-y-2">
@@ -1015,10 +1059,11 @@ const EstablishmentSettings = () => {
                       <Textarea
                         id="ai_prompt"
                         placeholder="Você é um atendente amigável de uma lanchonete. Responda de forma cordial e ajude o cliente a fazer pedidos..."
-                        value={formData.ai_prompt}
-                        onChange={(e) => setFormData({ ...formData, ai_prompt: e.target.value })}
+                        value={aiPrompt}
+                        onChange={(e) => setAiPrompt(e.target.value)}
                         rows={6}
                         className="font-mono text-sm"
+                        disabled={!whatsappInstanceId}
                       />
                       <p className="text-xs text-muted-foreground">
                         Este texto define como o bot deve se comportar. Inclua instruções sobre tom de voz, produtos em destaque, e como lidar com dúvidas.
@@ -1033,10 +1078,10 @@ const EstablishmentSettings = () => {
             <TabsContent value="notifications">
               <div className="grid gap-6 md:grid-cols-2">
                 <NotificationSoundSelector
-                  selectedSound={notificationSound}
-                  volume={notificationVolume}
-                  onSoundChange={setNotificationSound}
-                  onVolumeChange={setNotificationVolume}
+                  selectedSound="new-order"
+                  volume={notificationPrefs.volume}
+                  onSoundChange={() => {}}
+                  onVolumeChange={(vol) => updateNotificationPrefs({ volume: vol })}
                 />
                 <WhatsAppNotificationsConfig
                   enabled={whatsappNotificationsEnabled}
