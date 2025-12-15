@@ -22,6 +22,8 @@ import {
   Truck,
   Package,
   RefreshCw,
+  History,
+  Ban,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -85,6 +87,8 @@ const OrdersManagement = () => {
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [orderHistory, setOrderHistory] = useState<Array<{action: string; created_at: string; old_data: any; new_data: any}>>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
 
   const baseUrl = slug ? `/painel/${slug}` : '/painel';
 
@@ -299,6 +303,38 @@ const OrdersManagement = () => {
     return flow[currentStatus];
   };
 
+  const fetchOrderHistory = async (orderId: string) => {
+    setLoadingHistory(true);
+    try {
+      const { data, error } = await supabase
+        .from('audit_logs')
+        .select('action, created_at, old_data, new_data')
+        .eq('entity_type', 'order')
+        .eq('entity_id', orderId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setOrderHistory(data || []);
+    } catch (error) {
+      console.error('Error fetching order history:', error);
+      setOrderHistory([]);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
+  const openOrderModal = (order: Order) => {
+    setSelectedOrder(order);
+    setShowOrderModal(true);
+    fetchOrderHistory(order.id);
+  };
+
+  const openCancelModal = (order: Order) => {
+    setSelectedOrder(order);
+    setShowRejectModal(true);
+    setRejectReason("");
+  };
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background overflow-hidden">
@@ -504,10 +540,7 @@ const OrdersManagement = () => {
                           <Button 
                             size="sm" 
                             variant="outline"
-                            onClick={() => {
-                              setSelectedOrder(order);
-                              setShowOrderModal(true);
-                            }}
+                            onClick={() => openOrderModal(order)}
                           >
                             <Eye className="w-4 h-4" />
                           </Button>
@@ -518,6 +551,16 @@ const OrdersManagement = () => {
                           >
                             <Printer className="w-4 h-4" />
                           </Button>
+                          {order.status !== 'delivered' && order.status !== 'cancelled' && order.status !== 'pending' && (
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                              onClick={() => openCancelModal(order)}
+                            >
+                              <Ban className="w-4 h-4" />
+                            </Button>
+                          )}
                         </div>
                       </CardContent>
                     </Card>
@@ -602,6 +645,37 @@ const OrdersManagement = () => {
                   </p>
                 </div>
               )}
+
+              {/* Order History */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <History className="w-4 h-4" />
+                  <p className="font-medium">Histórico de Alterações</p>
+                </div>
+                {loadingHistory ? (
+                  <div className="text-sm text-muted-foreground">Carregando...</div>
+                ) : orderHistory.length === 0 ? (
+                  <div className="text-sm text-muted-foreground">Nenhuma alteração registrada</div>
+                ) : (
+                  <div className="max-h-32 overflow-y-auto space-y-2">
+                    {orderHistory.map((log, idx) => (
+                      <div key={idx} className="text-xs bg-muted/50 p-2 rounded">
+                        <div className="flex justify-between">
+                          <span className="font-medium capitalize">{log.action}</span>
+                          <span className="text-muted-foreground">
+                            {new Date(log.created_at).toLocaleString('pt-BR')}
+                          </span>
+                        </div>
+                        {log.old_data?.status && log.new_data?.status && (
+                          <div className="text-muted-foreground">
+                            Status: {statusConfig[log.old_data.status as OrderStatus]?.label || log.old_data.status} → {statusConfig[log.new_data.status as OrderStatus]?.label || log.new_data.status}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
 
               <div className="flex gap-2 pt-4">
                 {selectedOrder.status !== 'delivered' && selectedOrder.status !== 'cancelled' && (
