@@ -2274,6 +2274,7 @@ export type Database = {
           address_number: string | null
           avg_delivery_time: number | null
           avg_prep_time: number | null
+          background_color: string | null
           banner_url: string | null
           city_id: string | null
           cnpj_cpf: string | null
@@ -2359,6 +2360,7 @@ export type Database = {
           address_number?: string | null
           avg_delivery_time?: number | null
           avg_prep_time?: number | null
+          background_color?: string | null
           banner_url?: string | null
           city_id?: string | null
           cnpj_cpf?: string | null
@@ -2444,6 +2446,7 @@ export type Database = {
           address_number?: string | null
           avg_delivery_time?: number | null
           avg_prep_time?: number | null
+          background_color?: string | null
           banner_url?: string | null
           city_id?: string | null
           cnpj_cpf?: string | null
