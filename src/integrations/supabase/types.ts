@@ -2270,10 +2270,13 @@ export type Database = {
           accepts_pickup: boolean | null
           accepts_table: boolean | null
           address: string | null
+          address_complement: string | null
           address_number: string | null
           avg_delivery_time: number | null
+          avg_prep_time: number | null
           banner_url: string | null
           city_id: string | null
+          cnpj_cpf: string | null
           created_at: string | null
           delivery_base_fee: number | null
           delivery_calculation_mode: string | null
@@ -2352,10 +2355,13 @@ export type Database = {
           accepts_pickup?: boolean | null
           accepts_table?: boolean | null
           address?: string | null
+          address_complement?: string | null
           address_number?: string | null
           avg_delivery_time?: number | null
+          avg_prep_time?: number | null
           banner_url?: string | null
           city_id?: string | null
+          cnpj_cpf?: string | null
           created_at?: string | null
           delivery_base_fee?: number | null
           delivery_calculation_mode?: string | null
@@ -2434,10 +2440,13 @@ export type Database = {
           accepts_pickup?: boolean | null
           accepts_table?: boolean | null
           address?: string | null
+          address_complement?: string | null
           address_number?: string | null
           avg_delivery_time?: number | null
+          avg_prep_time?: number | null
           banner_url?: string | null
           city_id?: string | null
+          cnpj_cpf?: string | null
           created_at?: string | null
           delivery_base_fee?: number | null
           delivery_calculation_mode?: string | null

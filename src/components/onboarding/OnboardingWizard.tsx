@@ -24,10 +24,17 @@ export interface OnboardingData {
   
   // Step 3 - Basic Data
   establishmentName: string;
+  description: string;
   phone: string;
   whatsapp: string;
+  email: string;
+  cnpjCpf: string;
   subdomain: string;
   logoUrl: string | null;
+  bannerUrl: string | null;
+  addressNumber: string;
+  addressComplement: string;
+  instagramUrl: string;
   belongsToVila: boolean;
   vilaId: string;
   
@@ -45,6 +52,8 @@ export interface OnboardingData {
   acceptsPickup: boolean;
   acceptsTable: boolean;
   operatingHours: Record<string, { open: boolean; start: string; end: string }>;
+  avgPrepTime: number;
+  minOrderValue: number;
 }
 
 const initialData: OnboardingData = {
@@ -53,10 +62,17 @@ const initialData: OnboardingData = {
   selectedSegments: [],
   customSegment: "",
   establishmentName: "",
+  description: "",
   phone: "",
   whatsapp: "",
+  email: "",
+  cnpjCpf: "",
   subdomain: "",
   logoUrl: null,
+  bannerUrl: null,
+  addressNumber: "",
+  addressComplement: "",
+  instagramUrl: "",
   belongsToVila: false,
   vilaId: "",
   firstProduct: null,
@@ -72,6 +88,8 @@ const initialData: OnboardingData = {
     saturday: { open: true, start: "08:00", end: "14:00" },
     sunday: { open: false, start: "08:00", end: "14:00" },
   },
+  avgPrepTime: 30,
+  minOrderValue: 0,
 };
 
 const steps = [
@@ -136,10 +154,17 @@ export const OnboardingWizard = () => {
         .from("establishments")
         .insert({
           name: data.establishmentName,
+          description: data.description,
           slug: data.subdomain,
           phone: data.phone,
           whatsapp: data.whatsapp,
+          email: data.email,
+          cnpj_cpf: data.cnpjCpf,
           logo_url: data.logoUrl,
+          banner_url: data.bannerUrl,
+          address_number: data.addressNumber,
+          address_complement: data.addressComplement,
+          instagram_url: data.instagramUrl,
           owner_id: user.id,
           segment_id: data.selectedSegments[0] || null,
           vila_id: data.belongsToVila && data.vilaId ? data.vilaId : null,
@@ -147,6 +172,8 @@ export const OnboardingWizard = () => {
           accepts_pickup: data.acceptsPickup,
           accepts_table: data.acceptsTable,
           operating_hours: data.operatingHours,
+          avg_prep_time: data.avgPrepTime,
+          min_order_value: data.minOrderValue,
           status: "active",
           is_open: true,
         })
