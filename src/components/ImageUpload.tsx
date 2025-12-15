@@ -41,6 +41,8 @@ export const ImageUpload = ({
     auto: "",
   };
 
+  const isCompact = aspectRatio === "square";
+
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -48,7 +50,7 @@ export const ImageUpload = ({
     // Validate file
     const maxSize = bucket === "avatars" ? 2 * 1024 * 1024 : 5 * 1024 * 1024;
     const validation = validateFile(file, { maxSize });
-    
+
     if (!validation.valid) {
       toast.error(validation.error);
       return;
@@ -103,7 +105,7 @@ export const ImageUpload = ({
         setDeleting(false);
       }
     }
-    
+
     setPreview(null);
     onRemove?.();
   };
@@ -120,15 +122,13 @@ export const ImageUpload = ({
       />
 
       {preview ? (
-        <div className={cn(
-          "relative rounded-lg overflow-hidden border border-border bg-muted",
-          aspectClasses[aspectRatio]
-        )}>
-          <img
-            src={preview}
-            alt="Preview"
-            className="w-full h-full object-cover"
-          />
+        <div
+          className={cn(
+            "relative rounded-lg overflow-hidden border border-border bg-muted",
+            aspectClasses[aspectRatio]
+          )}
+        >
+          <img src={preview} alt="Preview" className="w-full h-full object-cover" />
           {!uploading && !deleting && (
             <div className="absolute inset-0 bg-black/50 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
               <Button
@@ -155,9 +155,7 @@ export const ImageUpload = ({
           {(uploading || deleting) && (
             <div className="absolute inset-0 bg-black/50 flex items-center justify-center flex-col gap-2">
               <Loader2 className="w-8 h-8 text-white animate-spin" />
-              <span className="text-white text-sm">
-                {deleting ? 'Removendo...' : 'Enviando...'}
-              </span>
+              <span className="text-white text-sm">{deleting ? 'Removendo...' : 'Enviando...'}</span>
             </div>
           )}
         </div>
@@ -167,7 +165,8 @@ export const ImageUpload = ({
           onClick={() => inputRef.current?.click()}
           disabled={uploading}
           className={cn(
-            "w-full rounded-lg border-2 border-dashed border-border hover:border-primary/50 bg-muted/50 hover:bg-muted transition-colors flex flex-col items-center justify-center gap-2 p-6",
+            "w-full rounded-lg border-2 border-dashed border-border hover:border-primary/50 bg-muted/50 hover:bg-muted transition-colors flex flex-col items-center justify-center gap-2",
+            isCompact ? "p-3" : "p-4 sm:p-6",
             aspectClasses[aspectRatio],
             uploading && "pointer-events-none opacity-50"
           )}
@@ -176,11 +175,16 @@ export const ImageUpload = ({
             <Loader2 className="w-8 h-8 text-muted-foreground animate-spin" />
           ) : (
             <>
-              <ImageIcon className="w-8 h-8 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">
-                Clique para enviar uma imagem
+              <ImageIcon className={cn("text-muted-foreground", isCompact ? "w-6 h-6" : "w-8 h-8")} />
+              <span className={cn("text-muted-foreground text-center", isCompact ? "text-xs" : "text-sm")}>
+                Clique para enviar
               </span>
-              <span className="text-xs text-muted-foreground">
+              <span
+                className={cn(
+                  "text-xs text-muted-foreground text-center",
+                  isCompact && "hidden sm:block"
+                )}
+              >
                 JPEG, PNG, WebP ou GIF (max {bucket === "avatars" ? "2MB" : "5MB"})
               </span>
             </>
