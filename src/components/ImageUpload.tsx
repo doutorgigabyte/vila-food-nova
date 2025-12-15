@@ -11,7 +11,7 @@ interface ImageUploadProps {
   onUpload: (url: string) => void;
   onRemove?: () => void;
   className?: string;
-  aspectRatio?: "square" | "banner" | "auto";
+  aspectRatio?: "square" | "banner" | "auto" | "video";
   establishmentId?: string;
 }
 
@@ -37,6 +37,7 @@ export const ImageUpload = ({
   const aspectClasses = {
     square: "aspect-square",
     banner: "aspect-[3/1]",
+    video: "aspect-video",
     auto: "",
   };
 
