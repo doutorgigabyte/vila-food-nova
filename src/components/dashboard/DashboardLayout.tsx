@@ -1,6 +1,7 @@
 import { useState, ReactNode } from "react";
 import { Button } from "@/components/ui/button";
-import { Bell, Menu } from "lucide-react";
+import { Menu, ExternalLink, Settings } from "lucide-react";
+import { Link } from "react-router-dom";
 import DashboardSidebar from "./DashboardSidebar";
 
 interface DashboardLayoutProps {
@@ -24,6 +25,9 @@ const DashboardLayout = ({
   establishment 
 }: DashboardLayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const storeUrl = establishment?.slug ? `/${establishment.slug}` : "#";
+  const settingsUrl = establishment?.slug ? `/painel/${establishment.slug}/configuracoes` : "/painel/configuracoes";
 
   return (
     <div className="min-h-screen bg-muted/30 flex w-full overflow-hidden">
@@ -51,9 +55,27 @@ const DashboardLayout = ({
               <h1 className="text-xl font-semibold truncate">{title}</h1>
             </div>
             <div className="flex items-center gap-2 shrink-0">
-              <Button variant="ghost" size="icon" className="relative">
-                <Bell className="w-5 h-5" />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-primary rounded-full" />
+              {/* Ver Loja Button */}
+              <Button 
+                asChild
+                className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                size="sm"
+              >
+                <a href={storeUrl} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="w-4 h-4 mr-1.5" />
+                  <span className="hidden sm:inline">Ver Loja</span>
+                </a>
+              </Button>
+              
+              {/* Settings Button */}
+              <Button 
+                asChild
+                variant="ghost" 
+                size="icon"
+              >
+                <Link to={settingsUrl}>
+                  <Settings className="w-5 h-5" />
+                </Link>
               </Button>
             </div>
           </div>
