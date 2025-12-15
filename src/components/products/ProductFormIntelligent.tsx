@@ -20,6 +20,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ImageUpload } from "@/components/ImageUpload";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import { CategorySuggestionModal } from "./CategorySuggestionModal";
+import { useSegments, Segment } from "@/hooks/useSegments";
 
 const productSchema = z.object({
   name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
@@ -71,6 +72,14 @@ export const ProductFormIntelligent = ({
   onSuccess,
   onCancel,
 }: ProductFormIntelligentProps) => {
+  const { segments, loading: loadingSegments } = useSegments();
+  const [localCategories, setLocalCategories] = useState<Category[]>(categories);
+  
+  // Sync local categories when prop changes
+  useEffect(() => {
+    setLocalCategories(categories);
+  }, [categories]);
+
   const [productType, setProductType] = useState<ProductType>(initialData?.product_type || 'single');
   const [imageUrl, setImageUrl] = useState<string>(initialData?.image_url || '');
   const [isSaving, setIsSaving] = useState(false);
@@ -353,23 +362,70 @@ export const ProductFormIntelligent = ({
                 <FormItem>
                   <FormLabel>Categoria</FormLabel>
                   <div className="flex gap-2">
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select 
+                      onValueChange={async (value) => {
+                        // Check if this is a segment (system category) that needs to be imported
+                        const segment = segments.find(s => s.id === value);
+                        if (segment) {
+                          // Check if already exists in local categories
+                          const existingLocal = localCategories.find(c => c.name === segment.name);
+                          if (existingLocal) {
+                            field.onChange(existingLocal.id);
+                          } else {
+                            // Import segment as local category
+                            try {
+                              const { data: newCategory, error } = await supabase
+                                .from('categories')
+                                .insert({
+                                  establishment_id: establishmentId,
+                                  name: segment.name,
+                                  is_active: true,
+                                })
+                                .select()
+                                .single();
+                              
+                              if (error) throw error;
+                              
+                              setLocalCategories(prev => [...prev, { id: newCategory.id, name: newCategory.name }]);
+                              field.onChange(newCategory.id);
+                              toast.success(`Categoria "${segment.name}" importada!`);
+                            } catch (error: any) {
+                              console.error('Error importing category:', error);
+                              toast.error('Erro ao importar categoria');
+                            }
+                          }
+                        } else {
+                          // It's already a local category
+                          field.onChange(value);
+                        }
+                      }} 
+                      value={field.value}
+                    >
                       <FormControl>
                         <SelectTrigger className="flex-1">
-                          <SelectValue placeholder="Selecione uma categoria" />
+                          <SelectValue placeholder={loadingSegments ? "Carregando..." : "Selecione uma categoria"} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {categories.map((cat) => (
-                          <SelectItem key={cat.id} value={cat.id}>
-                            {cat.name}
-                          </SelectItem>
-                        ))}
+                        {/* Show system categories (segments) */}
+                        {segments.map((segment) => {
+                          // Check if this segment already exists locally
+                          const localMatch = localCategories.find(c => c.name === segment.name);
+                          return (
+                            <SelectItem 
+                              key={segment.id} 
+                              value={localMatch ? localMatch.id : segment.id}
+                            >
+                              {segment.name}
+                            </SelectItem>
+                          );
+                        })}
                       </SelectContent>
                     </Select>
                     <CategorySuggestionModal
                       establishmentId={establishmentId}
-                      onCategoryCreated={(categoryId) => {
+                      onCategoryCreated={(categoryId, categoryName) => {
+                        setLocalCategories(prev => [...prev, { id: categoryId, name: categoryName || '' }]);
                         field.onChange(categoryId);
                       }}
                     />
