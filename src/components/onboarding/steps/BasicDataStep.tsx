@@ -22,7 +22,6 @@ import {
   FileText,
   Image,
   Instagram,
-  Home,
   Users,
   HelpCircle
 } from "lucide-react";
@@ -30,7 +29,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useVilas } from "@/hooks/useVilas";
 import { OnboardingData } from "../OnboardingWizard";
 import { ImageUpload } from "@/components/ImageUpload";
-import { CepAutocomplete, CepData } from "@/components/address/CepAutocomplete";
+import { SmartAddressInput, AddressData } from "@/components/address/SmartAddressInput";
 import { useServiceCities, validateServiceCity } from "@/hooks/useActiveRegion";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -75,16 +74,23 @@ const formatPhone = (value: string) => {
 
 export const BasicDataStep = ({ data, updateData, onNext, onBack }: BasicDataStepProps) => {
   const { vilas } = useVilas();
-  const { cities: serviceCities, loading: loadingCities } = useServiceCities();
+  const { cities: serviceCities } = useServiceCities();
   const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null);
   const [checkingSlug, setCheckingSlug] = useState(false);
-  const [cep, setCep] = useState("");
   const [cityValidation, setCityValidation] = useState<{ valid: boolean; message: string } | null>(null);
-  const [addressData, setAddressData] = useState({
-    address: "",
-    neighborhood: "",
-    city: "",
-    state: "",
+
+  // Address state for SmartAddressInput
+  const [addressState, setAddressState] = useState<AddressData>({
+    cep: data.zipCode || "",
+    address: data.address || "",
+    number: data.addressNumber || "",
+    complement: data.addressComplement || "",
+    neighborhood: data.neighborhood || "",
+    city: data.city || "",
+    state: data.state || "",
+    reference: "",
+    lat: data.latitude || undefined,
+    lng: data.longitude || undefined,
   });
 
   useEffect(() => {
@@ -113,16 +119,25 @@ export const BasicDataStep = ({ data, updateData, onNext, onBack }: BasicDataSte
     updateData({ subdomain: sanitized });
   };
 
-  const handleCepFound = (cepData: CepData) => {
-    setAddressData({
-      address: cepData.address,
-      neighborhood: cepData.neighborhood,
-      city: cepData.city,
-      state: cepData.state,
+  const handleAddressChange = (newAddress: AddressData) => {
+    setAddressState(newAddress);
+    
+    // Update onboarding data
+    updateData({
+      address: newAddress.address,
+      addressNumber: newAddress.number,
+      addressComplement: newAddress.complement,
+      neighborhood: newAddress.neighborhood,
+      city: newAddress.city,
+      state: newAddress.state,
+      zipCode: newAddress.cep,
+      latitude: newAddress.lat || null,
+      longitude: newAddress.lng || null,
     });
     
-    if (serviceCities.length > 0) {
-      const matchedCity = validateServiceCity(cepData.city, serviceCities);
+    // Validate city against service area
+    if (newAddress.city && serviceCities.length > 0) {
+      const matchedCity = validateServiceCity(newAddress.city, serviceCities);
       if (matchedCity) {
         setCityValidation({ 
           valid: true, 
@@ -334,69 +349,37 @@ export const BasicDataStep = ({ data, updateData, onNext, onBack }: BasicDataSte
       <Card className="p-6 space-y-4">
         <div className="flex items-center gap-2 mb-2">
           <MapPin className="w-5 h-5 text-primary" />
-          <h3 className="font-semibold">Localização</h3>
+          <h3 className="font-semibold">Localização do Estabelecimento</h3>
         </div>
 
-        <CepAutocomplete value={cep} onChange={setCep} onAddressFound={handleCepFound} />
-        
-        {addressData.address && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-            <div className="grid md:grid-cols-3 gap-3">
-              <div className="md:col-span-2">
-                <Label className="text-xs">Endereço</Label>
-                <Input value={addressData.address} readOnly className="bg-muted/50" />
-              </div>
-              <div>
-                <Label className="text-xs">Número *</Label>
-                <div className="relative">
-                  <Home className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input 
-                    placeholder="Nº" 
-                    className="pl-10" 
-                    value={data.addressNumber} 
-                    onChange={(e) => updateData({ addressNumber: e.target.value })}
-                  />
-                </div>
-              </div>
-            </div>
+        <p className="text-sm text-muted-foreground">
+          Use sua localização atual ou busque o endereço pelo mapa. Validaremos automaticamente com Google Maps.
+        </p>
 
-            <div className="grid md:grid-cols-3 gap-3">
-              <div>
-                <Label className="text-xs">Complemento</Label>
-                <Input 
-                  placeholder="Sala, bloco, apto..." 
-                  value={data.addressComplement} 
-                  onChange={(e) => updateData({ addressComplement: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label className="text-xs">Bairro</Label>
-                <Input value={addressData.neighborhood} readOnly className="bg-muted/50" />
-              </div>
-              <div>
-                <Label className="text-xs">Cidade/Estado</Label>
-                <Input value={`${addressData.city}/${addressData.state}`} readOnly className="bg-muted/50" />
-              </div>
-            </div>
+        <SmartAddressInput
+          value={addressState}
+          onChange={handleAddressChange}
+          showMap={true}
+          showGpsButton={true}
+          compact={false}
+        />
 
-            {cityValidation && (
-              <motion.div 
-                initial={{ opacity: 0, y: -10 }} 
-                animate={{ opacity: 1, y: 0 }} 
-                className={`flex items-start gap-2 text-sm p-3 rounded-lg ${
-                  cityValidation.valid 
-                    ? "bg-green-500/10 text-green-600 border border-green-500/20" 
-                    : "bg-destructive/10 text-destructive border border-destructive/20"
-                }`}
-              >
-                {cityValidation.valid ? (
-                  <Check className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                ) : (
-                  <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                )}
-                <span>{cityValidation.message}</span>
-              </motion.div>
+        {cityValidation && (
+          <motion.div 
+            initial={{ opacity: 0, y: -10 }} 
+            animate={{ opacity: 1, y: 0 }} 
+            className={`flex items-start gap-2 text-sm p-3 rounded-lg ${
+              cityValidation.valid 
+                ? "bg-green-500/10 text-green-600 border border-green-500/20" 
+                : "bg-destructive/10 text-destructive border border-destructive/20"
+            }`}
+          >
+            {cityValidation.valid ? (
+              <Check className="w-4 h-4 flex-shrink-0 mt-0.5" />
+            ) : (
+              <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
             )}
+            <span>{cityValidation.message}</span>
           </motion.div>
         )}
       </Card>
