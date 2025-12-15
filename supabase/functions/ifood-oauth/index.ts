@@ -54,15 +54,17 @@ serve(async (req) => {
       // Step 1: Generate user code for authorization
       console.log('[iFood OAuth] Generating user code...');
       
+      const params = new URLSearchParams({
+        clientId: IFOOD_CLIENT_ID,
+      });
+      
       const response = await fetch(`${IFOOD_API_BASE}/authentication/v1.0/oauth/userCode`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/x-www-form-urlencoded',
           'Accept': 'application/json',
         },
-        body: JSON.stringify({
-          clientId: IFOOD_CLIENT_ID,
-        }),
+        body: params.toString(),
       });
 
       if (!response.ok) {
