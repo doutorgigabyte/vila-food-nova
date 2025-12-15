@@ -165,32 +165,48 @@ export const BasicDataStep = ({ data, updateData, onNext, onBack }: BasicDataSte
           <Image className="w-5 h-5 text-primary" />
           <h3 className="font-semibold">Identidade Visual</h3>
         </div>
-        
-        <div className="flex flex-col md:flex-row gap-8 items-start">
+
+        <div className="grid gap-6 md:grid-cols-[220px_1fr]">
           {/* Logo */}
-          <div className="flex flex-col items-center gap-3">
-            <Label className="text-sm font-medium">Logo</Label>
-            <ImageUpload 
-              currentImage={data.logoUrl} 
-              onUpload={(url) => updateData({ logoUrl: url })} 
-              bucket="establishments" 
-              aspectRatio="square" 
-              className="w-28 h-28" 
-            />
-            <span className="text-xs text-muted-foreground">Quadrada, máx 2MB</span>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <Label className="text-sm font-medium">Logo</Label>
+              <span className="text-xs text-muted-foreground whitespace-nowrap">até 2MB</span>
+            </div>
+
+            <div className="w-32 sm:w-40">
+              <ImageUpload
+                currentImage={data.logoUrl}
+                onUpload={(url) => updateData({ logoUrl: url })}
+                bucket="establishments"
+                aspectRatio="square"
+                className="w-full"
+              />
+            </div>
+
+            <p className="text-xs text-muted-foreground">
+              Quadrada. Recomendado fundo transparente (PNG/WebP).
+            </p>
           </div>
 
           {/* Banner */}
-          <div className="flex-1 w-full space-y-3">
-            <Label className="text-sm font-medium">Banner (opcional)</Label>
-            <ImageUpload 
-              currentImage={data.bannerUrl} 
-              onUpload={(url) => updateData({ bannerUrl: url })} 
-              bucket="establishments" 
-              aspectRatio="video" 
-              className="w-full" 
+          <div className="space-y-3 min-w-0">
+            <div className="flex items-center justify-between gap-3">
+              <Label className="text-sm font-medium">Banner (opcional)</Label>
+              <span className="text-xs text-muted-foreground whitespace-nowrap">até 5MB</span>
+            </div>
+
+            <ImageUpload
+              currentImage={data.bannerUrl}
+              onUpload={(url) => updateData({ bannerUrl: url })}
+              bucket="establishments"
+              aspectRatio="video"
+              className="w-full"
             />
-            <span className="text-xs text-muted-foreground">Aparece no topo do cardápio • 16:9, máx 5MB</span>
+
+            <span className="text-xs text-muted-foreground">
+              Aparece no topo do cardápio • 16:9
+            </span>
           </div>
         </div>
       </Card>
