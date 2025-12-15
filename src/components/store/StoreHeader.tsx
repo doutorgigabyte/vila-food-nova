@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Home, Store, ShoppingCart, Info, User, Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getContrastColor } from "@/lib/colorUtils";
 
 interface StoreHeaderProps {
   activeTab: string;
@@ -22,11 +23,13 @@ export const StoreHeader = ({ activeTab, onTabChange, cartCount, primaryColor }:
   const bgStyle = primaryColor 
     ? { background: `linear-gradient(135deg, ${primaryColor} 0%, ${primaryColor}dd 100%)` }
     : {};
+  
+  const textColor = primaryColor ? getContrastColor(primaryColor) : undefined;
 
   return (
     <header 
       className="sticky top-0 z-50 bg-primary text-primary-foreground shadow-lg"
-      style={bgStyle}
+      style={{ ...bgStyle, color: textColor }}
     >
       <nav className="flex items-center justify-around py-2">
         {tabs.map((tab) => {

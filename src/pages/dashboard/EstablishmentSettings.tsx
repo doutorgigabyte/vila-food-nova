@@ -36,6 +36,7 @@ import {
   Globe
 } from "lucide-react";
 import { ImageUpload } from "@/components/ImageUpload";
+import { getContrastColor, hasGoodContrast } from "@/lib/colorUtils";
 import { NotificationSoundSelector } from "@/components/settings/NotificationSoundSelector";
 import { WhatsAppNotificationsConfig } from "@/components/settings/WhatsAppNotificationsConfig";
 import { AssociatedDriversList } from "@/components/settings/AssociatedDriversList";
@@ -160,6 +161,7 @@ interface Establishment {
   longitude: number | null;
   primary_color: string | null;
   secondary_color: string | null;
+  background_color: string | null;
   min_order_value: number | null;
   avg_delivery_time: number | null;
   delivery_base_fee: number | null;
@@ -195,6 +197,7 @@ const EstablishmentSettings = () => {
     zip_code: "",
     primary_color: "#ea384c",
     secondary_color: "#fbbf24",
+    background_color: "#ffffff",
     min_order_value: 0,
     avg_delivery_time: 30,
     delivery_base_fee: 5,
@@ -285,6 +288,7 @@ const EstablishmentSettings = () => {
         zip_code: data.zip_code || "",
         primary_color: data.primary_color || "#ea384c",
         secondary_color: data.secondary_color || "#fbbf24",
+        background_color: (data as any).background_color || "#ffffff",
         min_order_value: data.min_order_value || 0,
         avg_delivery_time: data.avg_delivery_time || 30,
         delivery_base_fee: data.delivery_base_fee || 5,
@@ -365,6 +369,7 @@ const EstablishmentSettings = () => {
           longitude: addressData.lng,
           primary_color: formData.primary_color,
           secondary_color: formData.secondary_color,
+          background_color: formData.background_color,
           min_order_value: formData.min_order_value,
           avg_delivery_time: formData.avg_delivery_time,
           delivery_base_fee: formData.delivery_base_fee,
@@ -744,56 +749,159 @@ const EstablishmentSettings = () => {
               <Card>
                 <CardHeader>
                   <CardTitle>Cores do Tema</CardTitle>
-                  <CardDescription>Personalize as cores do seu cardápio digital</CardDescription>
+                  <CardDescription>Personalize as cores do seu cardápio digital com 3 cores harmoniosas</CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <div className="grid gap-6 md:grid-cols-2">
+                <CardContent className="space-y-6">
+                  <div className="grid gap-6 md:grid-cols-3">
+                    {/* Primary Color */}
                     <div className="space-y-2">
-                      <Label htmlFor="primary_color">Cor Primária</Label>
+                      <Label htmlFor="primary_color" className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: formData.primary_color }} />
+                        Cor Primária
+                      </Label>
+                      <p className="text-xs text-muted-foreground">Botões principais, CTAs, destaques</p>
                       <div className="flex gap-2">
                         <Input
                           id="primary_color"
                           type="color"
                           value={formData.primary_color}
                           onChange={(e) => setFormData({ ...formData, primary_color: e.target.value })}
-                          className="w-16 h-10 p-1"
+                          className="w-14 h-10 p-1 cursor-pointer"
                         />
                         <Input
                           value={formData.primary_color}
                           onChange={(e) => setFormData({ ...formData, primary_color: e.target.value })}
-                          className="flex-1"
+                          className="flex-1 font-mono text-sm"
+                          placeholder="#ea384c"
                         />
                       </div>
                     </div>
+                    
+                    {/* Secondary Color */}
                     <div className="space-y-2">
-                      <Label htmlFor="secondary_color">Cor Secundária</Label>
+                      <Label htmlFor="secondary_color" className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: formData.secondary_color }} />
+                        Cor Secundária
+                      </Label>
+                      <p className="text-xs text-muted-foreground">Ícones, badges, elementos de apoio</p>
                       <div className="flex gap-2">
                         <Input
                           id="secondary_color"
                           type="color"
                           value={formData.secondary_color}
                           onChange={(e) => setFormData({ ...formData, secondary_color: e.target.value })}
-                          className="w-16 h-10 p-1"
+                          className="w-14 h-10 p-1 cursor-pointer"
                         />
                         <Input
                           value={formData.secondary_color}
                           onChange={(e) => setFormData({ ...formData, secondary_color: e.target.value })}
-                          className="flex-1"
+                          className="flex-1 font-mono text-sm"
+                          placeholder="#fbbf24"
+                        />
+                      </div>
+                    </div>
+                    
+                    {/* Background Color */}
+                    <div className="space-y-2">
+                      <Label htmlFor="background_color" className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full border" style={{ backgroundColor: formData.background_color }} />
+                        Cor de Fundo
+                      </Label>
+                      <p className="text-xs text-muted-foreground">Background de cards e áreas suaves</p>
+                      <div className="flex gap-2">
+                        <Input
+                          id="background_color"
+                          type="color"
+                          value={formData.background_color}
+                          onChange={(e) => setFormData({ ...formData, background_color: e.target.value })}
+                          className="w-14 h-10 p-1 cursor-pointer"
+                        />
+                        <Input
+                          value={formData.background_color}
+                          onChange={(e) => setFormData({ ...formData, background_color: e.target.value })}
+                          className="flex-1 font-mono text-sm"
+                          placeholder="#ffffff"
                         />
                       </div>
                     </div>
                   </div>
                   
+                  {/* Contrast Warning */}
+                  {(!hasGoodContrast(formData.primary_color, getContrastColor(formData.primary_color), true) ||
+                    !hasGoodContrast(formData.secondary_color, getContrastColor(formData.secondary_color), true)) && (
+                    <div className="p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg text-sm text-yellow-700 dark:text-yellow-400">
+                      ⚠️ Algumas cores podem ter baixo contraste. Verifique a prévia abaixo.
+                    </div>
+                  )}
+                  
                   {/* Preview */}
                   <div className="mt-6 p-6 rounded-lg border">
                     <p className="text-sm text-muted-foreground mb-4">Prévia do tema:</p>
-                    <div className="flex gap-4">
-                      <Button style={{ backgroundColor: formData.primary_color }}>
-                        Botão Primário
-                      </Button>
-                      <Button style={{ backgroundColor: formData.secondary_color, color: "#000" }}>
-                        Botão Secundário
-                      </Button>
+                    
+                    {/* Simulated Header */}
+                    <div 
+                      className="rounded-lg p-4 mb-4"
+                      style={{ backgroundColor: formData.primary_color }}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span 
+                          className="font-semibold"
+                          style={{ color: getContrastColor(formData.primary_color) }}
+                        >
+                          {formData.name || "Seu Estabelecimento"}
+                        </span>
+                        <div className="flex gap-2">
+                          <span 
+                            className="text-sm px-2 py-1 rounded"
+                            style={{ 
+                              backgroundColor: formData.secondary_color,
+                              color: getContrastColor(formData.secondary_color)
+                            }}
+                          >
+                            Aberto
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Simulated Content Card */}
+                    <div 
+                      className="rounded-lg p-4 border"
+                      style={{ backgroundColor: formData.background_color }}
+                    >
+                      <p 
+                        className="font-medium mb-3"
+                        style={{ color: getContrastColor(formData.background_color) }}
+                      >
+                        Produto Exemplo
+                      </p>
+                      <p 
+                        className="text-sm mb-4 opacity-70"
+                        style={{ color: getContrastColor(formData.background_color) }}
+                      >
+                        Descrição do produto com texto de exemplo.
+                      </p>
+                      <div className="flex gap-3">
+                        <Button 
+                          size="sm"
+                          style={{ 
+                            backgroundColor: formData.primary_color,
+                            color: getContrastColor(formData.primary_color)
+                          }}
+                        >
+                          Adicionar
+                        </Button>
+                        <Button 
+                          size="sm"
+                          variant="outline"
+                          style={{ 
+                            borderColor: formData.secondary_color,
+                            color: formData.secondary_color
+                          }}
+                        >
+                          Ver Detalhes
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </CardContent>
