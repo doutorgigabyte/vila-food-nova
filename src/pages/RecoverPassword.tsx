@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Utensils, Mail, ArrowLeft, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 const RecoverPassword = () => {
   const [email, setEmail] = useState("");
@@ -19,11 +20,25 @@ const RecoverPassword = () => {
       return;
     }
     setIsLoading(true);
-    setTimeout(() => {
+    
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/redefinir-senha`,
+      });
+      
+      if (error) {
+        console.error("Password reset error:", error);
+        toast.error("Erro ao enviar e-mail de recuperação. Tente novamente.");
+      } else {
+        setEmailSent(true);
+        toast.success("E-mail de recuperação enviado!");
+      }
+    } catch (err) {
+      console.error("Unexpected error:", err);
+      toast.error("Erro inesperado. Tente novamente.");
+    } finally {
       setIsLoading(false);
-      setEmailSent(true);
-      toast.success("E-mail de recuperação enviado!");
-    }, 1500);
+    }
   };
 
   return (
