@@ -169,7 +169,7 @@ const EstablishmentDashboard = () => {
               ID do usuário: {user?.id?.slice(0, 8)}...
             </p>
             <Button asChild>
-              <Link to="/cadastrar-estabelecimento">Cadastrar estabelecimento</Link>
+              <Link to="/cadastro-estabelecimento">Cadastrar estabelecimento</Link>
             </Button>
           </CardContent>
         </Card>

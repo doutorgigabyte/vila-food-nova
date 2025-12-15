@@ -203,7 +203,7 @@ export default function VilaTokTVSection() {
             </div>
 
             <Button asChild size="lg" className="w-full md:w-auto">
-              <Link to="/cadastrar-estabelecimento">
+              <Link to="/cadastro-estabelecimento">
                 Começar agora
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Link>
