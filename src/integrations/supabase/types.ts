@@ -2326,6 +2326,15 @@ export type Database = {
           avg_delivery_time: number | null
           avg_prep_time: number | null
           background_color: string | null
+          bank_account: string | null
+          bank_account_digit: string | null
+          bank_account_type: string | null
+          bank_agency: string | null
+          bank_agency_digit: string | null
+          bank_code: string | null
+          bank_holder_cpf_cnpj: string | null
+          bank_holder_name: string | null
+          bank_name: string | null
           banner_url: string | null
           city_id: string | null
           cnpj_cpf: string | null
@@ -2413,6 +2422,15 @@ export type Database = {
           avg_delivery_time?: number | null
           avg_prep_time?: number | null
           background_color?: string | null
+          bank_account?: string | null
+          bank_account_digit?: string | null
+          bank_account_type?: string | null
+          bank_agency?: string | null
+          bank_agency_digit?: string | null
+          bank_code?: string | null
+          bank_holder_cpf_cnpj?: string | null
+          bank_holder_name?: string | null
+          bank_name?: string | null
           banner_url?: string | null
           city_id?: string | null
           cnpj_cpf?: string | null
@@ -2500,6 +2518,15 @@ export type Database = {
           avg_delivery_time?: number | null
           avg_prep_time?: number | null
           background_color?: string | null
+          bank_account?: string | null
+          bank_account_digit?: string | null
+          bank_account_type?: string | null
+          bank_agency?: string | null
+          bank_agency_digit?: string | null
+          bank_code?: string | null
+          bank_holder_cpf_cnpj?: string | null
+          bank_holder_name?: string | null
+          bank_name?: string | null
           banner_url?: string | null
           city_id?: string | null
           cnpj_cpf?: string | null
