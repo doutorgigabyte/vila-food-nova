@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Wand2, Plus, Trash2, Loader2, Sparkles, Upload, Clock, MapPin, Link, ThermometerSnowflake, Calendar } from "lucide-react";
+import { Plus, Trash2, Loader2, Sparkles, Upload, Clock, MapPin, Link, ThermometerSnowflake, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -71,7 +71,6 @@ export const ProductFormIntelligent = ({
 }: ProductFormIntelligentProps) => {
   const [productType, setProductType] = useState<ProductType>(initialData?.product_type || 'single');
   const [imageUrl, setImageUrl] = useState<string>(initialData?.image_url || '');
-  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   // Pizza settings
@@ -137,46 +136,6 @@ export const ProductFormIntelligent = ({
       stock_quantity: initialData?.stock_quantity || undefined,
     },
   });
-
-  const handleAIAssist = async () => {
-    const name = form.getValues('name');
-    if (!name) {
-      toast.error('Digite o nome do produto primeiro');
-      return;
-    }
-
-    setIsGeneratingAI(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('ai-product-assistant', {
-        body: { 
-          action: 'suggest',
-          productName: name,
-          productType,
-          categories: categories.map(c => c.name),
-        },
-      });
-
-      if (error) throw error;
-
-      if (data.description) {
-        form.setValue('description', data.description);
-      }
-      if (data.category && categories.find(c => c.name === data.category)) {
-        const cat = categories.find(c => c.name === data.category);
-        if (cat) form.setValue('category_id', cat.id);
-      }
-      if (data.price) {
-        form.setValue('price', data.price);
-      }
-
-      toast.success('Sugestões aplicadas!');
-    } catch (error) {
-      console.error('AI assist error:', error);
-      toast.error('Erro ao gerar sugestões');
-    } finally {
-      setIsGeneratingAI(false);
-    }
-  };
 
   const addPizzaSize = () => {
     setPizzaSizes([...pizzaSizes, { name: '', price: 0, max_flavors: 1 }]);
@@ -312,31 +271,16 @@ export const ProductFormIntelligent = ({
               />
             </div>
 
-            {/* Nome com assistente IA */}
+            {/* Nome */}
             <FormField
               control={form.control}
               name="name"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Nome do Produto</FormLabel>
-                  <div className="flex gap-2">
-                    <FormControl>
-                      <Input placeholder="Ex: Pizza Calabresa" {...field} />
-                    </FormControl>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      onClick={handleAIAssist}
-                      disabled={isGeneratingAI}
-                    >
-                      {isGeneratingAI ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <Wand2 className="w-4 h-4" />
-                      )}
-                    </Button>
-                  </div>
+                  <FormControl>
+                    <Input placeholder="Ex: Pizza Calabresa" {...field} />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
@@ -361,7 +305,7 @@ export const ProductFormIntelligent = ({
               )}
             />
 
-            {/* Preço e Categoria */}
+            {/* Preço e Preço Promocional */}
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -371,10 +315,15 @@ export const ProductFormIntelligent = ({
                     <FormLabel>Preço (R$)</FormLabel>
                     <FormControl>
                       <Input 
-                        type="number" 
-                        step="0.01"
-                        {...field}
-                        onChange={e => field.onChange(parseFloat(e.target.value))}
+                        type="text"
+                        inputMode="decimal"
+                        placeholder="0,00"
+                        value={field.value ? field.value.toFixed(2).replace('.', ',') : ''}
+                        onChange={e => {
+                          const value = e.target.value.replace(/[^\d,]/g, '').replace(',', '.');
+                          const parsed = parseFloat(value);
+                          field.onChange(isNaN(parsed) ? 0 : parsed);
+                        }}
                       />
                     </FormControl>
                     <FormMessage />
@@ -390,12 +339,15 @@ export const ProductFormIntelligent = ({
                     <FormLabel>Preço Promocional (R$)</FormLabel>
                     <FormControl>
                       <Input 
-                        type="number" 
-                        step="0.01"
-                        placeholder="Opcional"
-                        {...field}
-                        value={field.value || ''}
-                        onChange={e => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                        type="text"
+                        inputMode="decimal"
+                        placeholder="0,00"
+                        value={field.value ? field.value.toFixed(2).replace('.', ',') : ''}
+                        onChange={e => {
+                          const value = e.target.value.replace(/[^\d,]/g, '').replace(',', '.');
+                          const parsed = parseFloat(value);
+                          field.onChange(isNaN(parsed) ? undefined : parsed);
+                        }}
                       />
                     </FormControl>
                     <FormMessage />
