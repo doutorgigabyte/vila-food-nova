@@ -20,7 +20,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ImageUpload } from "@/components/ImageUpload";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import { CategorySuggestionModal } from "./CategorySuggestionModal";
-import { useSegments, Segment } from "@/hooks/useSegments";
+import { useSegments, useEstablishmentMainCategory } from "@/hooks/useSegments";
 
 const productSchema = z.object({
   name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
@@ -72,7 +72,9 @@ export const ProductFormIntelligent = ({
   onSuccess,
   onCancel,
 }: ProductFormIntelligentProps) => {
-  const { segments, loading: loadingSegments } = useSegments();
+  // Get establishment's main category to filter segments
+  const { mainCategoryId, loading: loadingMainCategory } = useEstablishmentMainCategory(establishmentId);
+  const { segments, loading: loadingSegments } = useSegments(mainCategoryId);
   const [localCategories, setLocalCategories] = useState<Category[]>(categories);
   
   // Sync local categories when prop changes
@@ -403,7 +405,7 @@ export const ProductFormIntelligent = ({
                     >
                       <FormControl>
                         <SelectTrigger className="flex-1">
-                          <SelectValue placeholder={loadingSegments ? "Carregando..." : "Selecione uma categoria"} />
+                          <SelectValue placeholder={(loadingSegments || loadingMainCategory) ? "Carregando..." : "Selecione uma categoria"} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
