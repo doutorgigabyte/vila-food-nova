@@ -149,6 +149,7 @@ const AffiliateSettings = lazy(() => import("./pages/affiliate/AffiliateSettings
 
 // Driver app - lazy loaded
 const DriverApp = lazy(() => import("./pages/driver/DriverApp"));
+const DriverRegister = lazy(() => import("./pages/driver/DriverRegister"));
 
 const queryClient = new QueryClient();
 
@@ -378,6 +379,7 @@ const AppRoutes = () => {
               <Route path="/afiliado/configuracoes" element={<AffiliateSettings />} />
               {/* Driver app */}
               <Route path="/entregador" element={<DriverApp />} />
+              <Route path="/entregador/cadastro" element={<DriverRegister />} />
               {/* Public display routes */}
               <Route path="/display/tv/:token" element={<TVSlidePlayer />} />
               <Route path="/display/cozinha/:token" element={<PublicKitchenDisplay />} />

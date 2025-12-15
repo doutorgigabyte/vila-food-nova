@@ -1297,7 +1297,7 @@ export type Database = {
           complaint_count: number | null
           created_at: string | null
           email: string | null
-          establishment_id: string
+          establishment_id: string | null
           id: string
           is_active: boolean | null
           is_available: boolean | null
@@ -1316,7 +1316,7 @@ export type Database = {
           complaint_count?: number | null
           created_at?: string | null
           email?: string | null
-          establishment_id: string
+          establishment_id?: string | null
           id?: string
           is_active?: boolean | null
           is_available?: boolean | null
@@ -1335,7 +1335,7 @@ export type Database = {
           complaint_count?: number | null
           created_at?: string | null
           email?: string | null
-          establishment_id?: string
+          establishment_id?: string | null
           id?: string
           is_active?: boolean | null
           is_available?: boolean | null
@@ -1919,6 +1919,54 @@ export type Database = {
             columns: ["establishment_id"]
             isOneToOne: false
             referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      driver_invitation_tokens: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          establishment_id: string
+          expires_at: string
+          id: string
+          token: string
+          used_at: string | null
+          used_by: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          establishment_id: string
+          expires_at?: string
+          id?: string
+          token: string
+          used_at?: string | null
+          used_by?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          establishment_id?: string
+          expires_at?: string
+          id?: string
+          token?: string
+          used_at?: string | null
+          used_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_invitation_tokens_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_invitation_tokens_used_by_fkey"
+            columns: ["used_by"]
+            isOneToOne: false
+            referencedRelation: "delivery_drivers"
             referencedColumns: ["id"]
           },
         ]
