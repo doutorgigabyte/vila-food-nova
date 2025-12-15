@@ -362,39 +362,39 @@ export const SmartAddressInput = ({
         </div>
       )}
 
-      {/* 3. Google Places Search - BELOW MAP */}
-      <div className="space-y-2 relative">
+      <div className="space-y-2">
         <Label className="text-sm font-medium">Buscar endereço</Label>
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
           <Input
             placeholder="Digite o endereço completo..."
             value={searchQuery}
             onChange={(e) => handleSearchChange(e.target.value)}
             onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
-            onBlur={() => setTimeout(() => setShowSuggestions(false), 300)}
             className="pl-10"
           />
-        </div>
-
-        {showSuggestions && suggestions.length > 0 && (
-          <Card className="absolute z-50 w-full mt-1 max-h-60 overflow-auto shadow-lg">
-            <CardContent className="p-0">
+          
+          {/* Suggestions dropdown */}
+          {showSuggestions && suggestions.length > 0 && (
+            <div className="absolute left-0 right-0 z-[100] mt-1 max-h-60 overflow-auto bg-background border border-border rounded-lg shadow-xl">
               {suggestions.map((suggestion) => (
                 <button
                   key={suggestion.place_id}
                   type="button"
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => handleSelectSuggestion(suggestion.place_id, suggestion.description)}
-                  className="w-full px-4 py-3 text-left hover:bg-muted transition-colors border-b last:border-0 flex items-start gap-3"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleSelectSuggestion(suggestion.place_id, suggestion.description);
+                  }}
+                  className="w-full px-4 py-3 text-left hover:bg-accent transition-colors border-b border-border last:border-0 flex items-start gap-3 cursor-pointer"
                 >
                   <MapPin className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-                  <span className="text-sm">{suggestion.description}</span>
+                  <span className="text-sm text-foreground">{suggestion.description}</span>
                 </button>
               ))}
-            </CardContent>
-          </Card>
-        )}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* 4. Confirmed Address Banner */}
