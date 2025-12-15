@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import { useUserEstablishment } from "@/hooks/useDashboardData";
+import { usePayments } from "@/hooks/usePayments";
 import { 
   Search,
   Bell,
@@ -24,6 +25,7 @@ import {
   RefreshCw,
   History,
   Ban,
+  RotateCcw,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -78,6 +80,7 @@ const statusConfig: Record<OrderStatus, { label: string; color: string; icon: an
 const OrdersManagement = () => {
   const { slug } = useParams();
   const { establishmentId, establishment, loading: estLoading } = useUserEstablishment();
+  const { processRefund, loading: refundLoading } = usePayments({ establishmentId: establishmentId || undefined, autoFetch: false });
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("pending");
@@ -85,6 +88,7 @@ const OrdersManagement = () => {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
+  const [showRefundModal, setShowRefundModal] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [orderHistory, setOrderHistory] = useState<Array<{action: string; created_at: string; old_data: any; new_data: any}>>([]);
@@ -333,6 +337,35 @@ const OrdersManagement = () => {
     setSelectedOrder(order);
     setShowRejectModal(true);
     setRejectReason("");
+  };
+
+  const handleRefund = async () => {
+    if (!selectedOrder) return;
+    
+    // Check if order has a payment ID (mp_payment_id in metadata or similar)
+    const paymentId = (selectedOrder as any).mp_payment_id || (selectedOrder as any).metadata?.payment_id;
+    
+    if (!paymentId) {
+      toast.error('Este pedido não possui um pagamento online associado');
+      setShowRefundModal(false);
+      return;
+    }
+
+    const result = await processRefund(paymentId);
+    if (result?.success) {
+      setShowRefundModal(false);
+      setShowOrderModal(false);
+      fetchOrders();
+    }
+  };
+
+  const isOnlinePayment = (paymentMethod: string) => {
+    return ['pix', 'credit_card', 'debit_card'].includes(paymentMethod);
+  };
+
+  const canRefund = (order: Order) => {
+    return isOnlinePayment(order.payment_method) && 
+           (order.status === 'delivered' || order.status === 'cancelled');
   };
 
   return (
@@ -701,6 +734,16 @@ const OrdersManagement = () => {
                   <Printer className="w-4 h-4 mr-2" />
                   Imprimir
                 </Button>
+                {canRefund(selectedOrder) && (
+                  <Button 
+                    variant="outline" 
+                    className="text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20"
+                    onClick={() => setShowRefundModal(true)}
+                  >
+                    <RotateCcw className="w-4 h-4 mr-2" />
+                    Estornar
+                  </Button>
+                )}
               </div>
             </div>
           )}
@@ -734,6 +777,32 @@ const OrdersManagement = () => {
               onClick={() => selectedOrder && updateOrderStatus(selectedOrder.id, 'cancelled', rejectReason)}
             >
               Confirmar Rejeição
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Refund Modal */}
+      <Dialog open={showRefundModal} onOpenChange={setShowRefundModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Estornar Pagamento</DialogTitle>
+            <DialogDescription>
+              Confirma o estorno do pagamento do pedido #{selectedOrder?.order_number}?
+              O valor de R$ {selectedOrder?.total.toFixed(2)} será devolvido ao cliente.
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowRefundModal(false)}>
+              Cancelar
+            </Button>
+            <Button 
+              variant="destructive"
+              onClick={handleRefund}
+              disabled={refundLoading}
+            >
+              {refundLoading ? "Processando..." : "Confirmar Estorno"}
             </Button>
           </DialogFooter>
         </DialogContent>
