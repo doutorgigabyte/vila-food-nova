@@ -7,6 +7,8 @@ import { CheckCircle2, Settings, Clock } from "lucide-react";
 import { MercadoPagoOAuth } from "./MercadoPagoOAuth";
 import { PaymentMethodsConfig } from "./PaymentMethodsConfig";
 import { usePaymentConfig, PaymentMethodsConfig as PaymentConfig } from "@/hooks/usePaymentConfig";
+import mercadoPagoLogo from "@/assets/logos/mercado-pago.jpg";
+import pagbankLogo from "@/assets/logos/pagbank.jpg";
 
 interface PaymentGatewayCardsProps {
   establishmentId: string;
@@ -41,7 +43,7 @@ export function PaymentGatewayCards({ establishmentId, onRefresh }: PaymentGatew
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-xl bg-[#009EE3]/10 flex items-center justify-center">
                   <img 
-                    src="https://http2.mlstatic.com/frontend-assets/mp-web-navigation/ui-navigation/6.6.92/mercadopago/logo__large@2x.png" 
+                    src={mercadoPagoLogo} 
                     alt="Mercado Pago" 
                     className="w-8 h-8 object-contain"
                   />
@@ -83,13 +85,13 @@ export function PaymentGatewayCards({ establishmentId, onRefresh }: PaymentGatew
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-xl bg-[#FFC700]/10 flex items-center justify-center">
                   <img 
-                    src="https://logodownload.org/wp-content/uploads/2019/09/pagseguro-logo-0.png" 
-                    alt="PagSeguro" 
+                    src={pagbankLogo} 
+                    alt="PagBank" 
                     className="w-8 h-8 object-contain"
                   />
                 </div>
                 <div>
-                  <h3 className="font-semibold">PagSeguro</h3>
+                  <h3 className="font-semibold">PagBank</h3>
                   <p className="text-xs text-muted-foreground">
                     PIX e cartões via PagBank
                   </p>
@@ -115,7 +117,7 @@ export function PaymentGatewayCards({ establishmentId, onRefresh }: PaymentGatew
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <img 
-                src="https://http2.mlstatic.com/frontend-assets/mp-web-navigation/ui-navigation/6.6.92/mercadopago/logo__large@2x.png" 
+                src={mercadoPagoLogo} 
                 alt="Mercado Pago" 
                 className="w-6 h-6 object-contain"
               />
