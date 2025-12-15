@@ -12,11 +12,9 @@ import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { 
-  ExternalLink, 
   RefreshCw, 
   Unplug, 
   Download, 
-  Copy, 
   CheckCircle2, 
   XCircle, 
   Clock, 
@@ -24,6 +22,7 @@ import {
   Package,
   Tag,
   Loader2,
+  Link as LinkIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -36,20 +35,15 @@ const IFoodIntegration = () => {
     loading,
     importing,
     connectionStatus,
-    userCodeData,
     importStats,
     getStatus,
-    generateUserCode,
-    exchangeToken,
+    connect,
     disconnect,
     importCatalog,
     refreshToken,
-    setUserCodeData,
   } = useIFoodIntegration(establishment?.id);
 
-  const [authCode, setAuthCode] = useState("");
   const [merchantId, setMerchantId] = useState("");
-  const [step, setStep] = useState<'idle' | 'authorizing' | 'entering_code'>('idle');
 
   useEffect(() => {
     if (establishment?.id) {
@@ -57,49 +51,12 @@ const IFoodIntegration = () => {
     }
   }, [establishment?.id, getStatus]);
 
-  const handleStartConnection = async () => {
+  const handleConnect = async () => {
     try {
-      await generateUserCode();
-      setStep('authorizing');
+      await connect(merchantId.trim() || undefined);
     } catch {
       // Error already handled in hook
     }
-  };
-
-  const handleCopyCode = () => {
-    if (userCodeData?.userCode) {
-      navigator.clipboard.writeText(userCodeData.userCode);
-      toast.success('Código copiado!');
-    }
-  };
-
-  const handleOpenVerification = () => {
-    if (userCodeData?.verificationUrlComplete) {
-      window.open(userCodeData.verificationUrlComplete, '_blank');
-      setStep('entering_code');
-    }
-  };
-
-  const handleExchangeToken = async () => {
-    if (!authCode.trim()) {
-      toast.error('Insira o código de autorização');
-      return;
-    }
-    try {
-      await exchangeToken(authCode.trim(), userCodeData?.authorizationCodeVerifier, merchantId.trim() || undefined);
-      setStep('idle');
-      setAuthCode("");
-      setMerchantId("");
-    } catch {
-      // Error already handled in hook
-    }
-  };
-
-  const handleCancel = () => {
-    setStep('idle');
-    setUserCodeData(null);
-    setAuthCode("");
-    setMerchantId("");
   };
 
   const handleDisconnect = async () => {
@@ -191,6 +148,21 @@ const IFoodIntegration = () => {
                   </div>
                 </div>
                 
+                {!connectionStatus.merchantId && (
+                  <div className="space-y-2">
+                    <Label htmlFor="merchantIdInput">Merchant ID (necessário para importar)</Label>
+                    <Input
+                      id="merchantIdInput"
+                      placeholder="ID do seu merchant no iFood"
+                      value={merchantId}
+                      onChange={(e) => setMerchantId(e.target.value)}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Encontre no Portal do Parceiro iFood em Configurações → Informações da Loja
+                    </p>
+                  </div>
+                )}
+                
                 <Separator />
                 
                 <div className="flex flex-wrap gap-2">
@@ -212,116 +184,39 @@ const IFoodIntegration = () => {
                   </Button>
                 </div>
               </div>
-            ) : step === 'idle' ? (
+            ) : (
               <div className="space-y-4">
                 <Alert>
-                  <AlertTitle>Como funciona?</AlertTitle>
+                  <AlertTitle>Conecte ao iFood</AlertTitle>
                   <AlertDescription>
-                    <ol className="list-decimal list-inside space-y-1 mt-2 text-sm">
-                      <li>Clique em "Iniciar Conexão" para gerar um código</li>
-                      <li>Acesse o Portal do Parceiro iFood e autorize o aplicativo</li>
-                      <li>Cole o código de autorização recebido</li>
-                      <li>Importe seu cardápio automaticamente</li>
-                    </ol>
+                    Clique no botão abaixo para conectar sua loja ao iFood. 
+                    Opcionalmente, informe o Merchant ID para poder importar o cardápio.
                   </AlertDescription>
                 </Alert>
-                <Button onClick={handleStartConnection} disabled={loading}>
+
+                <div className="space-y-2">
+                  <Label htmlFor="merchantId">Merchant ID (opcional)</Label>
+                  <Input
+                    id="merchantId"
+                    placeholder="ID do seu merchant no iFood"
+                    value={merchantId}
+                    onChange={(e) => setMerchantId(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Encontre no Portal do Parceiro iFood em Configurações → Informações da Loja
+                  </p>
+                </div>
+
+                <Button onClick={handleConnect} disabled={loading}>
                   {loading ? (
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   ) : (
-                    <ExternalLink className="w-4 h-4 mr-2" />
+                    <LinkIcon className="w-4 h-4 mr-2" />
                   )}
-                  Iniciar Conexão
+                  Conectar ao iFood
                 </Button>
               </div>
-            ) : step === 'authorizing' && userCodeData ? (
-              <div className="space-y-4">
-                <Alert className="bg-primary/5 border-primary/20">
-                  <AlertTitle>Passo 1: Copie o código abaixo</AlertTitle>
-                  <AlertDescription className="mt-2">
-                    <div className="flex items-center gap-2 mt-2">
-                      <code className="px-4 py-2 bg-muted rounded-lg text-xl font-mono tracking-wider">
-                        {userCodeData.userCode}
-                      </code>
-                      <Button variant="outline" size="sm" onClick={handleCopyCode}>
-                        <Copy className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </AlertDescription>
-                </Alert>
-                
-                <Alert>
-                  <AlertTitle>Passo 2: Autorize no Portal iFood</AlertTitle>
-                  <AlertDescription>
-                    <p className="text-sm mt-1">
-                      Clique no botão abaixo para abrir o Portal do Parceiro iFood.
-                      Faça login e cole o código acima para autorizar o VilaFood.
-                    </p>
-                    <Button className="mt-3" onClick={handleOpenVerification}>
-                      <ExternalLink className="w-4 h-4 mr-2" />
-                      Abrir Portal iFood
-                    </Button>
-                  </AlertDescription>
-                </Alert>
-
-                <div className="flex gap-2">
-                  <Button variant="outline" onClick={handleCancel}>
-                    Cancelar
-                  </Button>
-                </div>
-              </div>
-            ) : step === 'entering_code' ? (
-              <div className="space-y-4">
-                <Alert className="bg-green-500/10 border-green-500/20">
-                  <CheckCircle2 className="w-4 h-4 text-green-500" />
-                  <AlertTitle>Passo 3: Cole o código de autorização</AlertTitle>
-                  <AlertDescription>
-                    <p className="text-sm mt-1">
-                      Após autorizar no Portal iFood, você receberá um código de autorização.
-                      Cole-o abaixo para concluir a conexão.
-                    </p>
-                  </AlertDescription>
-                </Alert>
-
-                <div className="space-y-3">
-                  <div>
-                    <Label htmlFor="authCode">Código de Autorização *</Label>
-                    <Input
-                      id="authCode"
-                      placeholder="Cole o authorization code aqui"
-                      value={authCode}
-                      onChange={(e) => setAuthCode(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="merchantId">Merchant ID (opcional)</Label>
-                    <Input
-                      id="merchantId"
-                      placeholder="ID do seu merchant no iFood"
-                      value={merchantId}
-                      onChange={(e) => setMerchantId(e.target.value)}
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Você pode encontrar isso no Portal do Parceiro iFood
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex gap-2">
-                  <Button onClick={handleExchangeToken} disabled={loading || !authCode.trim()}>
-                    {loading ? (
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    ) : (
-                      <CheckCircle2 className="w-4 h-4 mr-2" />
-                    )}
-                    Conectar
-                  </Button>
-                  <Button variant="outline" onClick={handleCancel}>
-                    Cancelar
-                  </Button>
-                </div>
-              </div>
-            ) : null}
+            )}
           </CardContent>
         </Card>
 
@@ -398,12 +293,12 @@ const IFoodIntegration = () => {
               Você pode encontrá-lo no Portal do Parceiro iFood, nas configurações da sua loja.
             </p>
             <p>
-              <strong>Código de Autorização:</strong> Após autorizar o VilaFood no Portal do Parceiro, 
-              o iFood exibirá um código que você deve colar aqui para concluir a conexão.
-            </p>
-            <p>
               <strong>Sincronização:</strong> A importação traz categorias e produtos do iFood para o VilaFood. 
               Produtos já importados serão atualizados.
+            </p>
+            <p>
+              <strong>Token:</strong> O token de acesso expira periodicamente. 
+              Se houver problemas, clique em "Renovar Token".
             </p>
           </CardContent>
         </Card>

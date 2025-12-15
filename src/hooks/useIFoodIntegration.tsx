@@ -10,14 +10,6 @@ interface IFoodConnectionStatus {
   tokenExpiresAt: string | null;
 }
 
-interface UserCodeResponse {
-  userCode: string;
-  authorizationCodeVerifier: string;
-  verificationUrl: string;
-  verificationUrlComplete: string;
-  expiresIn: number;
-}
-
 interface ImportStats {
   categoriesImported: number;
   categoriesUpdated: number;
@@ -30,7 +22,6 @@ export function useIFoodIntegration(establishmentId: string | undefined) {
   const [loading, setLoading] = useState(false);
   const [importing, setImporting] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<IFoodConnectionStatus | null>(null);
-  const [userCodeData, setUserCodeData] = useState<UserCodeResponse | null>(null);
   const [importStats, setImportStats] = useState<ImportStats | null>(null);
 
   const getStatus = useCallback(async () => {
@@ -75,7 +66,7 @@ export function useIFoodIntegration(establishmentId: string | undefined) {
     }
   }, [establishmentId]);
 
-  const generateUserCode = useCallback(async () => {
+  const connect = useCallback(async (merchantId?: string) => {
     if (!establishmentId) return;
     
     setLoading(true);
@@ -84,54 +75,8 @@ export function useIFoodIntegration(establishmentId: string | undefined) {
       
       const { data, error } = await supabase.functions.invoke('ifood-oauth', {
         body: {
-          action: 'generate_user_code',
+          action: 'connect',
           establishmentId,
-        },
-        headers: {
-          Authorization: `Bearer ${sessionData.session?.access_token}`,
-        },
-      });
-
-      if (error) throw error;
-      
-      if (data.success) {
-        setUserCodeData({
-          userCode: data.userCode,
-          authorizationCodeVerifier: data.authorizationCodeVerifier,
-          verificationUrl: data.verificationUrl,
-          verificationUrlComplete: data.verificationUrlComplete,
-          expiresIn: data.expiresIn,
-        });
-        return data;
-      } else {
-        throw new Error(data.error || 'Failed to generate user code');
-      }
-    } catch (err: any) {
-      console.error('Error generating user code:', err);
-      toast.error(err.message || 'Erro ao gerar código de autorização');
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, [establishmentId]);
-
-  const exchangeToken = useCallback(async (
-    authorizationCode: string,
-    authorizationCodeVerifier?: string,
-    merchantId?: string
-  ) => {
-    if (!establishmentId) return;
-
-    setLoading(true);
-    try {
-      const { data: sessionData } = await supabase.auth.getSession();
-
-      const { data, error } = await supabase.functions.invoke('ifood-oauth', {
-        body: {
-          action: 'exchange_token',
-          establishmentId,
-          authorizationCode,
-          authorizationCodeVerifier,
           merchantId,
         },
         headers: {
@@ -143,14 +88,13 @@ export function useIFoodIntegration(establishmentId: string | undefined) {
       
       if (data.success) {
         toast.success('iFood conectado com sucesso!');
-        setUserCodeData(null);
         await getStatus();
         return data;
       } else {
-        throw new Error(data.error || 'Failed to exchange token');
+        throw new Error(data.error || 'Failed to connect');
       }
     } catch (err: any) {
-      console.error('Error exchanging token:', err);
+      console.error('Error connecting to iFood:', err);
       toast.error(err.message || 'Erro ao conectar iFood');
       throw err;
     } finally {
@@ -264,14 +208,11 @@ export function useIFoodIntegration(establishmentId: string | undefined) {
     loading,
     importing,
     connectionStatus,
-    userCodeData,
     importStats,
     getStatus,
-    generateUserCode,
-    exchangeToken,
+    connect,
     disconnect,
     importCatalog,
     refreshToken,
-    setUserCodeData,
   };
 }
