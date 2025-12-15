@@ -41,11 +41,11 @@ export function PaymentGatewayCards({ establishmentId, onRefresh }: PaymentGatew
           <CardContent className="p-6">
             <div className="flex items-start justify-between mb-4">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-[#009EE3]/10 flex items-center justify-center">
+                <div className="w-12 h-12 rounded-xl bg-[#009EE3]/10 flex items-center justify-center overflow-hidden">
                   <img 
                     src={mercadoPagoLogo} 
                     alt="Mercado Pago" 
-                    className="w-8 h-8 object-contain"
+                    className="w-full h-full object-cover"
                   />
                 </div>
                 <div>
@@ -83,11 +83,11 @@ export function PaymentGatewayCards({ establishmentId, onRefresh }: PaymentGatew
           <CardContent className="p-6">
             <div className="flex items-start justify-between mb-4">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-[#FFC700]/10 flex items-center justify-center">
+                <div className="w-12 h-12 rounded-xl bg-[#FFC700]/10 flex items-center justify-center overflow-hidden">
                   <img 
                     src={pagbankLogo} 
                     alt="PagBank" 
-                    className="w-8 h-8 object-contain"
+                    className="w-full h-full object-cover"
                   />
                 </div>
                 <div>
@@ -116,11 +116,13 @@ export function PaymentGatewayCards({ establishmentId, onRefresh }: PaymentGatew
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <img 
-                src={mercadoPagoLogo} 
-                alt="Mercado Pago" 
-                className="w-6 h-6 object-contain"
-              />
+              <div className="w-6 h-6 rounded overflow-hidden">
+                <img 
+                  src={mercadoPagoLogo} 
+                  alt="Mercado Pago" 
+                  className="w-full h-full object-cover"
+                />
+              </div>
               Configurar Mercado Pago
             </DialogTitle>
           </DialogHeader>
