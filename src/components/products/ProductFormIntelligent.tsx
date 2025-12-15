@@ -207,9 +207,13 @@ export const ProductFormIntelligent = ({
     setIsSaving(true);
     try {
       const productCategory = getProductCategory(productType);
-      
+
+      // Avoid sending empty string to uuid columns
+      const normalizedCategoryId = data.category_id?.trim() ? data.category_id.trim() : null;
+
       const productData: any = {
         ...data,
+        category_id: normalizedCategoryId,
         establishment_id: establishmentId,
         image_url: imageUrl || null,
         product_type: productType,
