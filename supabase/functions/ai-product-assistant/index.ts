@@ -57,6 +57,27 @@ Sugira descrição, categoria e preço para este produto.`;
       if (!response.ok) {
         const errorText = await response.text();
         console.error('AI Gateway error:', response.status, errorText);
+        
+        if (response.status === 402) {
+          return new Response(JSON.stringify({ 
+            error: 'Créditos de IA esgotados. Acesse Configurações > Workspace > Uso para adicionar créditos.',
+            code: 'INSUFFICIENT_CREDITS'
+          }), {
+            status: 402,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        
+        if (response.status === 429) {
+          return new Response(JSON.stringify({ 
+            error: 'Limite de requisições excedido. Tente novamente em alguns segundos.',
+            code: 'RATE_LIMITED'
+          }), {
+            status: 429,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        
         throw new Error(`Erro na API de IA: ${response.status}`);
       }
 
