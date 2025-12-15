@@ -78,7 +78,10 @@ serve(async (req) => {
 
     const isSuperAdmin = !!userRole;
 
-    // If not super_admin, establishmentId is required
+    // Check for special onboarding case - user is creating a new establishment
+    const isOnboarding = establishmentId === 'onboarding';
+
+    // If not super_admin and not onboarding, establishmentId is required
     if (!establishmentId || establishmentId === 'general') {
       if (!isSuperAdmin) {
         return new Response(
@@ -87,6 +90,10 @@ serve(async (req) => {
         );
       }
       // Super admin uploading without establishment - use 'system' folder
+    } else if (isOnboarding) {
+      // Onboarding: authenticated user is creating a new establishment
+      // Use their user ID as folder to keep files organized
+      console.log(`Onboarding upload for user: ${user.id}`);
     } else {
       // Verify establishment exists and user has access
       const { data: establishment, error: estError } = await supabaseAdmin
@@ -110,10 +117,16 @@ serve(async (req) => {
       }
     }
 
-    // Use establishmentId or 'system' for super_admin without establishment
-    const uploadEstablishmentId = establishmentId && establishmentId !== 'general' 
-      ? establishmentId 
-      : 'system';
+    // Determine the folder for upload
+    let uploadEstablishmentId: string;
+    if (isOnboarding) {
+      // For onboarding, use 'onboarding/{user_id}' pattern
+      uploadEstablishmentId = `onboarding/${user.id}`;
+    } else if (establishmentId && establishmentId !== 'general') {
+      uploadEstablishmentId = establishmentId;
+    } else {
+      uploadEstablishmentId = 'system';
+    }
 
     // SECURITY: Validate file size based on type
     const isVideo = ALLOWED_VIDEO_CONTENT_TYPES.includes(file.type);

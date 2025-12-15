@@ -181,6 +181,7 @@ export const BasicDataStep = ({ data, updateData, onNext, onBack }: BasicDataSte
                 bucket="establishments"
                 aspectRatio="square"
                 className="w-full"
+                establishmentId="onboarding"
               />
             </div>
 
@@ -202,6 +203,7 @@ export const BasicDataStep = ({ data, updateData, onNext, onBack }: BasicDataSte
               bucket="establishments"
               aspectRatio="video"
               className="w-full"
+              establishmentId="onboarding"
             />
 
             <span className="text-xs text-muted-foreground">

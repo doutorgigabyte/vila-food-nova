@@ -89,6 +89,7 @@ export const FirstProductStep = ({ data, updateData, onNext, onBack, onSkip }: F
             bucket="products"
             aspectRatio="square"
             className="w-32 h-32"
+            establishmentId="onboarding"
           />
         </div>
 
