@@ -31,7 +31,6 @@ import {
   XCircle,
   Loader2,
   Share2,
-  Bot,
   Instagram,
   Globe
 } from "lucide-react";
@@ -119,11 +118,6 @@ const EstablishmentSettings = () => {
     youtube_url: "",
     website_url: "",
   });
-  
-  // AI Agent state (stored in whatsapp_instances)
-  const [aiEnabled, setAiEnabled] = useState(false);
-  const [aiPrompt, setAiPrompt] = useState("");
-  const [whatsappInstanceId, setWhatsappInstanceId] = useState<string | null>(null);
   
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [bannerUrl, setBannerUrl] = useState<string | null>(null);
@@ -218,20 +212,6 @@ const EstablishmentSettings = () => {
       });
       setLogoUrl(data.logo_url);
       setBannerUrl(data.banner_url);
-      
-      // Fetch AI settings from whatsapp_instances
-      const { data: instanceData } = await supabase
-        .from("whatsapp_instances")
-        .select("id, ai_enabled, ai_prompt")
-        .eq("establishment_id", data.id)
-        .maybeSingle();
-      
-      if (instanceData) {
-        setWhatsappInstanceId(instanceData.id);
-        setAiEnabled(instanceData.ai_enabled ?? false);
-        setAiPrompt(instanceData.ai_prompt || "");
-      }
-      setBannerUrl(data.banner_url);
       setAddressData({
         cep: data.zip_code || "",
         address: data.address || "",
@@ -314,20 +294,6 @@ const EstablishmentSettings = () => {
           updated_at: new Date().toISOString(),
         })
         .eq("id", establishment.id);
-
-      if (error) throw error;
-
-      // Save AI settings to whatsapp_instances
-      if (whatsappInstanceId) {
-        await supabase
-          .from("whatsapp_instances")
-          .update({
-            ai_enabled: aiEnabled,
-            ai_prompt: aiPrompt,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", whatsappInstanceId);
-      }
 
       toast.success("Configurações salvas com sucesso!");
     } catch (error) {
@@ -431,13 +397,9 @@ const EstablishmentSettings = () => {
                 <Share2 className="w-4 h-4" />
                 <span className="hidden sm:inline">Redes</span>
               </TabsTrigger>
-              <TabsTrigger value="ai" className="gap-2 text-xs sm:text-sm">
-                <Bot className="w-4 h-4" />
-                <span className="hidden sm:inline">IA</span>
-              </TabsTrigger>
               <TabsTrigger value="notifications" className="gap-2 text-xs sm:text-sm">
                 <Bell className="w-4 h-4" />
-                <span className="hidden sm:inline">Alertas</span>
+                <span className="hidden sm:inline">Sons e Alertas</span>
               </TabsTrigger>
               <TabsTrigger value="drivers" className="gap-2 text-xs sm:text-sm">
                 <Users className="w-4 h-4" />
@@ -921,55 +883,7 @@ const EstablishmentSettings = () => {
               </Card>
             </TabsContent>
 
-            {/* AI Agent Tab */}
-            <TabsContent value="ai">
-              <div className="grid gap-6 md:grid-cols-2">
-                <Card className="md:col-span-2">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Bot className="w-5 h-5" />
-                      Agente de IA
-                    </CardTitle>
-                    <CardDescription>Configure o comportamento do seu assistente virtual via WhatsApp</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {!whatsappInstanceId && (
-                      <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg text-sm text-yellow-700 dark:text-yellow-400">
-                        ⚠️ Você precisa configurar uma instância WhatsApp primeiro para usar o Agente IA.
-                      </div>
-                    )}
-                    <div className="flex items-center justify-between p-4 border rounded-lg">
-                      <div>
-                        <p className="font-medium">Ativar Agente IA</p>
-                        <p className="text-sm text-muted-foreground">Permitir que o bot responda automaticamente no WhatsApp</p>
-                      </div>
-                      <Switch
-                        checked={aiEnabled}
-                        onCheckedChange={setAiEnabled}
-                        disabled={!whatsappInstanceId}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="ai_prompt">Prompt do Sistema (Personalidade do Bot)</Label>
-                      <Textarea
-                        id="ai_prompt"
-                        placeholder="Você é um atendente amigável de uma lanchonete. Responda de forma cordial e ajude o cliente a fazer pedidos..."
-                        value={aiPrompt}
-                        onChange={(e) => setAiPrompt(e.target.value)}
-                        rows={6}
-                        className="font-mono text-sm"
-                        disabled={!whatsappInstanceId}
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Este texto define como o bot deve se comportar. Inclua instruções sobre tom de voz, produtos em destaque, e como lidar com dúvidas.
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </TabsContent>
-
-            {/* Notifications Tab */}
+            {/* Notifications Tab - Sons e Alertas */}
             <TabsContent value="notifications">
               <div className="grid gap-6 md:grid-cols-2">
                 <NotificationSoundSelector
@@ -989,8 +903,8 @@ const EstablishmentSettings = () => {
               </div>
               <div className="mt-6 p-4 border rounded-lg bg-muted/30">
                 <p className="text-sm text-muted-foreground">
-                  <strong>Nota:</strong> Todas as notificações são internas (dentro da plataforma) ou via WhatsApp. 
-                  E-mail é usado apenas para validação de conta.
+                  <strong>💡 Dica:</strong> Estas são notificações que <strong>você recebe</strong> (novos pedidos, alertas do sistema). 
+                  Para configurar o chatbot e atendimento automático, acesse <strong>WhatsApp</strong> no menu lateral.
                 </p>
               </div>
             </TabsContent>

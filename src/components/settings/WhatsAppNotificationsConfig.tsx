@@ -117,10 +117,10 @@ export const WhatsAppNotificationsConfig = ({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <MessageCircle className="w-5 h-5 text-green-500" />
-          Notificações por WhatsApp
+          Alertas para Você (WhatsApp)
         </CardTitle>
         <CardDescription>
-          Receba alertas importantes diretamente no seu WhatsApp
+          Receba alertas de novos pedidos e eventos importantes diretamente no seu WhatsApp pessoal
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">

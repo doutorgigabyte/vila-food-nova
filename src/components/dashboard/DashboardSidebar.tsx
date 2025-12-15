@@ -138,7 +138,7 @@ const getMenuGroups = (baseUrl: string): MenuGroup[] => [
     icon: Brain,
     items: [
       { icon: Brain, label: "Diagnóstico IA", href: `${baseUrl}/analise-ia`, badge: "Novo" },
-      { icon: MessageSquare, label: "WhatsApp IA", href: `${baseUrl}/whatsapp` },
+      { icon: MessageSquare, label: "WhatsApp", href: `${baseUrl}/whatsapp` },
       { icon: BarChart3, label: "Relatórios", href: `${baseUrl}/relatorios` },
       { icon: LineChart, label: "Pixels Analytics", href: `${baseUrl}/pixels` },
       { icon: Headphones, label: "Suporte", href: `${baseUrl}/suporte`, badge: "Novo" },
