@@ -29,7 +29,8 @@ import {
   Image,
   Wallet,
   MessageCircle,
-  FileText
+  FileText,
+  Lightbulb
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import logo from "@/assets/logo.png";
@@ -72,12 +73,13 @@ const navItems: NavItem[] = [
   { icon: CreditCard, label: "Planos", href: "/admin/planos" },
   { icon: Gift, label: "Assinaturas", href: "/admin/assinaturas" },
   { icon: Ticket, label: "Vouchers", href: "/admin/vouchers" },
-  { 
+{ 
     icon: ShoppingCart, 
     label: "Catálogo",
     children: [
       { icon: Package, label: "Produtos", href: "/admin/produtos" },
       { icon: Layers, label: "Categorias", href: "/admin/categorias" },
+      { icon: Lightbulb, label: "Sugestões", href: "/admin/sugestoes-categorias" },
       { icon: ShoppingCart, label: "Pedidos", href: "/admin/pedidos" },
     ]
   },

@@ -119,6 +119,7 @@ const SegmentsManagement = lazy(() => import("./pages/admin/SegmentsManagement")
 const MainCategoriesManagement = lazy(() => import("./pages/admin/MainCategoriesManagement"));
 const AdminProductsManagement = lazy(() => import("./pages/admin/AdminProductsManagement"));
 const AdminCategoriesManagement = lazy(() => import("./pages/admin/AdminCategoriesManagement"));
+const CategorySuggestionsManagement = lazy(() => import("./pages/admin/CategorySuggestionsManagement"));
 const AdminOrdersManagement = lazy(() => import("./pages/admin/AdminOrdersManagement"));
 const AdminVouchersManagement = lazy(() => import("./pages/admin/AdminVouchersManagement"));
 const DataMigration = lazy(() => import("./pages/admin/DataMigration"));
@@ -361,6 +362,7 @@ const AppRoutes = () => {
               <Route path="/admin/categorias-principais" element={<ProtectedAdminRoute><MainCategoriesManagement /></ProtectedAdminRoute>} />
               <Route path="/admin/produtos" element={<ProtectedAdminRoute><AdminProductsManagement /></ProtectedAdminRoute>} />
               <Route path="/admin/categorias" element={<ProtectedAdminRoute><AdminCategoriesManagement /></ProtectedAdminRoute>} />
+              <Route path="/admin/sugestoes-categorias" element={<ProtectedAdminRoute><CategorySuggestionsManagement /></ProtectedAdminRoute>} />
               <Route path="/admin/pedidos" element={<ProtectedAdminRoute><AdminOrdersManagement /></ProtectedAdminRoute>} />
               <Route path="/admin/vouchers" element={<ProtectedAdminRoute><AdminVouchersManagement /></ProtectedAdminRoute>} />
               <Route path="/admin/migracao" element={<DataMigration />} />
