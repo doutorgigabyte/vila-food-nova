@@ -8,12 +8,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Wallet, Plus, TrendingUp, TrendingDown, DollarSign, CreditCard, Banknote, Check, X, Calendar } from "lucide-react";
+import { Wallet, Plus, TrendingUp, TrendingDown, DollarSign, CreditCard, Banknote, Check, X, Calendar, Building2, History } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { format, parseISO, isAfter, isBefore, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { BankAccountSettings } from "@/components/financial/BankAccountSettings";
+import { TransactionHistory } from "@/components/financial/TransactionHistory";
+import { usePayments } from "@/hooks/usePayments";
 
 interface Account {
   id: string;
@@ -55,6 +58,12 @@ const AdvancedFinanceManagement = () => {
   const [accountDialogOpen, setAccountDialogOpen] = useState(false);
   const [transactionDialogOpen, setTransactionDialogOpen] = useState(false);
   const [establishmentId, setEstablishmentId] = useState<string | null>(null);
+  const [activeMainTab, setActiveMainTab] = useState("overview");
+  
+  const { processRefund, loading: refundLoading } = usePayments({ 
+    establishmentId: establishmentId || undefined, 
+    autoFetch: false 
+  });
   
   const [accountForm, setAccountForm] = useState({ name: "", type: "bank", balance: 0 });
   const [transactionForm, setTransactionForm] = useState({
@@ -66,6 +75,13 @@ const AdvancedFinanceManagement = () => {
     due_date: "",
     status: "pending"
   });
+
+  const handleRefund = async (transactionId: string, paymentId: string) => {
+    const result = await processRefund(paymentId);
+    if (result?.success) {
+      toast.success('Estorno realizado com sucesso');
+    }
+  };
 
   useEffect(() => {
     fetchData();
@@ -247,7 +263,23 @@ const AdvancedFinanceManagement = () => {
         </Card>
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-6 mt-6">
+      {/* Main Tabs */}
+      <Tabs value={activeMainTab} onValueChange={setActiveMainTab} className="mt-6">
+        <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-flex">
+          <TabsTrigger value="overview">Visão Geral</TabsTrigger>
+          <TabsTrigger value="mp_transactions" className="flex items-center gap-1">
+            <History className="h-4 w-4" />
+            <span className="hidden sm:inline">Transações MP</span>
+          </TabsTrigger>
+          <TabsTrigger value="bank" className="flex items-center gap-1">
+            <Building2 className="h-4 w-4" />
+            <span className="hidden sm:inline">Contas Bancárias</span>
+          </TabsTrigger>
+          <TabsTrigger value="internal">Contas Internas</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview" className="mt-6">
+          <div className="grid lg:grid-cols-3 gap-6">
         {/* Accounts */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -489,6 +521,101 @@ const AdvancedFinanceManagement = () => {
           </CardContent>
         </Card>
       </div>
+        </TabsContent>
+
+        <TabsContent value="mp_transactions">
+          {establishmentId && (
+            <TransactionHistory 
+              establishmentId={establishmentId} 
+              onRefund={handleRefund}
+            />
+          )}
+        </TabsContent>
+
+        <TabsContent value="bank">
+          {establishmentId && (
+            <BankAccountSettings establishmentId={establishmentId} />
+          )}
+        </TabsContent>
+
+        <TabsContent value="internal">
+          <div className="grid lg:grid-cols-3 gap-6">
+            {/* Accounts Card - moved here */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-lg">Contas Internas</CardTitle>
+                <Dialog open={accountDialogOpen} onOpenChange={setAccountDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button size="sm"><Plus className="w-4 h-4" /></Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Nova Conta</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div>
+                        <Label>Nome</Label>
+                        <Input
+                          value={accountForm.name}
+                          onChange={(e) => setAccountForm({ ...accountForm, name: e.target.value })}
+                          placeholder="Ex: Conta Corrente"
+                        />
+                      </div>
+                      <div>
+                        <Label>Tipo</Label>
+                        <Select value={accountForm.type} onValueChange={(v) => setAccountForm({ ...accountForm, type: v })}>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {accountTypes.map((t) => (
+                              <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label>Saldo Inicial</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={accountForm.balance}
+                          onChange={(e) => setAccountForm({ ...accountForm, balance: parseFloat(e.target.value) || 0 })}
+                        />
+                      </div>
+                      <Button onClick={createAccount} className="w-full">Criar Conta</Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {accounts.length === 0 ? (
+                  <p className="text-muted-foreground text-sm text-center py-4">Nenhuma conta interna</p>
+                ) : (
+                  accounts.map((account) => {
+                    const typeInfo = accountTypes.find(t => t.value === account.type);
+                    const Icon = typeInfo?.icon || Wallet;
+                    return (
+                      <div key={account.id} className="p-3 bg-muted/50 rounded-lg flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <Icon className="w-5 h-5 text-muted-foreground" />
+                          <div>
+                            <p className="font-medium">{account.name}</p>
+                            <p className="text-xs text-muted-foreground">{typeInfo?.label}</p>
+                          </div>
+                        </div>
+                        <p className={`font-bold ${account.balance >= 0 ? "text-green-600" : "text-red-600"}`}>
+                          R$ {account.balance.toFixed(2)}
+                        </p>
+                      </div>
+                    );
+                  })
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+      </Tabs>
     </DashboardLayout>
   );
 };
