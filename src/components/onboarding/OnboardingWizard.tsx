@@ -20,6 +20,7 @@ export interface OnboardingData {
   
   // Step 2 - Subcategories
   selectedSegments: string[];
+  customSegment: string;
   
   // Step 3 - Basic Data
   establishmentName: string;
@@ -50,6 +51,7 @@ const initialData: OnboardingData = {
   mainCategoryId: "",
   mainCategoryName: "",
   selectedSegments: [],
+  customSegment: "",
   establishmentName: "",
   phone: "",
   whatsapp: "",
