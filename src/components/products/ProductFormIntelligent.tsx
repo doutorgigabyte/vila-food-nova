@@ -18,6 +18,7 @@ import { ProductAdditionalsManager, ProductAdditional } from "./ProductAdditiona
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { ImageUpload } from "@/components/ImageUpload";
+import { CurrencyInput } from "@/components/ui/currency-input";
 
 const productSchema = z.object({
   name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
@@ -314,16 +315,10 @@ export const ProductFormIntelligent = ({
                   <FormItem>
                     <FormLabel>Preço (R$)</FormLabel>
                     <FormControl>
-                      <Input 
-                        type="text"
-                        inputMode="decimal"
+                      <CurrencyInput
+                        value={field.value}
+                        onChange={field.onChange}
                         placeholder="0,00"
-                        value={field.value ? field.value.toFixed(2).replace('.', ',') : ''}
-                        onChange={e => {
-                          const value = e.target.value.replace(/[^\d,]/g, '').replace(',', '.');
-                          const parsed = parseFloat(value);
-                          field.onChange(isNaN(parsed) ? 0 : parsed);
-                        }}
                       />
                     </FormControl>
                     <FormMessage />
@@ -338,16 +333,10 @@ export const ProductFormIntelligent = ({
                   <FormItem>
                     <FormLabel>Preço Promocional (R$)</FormLabel>
                     <FormControl>
-                      <Input 
-                        type="text"
-                        inputMode="decimal"
+                      <CurrencyInput
+                        value={field.value}
+                        onChange={field.onChange}
                         placeholder="0,00"
-                        value={field.value ? field.value.toFixed(2).replace('.', ',') : ''}
-                        onChange={e => {
-                          const value = e.target.value.replace(/[^\d,]/g, '').replace(',', '.');
-                          const parsed = parseFloat(value);
-                          field.onChange(isNaN(parsed) ? undefined : parsed);
-                        }}
                       />
                     </FormControl>
                     <FormMessage />
