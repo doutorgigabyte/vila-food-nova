@@ -6,6 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { SidebarProvider } from "@/components/ui/sidebar";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserEstablishment } from "@/hooks/useDashboardData";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
@@ -25,6 +27,8 @@ import {
   Wine,
   Snowflake,
   Menu,
+  Copy,
+  PackageOpen,
 } from "lucide-react";
 
 import type { Database } from "@/integrations/supabase/types";
@@ -43,6 +47,8 @@ const ProductsManagement = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState<'form' | 'import'>('form');
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -122,9 +128,60 @@ const ProductsManagement = () => {
     }
   };
 
-  const filteredProducts = products.filter((p) =>
-    p.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const handleDuplicate = async (product: Product) => {
+    if (!establishmentId) return;
+
+    const duplicatedProduct = {
+      establishment_id: establishmentId,
+      category_id: product.category_id,
+      name: `${product.name} (Cópia)`,
+      description: product.description,
+      price: product.price,
+      promotional_price: product.promotional_price,
+      image_url: product.image_url,
+      is_active: false,
+      is_featured: false,
+      stock_quantity: product.stock_quantity,
+      product_type: product.product_type,
+      preparation_time: product.preparation_time,
+      temperature_options: product.temperature_options,
+      max_flavors: product.max_flavors,
+    };
+
+    const { error } = await supabase
+      .from("products")
+      .insert(duplicatedProduct);
+
+    if (error) {
+      toast.error("Erro ao duplicar produto");
+    } else {
+      toast.success("Produto duplicado! Edite para personalizar.");
+      fetchProducts();
+    }
+  };
+
+  const handleToggleActive = async (product: Product) => {
+    const { error } = await supabase
+      .from("products")
+      .update({ is_active: !product.is_active })
+      .eq("id", product.id);
+
+    if (error) {
+      toast.error("Erro ao alterar status");
+    } else {
+      toast.success(product.is_active ? "Produto desativado" : "Produto ativado");
+      fetchProducts();
+    }
+  };
+
+  const filteredProducts = products.filter((p) => {
+    const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = categoryFilter === "all" || p.category_id === categoryFilter;
+    const matchesStatus = statusFilter === "all" || 
+      (statusFilter === "active" && p.is_active) || 
+      (statusFilter === "inactive" && !p.is_active);
+    return matchesSearch && matchesCategory && matchesStatus;
+  });
 
   const getProductTypeIcon = (type: string | null) => {
     switch (type) {
@@ -183,15 +240,38 @@ const ProductsManagement = () => {
           </header>
 
           <div className="p-4 md:p-6 space-y-6 overflow-x-auto">
-            {/* Search */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar produtos..."
-                className="pl-10"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+            {/* Search and Filters */}
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar produtos..."
+                  className="pl-10"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <SelectTrigger className="w-full sm:w-[180px]">
+                  <SelectValue placeholder="Categoria" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas categorias</SelectItem>
+                  {categories.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full sm:w-[140px]">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="active">Ativos</SelectItem>
+                  <SelectItem value="inactive">Inativos</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Products List */}
@@ -253,11 +333,25 @@ const ProductsManagement = () => {
                               {getCategoryName(product.category_id)}
                             </p>
                           </div>
-                          <div className="flex gap-2">
+                          <div className="flex items-center gap-2">
+                            <Switch 
+                              checked={product.is_active ?? false}
+                              onCheckedChange={() => handleToggleActive(product)}
+                              aria-label="Ativar/Desativar produto"
+                            />
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDuplicate(product)}
+                              title="Duplicar produto"
+                            >
+                              <Copy className="w-4 h-4" />
+                            </Button>
                             <Button
                               variant="ghost"
                               size="icon"
                               onClick={() => handleOpenDialog(product)}
+                              title="Editar produto"
                             >
                               <Edit className="w-4 h-4" />
                             </Button>
@@ -265,6 +359,7 @@ const ProductsManagement = () => {
                               variant="ghost"
                               size="icon"
                               onClick={() => handleDelete(product)}
+                              title="Excluir produto"
                             >
                               <Trash2 className="w-4 h-4 text-destructive" />
                             </Button>
@@ -273,7 +368,7 @@ const ProductsManagement = () => {
                         <p className="text-sm text-muted-foreground line-clamp-1 mt-1">
                           {product.description}
                         </p>
-                        <div className="flex items-center gap-2 mt-2">
+                        <div className="flex items-center gap-3 mt-2 flex-wrap">
                           <span className="font-bold text-primary">
                             R$ {product.price.toFixed(2)}
                           </span>
@@ -281,6 +376,12 @@ const ProductsManagement = () => {
                             <span className="text-sm text-muted-foreground line-through">
                               R$ {product.promotional_price.toFixed(2)}
                             </span>
+                          )}
+                          {product.stock_quantity !== null && (
+                            <Badge variant={product.stock_quantity > 0 ? "outline" : "destructive"} className="gap-1">
+                              <PackageOpen className="w-3 h-3" />
+                              {product.stock_quantity > 0 ? `${product.stock_quantity} em estoque` : "Sem estoque"}
+                            </Badge>
                           )}
                         </div>
                       </div>
