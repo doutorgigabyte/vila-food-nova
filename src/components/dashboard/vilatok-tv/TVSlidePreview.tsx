@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils";
 import { getImageUrl } from "@/lib/s3";
 import { QrCode, Phone, Globe, Instagram } from "lucide-react";
+import { getContrastColor, isLightColor } from "@/lib/colorUtils";
 
 interface TVSlidePreviewProps {
   imageUrl: string;
@@ -125,20 +126,9 @@ export function TVSlidePreview({
     );
   };
 
-  // Função para calcular contraste
-  const isLightColor = (color: string): boolean => {
-    const hex = color.replace('#', '');
-    const r = parseInt(hex.substr(0, 2), 16);
-    const g = parseInt(hex.substr(2, 2), 16);
-    const b = parseInt(hex.substr(4, 2), 16);
-    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
-    return brightness > 155;
-  };
-
-  // Botão "Eu quero!" padrão com contraste automático
+  // Botão "Eu quero!" padrão com contraste automático (usando utilitário centralizado)
   const CTAButton = ({ bgColor = primaryColor }: { bgColor?: string }) => {
-    const isLightBg = isLightColor(bgColor);
-    const textColor = isLightBg ? '#333333' : '#ffffff';
+    const textColor = getContrastColor(bgColor);
     
     return (
       <div 
@@ -268,10 +258,9 @@ export function TVSlidePreview({
 
   // ===== 6. GRADIENT_BURST - Triângulo invertido com explosão =====
   if (templateType === 'gradient_burst') {
-    // Para fundos gradiente, usar cores sólidas contrastantes
-    const isLightBg = isLightColor(primaryColor);
-    const contrastColor = isLightBg ? '#333333' : '#ffffff';
-    const qrBgColor = isLightBg ? '#ffffff' : '#333333';
+    // Para fundos gradiente, usar cores sólidas contrastantes (usando utilitário centralizado)
+    const contrastColor = getContrastColor(primaryColor);
+    const qrBgColor = isLightColor(primaryColor) ? '#ffffff' : '#333333';
     
     return (
       <div className="relative w-full h-full overflow-hidden" style={{ background: `radial-gradient(circle at center, ${primaryColor}60, ${primaryColor})` }}>

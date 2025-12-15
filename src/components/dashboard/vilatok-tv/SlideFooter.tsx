@@ -2,6 +2,7 @@ import { Phone, Globe, Instagram, Facebook, MessageCircle } from "lucide-react";
 import { QrCode } from "lucide-react";
 import { motion } from "framer-motion";
 import { DOMAIN } from "@/lib/constants";
+import { getContrastColor } from "@/lib/colorUtils";
 
 interface SocialLinks {
   instagram_url?: string | null;
@@ -79,38 +80,42 @@ export function SlideFooter({
     transparent: { backgroundColor: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)' }
   };
 
+  // Calculate text color based on background
+  const textColor = variant === 'default' ? getContrastColor(primaryColor) : '#ffffff';
+  const textOpacity = variant === 'default' ? (textColor === '#000000' ? 'text-black/90' : 'text-white/90') : 'text-white/90';
+
   return (
     <div 
       className="h-24 flex items-center justify-between px-12 z-50 relative"
-      style={bgStyles[variant]}
+      style={{ ...bgStyles[variant], color: textColor }}
     >
       {/* Left: Social Media Links */}
       <div className="flex items-center gap-6">
         {hasSocialLinks && (
           <div className="flex items-center gap-4">
             {socialLinks?.instagram_url && (
-              <div className="flex items-center gap-2 text-white/90 hover:text-white transition-colors">
+              <div className={`flex items-center gap-2 ${textOpacity} hover:opacity-100 transition-colors`}>
                 <Instagram className="w-6 h-6" />
                 <span className="text-sm font-medium">@{extractUsername(socialLinks.instagram_url)}</span>
               </div>
             )}
             {socialLinks?.facebook_url && (
-              <div className="flex items-center gap-2 text-white/90">
+              <div className={`flex items-center gap-2 ${textOpacity}`}>
                 <Facebook className="w-6 h-6" />
               </div>
             )}
             {socialLinks?.tiktok_url && (
-              <div className="flex items-center gap-2 text-white/90">
+              <div className={`flex items-center gap-2 ${textOpacity}`}>
                 <TikTokIcon className="w-6 h-6" />
               </div>
             )}
             {socialLinks?.twitter_url && (
-              <div className="flex items-center gap-2 text-white/90">
+              <div className={`flex items-center gap-2 ${textOpacity}`}>
                 <TwitterIcon className="w-6 h-6" />
               </div>
             )}
             {socialLinks?.youtube_url && (
-              <div className="flex items-center gap-2 text-white/90">
+              <div className={`flex items-center gap-2 ${textOpacity}`}>
                 <YouTubeIcon className="w-6 h-6" />
               </div>
             )}
@@ -119,7 +124,7 @@ export function SlideFooter({
         
         {/* Phone / WhatsApp */}
         {displayPhone && (
-          <div className="flex items-center gap-3 text-white">
+          <div className="flex items-center gap-3" style={{ color: textColor }}>
             <Phone className="w-6 h-6" />
             <span className="text-xl font-semibold">{displayPhone}</span>
           </div>
@@ -127,14 +132,14 @@ export function SlideFooter({
       </div>
 
       {/* Center: Domain */}
-      <div className="flex items-center gap-3 text-white">
+      <div className="flex items-center gap-3" style={{ color: textColor }}>
         <Globe className="w-6 h-6" />
         <span className="text-xl font-medium tracking-wide">{slug}.{DOMAIN}</span>
       </div>
 
       {/* Right: QR Code for full menu */}
       <div className="flex items-center gap-4">
-        <div className="flex flex-col items-end text-white text-right">
+        <div className="flex flex-col items-end text-right" style={{ color: textColor }}>
           <span className="text-xs uppercase tracking-wider opacity-80">Cardápio Digital</span>
           <span className="text-sm font-bold">Acesse nosso menu completo</span>
         </div>
@@ -168,21 +173,23 @@ export function SlideFooterPreview({
   slug: string;
   hasSocialLinks?: boolean;
 }) {
+  const textColor = getContrastColor(primaryColor);
+  
   return (
     <div 
       className="absolute bottom-0 left-0 right-0 h-5 z-50 flex items-center justify-between px-2"
-      style={{ backgroundColor: primaryColor }}
+      style={{ backgroundColor: primaryColor, color: textColor }}
     >
       <div className="flex items-center gap-1">
         {hasSocialLinks && (
           <>
-            <div className="w-1.5 h-1.5 rounded-full bg-white/60" />
-            <div className="w-1.5 h-1.5 rounded-full bg-white/60" />
+            <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: `${textColor}99` }} />
+            <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: `${textColor}99` }} />
           </>
         )}
-        <Phone className="w-1.5 h-1.5 text-white/80" />
+        <Phone className="w-1.5 h-1.5" style={{ color: `${textColor}cc` }} />
       </div>
-      <span className="text-[3px] text-white font-medium">{slug}.vilafood</span>
+      <span className="text-[3px] font-medium">{slug}.vilafood</span>
       <div className="bg-white/90 w-2 h-2 rounded-sm flex items-center justify-center">
         <QrCode className="w-1 h-1 text-gray-500" />
       </div>
