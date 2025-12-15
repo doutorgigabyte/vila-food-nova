@@ -150,6 +150,7 @@ const getMenuGroups = (baseUrl: string): MenuGroup[] => [
     items: [
       { icon: QrCode, label: "QR Code", href: `${baseUrl}/qrcode` },
       { icon: Plug, label: "Integrações", href: `${baseUrl}/integracoes` },
+      { icon: Plug, label: "iFood", href: `${baseUrl}/ifood`, badge: "Novo" },
       { icon: Users, label: "Equipe", href: `${baseUrl}/equipe`, badge: "Novo" },
       { icon: Settings, label: "Preferências", href: `${baseUrl}/configuracoes` },
     ],
