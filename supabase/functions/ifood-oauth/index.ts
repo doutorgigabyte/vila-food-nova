@@ -54,12 +54,11 @@ serve(async (req) => {
     if (action === 'connect') {
       // Use client_credentials flow for centralized apps
       console.log('[iFood OAuth] Connecting with client_credentials flow...');
+      console.log('[iFood OAuth] Client ID:', clientId ? `${clientId.substring(0, 8)}...` : 'NOT SET');
+      console.log('[iFood OAuth] Client Secret:', clientSecret ? 'SET' : 'NOT SET');
       
-      const params = new URLSearchParams({
-        grant_type: 'client_credentials',
-        client_id: clientId,
-        client_secret: clientSecret,
-      });
+      const bodyParams = `grant_type=client_credentials&client_id=${encodeURIComponent(clientId)}&client_secret=${encodeURIComponent(clientSecret)}`;
+      console.log('[iFood OAuth] Request body (masked):', bodyParams.replace(clientSecret, '***'));
 
       const response = await fetch(`${IFOOD_API_BASE}/authentication/v1.0/oauth/token`, {
         method: 'POST',
@@ -67,7 +66,7 @@ serve(async (req) => {
           'Content-Type': 'application/x-www-form-urlencoded',
           'Accept': 'application/json',
         },
-        body: params.toString(),
+        body: bodyParams,
       });
 
       const responseText = await response.text();
