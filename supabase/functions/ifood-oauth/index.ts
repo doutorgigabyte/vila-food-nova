@@ -54,7 +54,7 @@ serve(async (req) => {
       // Step 1: Generate user code for authorization
       console.log('[iFood OAuth] Generating user code...');
       
-      const response = await fetch(`${IFOOD_API_BASE}/authentication/v1.0/oauth/usercode`, {
+      const response = await fetch(`${IFOOD_API_BASE}/authentication/v1.0/oauth/userCode`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
