@@ -1044,6 +1044,7 @@ export type Database = {
           description: string | null
           establishment_id: string
           id: string
+          ifood_category_id: string | null
           image_url: string | null
           is_active: boolean | null
           name: string
@@ -1054,6 +1055,7 @@ export type Database = {
           description?: string | null
           establishment_id: string
           id?: string
+          ifood_category_id?: string | null
           image_url?: string | null
           is_active?: boolean | null
           name: string
@@ -1064,6 +1066,7 @@ export type Database = {
           description?: string | null
           establishment_id?: string
           id?: string
+          ifood_category_id?: string | null
           image_url?: string | null
           is_active?: boolean | null
           name?: string
@@ -2831,6 +2834,91 @@ export type Database = {
           },
         ]
       }
+      ifood_catalogs: {
+        Row: {
+          catalog_id: string
+          connection_id: string
+          context: string | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          last_sync_at: string | null
+        }
+        Insert: {
+          catalog_id: string
+          connection_id: string
+          context?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_sync_at?: string | null
+        }
+        Update: {
+          catalog_id?: string
+          connection_id?: string
+          context?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_sync_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ifood_catalogs_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "ifood_merchant_connections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ifood_merchant_connections: {
+        Row: {
+          access_token: string | null
+          created_at: string | null
+          establishment_id: string
+          id: string
+          last_sync_at: string | null
+          merchant_id: string | null
+          refresh_token: string | null
+          status: string
+          token_expires_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          access_token?: string | null
+          created_at?: string | null
+          establishment_id: string
+          id?: string
+          last_sync_at?: string | null
+          merchant_id?: string | null
+          refresh_token?: string | null
+          status?: string
+          token_expires_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          access_token?: string | null
+          created_at?: string | null
+          establishment_id?: string
+          id?: string
+          last_sync_at?: string | null
+          merchant_id?: string | null
+          refresh_token?: string | null
+          status?: string
+          token_expires_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ifood_merchant_connections_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: true
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       inventory_movements: {
         Row: {
           created_at: string | null
@@ -4042,6 +4130,9 @@ export type Database = {
           establishment_id: string
           expiration_days: number | null
           id: string
+          ifood_item_id: string | null
+          ifood_last_sync: string | null
+          ifood_sku: string | null
           image_url: string | null
           is_active: boolean | null
           is_featured: boolean | null
@@ -4081,6 +4172,9 @@ export type Database = {
           establishment_id: string
           expiration_days?: number | null
           id?: string
+          ifood_item_id?: string | null
+          ifood_last_sync?: string | null
+          ifood_sku?: string | null
           image_url?: string | null
           is_active?: boolean | null
           is_featured?: boolean | null
@@ -4120,6 +4214,9 @@ export type Database = {
           establishment_id?: string
           expiration_days?: number | null
           id?: string
+          ifood_item_id?: string | null
+          ifood_last_sync?: string | null
+          ifood_sku?: string | null
           image_url?: string | null
           is_active?: boolean | null
           is_featured?: boolean | null

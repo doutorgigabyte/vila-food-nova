@@ -59,6 +59,7 @@ const QRCodeManagement = lazy(() => import("./pages/dashboard/QRCodeManagement")
 const ReportsManagement = lazy(() => import("./pages/dashboard/ReportsManagement"));
 const WhatsAppManagement = lazy(() => import("./pages/dashboard/WhatsAppManagement"));
 const IntegrationsManagement = lazy(() => import("./pages/dashboard/IntegrationsManagement"));
+const IFoodIntegration = lazy(() => import("./pages/dashboard/IFoodIntegration"));
 const ServiceAreaManagement = lazy(() => import("./pages/dashboard/ServiceAreaManagementNew"));
 const MercadoPagoManagement = lazy(() => import("./pages/dashboard/MercadoPagoManagement"));
 const MercadoPagoCallback = lazy(() => import("./pages/dashboard/MercadoPagoCallback"));
@@ -260,6 +261,7 @@ const AppRoutes = () => {
               <Route path="/painel/:slug/relatorios" element={<ReportsManagement />} />
               <Route path="/painel/:slug/whatsapp" element={<WhatsAppManagement />} />
               <Route path="/painel/:slug/integracoes" element={<IntegrationsManagement />} />
+              <Route path="/painel/:slug/ifood" element={<IFoodIntegration />} />
               <Route path="/painel/:slug/area-atendimento" element={<ServiceAreaManagement />} />
               <Route path="/painel/:slug/mercadopago" element={<MercadoPagoManagement />} />
               <Route path="/painel/:slug/comanda" element={<WaiterApp />} />

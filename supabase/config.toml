@@ -157,3 +157,10 @@ verify_jwt = true  # Sensitive - admin operation
 
 [functions.whatsapp-auth-session]
 verify_jwt = false  # Public - validates code internally
+
+# iFood Integration functions
+[functions.ifood-oauth]
+verify_jwt = true  # Requires auth - establishment owner only
+
+[functions.ifood-import-catalog]
+verify_jwt = true  # Requires auth - establishment owner only
