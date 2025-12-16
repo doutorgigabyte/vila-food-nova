@@ -26,6 +26,8 @@ interface Driver {
   total_deliveries: number;
   rating_average: number | null;
   email: string | null;
+  masked_pix_key: string | null;
+  pix_key_type: string | null;
 }
 
 interface AssociatedDriversListProps {
@@ -63,27 +65,13 @@ export const AssociatedDriversList = ({ establishmentId }: AssociatedDriversList
     
     setLoading(true);
     try {
-      // Fetch drivers linked to this establishment
-      const { data: links, error: linksError } = await supabase
-        .from("driver_establishment_links")
-        .select(`
-          driver_id,
-          status,
-          delivery_drivers (
-            id, name, phone, vehicle_type, is_active, is_available,
-            total_deliveries, rating_average, email
-          )
-        `)
-        .eq("establishment_id", establishmentId)
-        .eq("status", "approved");
+      // Use RPC to get drivers with masked sensitive data
+      const { data: driversList, error: driversError } = await supabase
+        .rpc("get_establishment_drivers", { p_establishment_id: establishmentId });
 
-      if (linksError) throw linksError;
+      if (driversError) throw driversError;
 
-      const driversList = links
-        ?.map(link => link.delivery_drivers)
-        .filter(Boolean) as Driver[];
-
-      setDrivers(driversList || []);
+      setDrivers((driversList || []) as Driver[]);
 
       // Fetch today's deliveries for each driver
       const today = new Date().toISOString().split('T')[0];
