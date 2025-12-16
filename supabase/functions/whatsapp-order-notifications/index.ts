@@ -140,8 +140,8 @@ serve(async (req) => {
         .eq("id", order_id);
 
       // Build the review link - use the app domain
-      const appDomain = Deno.env.get("APP_DOMAIN") || "vilafood.com.br";
-      ratingLink = `https://${appDomain}/avaliar/${order_id}/${reviewToken}`;
+      const appDomain = Deno.env.get("APP_DOMAIN") || "vilafood.delivery";
+      ratingLink = `https://${appDomain}/pedidos/${order_id}/avaliar/${reviewToken}`;
     }
 
     // Build delivery address string

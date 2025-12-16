@@ -21,6 +21,8 @@ export interface UserOrder {
   observations: string | null;
   created_at: string;
   estimated_time: number | null;
+  has_review?: boolean;
+  review_token?: string | null;
   establishments?: {
     name: string;
     slug: string;
@@ -49,6 +51,8 @@ interface RpcOrderResult {
   establishment_name: string;
   establishment_slug: string;
   establishment_logo_url: string | null;
+  has_review: boolean;
+  review_token: string | null;
 }
 
 export const useUserOrders = () => {
@@ -91,6 +95,8 @@ export const useUserOrders = () => {
         observations: order.observations,
         created_at: order.created_at,
         estimated_time: order.estimated_time,
+        has_review: order.has_review,
+        review_token: order.review_token,
         establishments: {
           name: order.establishment_name,
           slug: order.establishment_slug,

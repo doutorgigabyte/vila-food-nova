@@ -350,6 +350,19 @@ const KitchenDisplay = () => {
         });
       }
 
+      if (newStatus === "delivered") {
+        toast.success("Pedido entregue!");
+        
+        // Send WhatsApp notification with review link
+        try {
+          await supabase.functions.invoke('whatsapp-order-notifications', {
+            body: { order_id: orderId, status: 'delivered' }
+          });
+        } catch (notifError) {
+          console.log("WhatsApp notification skipped:", notifError);
+        }
+      }
+
       fetchOrders();
       fetchDailyStats();
     } catch (error) {
@@ -404,7 +417,15 @@ const KitchenDisplay = () => {
 
       if (cashFlowError) {
         console.error("Cash flow error:", cashFlowError);
-        // Don't throw - order is already delivered
+      }
+
+      // 3. Send WhatsApp notification with review link
+      try {
+        await supabase.functions.invoke('whatsapp-order-notifications', {
+          body: { order_id: orderId, status: 'delivered' }
+        });
+      } catch (notifError) {
+        console.log("WhatsApp notification skipped:", notifError);
       }
 
       toast.success("Pagamento confirmado e pedido finalizado!");
