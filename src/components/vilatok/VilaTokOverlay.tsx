@@ -46,7 +46,7 @@ export function VilaTokOverlay({
   };
 
   return (
-    <div className="absolute bottom-0 left-0 right-20 p-4 pb-8 pointer-events-none z-[50]" data-vilatok-overlay>
+    <div className="absolute bottom-0 left-0 right-20 p-4 pb-8 z-[50]" data-vilatok-overlay>
       {/* Establishment Info */}
       <div className="flex items-center gap-3 mb-3 pointer-events-auto">
         <Avatar 
@@ -73,12 +73,12 @@ export function VilaTokOverlay({
 
       {/* Video Title & Description */}
       {video.title && (
-        <h3 className="text-white font-semibold text-base mb-1 drop-shadow-lg line-clamp-1">
+        <h3 className="text-white font-semibold text-base mb-1 drop-shadow-lg line-clamp-1 pointer-events-none">
           {video.title}
         </h3>
       )}
       {video.description && (
-        <p className="text-white/90 text-sm drop-shadow-lg line-clamp-2 mb-4">
+        <p className="text-white/90 text-sm drop-shadow-lg line-clamp-2 mb-4 pointer-events-none">
           {video.description}
         </p>
       )}
@@ -130,10 +130,15 @@ export function VilaTokOverlay({
                 e.stopPropagation();
                 onProductClick?.();
               }}
-              className="w-full mt-3 bg-primary hover:bg-primary/90 text-primary-foreground font-bold py-5 text-base rounded-xl shadow-lg shadow-primary/30 transition-all duration-200 active:scale-[0.98]"
+              className="w-full mt-3 bg-primary hover:bg-primary/90 text-primary-foreground font-bold py-5 text-base rounded-xl shadow-lg shadow-primary/30 transition-all duration-200 active:scale-[0.98] flex flex-col items-center leading-tight"
             >
-              <ShoppingBag className="w-5 h-5 mr-2" />
-              Eu Quero!
+              <span className="inline-flex items-center gap-2">
+                <ShoppingBag className="w-5 h-5" />
+                Eu Quero!
+              </span>
+              <span className="text-[10px] font-medium text-primary-foreground/80 -mt-0.5">
+                Adicionar ao carrinho
+              </span>
             </Button>
           </div>
         </div>
