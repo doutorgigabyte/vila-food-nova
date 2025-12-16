@@ -6403,6 +6403,21 @@ export type Database = {
           vehicle_type: string
         }[]
       }
+      get_establishment_abandoned_carts: {
+        Args: { p_establishment_id: string }
+        Returns: {
+          created_at: string
+          customer_name: string
+          id: string
+          items: Json
+          last_recovery_at: string
+          masked_phone: string
+          recovered: boolean
+          recovery_attempts: number
+          total: number
+          updated_at: string
+        }[]
+      }
       get_establishment_by_instance: {
         Args: { p_instance_name: string }
         Returns: {
@@ -6432,6 +6447,40 @@ export type Database = {
           slug: string
           system_prompt: string
           whatsapp: string
+        }[]
+      }
+      get_establishment_customers: {
+        Args: { p_establishment_id: string }
+        Returns: {
+          birth_month: number
+          created_at: string
+          id: string
+          last_order_at: string
+          masked_email: string
+          masked_phone: string
+          name: string
+          order_count: number
+          total_spent: number
+        }[]
+      }
+      get_establishment_drivers: {
+        Args: { p_establishment_id: string }
+        Returns: {
+          complaint_count: number
+          created_at: string
+          email: string
+          id: string
+          is_active: boolean
+          is_available: boolean
+          license_plate: string
+          masked_pix_key: string
+          name: string
+          phone: string
+          pix_key_type: string
+          rating_average: number
+          total_deliveries: number
+          updated_at: string
+          vehicle_type: string
         }[]
       }
       get_public_establishment_by_slug: {
