@@ -58,49 +58,71 @@ const StoryPreview = ({
   const [progress, setProgress] = useState(0);
   const [musicLoaded, setMusicLoaded] = useState(false);
 
-  // Handle music loading
+  // Always mute video when music is selected
+  const hasMusic = !!musicUrl;
+
+  // Handle music loading and playback
   useEffect(() => {
-    if (musicUrl && audioRef.current) {
-      audioRef.current.src = musicUrl;
-      audioRef.current.load();
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    if (musicUrl) {
+      audio.src = musicUrl;
+      audio.loop = true;
+      audio.load();
       
-      const handleCanPlay = () => setMusicLoaded(true);
-      const handleError = () => {
-        console.warn('Music failed to load:', musicUrl);
+      const handleCanPlay = () => {
+        setMusicLoaded(true);
+        // Auto-play music when ready if video is playing
+        if (isPlaying && !isMuted) {
+          audio.play().catch(console.warn);
+        }
+      };
+      
+      const handleError = (e: Event) => {
+        console.warn('Music failed to load:', musicUrl, e);
         setMusicLoaded(false);
       };
       
-      audioRef.current.addEventListener('canplaythrough', handleCanPlay);
-      audioRef.current.addEventListener('error', handleError);
+      audio.addEventListener('canplaythrough', handleCanPlay);
+      audio.addEventListener('error', handleError);
       
       return () => {
-        audioRef.current?.removeEventListener('canplaythrough', handleCanPlay);
-        audioRef.current?.removeEventListener('error', handleError);
+        audio.removeEventListener('canplaythrough', handleCanPlay);
+        audio.removeEventListener('error', handleError);
+        audio.pause();
       };
+    } else {
+      audio.pause();
+      audio.src = '';
+      setMusicLoaded(false);
     }
   }, [musicUrl]);
 
-  // Sync audio with play state
+  // Sync audio with play/mute state
   useEffect(() => {
-    if (audioRef.current && musicUrl) {
-      if (isPlaying && !isMuted) {
-        audioRef.current.play().catch(console.warn);
-      } else {
-        audioRef.current.pause();
-      }
+    const audio = audioRef.current;
+    if (!audio || !musicUrl) return;
+
+    if (isPlaying && !isMuted && musicLoaded) {
+      audio.play().catch(console.warn);
+    } else {
+      audio.pause();
     }
-  }, [isPlaying, isMuted, musicUrl]);
+  }, [isPlaying, isMuted, musicUrl, musicLoaded]);
 
   // Auto-play video on mount
   useEffect(() => {
     if (mediaType === "video" && videoRef.current) {
+      // Ensure video is muted when music is present
+      videoRef.current.muted = hasMusic || isMuted;
       videoRef.current.play().then(() => {
         setIsPlaying(true);
       }).catch(() => {
         setIsPlaying(false);
       });
     }
-  }, [mediaType]);
+  }, [mediaType, hasMusic]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -162,13 +184,19 @@ const StoryPreview = ({
   };
 
   const toggleMute = () => {
+    const newMuted = !isMuted;
     if (videoRef.current) {
-      videoRef.current.muted = !isMuted;
+      // Video stays muted if music is present
+      videoRef.current.muted = hasMusic || newMuted;
     }
-    if (audioRef.current) {
-      audioRef.current.muted = !isMuted;
+    if (audioRef.current && musicUrl) {
+      if (newMuted) {
+        audioRef.current.pause();
+      } else if (isPlaying) {
+        audioRef.current.play().catch(console.warn);
+      }
     }
-    setIsMuted(!isMuted);
+    setIsMuted(newMuted);
   };
 
   const formatPrice = (price: number) => {
@@ -180,10 +208,8 @@ const StoryPreview = ({
 
   return (
     <div className="flex flex-col h-full">
-      {/* Hidden audio element for music */}
-      {musicUrl && (
-        <audio ref={audioRef} loop preload="auto" />
-      )}
+      {/* Audio element for music - always rendered */}
+      <audio ref={audioRef} className="hidden" />
 
       {/* Header */}
       <div className="text-center mb-4">
@@ -214,7 +240,7 @@ const StoryPreview = ({
               className="w-full h-full object-cover"
               playsInline
               loop
-              muted={isMuted || !!musicUrl}
+              muted={hasMusic || isMuted}
               autoPlay
               onClick={togglePlay}
             />
