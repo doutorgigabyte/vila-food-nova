@@ -10,7 +10,7 @@ import { Upload, Image as ImageIcon, ShoppingBag, Video, Clock, ImagePlus } from
 import { TemplatePreviewSelector, TEMPLATE_OPTIONS } from "@/components/dashboard/TemplatePreviewSelector";
 import { uploadToS3, uploadVideoToS3, validateFile, validateVideoFile } from "@/lib/s3";
 import { toast } from "sonner";
-import { TVSlidePreview } from "./TVSlidePreview";
+import { TVSlideRealPreview } from "./TVSlideRealPreview";
 import { ImageAdjustControls } from "./ImageAdjustControls";
 
 interface Product {
@@ -40,6 +40,7 @@ interface EstablishmentData {
   primary_color?: string;
   logo_url?: string;
   name?: string;
+  slug?: string;
 }
 
 interface TVSlideFormProps {
@@ -166,7 +167,7 @@ export function TVSlideForm({
       <div className="lg:w-1/2 space-y-3">
         <Label className="text-sm font-medium">Preview em Tempo Real</Label>
         <div className="aspect-video w-full rounded-xl overflow-hidden border-2 border-border shadow-lg bg-muted">
-          <TVSlidePreview
+          <TVSlideRealPreview
             imageUrl={formData.image_url}
             title={formData.title}
             subtitle={formData.subtitle}
@@ -175,6 +176,7 @@ export function TVSlideForm({
             primaryColor={establishment?.primary_color || '#ea580c'}
             logoUrl={establishment?.logo_url}
             establishmentName={establishment?.name}
+            establishmentSlug={establishment?.slug}
             imageScale={formData.image_scale}
             imagePositionX={formData.image_position_x}
             imagePositionY={formData.image_position_y}

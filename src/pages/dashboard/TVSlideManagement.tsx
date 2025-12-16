@@ -374,7 +374,8 @@ export default function TVSlideManagement() {
               establishment={{
                 primary_color: establishment?.primary_color || undefined,
                 logo_url: establishment?.logo_url || undefined,
-                name: establishment?.name || undefined
+                name: establishment?.name || undefined,
+                slug: establishment?.slug || undefined
               }}
               onSubmit={handleSubmit}
               isEditing={!!editingSlide}
