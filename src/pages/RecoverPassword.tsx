@@ -22,17 +22,31 @@ const RecoverPassword = () => {
     setIsLoading(true);
     
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      // First, generate the reset link via Supabase
+      const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/redefinir-senha`,
       });
       
       if (error) {
         console.error("Password reset error:", error);
         toast.error("Erro ao enviar e-mail de recuperação. Tente novamente.");
-      } else {
-        setEmailSent(true);
-        toast.success("E-mail de recuperação enviado!");
+        return;
       }
+
+      // Also send a custom email via Resend for better deliverability
+      const resetLink = `${window.location.origin}/redefinir-senha`;
+      
+      const { error: emailError } = await supabase.functions.invoke('send-password-reset', {
+        body: { email, resetLink }
+      });
+
+      if (emailError) {
+        console.warn("Custom email failed, falling back to Supabase email:", emailError);
+        // Supabase already sent the email, so we can continue
+      }
+
+      setEmailSent(true);
+      toast.success("E-mail de recuperação enviado!");
     } catch (err) {
       console.error("Unexpected error:", err);
       toast.error("Erro inesperado. Tente novamente.");

@@ -164,3 +164,6 @@ verify_jwt = true  # Requires auth - establishment owner only
 
 [functions.ifood-import-catalog]
 verify_jwt = true  # Requires auth - establishment owner only
+
+[functions.send-password-reset]
+verify_jwt = false  # Public - password recovery flow
