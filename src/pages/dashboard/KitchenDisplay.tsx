@@ -5,8 +5,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { 
   ChefHat, Clock, CheckCircle, AlertCircle, Utensils, Package, Cog, Bell, 
-  VolumeX, ArrowLeft, Timer, TrendingUp, TrendingDown, History, RotateCcw
+  VolumeX, ArrowLeft, Timer, TrendingUp, TrendingDown, History, RotateCcw, Eye, X
 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useNotificationSound } from "@/hooks/useNotificationSound";
@@ -84,6 +85,7 @@ const KitchenDisplay = () => {
   const [showNewOrderSplash, setShowNewOrderSplash] = useState(false);
   const [newOrderNumber, setNewOrderNumber] = useState<number | null>(null);
   const [showHistory, setShowHistory] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [dailyStats, setDailyStats] = useState<DailyStats>({ 
     delivered: 0, returned: 0, cancelled: 0, yesterdayDelivered: 0 
   });
@@ -629,9 +631,10 @@ const KitchenDisplay = () => {
                   {deliveredOrders.map((order) => (
                     <div 
                       key={order.id} 
-                      className={`flex items-center justify-between p-3 rounded-lg ${
+                      className={`flex items-center justify-between p-3 rounded-lg cursor-pointer hover:opacity-80 transition-opacity ${
                         order.status === 'delivered' ? 'bg-green-500/10' : 'bg-red-500/10'
                       }`}
+                      onClick={() => setSelectedOrder(order)}
                     >
                       <div className="flex items-center gap-3">
                         <span className="text-lg font-bold">#{order.order_number}</span>
@@ -639,9 +642,12 @@ const KitchenDisplay = () => {
                           {order.status === 'delivered' ? '✅ Entregue' : '❌ Cancelado'}
                         </Badge>
                       </div>
-                      <span className="text-sm text-muted-foreground">
-                        {new Date(order.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground">
+                          {new Date(order.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                        <Eye className="w-4 h-4 text-muted-foreground" />
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -650,6 +656,85 @@ const KitchenDisplay = () => {
           </Card>
         </CollapsibleContent>
       </Collapsible>
+
+      {/* Order Detail Dialog */}
+      <Dialog open={!!selectedOrder} onOpenChange={() => setSelectedOrder(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between">
+              <span>Pedido #{selectedOrder?.order_number}</span>
+              <Badge variant={selectedOrder?.status === 'delivered' ? 'default' : 'destructive'}>
+                {selectedOrder?.status === 'delivered' ? '✅ Entregue' : '❌ Cancelado'}
+              </Badge>
+            </DialogTitle>
+          </DialogHeader>
+          
+          {selectedOrder && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Clock className="w-4 h-4" />
+                <span>
+                  {new Date(selectedOrder.created_at).toLocaleString('pt-BR', { 
+                    day: '2-digit', month: '2-digit', year: 'numeric',
+                    hour: '2-digit', minute: '2-digit' 
+                  })}
+                </span>
+              </div>
+              
+              <div className="flex flex-wrap gap-2">
+                <Badge variant="outline">
+                  {selectedOrder.delivery_type === "delivery" ? "🚚 Delivery" : 
+                   selectedOrder.delivery_type === "pickup" ? "🏪 Retirada" : 
+                   `🍽️ Mesa ${selectedOrder.table_number}`}
+                </Badge>
+                {selectedOrder.payment_method && (
+                  <Badge variant="outline">
+                    {selectedOrder.payment_method === "pix" ? "💳 PIX" :
+                     selectedOrder.payment_method === "credit_card" ? "💳 Crédito" :
+                     selectedOrder.payment_method === "debit_card" ? "💳 Débito" :
+                     selectedOrder.payment_method === "cash" ? "💵 Dinheiro" :
+                     selectedOrder.payment_method}
+                  </Badge>
+                )}
+              </div>
+
+              {selectedOrder.observations && (
+                <div className="p-3 rounded-lg bg-yellow-500/20 border border-yellow-500/50">
+                  <p className="font-bold text-yellow-700 dark:text-yellow-400 text-sm mb-1">OBSERVAÇÃO:</p>
+                  <p className="text-sm">{selectedOrder.observations}</p>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <p className="font-semibold">Itens do Pedido:</p>
+                {selectedOrder.items.map((item, idx) => (
+                  <div key={idx} className={`p-3 rounded-lg ${item.observations ? 'bg-yellow-500/10 border border-yellow-500/30' : 'bg-muted/50'}`}>
+                    <div className="flex items-center gap-3">
+                      <span className="font-bold text-lg bg-primary/10 px-2 py-1 rounded">{item.quantity}x</span>
+                      <span className="font-medium flex-1">{item.name}</span>
+                    </div>
+                    {item.observations && (
+                      <p className="text-sm text-yellow-600 mt-2 flex items-start gap-2">
+                        <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                        {item.observations}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <Button 
+                variant="outline" 
+                className="w-full"
+                onClick={() => setSelectedOrder(null)}
+              >
+                <X className="w-4 h-4 mr-2" />
+                Fechar
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
