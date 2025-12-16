@@ -19,7 +19,7 @@ import { StoreInfoTab } from "@/components/store/StoreInfoTab";
 import { StoreFloatingCart } from "@/components/store/StoreFloatingCart";
 import { StoreAccountTab } from "@/components/store/StoreAccountTab";
 import StoreBottomNav from "@/components/store/StoreBottomNav";
-import StoreStories from "@/components/store/StoreStories";
+import { StoreVilaTok, type StoreVideo } from "@/components/store/StoreVilaTok";
 import StoreReviewsSection from "@/components/store/StoreReviewsSection";
 import { ServiceRequestModal } from "@/components/products/ServiceRequestModal";
 import { supabase } from "@/integrations/supabase/client";
@@ -92,14 +92,33 @@ const Store = () => {
     }
   }, [searchParams, products, slug, navigate]);
 
-  // Fetch stories for this establishment - filter by display_in_store
+  // Fetch stories for this establishment - filter by display_in_store with full data
   const { data: stories } = useQuery({
-    queryKey: ["store-stories", establishment?.id],
-    queryFn: async () => {
+    queryKey: ["store-vilatok", establishment?.id],
+    queryFn: async (): Promise<StoreVideo[]> => {
       if (!establishment?.id) return [];
       const { data, error } = await supabase
         .from("establishment_videos")
-        .select("id, video_url, thumbnail_url, description, duration")
+        .select(`
+          id, 
+          video_url, 
+          thumbnail_url, 
+          music_url,
+          title,
+          description, 
+          duration,
+          likes_count,
+          shares_count,
+          comments_count,
+          product_id,
+          products:product_id (
+            id,
+            name,
+            price,
+            promotional_price,
+            image_url
+          )
+        `)
         .eq("establishment_id", establishment.id)
         .eq("is_active", true)
         .eq("display_in_store", true)
@@ -108,10 +127,22 @@ const Store = () => {
       if (error) throw error;
       return (data || []).map(s => ({
         id: s.id,
-        videoUrl: s.video_url,
-        thumbnailUrl: s.thumbnail_url || s.video_url,
-        description: s.description || undefined,
-        duration: s.duration || 15
+        video_url: s.video_url,
+        thumbnail_url: s.thumbnail_url,
+        music_url: s.music_url,
+        title: s.title,
+        description: s.description,
+        duration: s.duration,
+        likes_count: s.likes_count || 0,
+        shares_count: s.shares_count || 0,
+        comments_count: s.comments_count || 0,
+        product: s.products ? {
+          id: (s.products as any).id,
+          name: (s.products as any).name,
+          price: (s.products as any).price,
+          promotional_price: (s.products as any).promotional_price,
+          image_url: (s.products as any).image_url,
+        } : null
       }));
     },
     enabled: !!establishment?.id,
@@ -290,13 +321,16 @@ const Store = () => {
             onStoriesClick={() => setIsStoriesOpen(true)}
           />
 
-          {/* Stories Viewer (fullscreen) - triggered from StoreHero */}
+          {/* Stories Viewer (fullscreen VilaTok) - triggered from StoreHero */}
           {stories && stories.length > 0 && (
-            <StoreStories
-              stories={stories}
-              establishmentName={establishment.name}
-              establishmentLogo={establishment.logo_url || undefined}
-              primaryColor={establishment.primary_color || undefined}
+            <StoreVilaTok
+              videos={stories}
+              establishment={{
+                id: establishment.id,
+                name: establishment.name,
+                slug: establishment.slug,
+                logo_url: establishment.logo_url,
+              }}
               isOpen={isStoriesOpen}
               onClose={() => setIsStoriesOpen(false)}
             />
