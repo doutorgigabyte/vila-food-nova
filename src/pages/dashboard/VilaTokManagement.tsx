@@ -117,14 +117,14 @@ const StoriesManagement = () => {
   };
 
   return (
-    <DashboardLayout title="Stories" establishment={establishment}>
+    <DashboardLayout title="VilaTok" establishment={establishment}>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold">Stories</h1>
+            <h1 className="text-2xl font-bold">VilaTok</h1>
             <p className="text-muted-foreground">
-              Crie vídeos curtos para promover seus produtos
+              Crie vídeos curtos e fotos para promover seus produtos
             </p>
           </div>
           <Button onClick={() => setIsCreatorOpen(true)} className="gap-2">

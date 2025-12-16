@@ -74,8 +74,7 @@ const InventoryManagement = lazy(() => import("./pages/dashboard/InventoryManage
 const AdvancedFinanceManagement = lazy(() => import("./pages/dashboard/AdvancedFinanceManagement"));
 
 const PaymentsManagement = lazy(() => import("./pages/dashboard/PaymentsManagement"));
-const VideosManagement = lazy(() => import("./pages/dashboard/VideosManagement"));
-const StoriesManagement = lazy(() => import("./pages/dashboard/StoriesManagement"));
+const VilaTokManagement = lazy(() => import("./pages/dashboard/VilaTokManagement"));
 const AIAnalysisDashboard = lazy(() => import("./pages/dashboard/AIAnalysisDashboard"));
 const EstablishmentSettings = lazy(() => import("./pages/dashboard/EstablishmentSettings"));
 const AffiliateDashboard = lazy(() => import("./pages/dashboard/AffiliateDashboard"));
@@ -276,8 +275,7 @@ const AppRoutes = () => {
               <Route path="/painel/:slug/financeiro" element={<AdvancedFinanceManagement />} />
               
               <Route path="/painel/:slug/pagamentos" element={<PaymentsManagement />} />
-              <Route path="/painel/:slug/videos" element={<VideosManagement />} />
-              <Route path="/painel/:slug/stories" element={<StoriesManagement />} />
+              <Route path="/painel/:slug/vilatok" element={<VilaTokManagement />} />
               <Route path="/painel/:slug/analise-ia" element={<AIAnalysisDashboard />} />
               <Route path="/painel/:slug/configuracoes" element={<EstablishmentSettings />} />
               <Route path="/painel/:slug/kits" element={<ProductKitsManagement />} />
@@ -314,8 +312,7 @@ const AppRoutes = () => {
               <Route path="/painel/financeiro" element={<AdvancedFinanceManagement />} />
               
               <Route path="/painel/pagamentos" element={<PaymentsManagement />} />
-              <Route path="/painel/videos" element={<VideosManagement />} />
-              <Route path="/painel/stories" element={<StoriesManagement />} />
+              <Route path="/painel/vilatok" element={<VilaTokManagement />} />
               <Route path="/painel/vilatok-tv" element={<TVSlideManagement />} />
               <Route path="/painel/comissoes" element={<CommissionDebtManagement />} />
               <Route path="/painel/analise-ia" element={<AIAnalysisDashboard />} />

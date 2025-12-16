@@ -17,10 +17,10 @@ const MarketingHub = () => {
       bgColor: 'bg-green-500/10',
     },
     {
-      title: 'VilaTok Stories',
-      description: 'Publique stories verticais para engajar seus clientes',
+      title: 'VilaTok',
+      description: 'Publique vídeos e fotos para engajar seus clientes',
       icon: Video,
-      href: `${baseUrl}/stories`,
+      href: `${baseUrl}/vilatok`,
       color: 'text-purple-500',
       bgColor: 'bg-purple-500/10',
     },
