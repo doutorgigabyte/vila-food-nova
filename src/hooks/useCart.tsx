@@ -201,6 +201,17 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       console.error('[Analytics] Error tracking add to cart:', err);
     }
 
+    // Dispatch custom event for cart animation
+    window.dispatchEvent(new CustomEvent('cart-item-added', { 
+      detail: { productName: product.name, quantity } 
+    }));
+
+    // Show success toast with product name
+    toast.success(`${product.name} adicionado ao carrinho!`, {
+      duration: 2000,
+      position: 'top-center',
+    });
+
     return true;
   };
 

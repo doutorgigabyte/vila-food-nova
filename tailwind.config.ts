@@ -128,6 +128,22 @@ export default {
             clipPath: "polygon(100% 50%, 100% 35%, 0% 0%, 0% 100%, 100% 65%)"
           },
         },
+        "cart-bounce": {
+          "0%, 100%": { transform: "scale(1)" },
+          "25%": { transform: "scale(1.2)" },
+          "50%": { transform: "scale(0.95)" },
+          "75%": { transform: "scale(1.1)" },
+        },
+        "cart-pop": {
+          "0%": { transform: "scale(1)", boxShadow: "0 0 0 0 hsl(var(--primary) / 0.7)" },
+          "50%": { transform: "scale(1.15)", boxShadow: "0 0 0 10px hsl(var(--primary) / 0)" },
+          "100%": { transform: "scale(1)", boxShadow: "0 0 0 0 hsl(var(--primary) / 0)" },
+        },
+        "badge-ping": {
+          "0%": { transform: "scale(1)", opacity: "1" },
+          "50%": { transform: "scale(1.5)", opacity: "0.5" },
+          "100%": { transform: "scale(1)", opacity: "1" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -141,6 +157,9 @@ export default {
         "chomp-top": "chomp-top 0.3s ease-in-out infinite",
         "chomp-bottom": "chomp-bottom 0.3s ease-in-out infinite",
         "pacman-chomp": "pacman-chomp 0.3s ease-in-out infinite",
+        "cart-bounce": "cart-bounce 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)",
+        "cart-pop": "cart-pop 0.6s ease-out",
+        "badge-ping": "badge-ping 0.4s ease-out",
       },
       backgroundImage: {
         "gradient-primary": "var(--gradient-primary)",
