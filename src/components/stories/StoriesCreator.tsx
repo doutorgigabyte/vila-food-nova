@@ -18,12 +18,29 @@ import VideoTrimmer from "./VideoTrimmer";
 import MusicSelector from "./MusicSelector";
 import StoryPreview from "./StoryPreview";
 import StoryScheduler, { ScheduleData } from "./StoryScheduler";
+import { StoryProductSelector } from "./StoryProductSelector";
+import { StoryImageEditor } from "./StoryImageEditor";
 import { uploadVideoToS3, uploadToS3 } from "@/lib/s3";
 
 interface StoriesCreatorProps {
   establishmentId: string;
   onClose: () => void;
   onPublish: (storyData: StoryData) => Promise<void>;
+}
+
+interface Product {
+  id: string;
+  name: string;
+  description: string | null;
+  price: number;
+  promotional_price: number | null;
+  image_url: string | null;
+}
+
+interface ImageAdjustments {
+  scale: number;
+  positionX: number;
+  positionY: number;
 }
 
 export interface StoryData {
@@ -37,9 +54,15 @@ export interface StoryData {
   scheduledFor?: Date;
   repostDays?: number[];
   repostTimes?: string[];
+  productId?: string;
+  productName?: string;
+  productPrice?: number;
+  imageScale?: number;
+  imagePositionX?: number;
+  imagePositionY?: number;
 }
 
-type Step = "upload" | "trim" | "music" | "details" | "schedule" | "preview";
+type Step = "upload" | "trim" | "edit-image" | "music" | "product" | "details" | "schedule" | "preview";
 
 const StoriesCreator = ({ establishmentId, onClose, onPublish }: StoriesCreatorProps) => {
   const [currentStep, setCurrentStep] = useState<Step>("upload");
@@ -50,6 +73,12 @@ const StoriesCreator = ({ establishmentId, onClose, onPublish }: StoriesCreatorP
   const [thumbnailBlob, setThumbnailBlob] = useState<Blob | null>(null);
   const [thumbnailPreviewUrl, setThumbnailPreviewUrl] = useState<string>("");
   const [selectedMusic, setSelectedMusic] = useState<string | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [imageAdjustments, setImageAdjustments] = useState<ImageAdjustments>({
+    scale: 1,
+    positionX: 50,
+    positionY: 50
+  });
   const [description, setDescription] = useState("");
   const [displayInStore, setDisplayInStore] = useState(true);
   const [displayInMarketplace, setDisplayInMarketplace] = useState(true);
@@ -82,8 +111,8 @@ const StoriesCreator = ({ establishmentId, onClose, onPublish }: StoriesCreatorP
     setMediaType(isVideo ? "video" : "image");
     setMediaPreviewUrl(URL.createObjectURL(file));
     
-    // For images, skip to details; for videos, go to trim
-    setCurrentStep(isVideo ? "trim" : "details");
+    // For images, go to edit-image; for videos, go to trim
+    setCurrentStep(isVideo ? "trim" : "edit-image");
   }, []);
 
   const handleTrimComplete = useCallback((blob: Blob, thumbnail: string, videoDuration: number) => {
@@ -103,7 +132,20 @@ const StoriesCreator = ({ establishmentId, onClose, onPublish }: StoriesCreatorP
 
   const handleMusicSelect = useCallback((musicUrl: string | null) => {
     setSelectedMusic(musicUrl);
+    setCurrentStep("product");
+  }, []);
+
+  const handleProductSelect = useCallback((product: Product | null) => {
+    setSelectedProduct(product);
+    // Auto-fill description with product info
+    if (product && !description) {
+      setDescription(product.name);
+    }
     setCurrentStep("details");
+  }, [description]);
+
+  const handleImageEditConfirm = useCallback(() => {
+    setCurrentStep("product");
   }, []);
 
   const handleDetailsComplete = useCallback(() => {
@@ -170,6 +212,12 @@ const StoriesCreator = ({ establishmentId, onClose, onPublish }: StoriesCreatorP
         scheduledFor: scheduleData?.scheduledFor,
         repostDays: scheduleData?.repostDays,
         repostTimes: scheduleData?.repostTimes,
+        productId: selectedProduct?.id,
+        productName: selectedProduct?.name,
+        productPrice: selectedProduct?.promotional_price || selectedProduct?.price,
+        imageScale: mediaType === "image" ? imageAdjustments.scale : undefined,
+        imagePositionX: mediaType === "image" ? imageAdjustments.positionX : undefined,
+        imagePositionY: mediaType === "image" ? imageAdjustments.positionY : undefined,
       };
 
       setUploadProgress(90);
@@ -189,16 +237,46 @@ const StoriesCreator = ({ establishmentId, onClose, onPublish }: StoriesCreatorP
     }
   };
 
-  const steps: { key: Step; label: string }[] = [
-    { key: "upload", label: "Upload" },
-    { key: "trim", label: "Cortar" },
-    { key: "music", label: "Música" },
-    { key: "details", label: "Detalhes" },
-    { key: "schedule", label: "Agendar" },
-    { key: "preview", label: "Preview" },
-  ];
+  const getSteps = (): { key: Step; label: string }[] => {
+    if (mediaType === "image") {
+      return [
+        { key: "upload", label: "Upload" },
+        { key: "edit-image", label: "Editar" },
+        { key: "product", label: "Produto" },
+        { key: "details", label: "Detalhes" },
+        { key: "schedule", label: "Agendar" },
+        { key: "preview", label: "Preview" },
+      ];
+    }
+    return [
+      { key: "upload", label: "Upload" },
+      { key: "trim", label: "Cortar" },
+      { key: "music", label: "Música" },
+      { key: "product", label: "Produto" },
+      { key: "details", label: "Detalhes" },
+      { key: "schedule", label: "Agendar" },
+      { key: "preview", label: "Preview" },
+    ];
+  };
 
+  const steps = getSteps();
   const currentStepIndex = steps.findIndex(s => s.key === currentStep);
+
+  const getBackStep = (): Step => {
+    if (currentStep === "details") {
+      return "product";
+    }
+    if (currentStep === "product") {
+      return mediaType === "video" ? "music" : "edit-image";
+    }
+    if (currentStep === "music") {
+      return "trim";
+    }
+    if (currentStep === "edit-image") {
+      return "upload";
+    }
+    return "upload";
+  };
 
   return (
     <div className="fixed inset-0 z-50 bg-background flex flex-col">
@@ -243,10 +321,10 @@ const StoriesCreator = ({ establishmentId, onClose, onPublish }: StoriesCreatorP
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-auto p-4">
+      <div className="flex-1 overflow-auto">
         {/* Upload Step */}
         {currentStep === "upload" && (
-          <div className="flex flex-col items-center justify-center h-full gap-6">
+          <div className="flex flex-col items-center justify-center h-full gap-6 p-4">
             <div className="text-center">
               <h2 className="text-xl font-bold mb-2">Adicionar Mídia</h2>
               <p className="text-muted-foreground text-sm">
@@ -294,10 +372,23 @@ const StoriesCreator = ({ establishmentId, onClose, onPublish }: StoriesCreatorP
 
         {/* Trim Step */}
         {currentStep === "trim" && mediaPreviewUrl && (
-          <VideoTrimmer
-            videoUrl={mediaPreviewUrl}
-            maxDuration={15}
-            onTrimComplete={handleTrimComplete}
+          <div className="p-4">
+            <VideoTrimmer
+              videoUrl={mediaPreviewUrl}
+              maxDuration={15}
+              onTrimComplete={handleTrimComplete}
+              onBack={() => setCurrentStep("upload")}
+            />
+          </div>
+        )}
+
+        {/* Edit Image Step */}
+        {currentStep === "edit-image" && mediaPreviewUrl && (
+          <StoryImageEditor
+            imageUrl={mediaPreviewUrl}
+            adjustments={imageAdjustments}
+            onAdjustmentsChange={setImageAdjustments}
+            onConfirm={handleImageEditConfirm}
             onBack={() => setCurrentStep("upload")}
           />
         )}
@@ -307,14 +398,28 @@ const StoriesCreator = ({ establishmentId, onClose, onPublish }: StoriesCreatorP
           <MusicSelector
             selectedMusic={selectedMusic}
             onSelect={handleMusicSelect}
-            onSkip={() => setCurrentStep("details")}
+            onSkip={() => {
+              setSelectedMusic(null);
+              setCurrentStep("product");
+            }}
             onBack={() => setCurrentStep("trim")}
+          />
+        )}
+
+        {/* Product Step */}
+        {currentStep === "product" && (
+          <StoryProductSelector
+            establishmentId={establishmentId}
+            selectedProduct={selectedProduct}
+            onSelect={handleProductSelect}
+            onSkip={() => setCurrentStep("details")}
+            onBack={() => setCurrentStep(mediaType === "video" ? "music" : "edit-image")}
           />
         )}
 
         {/* Details Step */}
         {currentStep === "details" && (
-          <div className="max-w-md mx-auto space-y-6">
+          <div className="max-w-md mx-auto space-y-6 p-4">
             <div>
               <h2 className="text-xl font-bold mb-1">Detalhes do Story</h2>
               <p className="text-muted-foreground text-sm">
@@ -336,9 +441,41 @@ const StoriesCreator = ({ establishmentId, onClose, onPublish }: StoriesCreatorP
                   src={mediaPreviewUrl}
                   alt="Preview"
                   className="w-full h-full object-cover"
+                  style={{
+                    transform: `scale(${imageAdjustments.scale})`,
+                    objectPosition: `${imageAdjustments.positionX}% ${imageAdjustments.positionY}%`
+                  }}
                 />
               )}
             </div>
+
+            {/* Product info */}
+            {selectedProduct && (
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-primary/10 border border-primary/20">
+                {selectedProduct.image_url && (
+                  <img 
+                    src={selectedProduct.image_url} 
+                    alt={selectedProduct.name}
+                    className="w-12 h-12 rounded-lg object-cover"
+                  />
+                )}
+                <div className="flex-1">
+                  <p className="font-medium text-sm">{selectedProduct.name}</p>
+                  <p className="text-primary text-sm font-bold">
+                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
+                      selectedProduct.promotional_price || selectedProduct.price
+                    )}
+                  </p>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => setCurrentStep("product")}
+                >
+                  Trocar
+                </Button>
+              </div>
+            )}
 
             <div className="space-y-4">
               <div>
@@ -386,7 +523,7 @@ const StoriesCreator = ({ establishmentId, onClose, onPublish }: StoriesCreatorP
             <div className="flex gap-3 pt-4">
               <Button 
                 variant="outline" 
-                onClick={() => setCurrentStep(mediaType === "video" ? "music" : "upload")}
+                onClick={() => setCurrentStep("product")}
                 className="flex-1"
               >
                 Voltar
@@ -395,7 +532,7 @@ const StoriesCreator = ({ establishmentId, onClose, onPublish }: StoriesCreatorP
                 onClick={handleDetailsComplete}
                 className="flex-1"
               >
-                Preview
+                Continuar
               </Button>
             </div>
           </div>
@@ -403,24 +540,30 @@ const StoriesCreator = ({ establishmentId, onClose, onPublish }: StoriesCreatorP
 
         {/* Schedule Step */}
         {currentStep === "schedule" && (
-          <StoryScheduler
-            onSchedule={handleScheduleComplete}
-            onBack={() => setCurrentStep("details")}
-            onSkip={handleSkipSchedule}
-          />
+          <div className="p-4">
+            <StoryScheduler
+              onSchedule={handleScheduleComplete}
+              onBack={() => setCurrentStep("details")}
+              onSkip={handleSkipSchedule}
+            />
+          </div>
         )}
 
         {/* Preview Step */}
         {currentStep === "preview" && (
-          <StoryPreview
-            mediaUrl={trimmedVideoBlob ? URL.createObjectURL(trimmedVideoBlob) : mediaPreviewUrl}
-            mediaType={mediaType || "image"}
-            description={description}
-            musicUrl={selectedMusic}
-            onBack={() => setCurrentStep("schedule")}
-            onPublish={handlePublish}
-            isPublishing={isProcessing}
-          />
+          <div className="p-4">
+            <StoryPreview
+              mediaUrl={trimmedVideoBlob ? URL.createObjectURL(trimmedVideoBlob) : mediaPreviewUrl}
+              mediaType={mediaType || "image"}
+              description={description}
+              musicUrl={selectedMusic}
+              product={selectedProduct}
+              imageAdjustments={mediaType === "image" ? imageAdjustments : undefined}
+              onBack={() => setCurrentStep("schedule")}
+              onPublish={handlePublish}
+              isPublishing={isProcessing}
+            />
+          </div>
         )}
       </div>
 
