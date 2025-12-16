@@ -131,6 +131,7 @@ function MediaFrame({
   frameClassName?: string;
   showOverlay?: boolean;
 }) {
+  const [imageError, setImageError] = useState(false);
   const isVideo = slide.media_type === 'video' || slide.image_url?.match(/\.(mp4|webm|mov)$/i);
   const scale = slide.image_scale || 1;
   const posX = slide.image_position_x || 0;
@@ -158,6 +159,23 @@ function MediaFrame({
     );
   }
 
+  // Se a imagem falhou, mostra um placeholder com gradiente
+  if (imageError || !slide.image_url) {
+    return (
+      <div className={`overflow-hidden ${frameClassName}`}>
+        <div 
+          className={`w-full h-full flex items-center justify-center ${className}`}
+          style={{ 
+            background: 'linear-gradient(135deg, hsl(var(--muted)) 0%, hsl(var(--muted-foreground)/0.2) 100%)'
+          }}
+        >
+          <span className="text-muted-foreground text-2xl">Imagem indisponível</span>
+        </div>
+        {showOverlay && <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />}
+      </div>
+    );
+  }
+
   return (
     <div className={`overflow-hidden ${frameClassName}`}>
       <img
@@ -165,6 +183,7 @@ function MediaFrame({
         alt={slide.title || 'Slide'}
         className={`w-full h-full object-cover ${className}`}
         style={mediaStyle}
+        onError={() => setImageError(true)}
       />
       {showOverlay && <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />}
     </div>
