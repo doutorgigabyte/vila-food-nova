@@ -104,7 +104,7 @@ export const useDashboardData = (establishmentId: string | null) => {
           .eq('establishment_id', establishmentId)
           .gte('created_at', monthISO),
         
-        // Pending orders with customer data - only fields needed for display
+        // Pending and confirmed orders with customer data
         supabase
           .from('orders')
           .select(`
@@ -113,9 +113,9 @@ export const useDashboardData = (establishmentId: string | null) => {
             customer:customers(name, phone)
           `)
           .eq('establishment_id', establishmentId)
-          .in('status', ['pending', 'confirmed', 'preparing'])
+          .in('status', ['pending', 'awaiting_payment', 'confirmed'])
           .order('created_at', { ascending: false })
-          .limit(10),
+          .limit(15),
         
         // Recent completed orders - only fields needed for display
         supabase

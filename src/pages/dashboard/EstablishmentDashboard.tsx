@@ -73,13 +73,13 @@ const EstablishmentDashboard = () => {
   const handleAcceptOrder = async (orderId: string) => {
     const { error } = await supabase
       .from('orders')
-      .update({ status: 'confirmed' })
+      .update({ status: 'preparing' })
       .eq('id', orderId);
 
     if (error) {
       toast.error("Erro ao aceitar pedido");
     } else {
-      toast.success("Pedido aceito!");
+      toast.success("Pedido enviado para preparo!");
       refetch();
     }
   };
@@ -380,9 +380,9 @@ const EstablishmentDashboard = () => {
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Clock className="w-5 h-5 text-yellow-500" />
-                  Pedidos Pendentes
-                  {stats.pendingOrders > 0 && (
-                    <Badge variant="destructive">{stats.pendingOrders}</Badge>
+                  Novos Pedidos
+                  {pendingOrders.length > 0 && (
+                    <Badge variant="destructive">{pendingOrders.length}</Badge>
                   )}
                 </CardTitle>
                 <Link to="/painel/pedidos">
@@ -403,14 +403,45 @@ const EstablishmentDashboard = () => {
                   <p>Nenhum pedido pendente</p>
                 </div>
               ) : (
-                pendingOrders.map((order) => (
-                  <div key={order.id} className="p-4 bg-muted/50 rounded-lg">
+                pendingOrders.map((order) => {
+                  const isAwaitingPayment = order.status === 'awaiting_payment';
+                  const isPayOnDelivery = ['cash', 'card_on_delivery', 'pix_on_delivery'].includes(order.payment_method);
+                  const isConfirmed = order.status === 'confirmed';
+                  
+                  return (
+                  <div key={order.id} className={`p-4 rounded-lg ${isConfirmed ? 'bg-green-500/10 border border-green-500/30' : isAwaitingPayment ? 'bg-yellow-500/10 border border-yellow-500/30' : 'bg-muted/50'}`}>
                     <div className="flex items-start justify-between mb-3">
                       <div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                           <span className="font-bold">#{order.order_number}</span>
                           <Badge variant="outline">
                             {order.delivery_type === "delivery" ? "Delivery" : "Retirada"}
+                          </Badge>
+                          {/* Payment status badges */}
+                          {isAwaitingPayment && (
+                            <Badge variant="secondary" className="bg-yellow-500/20 text-yellow-700 dark:text-yellow-400">
+                              ⏳ Aguardando Pagamento
+                            </Badge>
+                          )}
+                          {isPayOnDelivery && !isAwaitingPayment && (
+                            <Badge variant="secondary" className="bg-orange-500/20 text-orange-700 dark:text-orange-400">
+                              💵 Pagar na Entrega
+                            </Badge>
+                          )}
+                          {isConfirmed && (
+                            <Badge variant="secondary" className="bg-green-500/20 text-green-700 dark:text-green-400">
+                              ✅ Pagamento Confirmado
+                            </Badge>
+                          )}
+                          {/* Payment method */}
+                          <Badge variant="outline" className="text-xs">
+                            {order.payment_method === "pix" ? "PIX" :
+                             order.payment_method === "credit_card" ? "Crédito" :
+                             order.payment_method === "debit_card" ? "Débito" :
+                             order.payment_method === "cash" ? "Dinheiro" :
+                             order.payment_method === "card_on_delivery" ? "Cartão Entrega" :
+                             order.payment_method === "pix_on_delivery" ? "PIX Entrega" :
+                             order.payment_method || "N/A"}
                           </Badge>
                           <span className="text-sm text-muted-foreground">
                             {formatOrderTime(order.created_at)}
@@ -441,14 +472,21 @@ const EstablishmentDashboard = () => {
                       </p>
                     )}
                     <div className="flex gap-2">
-                      <Button 
-                        size="sm" 
-                        className="flex-1"
-                        onClick={() => handleAcceptOrder(order.id)}
-                      >
-                        <CheckCircle className="w-4 h-4 mr-2" />
-                        Aceitar
-                      </Button>
+                      {!isAwaitingPayment && (
+                        <Button 
+                          size="sm" 
+                          className="flex-1"
+                          onClick={() => handleAcceptOrder(order.id)}
+                        >
+                          <CheckCircle className="w-4 h-4 mr-2" />
+                          {isConfirmed ? 'Preparar' : 'Aceitar'}
+                        </Button>
+                      )}
+                      {isAwaitingPayment && (
+                        <Badge variant="outline" className="flex-1 justify-center py-2 text-yellow-600">
+                          Aguardando confirmação de pagamento
+                        </Badge>
+                      )}
                       <Button 
                         size="sm" 
                         variant="outline"
@@ -467,7 +505,8 @@ const EstablishmentDashboard = () => {
                       </Button>
                     </div>
                   </div>
-                ))
+                );
+                })
               )}
             </CardContent>
           </Card>
