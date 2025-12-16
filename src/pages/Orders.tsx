@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Package, Clock, CheckCircle, XCircle, Truck, ChefHat, Loader2, RefreshCw, Calendar } from 'lucide-react';
+import { ArrowLeft, Package, Clock, CheckCircle, XCircle, Truck, ChefHat, Loader2, RefreshCw, Calendar, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
@@ -189,14 +189,32 @@ const Orders = () => {
               )}
 
               {order.status === 'delivered' && (
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="mt-3 w-full"
-                  onClick={() => navigate(`/loja/${order.establishments?.slug}`)}
-                >
-                  Pedir novamente
-                </Button>
+                <div className="flex gap-2 mt-3">
+                  {!order.has_review && order.review_token ? (
+                    <Button 
+                      variant="default" 
+                      size="sm" 
+                      className="flex-1"
+                      onClick={() => navigate(`/pedidos/${order.id}/avaliar/${order.review_token}`)}
+                    >
+                      <Star className="h-4 w-4 mr-2" />
+                      Avaliar Pedido
+                    </Button>
+                  ) : order.has_review ? (
+                    <Badge variant="outline" className="text-green-600 border-green-600 flex items-center gap-1">
+                      <CheckCircle className="h-3 w-3" />
+                      Avaliado
+                    </Badge>
+                  ) : null}
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex-1"
+                    onClick={() => navigate(`/loja/${order.establishments?.slug}`)}
+                  >
+                    Pedir novamente
+                  </Button>
+                </div>
               )}
             </div>
           </div>
