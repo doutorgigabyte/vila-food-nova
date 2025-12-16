@@ -7,15 +7,33 @@ import {
   Upload,
   Volume2,
   VolumeX,
-  Loader2
+  Loader2,
+  ShoppingBag
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+interface Product {
+  id: string;
+  name: string;
+  description: string | null;
+  price: number;
+  promotional_price: number | null;
+  image_url: string | null;
+}
+
+interface ImageAdjustments {
+  scale: number;
+  positionX: number;
+  positionY: number;
+}
 
 interface StoryPreviewProps {
   mediaUrl: string;
   mediaType: "video" | "image";
   description: string;
   musicUrl?: string | null;
+  product?: Product | null;
+  imageAdjustments?: ImageAdjustments;
   onBack: () => void;
   onPublish: () => void;
   isPublishing: boolean;
@@ -26,14 +44,26 @@ const StoryPreview = ({
   mediaType, 
   description, 
   musicUrl, 
+  product,
+  imageAdjustments,
   onBack, 
   onPublish,
   isPublishing 
 }: StoryPreviewProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(true); // Auto-play enabled
   const [isMuted, setIsMuted] = useState(false);
   const [progress, setProgress] = useState(0);
+
+  // Auto-play video on mount
+  useEffect(() => {
+    if (mediaType === "video" && videoRef.current) {
+      videoRef.current.play().catch(() => {
+        // Autoplay blocked, user will need to click play
+        setIsPlaying(false);
+      });
+    }
+  }, [mediaType]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -48,12 +78,19 @@ const StoryPreview = ({
       video.play();
     };
 
+    const handlePlay = () => setIsPlaying(true);
+    const handlePause = () => setIsPlaying(false);
+
     video.addEventListener("timeupdate", handleTimeUpdate);
     video.addEventListener("ended", handleEnded);
+    video.addEventListener("play", handlePlay);
+    video.addEventListener("pause", handlePause);
 
     return () => {
       video.removeEventListener("timeupdate", handleTimeUpdate);
       video.removeEventListener("ended", handleEnded);
+      video.removeEventListener("play", handlePlay);
+      video.removeEventListener("pause", handlePause);
     };
   }, [mediaType]);
 
@@ -94,6 +131,13 @@ const StoryPreview = ({
     setIsMuted(!isMuted);
   };
 
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(price);
+  };
+
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
@@ -126,6 +170,7 @@ const StoryPreview = ({
               playsInline
               loop
               muted={isMuted}
+              autoPlay
               onClick={togglePlay}
             />
           ) : (
@@ -133,6 +178,10 @@ const StoryPreview = ({
               src={mediaUrl}
               alt="Story preview"
               className="w-full h-full object-cover"
+              style={imageAdjustments ? {
+                transform: `scale(${imageAdjustments.scale})`,
+                objectPosition: `${imageAdjustments.positionX}% ${imageAdjustments.positionY}%`
+              } : undefined}
               onClick={togglePlay}
             />
           )}
@@ -151,6 +200,32 @@ const StoryPreview = ({
 
           {/* Controls */}
           <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
+            {/* Product Card */}
+            {product && (
+              <div className="flex items-center gap-2 mb-3 p-2 rounded-lg bg-white/10 backdrop-blur-sm">
+                {product.image_url ? (
+                  <img 
+                    src={product.image_url} 
+                    alt={product.name}
+                    className="w-10 h-10 rounded-lg object-cover"
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center">
+                    <ShoppingBag className="w-5 h-5 text-white" />
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-white text-sm font-medium truncate">{product.name}</p>
+                  <p className="text-primary text-sm font-bold">
+                    {formatPrice(product.promotional_price || product.price)}
+                  </p>
+                </div>
+                <Button size="sm" className="h-8 text-xs">
+                  Ver
+                </Button>
+              </div>
+            )}
+
             {/* Description */}
             {description && (
               <p className="text-white text-sm mb-3 line-clamp-2">
