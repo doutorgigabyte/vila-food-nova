@@ -98,16 +98,26 @@ async function fetchVilaTokData(mainCategorySlug: string | null | undefined) {
     if (!acc[estId] && video.establishment) {
       acc[estId] = {
         establishment: video.establishment,
-        videos: []
+        videos: [],
+        mostRecentAt: video.created_at // Track most recent video date
       };
     }
     if (acc[estId]) {
       acc[estId].videos.push(video);
+      // Update most recent date if this video is newer
+      if (video.created_at > acc[estId].mostRecentAt) {
+        acc[estId].mostRecentAt = video.created_at;
+      }
     }
     return acc;
-  }, {} as Record<string, EstablishmentWithVideos>);
+  }, {} as Record<string, EstablishmentWithVideos & { mostRecentAt: string }>);
 
-  return Object.values(grouped);
+  // Sort establishments by most recent video (Instagram-style: last posted = first in queue)
+  const sortedEstablishments = Object.values(grouped)
+    .sort((a, b) => new Date(b.mostRecentAt).getTime() - new Date(a.mostRecentAt).getTime())
+    .map(({ mostRecentAt, ...rest }) => rest); // Remove mostRecentAt from final output
+
+  return sortedEstablishments;
 }
 
 export function useVilaTok(options: UseVilaTokOptions = {}) {
