@@ -126,9 +126,8 @@ const getMenuGroups = (baseUrl: string): MenuGroup[] => [
     items: [
       { icon: DollarSign, label: "Cupons", href: `${baseUrl}/cupons` },
       { icon: ShoppingCart, label: "Recuperador de Vendas", href: `${baseUrl}/carrinhos-abandonados` },
-      { icon: Video, label: "VilaTok", href: `${baseUrl}/videos` },
-      { icon: Tv, label: "VilaTok TV", href: `${baseUrl}/vilatok-tv`, badge: "Novo" },
-      { icon: Camera, label: "Stories", href: `${baseUrl}/stories` },
+      { icon: Video, label: "VilaTok", href: `${baseUrl}/vilatok` },
+      { icon: Tv, label: "VilaTok TV", href: `${baseUrl}/vilatok-tv` },
       { icon: Eye, label: "Banners", href: `${baseUrl}/banners` },
       { icon: Star, label: "Avaliações", href: `${baseUrl}/avaliacoes`, badge: "Novo" },
     ],
