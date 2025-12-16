@@ -110,6 +110,7 @@ export const useDashboardData = (establishmentId: string | null) => {
           .select(`
             id, order_number, customer_id, status, delivery_type, payment_method,
             items, subtotal, delivery_fee, total, delivery_address, observations, created_at,
+            payment_confirmed_at, customer_name,
             customer:customers(name, phone)
           `)
           .eq('establishment_id', establishmentId)

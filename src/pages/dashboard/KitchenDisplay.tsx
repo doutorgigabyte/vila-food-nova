@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { 
   ChefHat, Clock, CheckCircle, AlertCircle, Utensils, Package, Cog, Bell, 
-  VolumeX, ArrowLeft, Timer, TrendingUp, TrendingDown, History, RotateCcw, Eye, X
+  VolumeX, ArrowLeft, Timer, TrendingUp, TrendingDown, History, RotateCcw, Eye, X, DollarSign
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNotificationSound } from "@/hooks/useNotificationSound";
 import { useAuth } from "@/hooks/useAuth";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { PaymentConfirmationDialog } from "@/components/orders/PaymentConfirmationDialog";
 
 interface OrderItem {
   name: string;
@@ -30,6 +31,9 @@ interface Order {
   status: string;
   observations?: string;
   payment_method?: string;
+  total?: number;
+  customer_name?: string;
+  payment_confirmed_at?: string;
 }
 
 interface DailyStats {
@@ -89,6 +93,8 @@ const KitchenDisplay = () => {
   const [dailyStats, setDailyStats] = useState<DailyStats>({ 
     delivered: 0, returned: 0, cancelled: 0, yesterdayDelivered: 0 
   });
+  const [orderToConfirmPayment, setOrderToConfirmPayment] = useState<Order | null>(null);
+  const [isConfirmingPayment, setIsConfirmingPayment] = useState(false);
   const previousOrdersRef = useRef<string[]>([]);
   
   const { playNotification, stopSound, isPlaying } = useNotificationSound();
@@ -351,6 +357,104 @@ const KitchenDisplay = () => {
     }
   };
 
+  // Handle delivery with payment confirmation for cash/card_on_delivery/pix_on_delivery
+  const handleMarkDelivered = (order: Order) => {
+    const needsPaymentConfirmation = ['cash', 'card_on_delivery', 'pix_on_delivery'].includes(order.payment_method || '');
+    
+    if (needsPaymentConfirmation) {
+      setOrderToConfirmPayment(order);
+    } else {
+      updateStatus(order.id, 'delivered');
+    }
+  };
+
+  // Confirm payment and mark as delivered
+  const confirmPaymentAndDeliver = async (orderId: string, amount: number) => {
+    if (!user || !establishmentId) return;
+    
+    setIsConfirmingPayment(true);
+    try {
+      const order = orderToConfirmPayment;
+      if (!order) throw new Error("Pedido não encontrado");
+
+      // 1. Update order status and payment confirmation
+      const { error: orderError } = await supabase
+        .from("orders")
+        .update({ 
+          status: 'delivered',
+          payment_confirmed_at: new Date().toISOString(),
+          payment_confirmed_by: user.id
+        })
+        .eq("id", orderId);
+
+      if (orderError) throw orderError;
+
+      // 2. Register in cash_flow
+      const { error: cashFlowError } = await supabase
+        .from("cash_flow")
+        .insert({
+          establishment_id: establishmentId,
+          type: 'income',
+          category: 'vendas',
+          description: `Pedido #${order.order_number}`,
+          amount: amount,
+          payment_method: order.payment_method,
+          reference_id: orderId
+        });
+
+      if (cashFlowError) {
+        console.error("Cash flow error:", cashFlowError);
+        // Don't throw - order is already delivered
+      }
+
+      toast.success("Pagamento confirmado e pedido finalizado!");
+      setOrderToConfirmPayment(null);
+      fetchOrders();
+      fetchDailyStats();
+    } catch (error) {
+      console.error("Error confirming payment:", error);
+      toast.error("Erro ao confirmar pagamento");
+    } finally {
+      setIsConfirmingPayment(false);
+    }
+  };
+
+  // Manual payment confirmation for already delivered orders
+  const confirmManualPayment = async (order: Order) => {
+    if (!user || !establishmentId || !order.total) return;
+
+    try {
+      const { error: orderError } = await supabase
+        .from("orders")
+        .update({ 
+          payment_confirmed_at: new Date().toISOString(),
+          payment_confirmed_by: user.id
+        })
+        .eq("id", order.id);
+
+      if (orderError) throw orderError;
+
+      const { error: cashFlowError } = await supabase
+        .from("cash_flow")
+        .insert({
+          establishment_id: establishmentId,
+          type: 'income',
+          category: 'vendas',
+          description: `Pedido #${order.order_number}`,
+          amount: order.total,
+          payment_method: order.payment_method,
+          reference_id: order.id
+        });
+
+      if (cashFlowError) console.error("Cash flow error:", cashFlowError);
+
+      toast.success("Pagamento confirmado!");
+      fetchDailyStats();
+    } catch (error) {
+      toast.error("Erro ao confirmar pagamento");
+    }
+  };
+
   const getTimeElapsed = (createdAt: string) => {
     const diff = Math.floor((Date.now() - new Date(createdAt).getTime()) / 60000);
     if (diff < 1) return "Agora";
@@ -591,7 +695,7 @@ const KitchenDisplay = () => {
                   )}
                   {order.status === "ready" && (
                     <Button
-                      onClick={() => updateStatus(order.id, "delivered")}
+                      onClick={() => handleMarkDelivered(order)}
                       variant="outline"
                       className="flex-1 h-14 text-lg border-green-500 text-green-600 hover:bg-green-500/10"
                     >
@@ -628,28 +732,57 @@ const KitchenDisplay = () => {
                 </p>
               ) : (
                 <div className="space-y-2 max-h-64 overflow-y-auto">
-                  {deliveredOrders.map((order) => (
-                    <div 
-                      key={order.id} 
-                      className={`flex items-center justify-between p-3 rounded-lg cursor-pointer hover:opacity-80 transition-opacity ${
-                        order.status === 'delivered' ? 'bg-green-500/10' : 'bg-red-500/10'
-                      }`}
-                      onClick={() => setSelectedOrder(order)}
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className="text-lg font-bold">#{order.order_number}</span>
-                        <Badge variant={order.status === 'delivered' ? 'default' : 'destructive'}>
-                          {order.status === 'delivered' ? '✅ Entregue' : '❌ Cancelado'}
-                        </Badge>
+                  {deliveredOrders.map((order) => {
+                    const needsPaymentConfirmation = ['cash', 'card_on_delivery', 'pix_on_delivery'].includes(order.payment_method || '');
+                    const isPaid = !!order.payment_confirmed_at || !needsPaymentConfirmation;
+                    
+                    return (
+                      <div 
+                        key={order.id} 
+                        className={`flex items-center justify-between p-3 rounded-lg ${
+                          order.status === 'delivered' ? 'bg-green-500/10' : 'bg-red-500/10'
+                        }`}
+                      >
+                        <div 
+                          className="flex items-center gap-3 flex-1 cursor-pointer hover:opacity-80"
+                          onClick={() => setSelectedOrder(order)}
+                        >
+                          <span className="text-lg font-bold">#{order.order_number}</span>
+                          <Badge variant={order.status === 'delivered' ? 'default' : 'destructive'}>
+                            {order.status === 'delivered' ? '✅ Entregue' : '❌ Cancelado'}
+                          </Badge>
+                          {order.status === 'delivered' && (
+                            <Badge variant={isPaid ? 'outline' : 'secondary'} className={isPaid ? 'text-green-600' : 'text-orange-600'}>
+                              {isPaid ? '💰 Pago' : '⏳ Pag. Pendente'}
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {order.status === 'delivered' && !isPaid && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="border-green-500 text-green-600 hover:bg-green-500/10"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                confirmManualPayment(order);
+                              }}
+                            >
+                              <DollarSign className="w-4 h-4 mr-1" />
+                              Confirmar
+                            </Button>
+                          )}
+                          <span className="text-sm text-muted-foreground">
+                            {new Date(order.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                          <Eye 
+                            className="w-4 h-4 text-muted-foreground cursor-pointer hover:text-foreground" 
+                            onClick={() => setSelectedOrder(order)}
+                          />
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-muted-foreground">
-                          {new Date(order.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                        <Eye className="w-4 h-4 text-muted-foreground" />
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </CardContent>
@@ -735,6 +868,15 @@ const KitchenDisplay = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Payment Confirmation Dialog */}
+      <PaymentConfirmationDialog
+        order={orderToConfirmPayment}
+        open={!!orderToConfirmPayment}
+        onOpenChange={(open) => !open && setOrderToConfirmPayment(null)}
+        onConfirm={confirmPaymentAndDeliver}
+        isLoading={isConfirmingPayment}
+      />
     </div>
   );
 };

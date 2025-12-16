@@ -3640,6 +3640,8 @@ export type Database = {
           order_number: number
           order_source: string | null
           out_of_stock_action: string | null
+          payment_confirmed_at: string | null
+          payment_confirmed_by: string | null
           payment_method: Database["public"]["Enums"]["payment_method"] | null
           pix_code: string | null
           pix_expires_at: string | null
@@ -3679,6 +3681,8 @@ export type Database = {
           order_number?: number
           order_source?: string | null
           out_of_stock_action?: string | null
+          payment_confirmed_at?: string | null
+          payment_confirmed_by?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"] | null
           pix_code?: string | null
           pix_expires_at?: string | null
@@ -3718,6 +3722,8 @@ export type Database = {
           order_number?: number
           order_source?: string | null
           out_of_stock_action?: string | null
+          payment_confirmed_at?: string | null
+          payment_confirmed_by?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"] | null
           pix_code?: string | null
           pix_expires_at?: string | null
