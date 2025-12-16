@@ -43,19 +43,11 @@ export const NotificationProvider = ({ children, establishmentId }: Notification
     const isInAdminContext = pathname.startsWith('/admin');
     const isInEstablishmentContext = pathname.startsWith('/painel/');
     
-    // Extract establishment slug from URL if in establishment context
-    let estSlug: string | undefined;
-    if (isInEstablishmentContext) {
-      const match = pathname.match(/^\/painel\/([^/]+)/);
-      estSlug = match ? match[1] : undefined;
-    }
-    
     return {
       isInAdminContext,
       isInEstablishmentContext,
-      estSlug: establishmentId || estSlug
     };
-  }, [establishmentId]);
+  }, []);
   
   const {
     notifications,
@@ -65,7 +57,7 @@ export const NotificationProvider = ({ children, establishmentId }: Notification
     markAllAsRead,
     dismissNotification,
     createNotification,
-  } = useNotifications(getContextFromUrl.estSlug, { 
+  } = useNotifications(establishmentId, { 
     isInAdminContext: getContextFromUrl.isInAdminContext, 
     isInEstablishmentContext: getContextFromUrl.isInEstablishmentContext 
   });
