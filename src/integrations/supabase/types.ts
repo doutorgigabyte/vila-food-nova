@@ -6646,11 +6646,13 @@ export type Database = {
           establishment_name: string
           establishment_slug: string
           estimated_time: number
+          has_review: boolean
           id: string
           items: Json
           observations: string
           order_number: number
           payment_method: string
+          review_token: string
           status: string
           subtotal: number
           table_number: string
