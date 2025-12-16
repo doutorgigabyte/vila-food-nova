@@ -132,6 +132,10 @@ function MediaFrame({
   showOverlay?: boolean;
 }) {
   const [imageError, setImageError] = useState(false);
+  useEffect(() => {
+    setImageError(false);
+  }, [slide.id, slide.image_url]);
+
   const isVideo = slide.media_type === 'video' || slide.image_url?.match(/\.(mp4|webm|mov)$/i);
   const scale = slide.image_scale || 1;
   const posX = slide.image_position_x || 0;
@@ -166,7 +170,7 @@ function MediaFrame({
         <div 
           className={`w-full h-full flex items-center justify-center ${className}`}
           style={{ 
-            background: 'linear-gradient(135deg, hsl(var(--muted)) 0%, hsl(var(--muted-foreground)/0.2) 100%)'
+            background: 'linear-gradient(135deg, hsl(var(--muted)) 0%, hsl(var(--muted-foreground) / 0.2) 100%)'
           }}
         >
           <span className="text-muted-foreground text-2xl">Imagem indisponível</span>

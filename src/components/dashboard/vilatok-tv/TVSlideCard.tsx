@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Card, CardContent } from "@/components/ui/card";
@@ -60,6 +61,13 @@ export function TVSlideCard({
   const isVideo = slide.media_type === 'video' || 
     slide.image_url?.match(/\.(mp4|webm|mov)$/i);
 
+  const [imageError, setImageError] = useState(false);
+  const hasImage = Boolean(slide.image_url) && !imageError;
+
+  useEffect(() => {
+    setImageError(false);
+  }, [slide.id, slide.image_url]);
+
   return (
     <Card 
       ref={setNodeRef}
@@ -76,14 +84,19 @@ export function TVSlideCard({
               muted
             />
           </div>
-        ) : (
+        ) : hasImage ? (
           <img
             src={slide.image_url}
             alt={slide.title || 'Slide'}
             className="w-full h-full object-cover"
+            onError={() => setImageError(true)}
           />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-muted">
+            <span className="text-sm text-muted-foreground">Imagem indisponível</span>
+          </div>
         )}
-        
+
         {/* Drag Handle */}
         <div 
           {...attributes}
