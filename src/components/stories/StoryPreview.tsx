@@ -8,7 +8,8 @@ import {
   Volume2,
   VolumeX,
   Loader2,
-  ShoppingBag
+  ShoppingBag,
+  Music
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -51,15 +52,51 @@ const StoryPreview = ({
   isPublishing 
 }: StoryPreviewProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [isPlaying, setIsPlaying] = useState(true); // Auto-play enabled
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [musicLoaded, setMusicLoaded] = useState(false);
+
+  // Handle music loading
+  useEffect(() => {
+    if (musicUrl && audioRef.current) {
+      audioRef.current.src = musicUrl;
+      audioRef.current.load();
+      
+      const handleCanPlay = () => setMusicLoaded(true);
+      const handleError = () => {
+        console.warn('Music failed to load:', musicUrl);
+        setMusicLoaded(false);
+      };
+      
+      audioRef.current.addEventListener('canplaythrough', handleCanPlay);
+      audioRef.current.addEventListener('error', handleError);
+      
+      return () => {
+        audioRef.current?.removeEventListener('canplaythrough', handleCanPlay);
+        audioRef.current?.removeEventListener('error', handleError);
+      };
+    }
+  }, [musicUrl]);
+
+  // Sync audio with play state
+  useEffect(() => {
+    if (audioRef.current && musicUrl) {
+      if (isPlaying && !isMuted) {
+        audioRef.current.play().catch(console.warn);
+      } else {
+        audioRef.current.pause();
+      }
+    }
+  }, [isPlaying, isMuted, musicUrl]);
 
   // Auto-play video on mount
   useEffect(() => {
     if (mediaType === "video" && videoRef.current) {
-      videoRef.current.play().catch(() => {
-        // Autoplay blocked, user will need to click play
+      videoRef.current.play().then(() => {
+        setIsPlaying(true);
+      }).catch(() => {
         setIsPlaying(false);
       });
     }
@@ -105,7 +142,7 @@ const StoryPreview = ({
           if (prev >= 100) {
             return 0;
           }
-          return prev + 2; // 5 seconds total (100 / 2 = 50 steps, 100ms each = 5s)
+          return prev + 2;
         });
       }, 100);
     }
@@ -128,6 +165,9 @@ const StoryPreview = ({
     if (videoRef.current) {
       videoRef.current.muted = !isMuted;
     }
+    if (audioRef.current) {
+      audioRef.current.muted = !isMuted;
+    }
     setIsMuted(!isMuted);
   };
 
@@ -140,6 +180,11 @@ const StoryPreview = ({
 
   return (
     <div className="flex flex-col h-full">
+      {/* Hidden audio element for music */}
+      {musicUrl && (
+        <audio ref={audioRef} loop preload="auto" />
+      )}
+
       {/* Header */}
       <div className="text-center mb-4">
         <h2 className="text-xl font-bold mb-1">Preview do Story</h2>
@@ -169,7 +214,7 @@ const StoryPreview = ({
               className="w-full h-full object-cover"
               playsInline
               loop
-              muted={isMuted}
+              muted={isMuted || !!musicUrl}
               autoPlay
               onClick={togglePlay}
             />
@@ -246,26 +291,32 @@ const StoryPreview = ({
                 )}
               </button>
 
-              {mediaType === "video" && (
-                <button
-                  onClick={toggleMute}
-                  className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center"
-                >
-                  {isMuted ? (
-                    <VolumeX className="w-5 h-5 text-white" />
-                  ) : (
-                    <Volume2 className="w-5 h-5 text-white" />
-                  )}
-                </button>
-              )}
+              <button
+                onClick={toggleMute}
+                className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center"
+              >
+                {isMuted ? (
+                  <VolumeX className="w-5 h-5 text-white" />
+                ) : (
+                  <Volume2 className="w-5 h-5 text-white" />
+                )}
+              </button>
             </div>
           </div>
 
           {/* Music indicator */}
           {musicUrl && (
-            <div className="absolute top-12 right-2 flex items-center gap-1 bg-black/50 px-2 py-1 rounded-full">
-              <div className="w-4 h-4 bg-white rounded-full animate-pulse" />
-              <span className="text-white text-xs">🎵</span>
+            <div className={cn(
+              "absolute top-12 right-2 flex items-center gap-1 px-2 py-1 rounded-full",
+              musicLoaded ? "bg-primary/80" : "bg-black/50"
+            )}>
+              <Music className={cn(
+                "w-3 h-3 text-white",
+                isPlaying && musicLoaded && "animate-pulse"
+              )} />
+              <span className="text-white text-xs">
+                {musicLoaded ? "♫" : "..."}
+              </span>
             </div>
           )}
         </div>
