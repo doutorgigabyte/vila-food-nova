@@ -136,17 +136,20 @@ export default function VilaTok() {
         accepts_delivery: true,
       }
     );
-    toast.success(`${video.product.name} adicionado!`);
   }, [activeEstablishmentIndex, establishments, addToCart]);
 
   const handleGoToStore = useCallback(() => {
     const est = establishments[activeEstablishmentIndex];
-    const video = est?.videos[getActiveVideoIndex(activeEstablishmentIndex)];
-    if (est && video?.product) {
-      // Navegar para a loja com o produto selecionado
-      navigate(`/loja/${est.establishment.slug}?product=${video.product.id}`);
-    } else if (est) {
+    if (est) {
       navigate(`/loja/${est.establishment.slug}`);
+    }
+  }, [activeEstablishmentIndex, establishments, navigate]);
+
+  const handleBuyProduct = useCallback(() => {
+    const est = establishments[activeEstablishmentIndex];
+    const video = est?.videos[getActiveVideoIndex(activeEstablishmentIndex)];
+    if (video?.product) {
+      navigate(`/produto/${video.product.id}`);
     }
   }, [activeEstablishmentIndex, establishments, navigate]);
 
@@ -233,6 +236,8 @@ export default function VilaTok() {
             touchRatio={1}
             longSwipesRatio={0.2}
             resistanceRatio={0.8}
+            preventClicks={false}
+            preventClicksPropagation={false}
             className="w-full h-full"
             onSwiper={(swiper) => { verticalSwiperRef.current = swiper; }}
             onSlideChange={handleVerticalSlideChange}
@@ -247,6 +252,8 @@ export default function VilaTok() {
               threshold={10}
               touchRatio={1}
               resistanceRatio={0.8}
+              preventClicks={false}
+              preventClicksPropagation={false}
               nested
               className="w-full h-full"
               onSwiper={(swiper) => { horizontalSwipersRef.current.set(estIndex, swiper); }}
@@ -325,17 +332,8 @@ export default function VilaTok() {
                           console.log('Share button clicked');
                           handleShare();
                         }}
-                        onProduct={handleAddToCart}
-                        onStore={() => {
-                          const est = establishments[activeEstablishmentIndex];
-                          const video = est?.videos[getActiveVideoIndex(activeEstablishmentIndex)];
-                          if (est && video?.product) {
-                            // Navegar para a loja com o produto selecionado
-                            navigate(`/loja/${est.establishment.slug}?product=${video.product.id}`);
-                          } else if (est) {
-                            navigate(`/loja/${est.establishment.slug}`);
-                          }
-                        }}
+                        onBuy={handleBuyProduct}
+                        onStore={handleGoToStore}
                       />
                     </div>
                   </SwiperSlide>

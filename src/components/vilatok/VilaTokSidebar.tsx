@@ -11,7 +11,7 @@ interface VilaTokSidebarProps {
   onLike: () => void;
   onComment: () => void;
   onShare: () => void;
-  onProduct: () => void;
+  onBuy: () => void;
   onStore: () => void;
 }
 
@@ -30,12 +30,11 @@ export function VilaTokSidebar({
   onLike,
   onComment,
   onShare,
-  onProduct,
+  onBuy,
   onStore,
 }: VilaTokSidebarProps) {
   const handleButtonClick = useCallback((e: React.MouseEvent | React.TouchEvent, onClick: () => void) => {
     e.stopPropagation();
-    e.preventDefault();
     onClick();
   }, []);
 
@@ -81,7 +80,7 @@ export function VilaTokSidebar({
       <Button icon={Heart} count={likesCount} onClick={onLike} active={isLiked} />
       <Button icon={MessageCircle} count={commentsCount} onClick={onComment} />
       <Button icon={Share2} count={sharesCount} onClick={onShare} />
-      {hasProduct && <Button icon={ShoppingBag} onClick={onProduct} label="Comprar" primary />}
+      {hasProduct && <Button icon={ShoppingBag} onClick={onBuy} label="Comprar" primary />}
       <Button icon={Store} onClick={onStore} label="Loja" />
     </div>
   );
