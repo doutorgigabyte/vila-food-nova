@@ -187,7 +187,10 @@ const AppRoutes = () => {
         location.pathname.startsWith('/vilatok') || 
         location.pathname.startsWith('/categoria/') ||
         location.pathname.startsWith('/checkout/') ||
-        location.pathname.startsWith('/pedidos/');
+        location.pathname.startsWith('/pedidos/') ||
+        location.pathname.startsWith('/produto/') ||
+        location.pathname.startsWith('/kit/') ||
+        location.pathname.startsWith('/produtos/');
       
       // Skip global auth check for public routes and admin routes
       // Admin routes have their own ProtectedAdminRoute component handling auth
