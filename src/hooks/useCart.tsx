@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { safeLocalStorage } from "@/lib/utils";
 import { trackAddToCart as trackAddToCartAnalytics } from "@/lib/analytics";
+import { CartConflictDialog } from "@/components/cart/CartConflictDialog";
 
 export interface CartProduct {
   id: string;
@@ -57,6 +58,13 @@ export interface EstablishmentInfo {
   operating_hours?: Record<string, { open: boolean; start: string; end: string }> | null;
 }
 
+interface PendingCartProduct {
+  product: CartProduct;
+  establishmentInfo: EstablishmentInfo;
+  quantity: number;
+  observation: string;
+}
+
 interface CartContextType {
   items: CartItem[];
   establishments: Map<string, EstablishmentInfo>;
@@ -86,6 +94,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [establishments, setEstablishments] = useState<Map<string, EstablishmentInfo>>(new Map());
   const [currentVilaId, setCurrentVilaId] = useState<string | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [pendingProduct, setPendingProduct] = useState<PendingCartProduct | null>(null);
 
   // Helper to validate if string is a valid UUID
   const isValidUUID = (str: string): boolean => {
@@ -151,11 +160,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       const newVilaId = establishmentInfo.vila_id;
       
       if (!currentVilaId || !newVilaId || currentVilaId !== newVilaId) {
-        // Different vila or no vila - show toast notification instead of browser dialog
-        toast.error(
-          "Você tem itens de outro estabelecimento no carrinho. Esvazie o carrinho primeiro para adicionar produtos de outro local.",
-          { duration: 5000 }
-        );
+        // Different vila or no vila - show confirmation dialog
+        setPendingProduct({ product, establishmentInfo, quantity, observation });
         return false;
       } else {
         // Same vila - allow multi-establishment cart
@@ -285,6 +291,64 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     safeLocalStorage.removeItem(ESTABLISHMENTS_STORAGE_KEY);
   };
 
+  // Handle cart conflict confirmation
+  const confirmReplaceCart = async () => {
+    if (pendingProduct) {
+      // Clear cart first
+      setItems([]);
+      setEstablishments(new Map());
+      setCurrentVilaId(null);
+      
+      // Add the pending product
+      const { product, establishmentInfo, quantity, observation } = pendingProduct;
+      
+      // Add establishment info
+      const newEstablishments = new Map<string, EstablishmentInfo>();
+      newEstablishments.set(product.establishment_id, establishmentInfo);
+      setEstablishments(newEstablishments);
+      setCurrentVilaId(establishmentInfo.vila_id);
+      
+      // Add item
+      setItems([{ product, quantity, observation }]);
+      
+      // Track analytics
+      try {
+        trackAddToCartAnalytics({
+          id: product.id,
+          name: product.name,
+          price: product.promotional_price || product.price,
+          quantity
+        });
+      } catch (err) {
+        console.error('[Analytics] Error tracking add to cart:', err);
+      }
+      
+      // Dispatch animation event
+      window.dispatchEvent(new CustomEvent('cart-item-added', { 
+        detail: { productName: product.name, quantity } 
+      }));
+      
+      toast.success(`${product.name} adicionado ao carrinho!`, {
+        duration: 2000,
+        position: 'top-center',
+      });
+      
+      setPendingProduct(null);
+    }
+  };
+
+  const cancelReplaceCart = () => {
+    setPendingProduct(null);
+  };
+
+  // Get current establishment name for dialog
+  const getCurrentEstablishmentName = (): string | undefined => {
+    if (establishments.size > 0) {
+      return establishments.values().next().value?.name;
+    }
+    return undefined;
+  };
+
   const clearEstablishmentCart = (establishmentId: string) => {
     setItems((prevItems) => 
       prevItems.filter((item) => item.product.establishment_id !== establishmentId)
@@ -349,6 +413,13 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       }}
     >
       {children}
+      <CartConflictDialog
+        isOpen={!!pendingProduct}
+        currentEstablishment={getCurrentEstablishmentName()}
+        newEstablishment={pendingProduct?.establishmentInfo.name}
+        onConfirm={confirmReplaceCart}
+        onCancel={cancelReplaceCart}
+      />
     </CartContext.Provider>
   );
 };
