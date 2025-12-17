@@ -23,6 +23,10 @@ export interface StoreEstablishment {
   primary_color: string | null;
   secondary_color: string | null;
   vila_id: string | null;
+  // SEO fields
+  meta_title: string | null;
+  meta_description: string | null;
+  meta_image: string | null;
   segment?: {
     name: string;
     icon: string | null;
@@ -99,7 +103,10 @@ export const useStoreData = (slug: string | undefined) => {
             primary_color,
             secondary_color,
             segment_id,
-            vila_id
+            vila_id,
+            meta_title,
+            meta_description,
+            meta_image
           `)
           .eq("slug", slug)
           .maybeSingle();
