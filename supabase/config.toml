@@ -167,3 +167,6 @@ verify_jwt = true  # Requires auth - establishment owner only
 
 [functions.send-password-reset]
 verify_jwt = false  # Public - password recovery flow
+
+[functions.store-seo]
+verify_jwt = false  # Public - bot prerendering for SEO
