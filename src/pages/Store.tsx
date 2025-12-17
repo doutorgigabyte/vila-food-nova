@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { Link, useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { Helmet } from "react-helmet-async";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -304,8 +305,38 @@ const Store = () => {
     );
   }
 
+  // Build SEO data
+  const seoTitle = establishment.meta_title || `${establishment.name} | VilaFood`;
+  const seoDescription = establishment.meta_description || establishment.description || `Cardápio digital de ${establishment.name}. Faça seu pedido online!`;
+  const seoImage = establishment.meta_image || establishment.banner_url || establishment.logo_url || '/og-image.png';
+  const seoUrl = `https://vilafood.delivery/loja/${establishment.slug}`;
+
   return (
     <div className="min-h-screen bg-background pb-20">
+      {/* Dynamic SEO Meta Tags */}
+      <Helmet>
+        <title>{seoTitle}</title>
+        <meta name="description" content={seoDescription} />
+        
+        {/* Open Graph / Facebook */}
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content={seoUrl} />
+        <meta property="og:title" content={seoTitle} />
+        <meta property="og:description" content={seoDescription} />
+        <meta property="og:image" content={seoImage} />
+        <meta property="og:site_name" content="VilaFood" />
+        <meta property="og:locale" content="pt_BR" />
+        
+        {/* Twitter */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:url" content={seoUrl} />
+        <meta name="twitter:title" content={seoTitle} />
+        <meta name="twitter:description" content={seoDescription} />
+        <meta name="twitter:image" content={seoImage} />
+        
+        {/* Canonical */}
+        <link rel="canonical" href={seoUrl} />
+      </Helmet>
       {activeTab === "info" ? (
         <StoreInfoTab establishment={establishment} />
       ) : activeTab === "conta" ? (
