@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { 
-  Video, MessageSquare, ChefHat, Wallet, CreditCard, Smartphone, Truck, BarChart3
+  Video, MessageSquare, ChefHat, Wallet, CreditCard, Smartphone, Truck, BarChart3, Tv
 } from "lucide-react";
 import PhoneFrame from "./features/PhoneFrame";
 import VilaTokSimulation from "./features/VilaTokSimulation";
@@ -11,6 +11,7 @@ import PDVSimulation from "./features/PDVSimulation";
 import MenuSimulation from "./features/MenuSimulation";
 import DeliverySimulation from "./features/DeliverySimulation";
 import ReportsSimulation from "./features/ReportsSimulation";
+import VilaTokTVSimulation from "./features/VilaTokTVSimulation";
 
 interface FeatureTab {
   id: string;
@@ -116,6 +117,18 @@ const featureTabs: FeatureTab[] = [
       { title: "Vendas em tempo real", description: "Dashboard ao vivo" },
       { title: "Produtos top", description: "Mais vendidos" },
       { title: "Horários de pico", description: "Quando mais vende" },
+    ],
+  },
+  {
+    id: "vilatok-tv",
+    icon: Tv,
+    label: "VilaTok TV",
+    color: "from-rose-500 to-pink-600",
+    simulation: <VilaTokTVSimulation />,
+    features: [
+      { title: "Link público", description: "Abra em qualquer TV" },
+      { title: "Templates animados", description: "Slides profissionais" },
+      { title: "QR Code integrado", description: "Cliente escaneia e compra" },
     ],
   },
 ];

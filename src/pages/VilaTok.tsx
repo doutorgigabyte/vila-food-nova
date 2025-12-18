@@ -1,4 +1,4 @@
-import { useCallback, useState, useRef } from 'react';
+import { useCallback, useState, useRef, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Flame } from 'lucide-react';
 import { Swiper, SwiperSlide } from 'swiper/react';
@@ -15,8 +15,11 @@ import { VilaTokOverlay } from '@/components/vilatok/VilaTokOverlay';
 import { VilaTokNavigation } from '@/components/vilatok/VilaTokNavigation';
 import { VilaTokProgressBars } from '@/components/vilatok/VilaTokProgressBars';
 import { VilaTokComments } from '@/components/vilatok/VilaTokComments';
+import { VilaTokTutorial } from '@/components/vilatok/VilaTokTutorial';
 import { useCart } from '@/hooks/useCart';
 import { toast } from 'sonner';
+
+const TUTORIAL_STORAGE_KEY = 'vilatok_tutorial_completed';
 
 export default function VilaTok() {
   const navigate = useNavigate();
@@ -41,6 +44,14 @@ export default function VilaTok() {
   const [activeEstablishmentIndex, setActiveEstablishmentIndex] = useState(0);
   const [activeVideoIndices, setActiveVideoIndices] = useState<Map<number, number>>(new Map());
   const [showComments, setShowComments] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(() => {
+    return !localStorage.getItem(TUTORIAL_STORAGE_KEY);
+  });
+
+  const handleTutorialComplete = useCallback(() => {
+    localStorage.setItem(TUTORIAL_STORAGE_KEY, 'true');
+    setShowTutorial(false);
+  }, []);
 
   const getActiveVideoIndex = (estIndex: number) => activeVideoIndices.get(estIndex) || 0;
 
@@ -364,6 +375,9 @@ export default function VilaTok() {
           // Update comments count if needed
         }}
       />
+
+      {/* Tutorial - mostrado no primeiro acesso */}
+      {showTutorial && <VilaTokTutorial onComplete={handleTutorialComplete} />}
     </div>
   );
 }
