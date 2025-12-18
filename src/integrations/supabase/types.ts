@@ -2421,6 +2421,8 @@ export type Database = {
           facebook_url: string | null
           free_delivery_radius_km: number | null
           gemini_api_key: string | null
+          google_calendar_id: string | null
+          google_calendar_token: Json | null
           id: string
           instagram_url: string | null
           is_open: boolean | null
@@ -2517,6 +2519,8 @@ export type Database = {
           facebook_url?: string | null
           free_delivery_radius_km?: number | null
           gemini_api_key?: string | null
+          google_calendar_id?: string | null
+          google_calendar_token?: Json | null
           id?: string
           instagram_url?: string | null
           is_open?: boolean | null
@@ -2613,6 +2617,8 @@ export type Database = {
           facebook_url?: string | null
           free_delivery_radius_km?: number | null
           gemini_api_key?: string | null
+          google_calendar_id?: string | null
+          google_calendar_token?: Json | null
           id?: string
           instagram_url?: string | null
           is_open?: boolean | null
@@ -4258,6 +4264,7 @@ export type Database = {
           name: string
           preparation_time: number | null
           price: number
+          price_on_request: boolean | null
           product_category: string | null
           product_type: string | null
           progressive_pricing: Json | null
@@ -4267,6 +4274,7 @@ export type Database = {
           requires_refrigeration: boolean | null
           service_duration: number | null
           service_location: string | null
+          service_location_type: string | null
           stock_quantity: number | null
           storage_temperature: string | null
           storage_type: string | null
@@ -4300,6 +4308,7 @@ export type Database = {
           name: string
           preparation_time?: number | null
           price: number
+          price_on_request?: boolean | null
           product_category?: string | null
           product_type?: string | null
           progressive_pricing?: Json | null
@@ -4309,6 +4318,7 @@ export type Database = {
           requires_refrigeration?: boolean | null
           service_duration?: number | null
           service_location?: string | null
+          service_location_type?: string | null
           stock_quantity?: number | null
           storage_temperature?: string | null
           storage_type?: string | null
@@ -4342,6 +4352,7 @@ export type Database = {
           name?: string
           preparation_time?: number | null
           price?: number
+          price_on_request?: boolean | null
           product_category?: string | null
           product_type?: string | null
           progressive_pricing?: Json | null
@@ -4351,6 +4362,7 @@ export type Database = {
           requires_refrigeration?: boolean | null
           service_duration?: number | null
           service_location?: string | null
+          service_location_type?: string | null
           stock_quantity?: number | null
           storage_temperature?: string | null
           storage_type?: string | null
@@ -4883,6 +4895,182 @@ export type Database = {
             columns: ["parent_category_id"]
             isOneToOne: false
             referencedRelation: "main_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_availability: {
+        Row: {
+          created_at: string | null
+          day_of_week: number
+          end_time: string
+          establishment_id: string
+          id: string
+          is_active: boolean | null
+          slot_duration: number | null
+          start_time: string
+        }
+        Insert: {
+          created_at?: string | null
+          day_of_week: number
+          end_time: string
+          establishment_id: string
+          id?: string
+          is_active?: boolean | null
+          slot_duration?: number | null
+          start_time: string
+        }
+        Update: {
+          created_at?: string | null
+          day_of_week?: number
+          end_time?: string
+          establishment_id?: string
+          id?: string
+          is_active?: boolean | null
+          slot_duration?: number | null
+          start_time?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_availability_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_blocked_slots: {
+        Row: {
+          blocked_date: string
+          created_at: string | null
+          end_time: string | null
+          establishment_id: string
+          id: string
+          reason: string | null
+          start_time: string | null
+        }
+        Insert: {
+          blocked_date: string
+          created_at?: string | null
+          end_time?: string | null
+          establishment_id: string
+          id?: string
+          reason?: string | null
+          start_time?: string | null
+        }
+        Update: {
+          blocked_date?: string
+          created_at?: string | null
+          end_time?: string | null
+          establishment_id?: string
+          id?: string
+          reason?: string | null
+          start_time?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_blocked_slots_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_bookings: {
+        Row: {
+          booking_date: string
+          booking_time: string
+          cancelled_at: string | null
+          cancelled_reason: string | null
+          completed_at: string | null
+          confirmed_at: string | null
+          created_at: string | null
+          customer_address: string | null
+          customer_email: string | null
+          customer_id: string | null
+          customer_name: string
+          customer_phone: string
+          end_time: string
+          establishment_id: string
+          google_event_id: string | null
+          id: string
+          notes: string | null
+          price: number | null
+          product_id: string | null
+          service_location: string
+          status: string | null
+          whatsapp_reminder_sent: boolean | null
+        }
+        Insert: {
+          booking_date: string
+          booking_time: string
+          cancelled_at?: string | null
+          cancelled_reason?: string | null
+          completed_at?: string | null
+          confirmed_at?: string | null
+          created_at?: string | null
+          customer_address?: string | null
+          customer_email?: string | null
+          customer_id?: string | null
+          customer_name: string
+          customer_phone: string
+          end_time: string
+          establishment_id: string
+          google_event_id?: string | null
+          id?: string
+          notes?: string | null
+          price?: number | null
+          product_id?: string | null
+          service_location?: string
+          status?: string | null
+          whatsapp_reminder_sent?: boolean | null
+        }
+        Update: {
+          booking_date?: string
+          booking_time?: string
+          cancelled_at?: string | null
+          cancelled_reason?: string | null
+          completed_at?: string | null
+          confirmed_at?: string | null
+          created_at?: string | null
+          customer_address?: string | null
+          customer_email?: string | null
+          customer_id?: string | null
+          customer_name?: string
+          customer_phone?: string
+          end_time?: string
+          establishment_id?: string
+          google_event_id?: string | null
+          id?: string
+          notes?: string | null
+          price?: number | null
+          product_id?: string | null
+          service_location?: string
+          status?: string | null
+          whatsapp_reminder_sent?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_bookings_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_bookings_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_bookings_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
             referencedColumns: ["id"]
           },
         ]
