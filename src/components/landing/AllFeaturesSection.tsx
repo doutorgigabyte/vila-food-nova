@@ -3,6 +3,7 @@ import {
   Video, MessageSquare, ChefHat, Wallet, CreditCard, Smartphone, Truck, BarChart3, Tv
 } from "lucide-react";
 import PhoneFrame from "./features/PhoneFrame";
+import TVFrame from "./features/TVFrame";
 import VilaTokSimulation from "./features/VilaTokSimulation";
 import WhatsAppSimulation from "./features/WhatsAppSimulation";
 import KDSSimulation from "./features/KDSSimulation";
@@ -20,6 +21,7 @@ interface FeatureTab {
   color: string;
   simulation: React.ReactNode;
   features: { title: string; description: string }[];
+  useTVFrame?: boolean;
 }
 
 const featureTabs: FeatureTab[] = [
@@ -125,6 +127,7 @@ const featureTabs: FeatureTab[] = [
     label: "VilaTok TV",
     color: "from-rose-500 to-pink-600",
     simulation: <VilaTokTVSimulation />,
+    useTVFrame: true,
     features: [
       { title: "Link público", description: "Abra em qualquer TV" },
       { title: "Templates animados", description: "Slides profissionais" },
@@ -173,49 +176,98 @@ const AllFeaturesSection = () => {
           ))}
         </div>
 
-        {/* Content: Phone + Features */}
-        <div className="flex flex-col lg:flex-row items-center lg:items-start gap-6 lg:gap-10 max-w-5xl mx-auto">
-          {/* Phone Frame */}
-          <div className="flex-shrink-0">
-            <PhoneFrame className="w-[280px] md:w-[320px]">
-              {currentTab.simulation}
-            </PhoneFrame>
-          </div>
-
-          {/* Features Grid */}
-          <div className="flex-1 w-full">
-            <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r ${currentTab.color} mb-4`}>
-              <currentTab.icon className="w-4 h-4 text-white" />
-              <span className="text-white font-semibold text-sm">{currentTab.label}</span>
+        {/* Content: Frame + Features */}
+        {currentTab.useTVFrame ? (
+          // TV Layout - TV on top, features below
+          <div className="flex flex-col items-center gap-6 lg:gap-8 max-w-4xl mx-auto">
+            {/* TV Frame */}
+            <div className="w-full max-w-2xl">
+              <TVFrame>
+                {currentTab.simulation}
+              </TVFrame>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {currentTab.features.map((feature, i) => (
-                <div
-                  key={feature.title}
-                  className="p-4 bg-card/50 rounded-xl border border-border/50 hover:border-primary/30 transition-all"
-                >
-                  <h4 className="text-foreground font-semibold text-sm mb-1">{feature.title}</h4>
-                  <p className="text-muted-foreground text-xs">{feature.description}</p>
+            {/* Features Below TV */}
+            <div className="w-full">
+              <div className="flex justify-center mb-4">
+                <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r ${currentTab.color}`}>
+                  <currentTab.icon className="w-4 h-4 text-white" />
+                  <span className="text-white font-semibold text-sm">{currentTab.label}</span>
                 </div>
-              ))}
-            </div>
+              </div>
 
-            {/* Stats */}
-            <div className="mt-6 grid grid-cols-3 gap-3">
-              {[
-                { value: "8+", label: "Módulos" },
-                { value: "24/7", label: "Suporte" },
-                { value: "100%", label: "Brasileiro" },
-              ].map((stat) => (
-                <div key={stat.label} className="text-center p-3 bg-card/30 rounded-xl border border-border/30">
-                  <div className="text-xl md:text-2xl font-bold text-primary">{stat.value}</div>
-                  <div className="text-[10px] md:text-xs text-muted-foreground">{stat.label}</div>
-                </div>
-              ))}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {currentTab.features.map((feature) => (
+                  <div
+                    key={feature.title}
+                    className="p-4 bg-card/50 rounded-xl border border-border/50 hover:border-primary/30 transition-all text-center"
+                  >
+                    <h4 className="text-foreground font-semibold text-sm mb-1">{feature.title}</h4>
+                    <p className="text-muted-foreground text-xs">{feature.description}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Stats */}
+              <div className="mt-6 grid grid-cols-3 gap-3">
+                {[
+                  { value: "8+", label: "Módulos" },
+                  { value: "24/7", label: "Suporte" },
+                  { value: "100%", label: "Brasileiro" },
+                ].map((stat) => (
+                  <div key={stat.label} className="text-center p-3 bg-card/30 rounded-xl border border-border/30">
+                    <div className="text-xl md:text-2xl font-bold text-primary">{stat.value}</div>
+                    <div className="text-[10px] md:text-xs text-muted-foreground">{stat.label}</div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
-        </div>
+        ) : (
+          // Phone Layout - Phone on left, features on right
+          <div className="flex flex-col lg:flex-row items-center lg:items-start gap-6 lg:gap-10 max-w-5xl mx-auto">
+            {/* Phone Frame */}
+            <div className="flex-shrink-0">
+              <PhoneFrame className="w-[280px] md:w-[320px]">
+                {currentTab.simulation}
+              </PhoneFrame>
+            </div>
+
+            {/* Features Grid */}
+            <div className="flex-1 w-full">
+              <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r ${currentTab.color} mb-4`}>
+                <currentTab.icon className="w-4 h-4 text-white" />
+                <span className="text-white font-semibold text-sm">{currentTab.label}</span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {currentTab.features.map((feature) => (
+                  <div
+                    key={feature.title}
+                    className="p-4 bg-card/50 rounded-xl border border-border/50 hover:border-primary/30 transition-all"
+                  >
+                    <h4 className="text-foreground font-semibold text-sm mb-1">{feature.title}</h4>
+                    <p className="text-muted-foreground text-xs">{feature.description}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Stats */}
+              <div className="mt-6 grid grid-cols-3 gap-3">
+                {[
+                  { value: "8+", label: "Módulos" },
+                  { value: "24/7", label: "Suporte" },
+                  { value: "100%", label: "Brasileiro" },
+                ].map((stat) => (
+                  <div key={stat.label} className="text-center p-3 bg-card/30 rounded-xl border border-border/30">
+                    <div className="text-xl md:text-2xl font-bold text-primary">{stat.value}</div>
+                    <div className="text-[10px] md:text-xs text-muted-foreground">{stat.label}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </section>
   );
