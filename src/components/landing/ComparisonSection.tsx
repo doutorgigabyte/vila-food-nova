@@ -3,7 +3,7 @@ import { Check, X, Trophy, Percent, Globe, Bot, Palette, CreditCard, TrendingUp,
 const features = [
   { 
     name: "Taxa por pedido", 
-    vilafood: "5% marketplace", 
+    vilafood: "0% taxa", 
     ifood: "12-27%", 
     rappi: "15-25%",
     icon: Percent,
@@ -113,8 +113,8 @@ const ComparisonSection = () => {
               {/* VilaFood */}
               <div className="p-4 md:p-6 rounded-xl bg-green-500/10 border border-green-500/20 text-center">
                 <p className="text-sm text-muted-foreground mb-2">VilaFood leva:</p>
-                <p className="text-2xl md:text-3xl font-bold text-green-500">R$ 1.667</p>
-                <p className="text-xs text-green-500/70 mt-1">5% + R$1/pedido</p>
+                <p className="text-2xl md:text-3xl font-bold text-green-500">R$ 0</p>
+                <p className="text-xs text-green-500/70 mt-1">0% taxa - 100% pra você</p>
               </div>
               
               {/* Savings */}
@@ -122,9 +122,9 @@ const ComparisonSection = () => {
                 <p className="text-sm text-muted-foreground mb-2">Você economiza:</p>
                 <div className="flex items-center justify-center gap-2">
                   <TrendingDown className="h-6 w-6 text-green-500" />
-                  <p className="text-2xl md:text-3xl font-bold text-foreground">R$ 6.193</p>
+                  <p className="text-2xl md:text-3xl font-bold text-foreground">R$ 7.860</p>
                 </div>
-                <p className="text-xs text-primary mt-1">R$ 74.316/ano</p>
+                <p className="text-xs text-primary mt-1">R$ 94.320/ano</p>
               </div>
             </div>
           </div>

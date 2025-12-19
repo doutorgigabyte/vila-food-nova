@@ -171,8 +171,8 @@ const VilasConceptSection = () => {
                         <ShoppingBag className="w-5 h-5 text-primary-foreground" />
                       </div>
                       <div>
-                        <p className="font-semibold text-sm">Resumo de valores</p>
-                        <p className="text-xs text-muted-foreground">3 lojas • 1 pagamento</p>
+                        <p className="font-semibold text-sm">Pedidos separados</p>
+                        <p className="text-xs text-muted-foreground">3 lojas • Retirada na vila</p>
                       </div>
                     </div>
                     
@@ -202,7 +202,7 @@ const VilasConceptSection = () => {
                           className="w-8 h-8 rounded-md object-cover border border-border"
                         />
                       ))}
-                      <span className="text-xs text-muted-foreground ml-auto">Retirada na Vila</span>
+                      <span className="text-xs text-muted-foreground ml-auto">Pague cada loja</span>
                     </div>
                   </motion.div>
                 </motion.div>
@@ -223,8 +223,8 @@ const VilasConceptSection = () => {
             <p className="text-muted-foreground mb-8">
               Vilas são polos comerciais onde múltiplos estabelecimentos operam juntos — 
               galerias, food parks, praças de alimentação, mercados. Com o VilaFood, 
-              seus clientes podem fazer <strong>um único pedido</strong> em várias lojas 
-              da mesma vila.
+              seus clientes podem explorar várias lojas, <strong>pagar diretamente cada estabelecimento</strong> e 
+              retirar os produtos na vila.
             </p>
 
             {/* Benefits List */}
@@ -236,7 +236,7 @@ const VilasConceptSection = () => {
                 <div>
                   <h4 className="font-semibold mb-1">Para o cliente</h4>
                   <p className="text-sm text-muted-foreground">
-                    Pedido em várias lojas, pagamento único, retirada em um só lugar
+                    Explora várias lojas, paga cada uma separadamente e retira tudo na vila
                   </p>
                 </div>
               </div>
@@ -248,7 +248,7 @@ const VilasConceptSection = () => {
                 <div>
                   <h4 className="font-semibold mb-1">Para o lojista</h4>
                   <p className="text-sm text-muted-foreground">
-                    Maior visibilidade, clientes compartilhados, gestão simplificada
+                    Maior visibilidade, clientes compartilhados, 0% de taxa da plataforma
                   </p>
                 </div>
               </div>
@@ -258,9 +258,9 @@ const VilasConceptSection = () => {
                   <CreditCard className="w-6 h-6 text-green-600" />
                 </div>
                 <div>
-                  <h4 className="font-semibold mb-1">Split automático</h4>
+                  <h4 className="font-semibold mb-1">100% do valor pra você</h4>
                   <p className="text-sm text-muted-foreground">
-                    O sistema divide o valor automaticamente para cada estabelecimento
+                    Cliente paga direto para sua loja, sem intermediários
                   </p>
                 </div>
               </div>
@@ -275,7 +275,7 @@ const VilasConceptSection = () => {
           viewport={{ once: true }}
           className="bg-card border border-border rounded-2xl p-6 md:p-8"
         >
-          <h3 className="text-xl font-bold text-center mb-8">Como funciona o pagamento?</h3>
+          <h3 className="text-xl font-bold text-center mb-8">Como funciona?</h3>
           
           <div className="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-8">
             {/* Step 1 */}
@@ -283,8 +283,8 @@ const VilasConceptSection = () => {
               <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-3">
                 <ShoppingBag className="w-7 h-7 text-primary" />
               </div>
-              <p className="text-sm font-medium">Cliente faz pedido em 3 lojas</p>
-              <p className="text-xs text-muted-foreground mt-1">R$ 100 total</p>
+              <p className="text-sm font-medium">Cliente explora a vila</p>
+              <p className="text-xs text-muted-foreground mt-1">Várias lojas em um lugar</p>
             </div>
 
             <ArrowRight className="w-6 h-6 text-muted-foreground hidden md:block" />
@@ -295,8 +295,8 @@ const VilasConceptSection = () => {
               <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-3">
                 <CreditCard className="w-7 h-7 text-green-600" />
               </div>
-              <p className="text-sm font-medium">Paga uma única vez</p>
-              <p className="text-xs text-muted-foreground mt-1">PIX ou Cartão</p>
+              <p className="text-sm font-medium">Paga cada loja</p>
+              <p className="text-xs text-muted-foreground mt-1">Direto para o estabelecimento</p>
             </div>
 
             <ArrowRight className="w-6 h-6 text-muted-foreground hidden md:block" />
@@ -307,28 +307,28 @@ const VilasConceptSection = () => {
               <div className="w-16 h-16 bg-accent/20 rounded-full flex items-center justify-center mb-3">
                 <Building2 className="w-7 h-7 text-accent-foreground" />
               </div>
-              <p className="text-sm font-medium">Sistema divide automaticamente</p>
-              <p className="text-xs text-muted-foreground mt-1">Cada loja recebe sua parte</p>
+              <p className="text-sm font-medium">Retira na vila</p>
+              <p className="text-xs text-muted-foreground mt-1">Prático e conveniente</p>
             </div>
           </div>
 
           {/* Fee explanation cards */}
           <div className="grid md:grid-cols-1 gap-4 mt-8 max-w-md mx-auto">
-            <div className="bg-muted/50 rounded-lg p-4">
+            <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
               <p className="text-sm font-medium text-foreground mb-2 flex items-center gap-2">
-                <Store className="w-4 h-4 text-primary" />
-                Lojista paga
+                <Store className="w-4 h-4 text-green-600" />
+                0% de taxa para o lojista
               </p>
               <p className="text-xs text-muted-foreground">
-                <strong>5% de comissão</strong> sobre o valor dos produtos — deduzido automaticamente 
-                no repasse. Taxa de entrega fica 100% com a loja.
+                O cliente paga diretamente para cada loja. <strong>100% do valor fica com você</strong> — 
+                sem intermediários, sem comissões.
               </p>
             </div>
           </div>
 
           <p className="text-center text-sm text-muted-foreground mt-6 max-w-xl mx-auto">
-            O valor é processado e distribuído automaticamente para cada estabelecimento 
-            conforme o valor dos produtos pedidos, garantindo transparência e praticidade.
+            O VilaFood conecta clientes às lojas da vila de forma simples e transparente, 
+            sem cobrar taxas sobre as vendas.
           </p>
         </motion.div>
 

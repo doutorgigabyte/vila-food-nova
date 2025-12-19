@@ -21,8 +21,8 @@ const IFOOD_BASIC_MONTHLY = 100;
 const IFOOD_DELIVERY_MONTHLY = 130;
 const IFOOD_MONTHLY_THRESHOLD = 1800;
 
-const VILAFOOD_COMMISSION = 0.05;
-const VILAFOOD_PER_ORDER = 1;
+const VILAFOOD_COMMISSION = 0; // Sem taxa de marketplace
+const VILAFOOD_PER_ORDER = 0; // Sem taxa por pedido
 const AVG_ORDER_VALUE = 45;
 
 const loadingPhrases = [
@@ -70,9 +70,8 @@ const IFoodCalculator = () => {
     const ifoodTax = ifoodCommission + ifoodPaymentFee + ifoodMonthly;
     const ifoodPercentage = (ifoodTax / revenueValue) * 100;
     
-    // VilaFood calculation (marketplace model: 5% + R$1 per order)
-    const estimatedOrders = Math.ceil(revenueValue / AVG_ORDER_VALUE);
-    const vilafoodTax = (revenueValue * VILAFOOD_COMMISSION) + (estimatedOrders * VILAFOOD_PER_ORDER);
+    // VilaFood calculation (0% taxa - cliente paga direto para a loja)
+    const vilafoodTax = 0;
     
     const savings = ifoodTax - vilafoodTax;
     const remaining = revenueValue - vilafoodTax;
@@ -274,7 +273,7 @@ const IFoodCalculator = () => {
                     </p>
                   </div>
                   <p className="text-green-400/80 text-xs md:text-sm">
-                    Taxa VilaFood: apenas {formatCurrency(result.vilafoodTax)}/mês
+                    Taxa VilaFood: 0% - Cliente paga direto para você
                   </p>
                 </div>
 
