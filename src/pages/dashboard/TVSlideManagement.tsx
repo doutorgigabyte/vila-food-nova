@@ -45,6 +45,8 @@ interface TVSlide {
   image_scale?: number;
   image_position_x?: number;
   image_position_y?: number;
+  logo_position?: string;
+  logo_shape?: string;
   product?: {
     id: string;
     name: string;
@@ -81,7 +83,9 @@ export default function TVSlideManagement() {
     duration_seconds: 10,
     image_scale: 1,
     image_position_x: 0,
-    image_position_y: 0
+    image_position_y: 0,
+    logo_position: 'center' as 'left' | 'center' | 'right',
+    logo_shape: 'circle' as 'circle' | 'rounded_square'
   });
 
   const sensors = useSensors(
@@ -186,7 +190,9 @@ export default function TVSlideManagement() {
       duration_seconds: 10,
       image_scale: 1,
       image_position_x: 0,
-      image_position_y: 0
+      image_position_y: 0,
+      logo_position: 'center',
+      logo_shape: 'circle'
     });
     setEditingSlide(null);
   };
@@ -204,7 +210,9 @@ export default function TVSlideManagement() {
       duration_seconds: slide.duration_seconds || 10,
       image_scale: slide.image_scale || 1,
       image_position_x: slide.image_position_x || 0,
-      image_position_y: slide.image_position_y || 0
+      image_position_y: slide.image_position_y || 0,
+      logo_position: (slide.logo_position as 'left' | 'center' | 'right') || 'center',
+      logo_shape: (slide.logo_shape as 'circle' | 'rounded_square') || 'circle'
     });
     setIsDialogOpen(true);
   };

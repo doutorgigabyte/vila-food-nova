@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
-import { Upload, Image as ImageIcon, ShoppingBag, Video, Clock, ImagePlus } from "lucide-react";
+import { Upload, Image as ImageIcon, ShoppingBag, Video, Clock, ImagePlus, AlignLeft, AlignCenter, AlignRight, Circle, Square } from "lucide-react";
 import { TemplatePreviewSelector, TEMPLATE_OPTIONS } from "@/components/dashboard/TemplatePreviewSelector";
 import { uploadToS3, uploadVideoToS3, validateFile, validateVideoFile } from "@/lib/s3";
 import { toast } from "sonner";
@@ -34,6 +34,8 @@ interface FormData {
   image_scale: number;
   image_position_x: number;
   image_position_y: number;
+  logo_position: 'left' | 'center' | 'right';
+  logo_shape: 'circle' | 'rounded_square';
 }
 
 interface EstablishmentData {
@@ -181,6 +183,8 @@ export function TVSlideForm({
             imagePositionX={formData.image_position_x}
             imagePositionY={formData.image_position_y}
             mediaType={formData.media_type}
+            logoPosition={formData.logo_position}
+            logoShape={formData.logo_shape}
           />
         </div>
         <p className="text-xs text-muted-foreground text-center">
@@ -376,7 +380,7 @@ export function TVSlideForm({
             </div>
 
             {/* Badge Text */}
-            {['promo', 'diamond', 'diagonal', 'catering'].includes(formData.template_type) && (
+            {['promo', 'diamond', 'diagonal', 'catering', 'cinematic_gradient', 'bold_overlay'].includes(formData.template_type) && (
               <div className="space-y-2">
                 <Label>Texto do Badge (opcional)</Label>
                 <Input
@@ -386,6 +390,75 @@ export function TVSlideForm({
                 />
               </div>
             )}
+
+            {/* Logo Customization */}
+            <div className="space-y-4 p-4 bg-muted/30 rounded-lg border">
+              <Label className="text-sm font-medium">Personalização da Logomarca</Label>
+              
+              {/* Logo Position */}
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">Posição da Logo</Label>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant={formData.logo_position === 'left' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setFormData({ ...formData, logo_position: 'left' })}
+                    className="flex-1 flex items-center gap-2"
+                  >
+                    <AlignLeft className="w-4 h-4" />
+                    Esquerda
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={formData.logo_position === 'center' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setFormData({ ...formData, logo_position: 'center' })}
+                    className="flex-1 flex items-center gap-2"
+                  >
+                    <AlignCenter className="w-4 h-4" />
+                    Centro
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={formData.logo_position === 'right' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setFormData({ ...formData, logo_position: 'right' })}
+                    className="flex-1 flex items-center gap-2"
+                  >
+                    <AlignRight className="w-4 h-4" />
+                    Direita
+                  </Button>
+                </div>
+              </div>
+
+              {/* Logo Shape */}
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">Formato da Logo</Label>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant={formData.logo_shape === 'circle' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setFormData({ ...formData, logo_shape: 'circle' })}
+                    className="flex-1 flex items-center gap-2"
+                  >
+                    <Circle className="w-4 h-4" />
+                    Redondo
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={formData.logo_shape === 'rounded_square' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setFormData({ ...formData, logo_shape: 'rounded_square' })}
+                    className="flex-1 flex items-center gap-2"
+                  >
+                    <Square className="w-4 h-4" />
+                    Quadrado
+                  </Button>
+                </div>
+              </div>
+            </div>
 
             {/* Duration */}
             <div className="space-y-2">

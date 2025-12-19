@@ -336,6 +336,42 @@ const TemplatePreviewTropicalFruits = () => (
   </div>
 );
 
+// ========== NOVOS TEMPLATES DEGRADÊ ==========
+const TemplatePreviewCinematicGradient = () => (
+  <div className="relative w-full h-full rounded overflow-hidden">
+    <div className="absolute inset-0 bg-gradient-to-br from-gray-400 to-gray-600" />
+    <div 
+      className="absolute inset-0" 
+      style={{ 
+        background: 'linear-gradient(135deg, rgba(234,88,12,0.8) 0%, rgba(234,88,12,0.4) 30%, transparent 60%)'
+      }} 
+    />
+    <div className="absolute bottom-1 left-1 flex flex-col gap-0.5">
+      <div className="w-5 h-1.5 bg-white/90 rounded-sm" />
+      <div className="w-3 h-1 bg-white/60 rounded-sm" />
+    </div>
+    <div className="absolute top-1 left-1/2 -translate-x-1/2 w-3 h-3 bg-white/80 rounded-full" />
+  </div>
+);
+
+const TemplatePreviewBoldOverlay = () => (
+  <div className="relative w-full h-full rounded overflow-hidden">
+    <div className="absolute inset-0 bg-gradient-to-br from-gray-300 to-gray-500" />
+    <div 
+      className="absolute inset-y-0 left-0 w-[60%]" 
+      style={{ 
+        background: 'linear-gradient(to right, rgba(234,88,12,0.95) 0%, rgba(234,88,12,0.8) 70%, transparent 100%)'
+      }} 
+    />
+    <div className="absolute top-1 left-2 w-2 h-1 bg-amber-400 rounded-sm transform -rotate-3" />
+    <div className="absolute bottom-2 left-1 flex flex-col gap-0.5">
+      <div className="w-4 h-1.5 bg-white/90 rounded-sm" />
+      <div className="w-3 h-1 bg-white/60 rounded-sm" />
+    </div>
+    <div className="absolute top-1 left-1/2 -translate-x-1/2 w-3 h-3 bg-white/80 rounded-full" />
+  </div>
+);
+
 // ========== TEMPLATES ORIGINAIS PRESERVADOS ==========
 const TemplatePreviewMinimal = () => (
   <div className="relative w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 rounded overflow-hidden">
@@ -500,6 +536,8 @@ export const TEMPLATE_CATEGORIES: TemplateCategory[] = [
     templates: [
       { value: 'product_showcase', label: 'Vitrine', description: 'Foto + nome + preço + QR Code', preview: <TemplatePreviewProductShowcase /> },
       { value: 'promo', label: 'Promoção', description: 'Destaque promocional com badge', preview: <TemplatePreviewPromo /> },
+      { value: 'cinematic_gradient', label: 'Cinemático', description: 'Foto fullscreen com degradê animado', preview: <TemplatePreviewCinematicGradient />, category: 'balanced' },
+      { value: 'bold_overlay', label: 'Bold Overlay', description: 'Overlay lateral ousado com zoom', preview: <TemplatePreviewBoldOverlay />, category: 'balanced' },
       { value: 'modern_classic', label: 'Moderno Clássico', description: 'Mix elegante de estilos', preview: <TemplatePreviewModernClassic /> },
       { value: 'corporate_clean', label: 'Corporativo', description: 'Visual profissional e limpo', preview: <TemplatePreviewCorporateClean /> },
       { value: 'warm_cozy', label: 'Aconchegante', description: 'Tons quentes e acolhedores', preview: <TemplatePreviewWarmCozy /> },
