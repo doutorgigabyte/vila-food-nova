@@ -27,6 +27,8 @@ interface TVSlideRealPreviewProps {
   mediaType?: 'image' | 'video';
   productId?: string;
   price?: string;
+  logoPosition?: 'left' | 'center' | 'right';
+  logoShape?: 'circle' | 'rounded_square';
 }
 
 interface SlideData {
@@ -48,14 +50,34 @@ interface SlideData {
   } | null;
 }
 
-// Logo fixa centralizada
-function FixedLogo({ logoUrl, name, variant = 'light' }: { logoUrl: string | null; name: string; variant?: 'light' | 'dark' }) {
+// Logo fixa com posição e formato personalizável
+function FixedLogo({ 
+  logoUrl, 
+  name, 
+  variant = 'light',
+  position = 'center',
+  shape = 'circle'
+}: { 
+  logoUrl: string | null; 
+  name: string; 
+  variant?: 'light' | 'dark';
+  position?: 'left' | 'center' | 'right';
+  shape?: 'circle' | 'rounded_square';
+}) {
   if (!logoUrl) return null;
   
+  const positionClasses = {
+    left: 'left-10',
+    center: 'left-1/2 -translate-x-1/2',
+    right: 'right-10'
+  };
+  
+  const shapeClasses = shape === 'circle' ? 'rounded-full' : 'rounded-3xl';
+  
   return (
-    <div className="absolute top-10 left-1/2 -translate-x-1/2 z-30">
+    <div className={`absolute top-10 z-30 ${positionClasses[position]}`}>
       <div 
-        className={`w-28 h-28 rounded-full overflow-hidden border-4 shadow-2xl ${
+        className={`w-28 h-28 ${shapeClasses} overflow-hidden border-4 shadow-2xl ${
           variant === 'dark' ? 'border-white/40 bg-white/20' : 'border-white bg-white'
         }`}
         style={{ boxShadow: '0 10px 40px rgba(0,0,0,0.3)' }}
@@ -155,7 +177,9 @@ export function TVSlideRealPreview({
   imagePositionY,
   mediaType = 'image',
   productId,
-  price
+  price,
+  logoPosition = 'center',
+  logoShape = 'circle'
 }: TVSlideRealPreviewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0.2);
@@ -223,7 +247,7 @@ export function TVSlideRealPreview({
           <WaveLines color={primaryColor} opacity={0.12} />
           <NoiseTexture opacity={0.02} />
           
-          <FixedLogo logoUrl={logoUrl || null} name={establishmentName} />
+          <FixedLogo logoUrl={logoUrl || null} name={establishmentName} position={logoPosition} shape={logoShape} />
           
           <div className="flex-1 flex relative z-10">
             <div className="w-[58%] h-full relative">
@@ -285,7 +309,7 @@ export function TVSlideRealPreview({
               showOverlay
             />
             
-            <FixedLogo logoUrl={logoUrl || null} name={establishmentName} variant="dark" />
+            <FixedLogo logoUrl={logoUrl || null} name={establishmentName} variant="dark" position={logoPosition} shape={logoShape} />
             
             <div className="absolute bottom-16 left-16 right-16 flex items-end justify-between">
               <div className="bg-black/70 backdrop-blur-md px-12 py-8 rounded-3xl max-w-3xl">
@@ -326,7 +350,7 @@ export function TVSlideRealPreview({
           <WaveLines color={primaryColor} opacity={0.15} />
           <NoiseTexture opacity={0.02} />
           
-          <FixedLogo logoUrl={logoUrl || null} name={establishmentName} />
+          <FixedLogo logoUrl={logoUrl || null} name={establishmentName} position={logoPosition} shape={logoShape} />
           
           <div className="flex-1 flex relative z-10">
             <div className="w-[55%] h-full relative">
@@ -397,7 +421,7 @@ export function TVSlideRealPreview({
     if (templateType === 'clean_white') {
       return (
         <div className="relative w-full h-full flex flex-col bg-white">
-          <FixedLogo logoUrl={logoUrl || null} name={establishmentName} />
+          <FixedLogo logoUrl={logoUrl || null} name={establishmentName} position={logoPosition} shape={logoShape} />
           
           <div className="flex-1 flex relative z-10 px-16 pt-36 pb-20">
             <div className="w-[50%] h-full relative">
@@ -446,11 +470,202 @@ export function TVSlideRealPreview({
       );
     }
 
+    // ===== TEMPLATE: CINEMATIC_GRADIENT =====
+    if (templateType === 'cinematic_gradient') {
+      return (
+        <div className="relative w-full h-full flex flex-col overflow-hidden">
+          {/* Fullscreen image with zoom animation */}
+          <motion.div 
+            className="absolute inset-0"
+            initial={{ scale: 1.1 }}
+            animate={{ scale: 1 }}
+            transition={{ duration: 20, ease: "easeOut" }}
+          >
+            <MediaFrame 
+              slide={slide} 
+              frameClassName="w-full h-full"
+            />
+          </motion.div>
+          
+          {/* Gradient overlay from primary color */}
+          <div 
+            className="absolute inset-0"
+            style={{
+              background: `linear-gradient(135deg, ${primaryColor}cc 0%, ${primaryColor}88 30%, transparent 60%, transparent 100%)`
+            }}
+          />
+          
+          <FixedLogo 
+            logoUrl={logoUrl || null} 
+            name={establishmentName} 
+            variant="dark"
+            position={logoPosition}
+            shape={logoShape}
+          />
+          
+          <div className="flex-1 relative z-10 flex flex-col justify-end p-16 pb-32">
+            <motion.div
+              initial={{ opacity: 0, x: -50 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8, delay: 0.3 }}
+              className="max-w-3xl"
+            >
+              {badgeText && (
+                <div 
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-full mb-6 text-2xl font-bold"
+                  style={{ backgroundColor: 'rgba(255,255,255,0.2)', color: 'white' }}
+                >
+                  <span>✨</span>
+                  <span>{badgeText}</span>
+                </div>
+              )}
+              
+              <h1 className="text-8xl font-black text-white uppercase leading-[0.92] mb-6 drop-shadow-2xl">
+                {title || 'Destaque'}
+              </h1>
+              
+              {subtitle && (
+                <p className="text-3xl text-white/90 mb-8 max-w-2xl line-clamp-2">
+                  {subtitle}
+                </p>
+              )}
+              
+              {price && (
+                <div className="text-7xl font-black text-white mb-8 drop-shadow-lg">
+                  {price}
+                </div>
+              )}
+            </motion.div>
+            
+            <div className="absolute bottom-32 right-16">
+              <QRCodeCompact 
+                url={productUrl}
+                primaryColor="#ffffff"
+                buttonText="Eu quero!"
+                size="lg"
+              />
+            </div>
+          </div>
+
+          <SlideFooter 
+            primaryColor={primaryColor}
+            slug={establishmentSlug}
+            socialLinks={socialLinks}
+            variant="dark"
+          />
+        </div>
+      );
+    }
+
+    // ===== TEMPLATE: BOLD_OVERLAY =====
+    if (templateType === 'bold_overlay') {
+      return (
+        <div className="relative w-full h-full flex flex-col overflow-hidden">
+          {/* Fullscreen image with subtle zoom */}
+          <motion.div 
+            className="absolute inset-0"
+            initial={{ scale: 1 }}
+            animate={{ scale: 1.05 }}
+            transition={{ duration: 15, ease: "linear" }}
+          >
+            <MediaFrame 
+              slide={slide} 
+              frameClassName="w-full h-full"
+            />
+          </motion.div>
+          
+          {/* Bold lateral overlay covering ~60% */}
+          <div 
+            className="absolute inset-y-0 left-0 w-[60%]"
+            style={{
+              background: `linear-gradient(to right, ${primaryColor}f0 0%, ${primaryColor}dd 70%, transparent 100%)`
+            }}
+          />
+          
+          <FixedLogo 
+            logoUrl={logoUrl || null} 
+            name={establishmentName} 
+            variant="dark"
+            position={logoPosition}
+            shape={logoShape}
+          />
+          
+          <div className="flex-1 relative z-10 flex items-center">
+            <div className="w-[55%] flex flex-col justify-center pl-16 pr-8">
+              {badgeText && (
+                <motion.div 
+                  className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl mb-8 text-3xl font-black self-start"
+                  style={{ 
+                    backgroundColor: 'rgba(251, 191, 36, 0.95)',
+                    color: '#78350f',
+                    transform: 'rotate(-2deg)'
+                  }}
+                  initial={{ scale: 0.8, rotate: -5 }}
+                  animate={{ scale: 1, rotate: -2 }}
+                  transition={{ duration: 0.5, delay: 0.2 }}
+                >
+                  <span>🔥</span>
+                  <span>{badgeText}</span>
+                </motion.div>
+              )}
+              
+              <motion.h1 
+                className="text-9xl font-black text-white uppercase leading-[0.85] mb-8 drop-shadow-2xl"
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6 }}
+              >
+                {title || 'Destaque'}
+              </motion.h1>
+              
+              {subtitle && (
+                <motion.p 
+                  className="text-3xl text-white/95 mb-10 max-w-xl line-clamp-2"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.5, delay: 0.3 }}
+                >
+                  {subtitle}
+                </motion.p>
+              )}
+              
+              {price && (
+                <motion.div 
+                  className="text-8xl font-black text-white mb-10"
+                  style={{ textShadow: '4px 4px 0 rgba(0,0,0,0.2)' }}
+                  initial={{ scale: 0.9 }}
+                  animate={{ scale: 1 }}
+                  transition={{ duration: 0.4, delay: 0.4 }}
+                >
+                  {price}
+                </motion.div>
+              )}
+              
+              <QRCodeWithFrame
+                url={productUrl}
+                primaryColor="#ffffff"
+                label="PEÇA AGORA"
+                buttonText="Eu quero!"
+                size="lg"
+              />
+            </div>
+          </div>
+
+          <SlideFooter 
+            primaryColor={primaryColor}
+            slug={establishmentSlug}
+            socialLinks={socialLinks}
+            variant="dark"
+          />
+        </div>
+      );
+    }
+
     // ===== DEFAULT FALLBACK =====
     return (
       <div className="relative w-full h-full flex flex-col" style={{ backgroundColor: secondaryColor }}>
         <GradientBackground primaryColor={primaryColor} secondaryColor={secondaryColor} variant="mesh" />
-        <FixedLogo logoUrl={logoUrl || null} name={establishmentName} />
+        <FixedLogo logoUrl={logoUrl || null} name={establishmentName} position={logoPosition} shape={logoShape} />
         
         <div className="flex-1 flex relative z-10">
           <div className="w-[58%] h-full relative">

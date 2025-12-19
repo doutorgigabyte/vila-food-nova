@@ -5515,6 +5515,8 @@ export type Database = {
           image_scale: number | null
           image_url: string
           is_active: boolean | null
+          logo_position: string | null
+          logo_shape: string | null
           media_type: string | null
           product_id: string | null
           secondary_images: Json | null
@@ -5535,6 +5537,8 @@ export type Database = {
           image_scale?: number | null
           image_url: string
           is_active?: boolean | null
+          logo_position?: string | null
+          logo_shape?: string | null
           media_type?: string | null
           product_id?: string | null
           secondary_images?: Json | null
@@ -5555,6 +5559,8 @@ export type Database = {
           image_scale?: number | null
           image_url?: string
           is_active?: boolean | null
+          logo_position?: string | null
+          logo_shape?: string | null
           media_type?: string | null
           product_id?: string | null
           secondary_images?: Json | null
