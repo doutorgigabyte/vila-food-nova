@@ -1,0 +1,8 @@
+node_modules
+dist
+.git
+.vscode
+.claude
+*.md
+.env.local
+.env.*.local
