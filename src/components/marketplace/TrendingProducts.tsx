@@ -100,7 +100,7 @@ const TrendingProducts = ({ mainCategory }: TrendingProductsProps) => {
               ref={scrollRef}
               {...handlers}
               className={cn(
-                "flex gap-3 md:gap-4 overflow-x-auto scrollbar-hide scroll-smooth pb-2 snap-x snap-mandatory md:snap-none select-none",
+                "flex gap-3 md:gap-4 overflow-x-auto scrollbar-hide pb-2 select-none",
                 isDragging ? "cursor-grabbing" : "cursor-grab"
               )}
               style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
@@ -110,14 +110,14 @@ const TrendingProducts = ({ mainCategory }: TrendingProductsProps) => {
                 const currentPrice = product.promotional_price || product.price;
                 
                 return (
-                  <Link 
-                    key={product.id} 
-                    to={`/loja/${product.establishment?.slug || ''}`}
+                  <Link
+                    key={product.id}
+                    to={`/produto/${product.id}`}
                     className="flex-shrink-0 snap-start"
                     onClick={(e) => isDragging && e.preventDefault()}
                   >
-                    <Card className="w-44 md:w-52 overflow-hidden group/card hover:shadow-elevated transition-all duration-300 border-0 shadow-soft bg-card">
-                      <div className="relative h-36 md:h-40 overflow-hidden bg-muted">
+                    <Card className="w-48 md:w-52 overflow-hidden group/card hover:shadow-elevated transition-all duration-300 border-0 shadow-soft bg-card">
+                      <div className="relative h-40 overflow-hidden bg-muted">
                         {product.image_url ? (
                           <img
                             src={product.image_url}
@@ -239,7 +239,7 @@ const TrendingProducts = ({ mainCategory }: TrendingProductsProps) => {
             ref={scrollRef}
             {...handlers}
             className={cn(
-              "flex gap-3 md:gap-4 overflow-x-auto scrollbar-hide scroll-smooth pb-2 snap-x snap-mandatory md:snap-none select-none",
+              "flex gap-3 md:gap-4 overflow-x-auto scrollbar-hide pb-2 select-none",
               isDragging ? "cursor-grabbing" : "cursor-grab"
             )}
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}

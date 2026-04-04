@@ -64,7 +64,7 @@ const CategoryProductsSection = ({ products, categoryName, loading }: CategoryPr
         {products.slice(0, 10).map((product) => (
           <button
             key={product.id}
-            onClick={() => product.establishments?.slug && navigate(`/loja/${product.establishments.slug}`)}
+            onClick={() => navigate(`/produto/${product.id}`)}
             className="bg-card rounded-xl border border-border overflow-hidden hover:shadow-lg transition-all duration-200 text-left group"
           >
             {/* Image */}

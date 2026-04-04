@@ -9,6 +9,7 @@ import { UserMenu } from "./UserMenu";
 import { LocationSelector } from "./LocationSelector";
 import CategoryBreadcrumb from "./CategoryBreadcrumb";
 import VilaTokStoriesRow from "./VilaTokStoriesRow";
+import NotificationCenter from "@/components/notifications/NotificationCenter";
 
 interface CategoryPageHeaderProps {
   categoryName: string;
@@ -96,6 +97,7 @@ const CategoryPageHeader = ({
 
           {/* Right: Actions */}
           <div className="flex items-center gap-0.5">
+            <NotificationCenter />
             <UserMenu />
           </div>
         </div>

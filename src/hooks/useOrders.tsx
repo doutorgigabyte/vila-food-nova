@@ -104,10 +104,42 @@ export const useOrders = (establishmentId?: string) => {
     return data;
   };
 
-  const updateOrderStatus = async (orderId: string, status: Order['status']) => {
+  const updateOrderStatus = async (orderId: string, newStatus: Order['status']) => {
+    const validTransitions: Record<string, string[]> = {
+      pending: ['confirmed', 'cancelled'],
+      confirmed: ['preparing', 'cancelled'],
+      preparing: ['ready', 'cancelled'],
+      ready: ['delivering', 'delivered', 'cancelled'],
+      delivering: ['delivered'],
+      delivered: [],
+      cancelled: [],
+    };
+
+    // Validate transition
+    const { data: current } = await supabase
+      .from('orders')
+      .select('status')
+      .eq('id', orderId)
+      .single();
+
+    if (current && validTransitions[current.status] && !validTransitions[current.status].includes(newStatus)) {
+      throw new Error(`Transição inválida: ${current.status} → ${newStatus}`);
+    }
+
+    const updateData: Record<string, any> = {
+      status: newStatus,
+      updated_at: new Date().toISOString(),
+    };
+
+    if (newStatus === 'delivered') {
+      updateData.delivered_at = new Date().toISOString();
+    } else if (newStatus === 'cancelled') {
+      updateData.cancelled_at = new Date().toISOString();
+    }
+
     const { error } = await supabase
       .from('orders')
-      .update({ status })
+      .update(updateData)
       .eq('id', orderId);
 
     if (error) throw error;

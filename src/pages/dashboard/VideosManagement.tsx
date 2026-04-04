@@ -13,6 +13,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useEstablishment } from '@/hooks/useEstablishment';
+import { useEstablishmentPlan } from '@/hooks/useEstablishmentPlan';
 import { uploadToS3, validateFile, UploadType } from '@/lib/s3';
 import { toast } from 'sonner';
 import { getImageUrl } from '@/lib/s3';
@@ -44,6 +45,7 @@ interface Product {
 export default function VideosManagement() {
   const { slug } = useParams();
   const { establishment } = useEstablishment(slug);
+  const { canAddVideo, videoLimitReached, plan } = useEstablishmentPlan(establishment?.id || null);
   const [products, setProducts] = useState<Product[]>([]);
   const [videos, setVideos] = useState<EstablishmentVideo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -189,12 +191,19 @@ export default function VideosManagement() {
     <DashboardLayout title="VilaTok - Vídeos" establishment={establishment}>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <p className="text-muted-foreground">Gerencie seus vídeos promocionais</p>
+          <div>
+            <p className="text-muted-foreground">Gerencie seus vídeos promocionais</p>
+            {videoLimitReached && plan && (
+              <p className="text-xs text-amber-600 mt-1">
+                Limite de {plan.max_videos} videos atingido. Atualize seu plano para adicionar mais.
+              </p>
+            )}
+          </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button><Plus className="w-4 h-4 mr-2" />Novo Vídeo</Button>
+              <Button disabled={videoLimitReached}><Plus className="w-4 h-4 mr-2" />Novo Vídeo</Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md">
+            <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
               <DialogHeader><DialogTitle>Adicionar Vídeo</DialogTitle></DialogHeader>
               <div className="space-y-4">
                 <div>

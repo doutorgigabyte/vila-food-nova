@@ -60,14 +60,12 @@ const MercadoPagoManagement = lazy(() => import("./pages/dashboard/MercadoPagoMa
 const MercadoPagoCallback = lazy(() => import("./pages/dashboard/MercadoPagoCallback"));
 const WaiterApp = lazy(() => import("./pages/dashboard/WaiterApp"));
 const KitchenDisplay = lazy(() => import("./pages/dashboard/KitchenDisplay"));
-const CashbackManagement = lazy(() => import("./pages/dashboard/CashbackManagement"));
 const AbandonedCartsManagement = lazy(() => import("./pages/dashboard/AbandonedCartsManagement"));
 const ScheduledOrdersManagement = lazy(() => import("./pages/dashboard/ScheduledOrdersManagement"));
 const DeliveryDriversManagement = lazy(() => import("./pages/dashboard/DeliveryDriversManagement"));
 const AnalyticsPixelsManagement = lazy(() => import("./pages/dashboard/AnalyticsPixelsManagement"));
 const InventoryManagement = lazy(() => import("./pages/dashboard/InventoryManagement"));
 const AdvancedFinanceManagement = lazy(() => import("./pages/dashboard/AdvancedFinanceManagement"));
-const SuppliersManagement = lazy(() => import("./pages/dashboard/SuppliersManagement"));
 const PaymentsManagement = lazy(() => import("./pages/dashboard/PaymentsManagement"));
 const VideosManagement = lazy(() => import("./pages/dashboard/VideosManagement"));
 const StoriesManagement = lazy(() => import("./pages/dashboard/StoriesManagement"));
@@ -187,7 +185,7 @@ const AppRoutes = () => {
               <Route path="/painel/:slug/banners" element={<BannersManagement />} />
               <Route path="/painel/:slug/cupons" element={<CouponsManagement />} />
               <Route path="/painel/:slug/frete" element={<DeliveryFeesManagement />} />
-              <Route path="/painel/:slug/fluxo" element={<CashFlowManagement />} />
+              <Route path="/painel/:slug/fluxo" element={<AdvancedFinanceManagement />} />
               <Route path="/painel/:slug/qrcode" element={<QRCodeManagement />} />
               <Route path="/painel/:slug/relatorios" element={<ReportsManagement />} />
               <Route path="/painel/:slug/whatsapp" element={<WhatsAppManagement />} />
@@ -196,15 +194,13 @@ const AppRoutes = () => {
               <Route path="/painel/:slug/mercadopago" element={<MercadoPagoManagement />} />
               <Route path="/painel/:slug/comanda" element={<WaiterApp />} />
               <Route path="/painel/:slug/cozinha" element={<KitchenDisplay />} />
-              <Route path="/painel/:slug/cashback" element={<CashbackManagement />} />
               <Route path="/painel/:slug/carrinhos-abandonados" element={<AbandonedCartsManagement />} />
               <Route path="/painel/:slug/agendados" element={<ScheduledOrdersManagement />} />
               <Route path="/painel/:slug/entregadores" element={<DeliveryDriversManagement />} />
               <Route path="/painel/:slug/pixels" element={<AnalyticsPixelsManagement />} />
               <Route path="/painel/:slug/estoque" element={<InventoryManagement />} />
               <Route path="/painel/:slug/financeiro" element={<AdvancedFinanceManagement />} />
-              <Route path="/painel/:slug/fornecedores" element={<SuppliersManagement />} />
-              <Route path="/painel/:slug/pagamentos" element={<PaymentsManagement />} />
+              <Route path="/painel/:slug/pagamentos" element={<AdvancedFinanceManagement />} />
               <Route path="/painel/:slug/videos" element={<VideosManagement />} />
               <Route path="/painel/:slug/stories" element={<StoriesManagement />} />
               <Route path="/painel/:slug/analise-ia" element={<AIAnalysisDashboard />} />
@@ -217,7 +213,7 @@ const AppRoutes = () => {
               <Route path="/painel/banners" element={<BannersManagement />} />
               <Route path="/painel/cupons" element={<CouponsManagement />} />
               <Route path="/painel/frete" element={<DeliveryFeesManagement />} />
-              <Route path="/painel/fluxo" element={<CashFlowManagement />} />
+              <Route path="/painel/fluxo" element={<AdvancedFinanceManagement />} />
               <Route path="/painel/qrcode" element={<QRCodeManagement />} />
               <Route path="/painel/relatorios" element={<ReportsManagement />} />
               <Route path="/painel/whatsapp" element={<WhatsAppManagement />} />
@@ -226,15 +222,13 @@ const AppRoutes = () => {
               <Route path="/painel/mercadopago" element={<MercadoPagoManagement />} />
               <Route path="/painel/comanda" element={<WaiterApp />} />
               <Route path="/painel/cozinha" element={<KitchenDisplay />} />
-              <Route path="/painel/cashback" element={<CashbackManagement />} />
               <Route path="/painel/carrinhos-abandonados" element={<AbandonedCartsManagement />} />
               <Route path="/painel/agendados" element={<ScheduledOrdersManagement />} />
               <Route path="/painel/entregadores" element={<DeliveryDriversManagement />} />
               <Route path="/painel/pixels" element={<AnalyticsPixelsManagement />} />
               <Route path="/painel/estoque" element={<InventoryManagement />} />
               <Route path="/painel/financeiro" element={<AdvancedFinanceManagement />} />
-              <Route path="/painel/fornecedores" element={<SuppliersManagement />} />
-              <Route path="/painel/pagamentos" element={<PaymentsManagement />} />
+              <Route path="/painel/pagamentos" element={<AdvancedFinanceManagement />} />
               <Route path="/painel/stories" element={<StoriesManagement />} />
               <Route path="/painel/analise-ia" element={<AIAnalysisDashboard />} />
               <Route path="/painel/configuracoes" element={<EstablishmentSettings />} />

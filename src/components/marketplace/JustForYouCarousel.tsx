@@ -65,14 +65,23 @@ const JustForYouCarousel = ({ mainCategory }: JustForYouCarouselProps) => {
   const [viewportWidth, setViewportWidth] = useState(1200);
   
   useEffect(() => {
+    let timeout: ReturnType<typeof setTimeout>;
     const updateViewport = () => {
-      const width = window.innerWidth;
-      setIsMobile(width < 768);
-      setViewportWidth(width);
+      clearTimeout(timeout);
+      timeout = setTimeout(() => {
+        const width = window.innerWidth;
+        setIsMobile(width < 768);
+        setViewportWidth(width);
+      }, 150);
     };
-    updateViewport();
+    // Set initial values immediately (no debounce)
+    setIsMobile(window.innerWidth < 768);
+    setViewportWidth(window.innerWidth);
     window.addEventListener('resize', updateViewport);
-    return () => window.removeEventListener('resize', updateViewport);
+    return () => {
+      window.removeEventListener('resize', updateViewport);
+      clearTimeout(timeout);
+    };
   }, []);
 
   // Calculate spread factor based on viewport width (desktop only)

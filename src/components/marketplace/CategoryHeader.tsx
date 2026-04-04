@@ -1,4 +1,4 @@
-import { ArrowLeft, Search, Bell, Flame } from "lucide-react";
+import { ArrowLeft, Search, Bell } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
 import { CategoryConfig } from "@/lib/categoryConfig";
 import { Input } from "@/components/ui/input";
@@ -35,14 +35,6 @@ const CategoryHeader = ({ category, searchTerm, onSearchChange }: CategoryHeader
         </div>
 
         <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate("/vilatok")}
-            className="text-primary-foreground hover:bg-primary-foreground/10"
-          >
-            <Flame className="h-5 w-5" />
-          </Button>
           <Button
             variant="ghost"
             size="icon"

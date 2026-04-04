@@ -84,6 +84,31 @@ const WaiterApp = () => {
     fetchUserName();
   }, []);
 
+  // Realtime subscription for table state changes
+  useEffect(() => {
+    if (!establishmentId) return;
+
+    const channel = supabase
+      .channel(`waiter-tabs-${establishmentId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "waiter_tabs",
+          filter: `establishment_id=eq.${establishmentId}`,
+        },
+        () => {
+          fetchData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [establishmentId]);
+
   const fetchUserName = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -377,7 +402,7 @@ const WaiterApp = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="flex-1 overflow-auto">
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
               {TABLE_CONFIG.tables.map((table) => {
                 const status = getTableStatus(table.number);
                 const tab = getTableTab(table.number);
@@ -386,7 +411,7 @@ const WaiterApp = () => {
                     key={table.number}
                     onClick={() => selectTable(table.number)}
                     className={`
-                      aspect-square rounded-lg flex flex-col items-center justify-center text-xs font-bold transition-all
+                      aspect-square min-h-[56px] rounded-lg flex flex-col items-center justify-center text-sm font-bold transition-all active:scale-95
                       ${selectedTab?.table_number === `Mesa ${table.number}` ? "ring-2 ring-primary ring-offset-2" : ""}
                       ${status === "free" 
                         ? "bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400" 
@@ -771,10 +796,10 @@ const WaiterApp = () => {
             </div>
             <div>
               <Label>Nome do Garçom</Label>
-              <Input 
+              <Input
                 value={newTab.waiter_name}
-                onChange={(e) => setNewTab({ ...newTab, waiter_name: e.target.value })}
-                placeholder="Seu nome"
+                readOnly
+                className="bg-muted cursor-default"
               />
             </div>
             <div>

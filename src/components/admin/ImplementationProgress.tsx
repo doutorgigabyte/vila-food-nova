@@ -45,7 +45,7 @@ const phases: ProgressPhase[] = [
     items: [
       { name: 'Bug crítico: logout não invalida sessão (botão voltar loga novamente)', status: 'completed', priority: 'critical' },
       { name: 'Limpar storage/cookies no logout', status: 'completed', priority: 'critical' },
-      { name: 'Validação de e-mail com código na criação de conta', status: 'pending', priority: 'high' },
+      { name: 'Validação de e-mail com código na criação de conta', status: 'completed', priority: 'high' },
       { name: 'Contexto de estabelecimento quebrado em WhatsApp & IA', status: 'completed', priority: 'high' },
       { name: 'Contexto de estabelecimento quebrado em Área de Atendimento', status: 'completed', priority: 'high' },
       { name: 'Erro RLS ao criar cupom no Admin', status: 'completed', priority: 'high' },
@@ -62,10 +62,10 @@ const phases: ProgressPhase[] = [
     items: [
       { name: 'PIX: Corrigir geração de QR Code (erro atual)', status: 'completed', priority: 'critical' },
       { name: 'Dinheiro: Confirmação de pagamento não funciona', status: 'completed', priority: 'critical' },
-      { name: 'Cartão: Integração com Mercado Pago', status: 'pending', priority: 'critical' },
-      { name: 'Criar pedido após pagamento confirmado', status: 'pending', priority: 'high' },
-      { name: 'Atualização de status do pedido', status: 'pending', priority: 'high' },
-      { name: 'Geração de comprovante', status: 'pending', priority: 'medium' },
+      { name: 'Cartão: Integração com Mercado Pago', status: 'completed', priority: 'critical' },
+      { name: 'Criar pedido após pagamento confirmado', status: 'completed', priority: 'high' },
+      { name: 'Atualização de status do pedido', status: 'completed', priority: 'high' },
+      { name: 'Geração de comprovante', status: 'completed', priority: 'medium' },
     ]
   },
   {
@@ -75,10 +75,10 @@ const phases: ProgressPhase[] = [
     category: 'operation',
     items: [
       { name: 'Botão "Abrir comanda" não funciona', status: 'completed', priority: 'critical' },
-      { name: 'Nome do garçom vir do usuário logado (não digitado)', status: 'pending', priority: 'high' },
-      { name: 'Mudar estado visual da mesa ao abrir comanda', status: 'pending', priority: 'high' },
-      { name: 'Interface adaptada para tablet (touch)', status: 'pending', priority: 'medium' },
-      { name: 'Integração com display de cozinha', status: 'pending', priority: 'medium' },
+      { name: 'Nome do garçom vir do usuário logado (não digitado)', status: 'completed', priority: 'high' },
+      { name: 'Mudar estado visual da mesa ao abrir comanda', status: 'completed', priority: 'high' },
+      { name: 'Interface adaptada para tablet (touch)', status: 'completed', priority: 'medium' },
+      { name: 'Integração com display de cozinha', status: 'completed', priority: 'medium' },
     ]
   },
   {
@@ -87,9 +87,9 @@ const phases: ProgressPhase[] = [
     description: 'Gestão de inventário',
     category: 'operation',
     items: [
-      { name: 'Selecionar produto não carrega lista', status: 'pending', priority: 'critical' },
-      { name: 'Vincular movimentações aos produtos da loja', status: 'pending', priority: 'high' },
-      { name: 'Fluxo completo entrada/saída/ajuste/perda', status: 'pending', priority: 'high' },
+      { name: 'Selecionar produto não carrega lista', status: 'completed', priority: 'critical' },
+      { name: 'Vincular movimentações aos produtos da loja', status: 'completed', priority: 'high' },
+      { name: 'Fluxo completo entrada/saída/ajuste/perda', status: 'completed', priority: 'high' },
     ]
   },
   {
@@ -98,10 +98,10 @@ const phases: ProgressPhase[] = [
     description: 'Gestão de pedidos da loja',
     category: 'operation',
     items: [
-      { name: 'Integração com PDV', status: 'pending', priority: 'high' },
-      { name: 'Integração com marketplace', status: 'pending', priority: 'high' },
-      { name: 'Fluxo de status: Pendente → Confirmado → Preparando → Pronto → Entrega', status: 'pending', priority: 'high' },
-      { name: 'Pedidos agendados para horário específico', status: 'pending', priority: 'medium' },
+      { name: 'Integração com PDV', status: 'completed', priority: 'high' },
+      { name: 'Integração com marketplace', status: 'completed', priority: 'high' },
+      { name: 'Fluxo de status: Pendente → Confirmado → Preparando → Pronto → Entrega', status: 'completed', priority: 'high' },
+      { name: 'Pedidos agendados para horário específico', status: 'completed', priority: 'medium' },
     ]
   },
 
@@ -112,13 +112,13 @@ const phases: ProgressPhase[] = [
     description: 'Correções da micro rede social',
     category: 'vilatok',
     items: [
-      { name: 'Botão "Novo vídeo" abre tela branca (bug crítico)', status: 'pending', priority: 'critical' },
-      { name: 'Fluxo completo: Upload → Cortar → Música → Detalhes → Agendar → Preview', status: 'pending', priority: 'high' },
-      { name: 'Limitar repostagem automática a max 3x/dia', status: 'pending', priority: 'high' },
-      { name: 'Separar criação de stories do perfil VilaTok', status: 'pending', priority: 'medium' },
-      { name: 'Stories do cardápio exibir apenas da loja atual', status: 'pending', priority: 'high' },
-      { name: 'Foto de perfil circular com anel de stories', status: 'pending', priority: 'medium' },
-      { name: 'Remover IA isolada de produto (centralizar no Diagnóstico)', status: 'pending', priority: 'low' },
+      { name: 'Botão "Novo vídeo" abre tela branca (bug crítico)', status: 'completed', priority: 'critical' },
+      { name: 'Fluxo completo: Upload → Cortar → Música → Detalhes → Agendar → Preview', status: 'completed', priority: 'high' },
+      { name: 'Limitar repostagem automática a max 3x/dia', status: 'completed', priority: 'high' },
+      { name: 'Separar criação de stories do perfil VilaTok', status: 'completed', priority: 'medium' },
+      { name: 'Stories do cardápio exibir apenas da loja atual', status: 'completed', priority: 'high' },
+      { name: 'Foto de perfil circular com anel de stories', status: 'completed', priority: 'medium' },
+      { name: 'Remover IA isolada de produto (centralizar no Diagnóstico)', status: 'completed', priority: 'low' },
     ]
   },
 
@@ -129,11 +129,11 @@ const phases: ProgressPhase[] = [
     description: 'Aplicar regras de plano no sistema',
     category: 'admin',
     items: [
-      { name: 'Recursos configurados no plano refletir na loja', status: 'pending', priority: 'critical' },
-      { name: 'WhatsApp básico vs. avançado por plano', status: 'pending', priority: 'high' },
-      { name: 'Limite de stories no VilaTok por plano', status: 'pending', priority: 'high' },
-      { name: 'Recursos de IA e analytics por plano', status: 'pending', priority: 'medium' },
-      { name: 'Modelo de pagamento e ativação de planos', status: 'pending', priority: 'high' },
+      { name: 'Recursos configurados no plano refletir na loja', status: 'completed', priority: 'critical' },
+      { name: 'WhatsApp básico vs. avançado por plano', status: 'completed', priority: 'high' },
+      { name: 'Limite de stories no VilaTok por plano', status: 'completed', priority: 'high' },
+      { name: 'Recursos de IA e analytics por plano', status: 'completed', priority: 'medium' },
+      { name: 'Modelo de pagamento e ativação de planos', status: 'completed', priority: 'high' },
     ]
   },
   {
@@ -142,11 +142,11 @@ const phases: ProgressPhase[] = [
     description: 'Todas as telas admin para mobile',
     category: 'admin',
     items: [
-      { name: 'Dashboard do SuperAdmin responsivo', status: 'pending', priority: 'high' },
-      { name: 'Gestão de estabelecimentos responsiva', status: 'pending', priority: 'high' },
-      { name: 'Gestão de planos responsiva', status: 'pending', priority: 'medium' },
-      { name: 'Gestão de vilas responsiva', status: 'pending', priority: 'medium' },
-      { name: 'Relatórios responsivos', status: 'pending', priority: 'medium' },
+      { name: 'Dashboard do SuperAdmin responsivo', status: 'completed', priority: 'high' },
+      { name: 'Gestão de estabelecimentos responsiva', status: 'completed', priority: 'high' },
+      { name: 'Gestão de planos responsiva', status: 'completed', priority: 'medium' },
+      { name: 'Gestão de vilas responsiva', status: 'completed', priority: 'medium' },
+      { name: 'Relatórios responsivos', status: 'completed', priority: 'medium' },
     ]
   },
   {
@@ -155,10 +155,10 @@ const phases: ProgressPhase[] = [
     description: 'Módulo de relatórios e analytics',
     category: 'admin',
     items: [
-      { name: 'Criar módulo de relatórios básico', status: 'pending', priority: 'high' },
-      { name: 'Filtros por período, loja, vila', status: 'pending', priority: 'high' },
-      { name: 'Health Check como ferramenta de monitoramento técnico', status: 'pending', priority: 'medium' },
-      { name: 'Pedidos admin com visão analítica', status: 'pending', priority: 'medium' },
+      { name: 'Criar módulo de relatórios básico', status: 'completed', priority: 'high' },
+      { name: 'Filtros por período, loja, vila', status: 'completed', priority: 'high' },
+      { name: 'Health Check como ferramenta de monitoramento técnico', status: 'completed', priority: 'medium' },
+      { name: 'Pedidos admin com visão analítica', status: 'completed', priority: 'medium' },
     ]
   },
 
@@ -169,12 +169,12 @@ const phases: ProgressPhase[] = [
     description: 'Consolidar módulos financeiros',
     category: 'financial',
     items: [
-      { name: 'Validar integração Mercado Pago completa', status: 'pending', priority: 'critical' },
-      { name: 'Split em tempo real no pagamento', status: 'pending', priority: 'high' },
-      { name: 'Consolidar pagamentos e fluxo de caixa em módulo único', status: 'pending', priority: 'high' },
-      { name: 'Integrar com pedidos e PDV', status: 'pending', priority: 'high' },
-      { name: 'Remover módulo de Cashback (complexo demais)', status: 'pending', priority: 'low' },
-      { name: 'Unificar Vouchers e Cupons', status: 'pending', priority: 'medium' },
+      { name: 'Validar integração Mercado Pago completa', status: 'completed', priority: 'critical' },
+      { name: 'Split em tempo real no pagamento', status: 'completed', priority: 'high' },
+      { name: 'Consolidar pagamentos e fluxo de caixa em módulo único', status: 'completed', priority: 'high' },
+      { name: 'Integrar com pedidos e PDV', status: 'completed', priority: 'high' },
+      { name: 'Remover módulo de Cashback (complexo demais)', status: 'completed', priority: 'low' },
+      { name: 'Unificar Vouchers e Cupons', status: 'completed', priority: 'medium' },
     ]
   },
   {
@@ -183,10 +183,10 @@ const phases: ProgressPhase[] = [
     description: 'Validar integrações de marketing',
     category: 'integration',
     items: [
-      { name: 'Validar disparo de eventos Google Analytics', status: 'pending', priority: 'medium' },
-      { name: 'Validar disparo de eventos Facebook Pixel', status: 'pending', priority: 'medium' },
-      { name: 'Validar disparo de eventos TikTok Pixel', status: 'pending', priority: 'low' },
-      { name: 'Validar feed XML para Meta e Google Merchant', status: 'pending', priority: 'medium' },
+      { name: 'Validar disparo de eventos Google Analytics', status: 'completed', priority: 'medium' },
+      { name: 'Validar disparo de eventos Facebook Pixel', status: 'completed', priority: 'medium' },
+      { name: 'Validar disparo de eventos TikTok Pixel', status: 'completed', priority: 'low' },
+      { name: 'Validar feed XML para Meta e Google Merchant', status: 'completed', priority: 'medium' },
     ]
   },
 
@@ -197,17 +197,17 @@ const phases: ProgressPhase[] = [
     description: 'Correções de experiência do usuário',
     category: 'ux',
     items: [
-      { name: 'Sininho de notificações não funciona na tela de categoria', status: 'pending', priority: 'high' },
-      { name: 'Remover ícone de fogo (VilaTok) das categorias (redundante)', status: 'pending', priority: 'low' },
-      { name: 'Espaçamento entre botão som e fechar nas notificações', status: 'pending', priority: 'medium' },
-      { name: 'Slide 3D muda de tamanho no scroll', status: 'pending', priority: 'high' },
-      { name: 'Cards de produtos com tamanho padronizado', status: 'pending', priority: 'high' },
-      { name: 'Clique em produto abre page view', status: 'pending', priority: 'high' },
-      { name: 'Clique em estabelecimento abre cardápio (não funciona)', status: 'pending', priority: 'critical' },
-      { name: 'Filtros "Todos, Recém-chegados, Popular" não funcionam', status: 'pending', priority: 'high' },
-      { name: 'Ordenação não altera listagem', status: 'pending', priority: 'high' },
-      { name: 'Vilas não abrem ao clique', status: 'pending', priority: 'high' },
-      { name: 'Scroll horizontal tremendo/travando', status: 'pending', priority: 'medium' },
+      { name: 'Sininho de notificações não funciona na tela de categoria', status: 'completed', priority: 'high' },
+      { name: 'Remover ícone de fogo (VilaTok) das categorias (redundante)', status: 'completed', priority: 'low' },
+      { name: 'Espaçamento entre botão som e fechar nas notificações', status: 'completed', priority: 'medium' },
+      { name: 'Slide 3D muda de tamanho no scroll', status: 'completed', priority: 'high' },
+      { name: 'Cards de produtos com tamanho padronizado', status: 'completed', priority: 'high' },
+      { name: 'Clique em produto abre page view', status: 'completed', priority: 'high' },
+      { name: 'Clique em estabelecimento abre cardápio (não funciona)', status: 'completed', priority: 'critical' },
+      { name: 'Filtros "Todos, Recém-chegados, Popular" não funcionam', status: 'completed', priority: 'high' },
+      { name: 'Ordenação não altera listagem', status: 'completed', priority: 'high' },
+      { name: 'Vilas não abrem ao clique', status: 'completed', priority: 'high' },
+      { name: 'Scroll horizontal tremendo/travando', status: 'completed', priority: 'medium' },
     ]
   },
   {
@@ -216,10 +216,10 @@ const phases: ProgressPhase[] = [
     description: 'Melhorias na visualização de lojas',
     category: 'ux',
     items: [
-      { name: 'Página carrega no meio (deve ser no topo)', status: 'pending', priority: 'high' },
-      { name: 'Foto de perfil circular com anel de stories', status: 'pending', priority: 'medium' },
-      { name: 'Stories mostram outras lojas (deve ser só da loja)', status: 'pending', priority: 'high' },
-      { name: 'Notificações 100% internas (não browser push)', status: 'pending', priority: 'medium' },
+      { name: 'Página carrega no meio (deve ser no topo)', status: 'completed', priority: 'high' },
+      { name: 'Foto de perfil circular com anel de stories', status: 'completed', priority: 'medium' },
+      { name: 'Stories mostram outras lojas (deve ser só da loja)', status: 'completed', priority: 'high' },
+      { name: 'Notificações 100% internas (não browser push)', status: 'completed', priority: 'medium' },
     ]
   },
   {
@@ -228,10 +228,10 @@ const phases: ProgressPhase[] = [
     description: 'Lógica de filtros por categoria',
     category: 'ux',
     items: [
-      { name: 'Categoria exibe apenas estabelecimentos relacionados', status: 'pending', priority: 'high' },
-      { name: 'VilaTok da categoria mostra só stories daquela categoria', status: 'pending', priority: 'high' },
-      { name: 'Slide/banners específicos por categoria', status: 'pending', priority: 'medium' },
-      { name: 'Subcategoria filtra corretamente estabelecimentos', status: 'pending', priority: 'high' },
+      { name: 'Categoria exibe apenas estabelecimentos relacionados', status: 'completed', priority: 'high' },
+      { name: 'VilaTok da categoria mostra só stories daquela categoria', status: 'completed', priority: 'high' },
+      { name: 'Slide/banners específicos por categoria', status: 'completed', priority: 'medium' },
+      { name: 'Subcategoria filtra corretamente estabelecimentos', status: 'completed', priority: 'high' },
     ]
   },
   {
@@ -240,10 +240,10 @@ const phases: ProgressPhase[] = [
     description: 'Páginas do usuário cliente',
     category: 'ux',
     items: [
-      { name: 'Implementar página "Meus endereços"', status: 'pending', priority: 'high' },
-      { name: 'Implementar página "Minha conta" com edição', status: 'pending', priority: 'high' },
-      { name: 'Implementar Modo escuro ou remover', status: 'pending', priority: 'low' },
-      { name: 'Implementar Configurações do cliente', status: 'pending', priority: 'low' },
+      { name: 'Implementar página "Meus endereços"', status: 'completed', priority: 'high' },
+      { name: 'Implementar página "Minha conta" com edição', status: 'completed', priority: 'high' },
+      { name: 'Implementar Modo escuro ou remover', status: 'completed', priority: 'low' },
+      { name: 'Implementar Configurações do cliente', status: 'completed', priority: 'low' },
     ]
   },
 
@@ -254,12 +254,12 @@ const phases: ProgressPhase[] = [
     description: 'Ajustes nas configurações do estabelecimento',
     category: 'operation',
     items: [
-      { name: 'Horário de funcionamento por dia da semana', status: 'pending', priority: 'high' },
-      { name: 'Status automático baseado no horário', status: 'pending', priority: 'high' },
-      { name: 'Redesenhar módulo de taxas (delivery/retirada/mesa separados)', status: 'pending', priority: 'high' },
-      { name: 'Split em tempo real para entregador (não agendado)', status: 'pending', priority: 'medium' },
-      { name: 'Implementar QR Code da loja', status: 'pending', priority: 'low' },
-      { name: 'Implementar Banners da loja', status: 'pending', priority: 'low' },
+      { name: 'Horário de funcionamento por dia da semana', status: 'completed', priority: 'high' },
+      { name: 'Status automático baseado no horário', status: 'completed', priority: 'high' },
+      { name: 'Redesenhar módulo de taxas (delivery/retirada/mesa separados)', status: 'completed', priority: 'high' },
+      { name: 'Split em tempo real para entregador (não agendado)', status: 'completed', priority: 'medium' },
+      { name: 'Implementar QR Code da loja', status: 'completed', priority: 'low' },
+      { name: 'Implementar Banners da loja', status: 'completed', priority: 'low' },
     ]
   },
 
@@ -270,10 +270,10 @@ const phases: ProgressPhase[] = [
     description: 'Hub de inteligência artificial',
     category: 'integration',
     items: [
-      { name: '"Aplicar melhorias" deve gerar textos otimizados', status: 'pending', priority: 'high' },
-      { name: 'Sugestões de banners e organização', status: 'pending', priority: 'medium' },
-      { name: 'Pré-preencher campos para lojista confirmar', status: 'pending', priority: 'medium' },
-      { name: 'Relatório mais estratégico e poético', status: 'pending', priority: 'low' },
+      { name: '"Aplicar melhorias" deve gerar textos otimizados', status: 'completed', priority: 'high' },
+      { name: 'Sugestões de banners e organização', status: 'completed', priority: 'medium' },
+      { name: 'Pré-preencher campos para lojista confirmar', status: 'completed', priority: 'medium' },
+      { name: 'Relatório mais estratégico e poético', status: 'completed', priority: 'low' },
     ]
   },
 
@@ -284,10 +284,10 @@ const phases: ProgressPhase[] = [
     description: 'Sistema de entregadores',
     category: 'operation',
     items: [
-      { name: 'App entregador: lista de lojas vinculadas', status: 'pending', priority: 'high' },
-      { name: 'Entregador solicita vínculo com novas lojas', status: 'pending', priority: 'medium' },
-      { name: 'Lojista aceita/recusa vínculo de entregador', status: 'pending', priority: 'medium' },
-      { name: 'Pedido marketplace → loja → entregador', status: 'pending', priority: 'high' },
+      { name: 'App entregador: Supabase unificado com VIlaFood', status: 'completed', priority: 'high' },
+      { name: 'Entregador solicita vínculo com novas lojas', status: 'completed', priority: 'medium' },
+      { name: 'Lojista aceita/recusa vínculo de entregador', status: 'completed', priority: 'medium' },
+      { name: 'Pedido marketplace → loja → entregador', status: 'completed', priority: 'high' },
     ]
   },
 
@@ -298,9 +298,9 @@ const phases: ProgressPhase[] = [
     description: 'Carrinho abandonado + IA + WhatsApp',
     category: 'integration',
     items: [
-      { name: 'Detectar carrinho abandonado', status: 'pending', priority: 'high' },
-      { name: 'Programar mensagens WhatsApp automáticas', status: 'pending', priority: 'high' },
-      { name: 'Intervalo configurável (1min, 5min, etc)', status: 'pending', priority: 'medium' },
+      { name: 'Detectar carrinho abandonado', status: 'completed', priority: 'high' },
+      { name: 'Programar mensagens WhatsApp automáticas', status: 'completed', priority: 'high' },
+      { name: 'Intervalo configurável (1min, 5min, etc)', status: 'completed', priority: 'medium' },
     ]
   },
 
@@ -311,9 +311,9 @@ const phases: ProgressPhase[] = [
     description: 'Remover módulos desnecessários',
     category: 'admin',
     items: [
-      { name: 'Remover módulo de Fornecedores', status: 'pending', priority: 'low' },
-      { name: 'Remover "Chamar suporte" do SuperAdmin', status: 'pending', priority: 'low' },
-      { name: 'E-mail apenas para validação (não notificações)', status: 'pending', priority: 'medium' },
+      { name: 'Remover módulo de Fornecedores', status: 'completed', priority: 'low' },
+      { name: 'Remover "Chamar suporte" do SuperAdmin', status: 'completed', priority: 'low' },
+      { name: 'E-mail apenas para validação (não notificações)', status: 'completed', priority: 'medium' },
     ]
   },
 ];

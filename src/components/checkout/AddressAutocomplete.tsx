@@ -26,7 +26,7 @@ interface AddressAutocompleteProps {
   establishmentLng?: number;
 }
 
-const GOOGLE_MAPS_API_KEY = "AIzaSyAIl_jZHOswjHwpXwHpDlnyacOUcRYXVco";
+import { GOOGLE_MAPS_API_KEY } from '@/lib/constants';
 
 const AddressAutocomplete = ({ 
   value, 

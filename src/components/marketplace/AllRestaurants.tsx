@@ -26,37 +26,40 @@ const AllRestaurants = ({ establishments, loading, mainCategory, subcategory }: 
   // Filter and sort establishments - memoized for performance
   // MUST be called before any early returns to maintain hook order
   const filteredEstablishments = useMemo(() => {
-    let filtered = establishments.filter((est) => {
+    let filtered = establishments.filter((est: any) => {
       switch (activeFilter) {
-        case "new":
+        case "new": {
           // Recém-chegados - establishments created in last 30 days
           const thirtyDaysAgo = new Date();
           thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
           return est.created_at ? new Date(est.created_at) >= thirtyDaysAgo : false;
+        }
         case "popular":
-          // Popular - based on order count or rating (simplified: use rating for now)
-          return (est.rating || 0) >= 4.0;
+          // Popular - establishments that are currently open
+          return est.is_open === true;
         case "top_rated":
-          // Melhor avaliados - highest rating first
-          return (est.rating || 0) >= 4.5;
+          // Melhor avaliados - featured / with lowest delivery times
+          return (est.avg_delivery_time || 999) <= 45;
         default:
           return true;
       }
     });
 
     // Sort establishments
-    return [...filtered].sort((a, b) => {
+    return [...filtered].sort((a: any, b: any) => {
       switch (sortBy) {
         case "rating":
-          return (b.rating || 0) - (a.rating || 0);
+          // Sort by open status first, then by name
+          return (b.is_open ? 1 : 0) - (a.is_open ? 1 : 0) || a.name.localeCompare(b.name);
         case "delivery_time":
           return (a.avg_delivery_time || 999) - (b.avg_delivery_time || 999);
         case "distance":
-          // TODO: Implement distance sorting when location is available
-          return 0;
+          // Sort by neighborhood alphabetically as proxy for distance
+          return (a.neighborhood || "").localeCompare(b.neighborhood || "");
         default:
-          // Recommended - default order
-          return 0;
+          // Recommended - open first, then by delivery time
+          return (b.is_open ? 1 : 0) - (a.is_open ? 1 : 0)
+            || (a.avg_delivery_time || 999) - (b.avg_delivery_time || 999);
       }
     });
   }, [establishments, activeFilter, sortBy]);

@@ -158,6 +158,26 @@ const AdminOrdersManagement = () => {
             </Select>
           </div>
 
+          {/* Analytics Summary */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+            <Card><CardContent className="p-3 text-center">
+              <p className="text-2xl font-bold">{filteredOrders.length}</p>
+              <p className="text-xs text-muted-foreground">Total Pedidos</p>
+            </CardContent></Card>
+            <Card><CardContent className="p-3 text-center">
+              <p className="text-2xl font-bold text-green-600">{formatCurrency(filteredOrders.reduce((s: number, o: any) => s + (o.total || 0), 0))}</p>
+              <p className="text-xs text-muted-foreground">Receita Total</p>
+            </CardContent></Card>
+            <Card><CardContent className="p-3 text-center">
+              <p className="text-2xl font-bold">{filteredOrders.filter((o: any) => o.status === 'delivered').length}</p>
+              <p className="text-xs text-muted-foreground">Entregues</p>
+            </CardContent></Card>
+            <Card><CardContent className="p-3 text-center">
+              <p className="text-2xl font-bold text-red-600">{filteredOrders.filter((o: any) => o.status === 'cancelled').length}</p>
+              <p className="text-xs text-muted-foreground">Cancelados</p>
+            </CardContent></Card>
+          </div>
+
           {/* Table */}
           {isLoading ? (
             <div className="text-center py-8">Carregando...</div>

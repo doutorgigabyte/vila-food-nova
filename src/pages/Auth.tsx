@@ -5,19 +5,22 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Utensils, Mail, Lock, User, Phone, ArrowLeft, Eye, EyeOff, CheckCircle, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 
 const Auth = () => {
   const navigate = useNavigate();
-  const { user, signIn, signUp, resendConfirmationEmail, loading } = useAuth();
+  const { user, signIn, signUp, resendConfirmationEmail, verifyOtp, loading } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [activeTab, setActiveTab] = useState("login");
   const [emailVerificationSent, setEmailVerificationSent] = useState(false);
   const [pendingEmail, setPendingEmail] = useState<string>("");
   const [resendingEmail, setResendingEmail] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
+  const [verifyingOtp, setVerifyingOtp] = useState(false);
   
   // Login form state
   const [loginEmail, setLoginEmail] = useState("");
@@ -357,7 +360,7 @@ const Auth = () => {
           </CardContent>
         </Card>
 
-        {/* Email Verification Screen */}
+        {/* Email Verification Screen with OTP */}
         {emailVerificationSent && (
           <Card className="mt-4 glass border-border/50">
             <CardContent className="pt-6">
@@ -368,12 +371,58 @@ const Auth = () => {
                 <div>
                   <CardTitle className="text-xl mb-2">Verifique seu e-mail</CardTitle>
                   <CardDescription>
-                    Enviamos um link de confirmação para <strong>{pendingEmail}</strong>
+                    Enviamos um codigo de verificacao para <strong>{pendingEmail}</strong>
                   </CardDescription>
                 </div>
-                <div className="space-y-2 text-sm text-muted-foreground">
-                  <p>Clique no link no e-mail para ativar sua conta.</p>
-                  <p>Não recebeu o e-mail? Verifique sua caixa de spam.</p>
+
+                <div className="space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    Digite o codigo de 6 digitos recebido no e-mail:
+                  </p>
+                  <div className="flex justify-center">
+                    <InputOTP
+                      maxLength={6}
+                      value={otpCode}
+                      onChange={setOtpCode}
+                    >
+                      <InputOTPGroup>
+                        <InputOTPSlot index={0} />
+                        <InputOTPSlot index={1} />
+                        <InputOTPSlot index={2} />
+                        <InputOTPSlot index={3} />
+                        <InputOTPSlot index={4} />
+                        <InputOTPSlot index={5} />
+                      </InputOTPGroup>
+                    </InputOTP>
+                  </div>
+
+                  <Button
+                    className="w-full"
+                    disabled={otpCode.length !== 6 || verifyingOtp}
+                    onClick={async () => {
+                      setVerifyingOtp(true);
+                      try {
+                        const { error } = await verifyOtp(pendingEmail, otpCode);
+                        if (error) {
+                          toast.error("Codigo invalido ou expirado. Tente novamente.");
+                          setOtpCode("");
+                        } else {
+                          toast.success("E-mail verificado com sucesso!");
+                          navigate("/marketplace");
+                        }
+                      } catch {
+                        toast.error("Erro ao verificar codigo.");
+                      } finally {
+                        setVerifyingOtp(false);
+                      }
+                    }}
+                  >
+                    {verifyingOtp ? "Verificando..." : "Verificar"}
+                  </Button>
+                </div>
+
+                <div className="text-sm text-muted-foreground">
+                  <p>Nao recebeu? Verifique sua caixa de spam.</p>
                 </div>
                 <div className="flex flex-col gap-2">
                   <Button
@@ -390,7 +439,7 @@ const Auth = () => {
                     ) : (
                       <>
                         <RefreshCw className="w-4 h-4 mr-2" />
-                        Reenviar e-mail
+                        Reenviar codigo
                       </>
                     )}
                   </Button>
@@ -399,6 +448,7 @@ const Auth = () => {
                     onClick={() => {
                       setEmailVerificationSent(false);
                       setPendingEmail("");
+                      setOtpCode("");
                       setActiveTab("login");
                     }}
                     className="w-full"

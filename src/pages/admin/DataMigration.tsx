@@ -105,15 +105,7 @@ export default function DataMigration() {
   };
 
   const createAdminUser = async () => {
-    const result = await runMigration('create_admin_user', {
-      email: 'admin@admin.com.br',
-      password: 'admin123',
-      full_name: 'Administrador'
-    });
-    
-    if (result?.success) {
-      setAdminCreated(true);
-    }
+    toast.error('Criação de admin desabilitada em produção. Use o painel Supabase Auth.');
   };
 
   const runAllBaseMigrations = async () => {

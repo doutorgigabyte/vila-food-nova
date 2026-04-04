@@ -86,3 +86,6 @@ verify_jwt = false
 
 [functions.fix-broken-images]
 verify_jwt = false
+
+[functions.sync-localiza]
+verify_jwt = true

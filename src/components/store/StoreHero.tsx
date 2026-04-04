@@ -1,7 +1,31 @@
+import { useMemo } from "react";
 import { MessageCircle, MapPin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { StoreEstablishment } from "@/hooks/useStoreData";
+
+function isOpenNow(operatingHours: any): boolean | null {
+  if (!operatingHours || typeof operatingHours !== "object") return null;
+
+  const days = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+  const now = new Date();
+  const dayName = days[now.getDay()];
+  const hours = operatingHours[dayName];
+
+  if (!hours || !hours.enabled) return false;
+
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  const [openH, openM] = (hours.open || "00:00").split(":").map(Number);
+  const [closeH, closeM] = (hours.close || "23:59").split(":").map(Number);
+  const openMinutes = openH * 60 + openM;
+  const closeMinutes = closeH * 60 + closeM;
+
+  if (closeMinutes < openMinutes) {
+    // Overnight: e.g., 18:00 - 02:00
+    return currentMinutes >= openMinutes || currentMinutes <= closeMinutes;
+  }
+  return currentMinutes >= openMinutes && currentMinutes <= closeMinutes;
+}
 
 interface StoreHeroProps {
   establishment: StoreEstablishment;
@@ -11,9 +35,16 @@ interface StoreHeroProps {
 }
 
 export const StoreHero = ({ establishment, cashbackPercentage, hasStories = false, storiesCount = 0 }: StoreHeroProps) => {
-  const whatsappLink = establishment.whatsapp 
-    ? `https://wa.me/${establishment.whatsapp.replace(/\D/g, '')}` 
+  const whatsappLink = establishment.whatsapp
+    ? `https://wa.me/${establishment.whatsapp.replace(/\D/g, '')}`
     : null;
+
+  // Calculate real-time open/close status based on operating hours
+  const computedIsOpen = useMemo(() => {
+    const autoStatus = isOpenNow(establishment.operating_hours);
+    // If we can calculate from hours, use that; otherwise fall back to manual is_open
+    return autoStatus !== null ? autoStatus : establishment.is_open;
+  }, [establishment.operating_hours, establishment.is_open]);
 
   return (
     <div className="relative">
@@ -120,7 +151,7 @@ export const StoreHero = ({ establishment, cashbackPercentage, hasStories = fals
               </div>
 
               <div className="flex items-center gap-1 mt-2">
-                {establishment.is_open ? (
+                {computedIsOpen ? (
                   <Badge className="bg-green-500 hover:bg-green-500 text-xs px-2">
                     ABERTO AGORA
                   </Badge>

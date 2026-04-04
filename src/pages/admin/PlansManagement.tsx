@@ -235,7 +235,7 @@ const PlansManagement = () => {
                   placeholder="Descrição do plano"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Preço (R$)</Label>
                   <Input
@@ -256,7 +256,7 @@ const PlansManagement = () => {
                   </select>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Máx. Produtos</Label>
                   <Input
@@ -363,7 +363,7 @@ const PlansManagement = () => {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
       ) : (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {plans.map((plan) => (
             <Card key={plan.id} className={`relative ${!plan.is_active && "opacity-60"}`}>
               {!plan.is_active && (

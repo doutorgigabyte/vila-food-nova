@@ -96,6 +96,66 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [items, establishments]);
 
+  // Track abandoned carts — save to DB when user leaves with items
+  useEffect(() => {
+    if (!isLoaded || items.length === 0) return;
+
+    const saveAbandonedCart = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        // Get customer phone from profile
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("phone, full_name")
+          .eq("id", user.id)
+          .single();
+
+        if (!profile?.phone) return;
+
+        const estIds = getUniqueEstablishments();
+        for (const estId of estIds) {
+          const estItems = items.filter(i => i.product.establishment_id === estId);
+          if (estItems.length === 0) continue;
+
+          const total = estItems.reduce((sum, i) => sum + (i.product.price * i.quantity), 0);
+
+          await supabase.from("abandoned_carts").upsert(
+            {
+              customer_phone: profile.phone,
+              customer_name: profile.full_name || user.email?.split("@")[0],
+              establishment_id: estId,
+              items: estItems.map(i => ({
+                product_id: i.product.id,
+                name: i.product.name,
+                price: i.product.price,
+                quantity: i.quantity,
+              })),
+              total,
+              recovered: false,
+            },
+            { onConflict: "customer_phone,establishment_id", ignoreDuplicates: false }
+          );
+        }
+      } catch {
+        // Silent fail — don't interrupt UX
+      }
+    };
+
+    // Save abandoned cart on page unload
+    const handleBeforeUnload = () => { saveAbandonedCart(); };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    // Also save after 2 minutes of inactivity with cart
+    const inactivityTimer = setTimeout(saveAbandonedCart, 2 * 60 * 1000);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      clearTimeout(inactivityTimer);
+    };
+  }, [isLoaded, items]);
+
   const addToCart = async (
     product: CartProduct,
     establishmentInfo: EstablishmentInfo,

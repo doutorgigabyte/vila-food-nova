@@ -15,19 +15,22 @@ import { Badge } from "@/components/ui/badge";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import { DeliveryConfigTab } from "@/components/dashboard/DeliveryConfigTab";
 import { PaymentGatewaySetup } from "@/components/payment/PaymentGatewaySetup";
-import { 
-  Menu, 
-  Store, 
-  Clock, 
-  CreditCard, 
-  Truck, 
-  Bell, 
+import {
+  Menu,
+  Store,
+  Clock,
+  CreditCard,
+  Truck,
+  Bell,
   Settings,
   Save,
   Palette,
-  Users
+  Users,
+  RefreshCw,
+  MapPin
 } from "lucide-react";
 import { ImageUpload } from "@/components/ImageUpload";
+import { useLocalizaSync } from "@/hooks/useLocalizaSync";
 
 interface Establishment {
   id: string;
@@ -95,6 +98,8 @@ const EstablishmentSettings = () => {
   
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [bannerUrl, setBannerUrl] = useState<string | null>(null);
+
+  const localizaSync = useLocalizaSync(establishment?.id || null);
   const [operatingHours, setOperatingHours] = useState<Record<string, { open: string; close: string; enabled: boolean }>>({
     monday: { open: "08:00", close: "22:00", enabled: true },
     tuesday: { open: "08:00", close: "22:00", enabled: true },
@@ -301,6 +306,10 @@ const EstablishmentSettings = () => {
               <TabsTrigger value="drivers" className="gap-2">
                 <Users className="w-4 h-4" />
                 Entregadores
+              </TabsTrigger>
+              <TabsTrigger value="localiza" className="gap-2">
+                <MapPin className="w-4 h-4" />
+                LocalizAI
               </TabsTrigger>
             </TabsList>
 
@@ -536,13 +545,13 @@ const EstablishmentSettings = () => {
 
                 <Card>
                   <CardHeader>
-                    <CardTitle>Taxas e Tempo</CardTitle>
-                    <CardDescription>Configure valores de entrega</CardDescription>
+                    <CardTitle>Configuracoes Gerais</CardTitle>
+                    <CardDescription>Pedido minimo e tempo de preparo</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="min_order">Pedido Mínimo (R$)</Label>
+                        <Label htmlFor="min_order">Pedido Minimo (R$)</Label>
                         <Input
                           id="min_order"
                           type="number"
@@ -551,7 +560,7 @@ const EstablishmentSettings = () => {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="avg_time">Tempo Médio (min)</Label>
+                        <Label htmlFor="avg_time">Tempo Medio de Preparo (min)</Label>
                         <Input
                           id="avg_time"
                           type="number"
@@ -560,39 +569,53 @@ const EstablishmentSettings = () => {
                         />
                       </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="base_fee">Taxa Base (R$)</Label>
-                        <Input
-                          id="base_fee"
-                          type="number"
-                          step="0.01"
-                          value={formData.delivery_base_fee}
-                          onChange={(e) => setFormData({ ...formData, delivery_base_fee: Number(e.target.value) })}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="fee_km">Taxa por KM (R$)</Label>
-                        <Input
-                          id="fee_km"
-                          type="number"
-                          step="0.01"
-                          value={formData.delivery_fee_per_km}
-                          onChange={(e) => setFormData({ ...formData, delivery_fee_per_km: Number(e.target.value) })}
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="max_radius">Raio Máximo (KM)</Label>
-                      <Input
-                        id="max_radius"
-                        type="number"
-                        value={formData.max_delivery_radius_km}
-                        onChange={(e) => setFormData({ ...formData, max_delivery_radius_km: Number(e.target.value) })}
-                      />
-                    </div>
                   </CardContent>
                 </Card>
+
+                {formData.accepts_delivery && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Truck className="w-4 h-4" />
+                        Taxas de Delivery
+                      </CardTitle>
+                      <CardDescription>Valores cobrados para entrega em domicilio</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="base_fee">Taxa Base (R$)</Label>
+                          <Input
+                            id="base_fee"
+                            type="number"
+                            step="0.01"
+                            value={formData.delivery_base_fee}
+                            onChange={(e) => setFormData({ ...formData, delivery_base_fee: Number(e.target.value) })}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="fee_km">Taxa por KM (R$)</Label>
+                          <Input
+                            id="fee_km"
+                            type="number"
+                            step="0.01"
+                            value={formData.delivery_fee_per_km}
+                            onChange={(e) => setFormData({ ...formData, delivery_fee_per_km: Number(e.target.value) })}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="max_radius">Raio Maximo (KM)</Label>
+                          <Input
+                            id="max_radius"
+                            type="number"
+                            value={formData.max_delivery_radius_km}
+                            onChange={(e) => setFormData({ ...formData, max_delivery_radius_km: Number(e.target.value) })}
+                          />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
               </div>
             </TabsContent>
 
@@ -692,6 +715,192 @@ const EstablishmentSettings = () => {
             {/* Drivers Tab */}
             <TabsContent value="drivers">
               <DeliveryConfigTab establishmentId={establishment?.id || null} />
+            </TabsContent>
+
+            {/* LocalizAI Sync Tab */}
+            <TabsContent value="localiza">
+              <div className="grid gap-6 md:grid-cols-2">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <MapPin className="w-5 h-5" />
+                      Sincronização LocalizAI
+                    </CardTitle>
+                    <CardDescription>
+                      Sincronize seu estabelecimento com o guia turístico LocalizAI Tamandaré
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center justify-between p-4 border rounded-lg">
+                      <div>
+                        <p className="font-medium">Ativar Sincronização</p>
+                        <p className="text-sm text-muted-foreground">
+                          Seu estabelecimento aparecerá no LocalizAI com badge "Vila Food"
+                        </p>
+                      </div>
+                      <Switch
+                        checked={localizaSync.syncEnabled}
+                        disabled={localizaSync.toggling}
+                        onCheckedChange={(checked) => localizaSync.toggleSync(checked)}
+                      />
+                    </div>
+
+                    {localizaSync.syncEnabled && (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                          <div>
+                            <p className="text-sm font-medium">Status</p>
+                            <p className="text-xs text-muted-foreground">
+                              {localizaSync.mapping
+                                ? `Mapeado: ${localizaSync.mapping.sync_status}`
+                                : "Aguardando primeira sincronização"}
+                            </p>
+                          </div>
+                          <Badge variant={localizaSync.mapping?.sync_status === "active" ? "default" : "secondary"}>
+                            {localizaSync.mapping?.sync_status === "active"
+                              ? "Ativo"
+                              : localizaSync.mapping?.sync_status === "paused"
+                              ? "Pausado"
+                              : localizaSync.mapping?.sync_status === "error"
+                              ? "Erro"
+                              : "Pendente"}
+                          </Badge>
+                        </div>
+
+                        {localizaSync.syncedAt && (
+                          <div className="p-3 bg-muted/50 rounded-lg">
+                            <p className="text-sm font-medium">Última Sincronização</p>
+                            <p className="text-xs text-muted-foreground">
+                              {new Date(localizaSync.syncedAt).toLocaleString("pt-BR")}
+                            </p>
+                          </div>
+                        )}
+
+                        {localizaSync.localizaPlaceId && (
+                          <div className="p-3 bg-muted/50 rounded-lg">
+                            <p className="text-sm font-medium">ID no LocalizAI</p>
+                            <p className="text-xs text-muted-foreground font-mono">
+                              {localizaSync.localizaPlaceId}
+                            </p>
+                          </div>
+                        )}
+
+                        <Button
+                          variant="outline"
+                          className="w-full gap-2"
+                          onClick={() => localizaSync.triggerSync()}
+                        >
+                          <RefreshCw className="w-4 h-4" />
+                          Sincronizar Agora
+                        </Button>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Dados Sincronizados</CardTitle>
+                    <CardDescription>
+                      Informações enviadas para o LocalizAI
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="text-sm space-y-2">
+                      <div className="flex justify-between py-1 border-b">
+                        <span className="text-muted-foreground">Nome</span>
+                        <span className="font-medium">{formData.name || "—"}</span>
+                      </div>
+                      <div className="flex justify-between py-1 border-b">
+                        <span className="text-muted-foreground">Endereço</span>
+                        <span className="font-medium">{formData.address || "—"}</span>
+                      </div>
+                      <div className="flex justify-between py-1 border-b">
+                        <span className="text-muted-foreground">Telefone</span>
+                        <span className="font-medium">{formData.phone || formData.whatsapp || "—"}</span>
+                      </div>
+                      <div className="flex justify-between py-1 border-b">
+                        <span className="text-muted-foreground">Horários</span>
+                        <span className="font-medium">
+                          {Object.values(operatingHours).filter(h => h.enabled).length} dias ativos
+                        </span>
+                      </div>
+                    </div>
+                    <div className="p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg">
+                      <p className="text-xs text-blue-700 dark:text-blue-300">
+                        O VIlaFood é a fonte principal para produtos, preços e horários.
+                        O LocalizAI é fonte principal para reviews e fotos de usuários.
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {localizaSync.syncStatus && (
+                  <Card className="md:col-span-2">
+                    <CardHeader>
+                      <CardTitle>Visão Geral da Sincronização</CardTitle>
+                      <CardDescription>
+                        Estatísticas globais do sistema de sincronização
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="text-center p-3 border rounded-lg">
+                          <p className="text-2xl font-bold">{localizaSync.syncStatus.sync_enabled_establishments}</p>
+                          <p className="text-xs text-muted-foreground">Estabelecimentos Habilitados</p>
+                        </div>
+                        <div className="text-center p-3 border rounded-lg">
+                          <p className="text-2xl font-bold">{localizaSync.syncStatus.total_mapped}</p>
+                          <p className="text-xs text-muted-foreground">Mapeamentos Totais</p>
+                        </div>
+                        <div className="text-center p-3 border rounded-lg">
+                          <p className="text-2xl font-bold">{localizaSync.syncStatus.active_mappings}</p>
+                          <p className="text-xs text-muted-foreground">Mapeamentos Ativos</p>
+                        </div>
+                        <div className="text-center p-3 border rounded-lg">
+                          <p className="text-2xl font-bold">
+                            {localizaSync.syncStatus.last_successful_sync
+                              ? new Date(localizaSync.syncStatus.last_successful_sync).toLocaleDateString("pt-BR")
+                              : "—"}
+                          </p>
+                          <p className="text-xs text-muted-foreground">Último Sync OK</p>
+                        </div>
+                      </div>
+
+                      {localizaSync.syncStatus.recent_syncs.length > 0 && (
+                        <div className="mt-4">
+                          <p className="text-sm font-medium mb-2">Sincronizações Recentes</p>
+                          <div className="space-y-2 max-h-48 overflow-y-auto">
+                            {localizaSync.syncStatus.recent_syncs.map((sync) => (
+                              <div key={sync.id} className="flex items-center justify-between p-2 text-xs border rounded">
+                                <div className="flex items-center gap-2">
+                                  <Badge
+                                    variant={
+                                      sync.status === "completed"
+                                        ? "default"
+                                        : sync.status === "failed"
+                                        ? "destructive"
+                                        : "secondary"
+                                    }
+                                    className="text-[10px]"
+                                  >
+                                    {sync.status}
+                                  </Badge>
+                                  <span>{sync.sync_type}</span>
+                                  <span className="text-muted-foreground">{sync.direction}</span>
+                                </div>
+                                <div className="text-muted-foreground">
+                                  {sync.records_processed ?? 0} ok / {sync.records_failed ?? 0} falha
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
             </TabsContent>
           </Tabs>
         </div>

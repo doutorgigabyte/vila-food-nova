@@ -10,6 +10,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   resendConfirmationEmail: (email: string) => Promise<{ error: Error | null }>;
+  verifyOtp: (email: string, token: string) => Promise<{ error: Error | null; data?: any }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -159,6 +160,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return { error: error as Error | null };
   };
 
+  const verifyOtp = async (email: string, token: string) => {
+    const { data, error } = await supabase.auth.verifyOtp({
+      email,
+      token,
+      type: 'signup',
+    });
+    return { error: error as Error | null, data };
+  };
+
   const resendConfirmationEmail = async (email: string) => {
     const { error } = await supabase.auth.resend({
       type: 'signup',
@@ -167,7 +177,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         emailRedirectTo: `${window.location.origin}/auth?verified=true`
       }
     });
-    
+
     return { error: error as Error | null };
   };
 
@@ -262,7 +272,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signUp, signIn, signOut, resendConfirmationEmail }}>
+    <AuthContext.Provider value={{ user, session, loading, signUp, signIn, signOut, resendConfirmationEmail, verifyOtp }}>
       {children}
     </AuthContext.Provider>
   );

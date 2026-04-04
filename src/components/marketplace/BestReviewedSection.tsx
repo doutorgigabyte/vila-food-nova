@@ -112,13 +112,13 @@ const BestReviewedSection = ({ mainCategory, subcategory }: BestReviewedSectionP
                 const currentPrice = product.promotional_price || product.price;
                 
                 return (
-                  <Link 
-                    key={product.id} 
-                    to={`/loja/${product.establishment?.slug || ''}`}
+                  <Link
+                    key={product.id}
+                    to={`/produto/${product.id}`}
                     className="flex-shrink-0"
                     onClick={(e) => isDragging && e.preventDefault()}
                   >
-                    <Card className="w-52 overflow-hidden group/card hover:shadow-lg transition-all">
+                    <Card className="w-48 md:w-52 overflow-hidden group/card hover:shadow-lg transition-all border-0 shadow-soft bg-card">
                       <div className="relative h-40 overflow-hidden bg-muted">
                         {product.image_url && (
                           <img

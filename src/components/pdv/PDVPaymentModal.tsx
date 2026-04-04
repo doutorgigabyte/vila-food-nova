@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -623,7 +623,7 @@ export function PDVPaymentModal({
                   <Button 
                     variant="outline" 
                     className="h-14 flex-col"
-                    onClick={() => onSuccess('credit_card')}
+                    onClick={() => onSuccessRef.current('credit_card')}
                   >
                     <CreditCard className="h-5 w-5 mb-1" />
                     Crédito

@@ -148,6 +148,66 @@ serve(async (req) => {
           }
         }
 
+        if (action.type === 'improve_description') {
+          // Generate optimized description using the establishment/product context
+          const targetTable = action.target_id === establishmentId ? 'establishments' : 'products';
+          const currentName = action.target_name || 'Item';
+
+          // Generate improved description
+          const improvedDesc = `${currentName} - Experimente o melhor sabor de Tamandaré. Feito com ingredientes frescos e selecionados, preparado com carinho para você.`;
+
+          const { error: updateError } = await supabase
+            .from(targetTable)
+            .update({ description: improvedDesc })
+            .eq('id', action.target_id);
+
+          if (!updateError) {
+            results.push({ action: action.type, success: true });
+            totalCreditsUsed += 1;
+          } else {
+            results.push({ action: action.type, success: false, error: updateError.message });
+          }
+        }
+
+        if (action.type === 'generate_all_photos') {
+          // Fetch all products without photos and generate for each
+          const { data: productsWithoutPhotos } = await supabase
+            .from('products')
+            .select('id, name')
+            .eq('establishment_id', establishmentId)
+            .is('image_url', null)
+            .eq('is_active', true)
+            .limit(10);
+
+          if (productsWithoutPhotos) {
+            for (const product of productsWithoutPhotos) {
+              const response = await fetch(`${SUPABASE_URL}/functions/v1/generate-image`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': authHeader || ''
+                },
+                body: JSON.stringify({
+                  type: 'products',
+                  id: product.id,
+                  name: product.name,
+                  establishmentId
+                })
+              });
+
+              results.push({
+                action: `generate_photo_${product.name}`,
+                success: response.ok,
+                error: response.ok ? undefined : await response.text()
+              });
+              totalCreditsUsed += 1;
+              await new Promise(resolve => setTimeout(resolve, 1500));
+            }
+          } else {
+            results.push({ action: action.type, success: true });
+          }
+        }
+
         if (action.type === 'generate_photo') {
           const response = await fetch(`${SUPABASE_URL}/functions/v1/generate-image`, {
             method: 'POST',

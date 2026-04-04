@@ -135,6 +135,7 @@ const WhatsAppManagement = () => {
   const [analytics, setAnalytics] = useState<Analytics>({ messages_today: 0, orders_today: 0, active_sessions: 0 });
   const [copied, setCopied] = useState(false);
   const [hasAIAccess, setHasAIAccess] = useState(false);
+  const [hasChatbotAccess, setHasChatbotAccess] = useState(true);
 
   const [form, setForm] = useState({
     instance_name: "",
@@ -193,13 +194,14 @@ Seja sempre educado e prestativo. Se não souber responder algo, peça para o cl
 
   const checkPlanAccess = async () => {
     if (!establishment?.plan_id) return;
-    
+
     const { data: plan } = await supabase
       .from("plans")
-      .select("whatsapp_ai_agent")
+      .select("whatsapp_chatbot, whatsapp_ai_agent")
       .eq("id", establishment.plan_id)
       .single();
-    
+
+    setHasChatbotAccess(plan?.whatsapp_chatbot ?? false);
     setHasAIAccess(plan?.whatsapp_ai_agent ?? false);
   };
 
@@ -625,6 +627,17 @@ Seja sempre educado e prestativo. Se não souber responder algo, peça para o cl
 
             {/* Chatbot Tab (Nível 1) */}
             <TabsContent value="chatbot" className="space-y-4 mt-4">
+              {!hasChatbotAccess && (
+                <Card className="border-amber-500/30 bg-amber-500/5 mb-4">
+                  <CardContent className="p-6 text-center space-y-3">
+                    <Lock className="w-10 h-10 mx-auto text-amber-500" />
+                    <h3 className="text-lg font-semibold">Chatbot - Recurso do Plano Mensal+</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Atualize seu plano para usar o chatbot automatico por WhatsApp.
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
               <Card>
                 <CardHeader>
                   <div className="flex items-center justify-between">

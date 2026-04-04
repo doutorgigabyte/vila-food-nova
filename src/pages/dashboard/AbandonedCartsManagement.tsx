@@ -3,7 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ShoppingCart, MessageSquare, Phone, DollarSign, TrendingUp, Check, RefreshCw } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { ShoppingCart, MessageSquare, Phone, DollarSign, TrendingUp, Check, RefreshCw, Send, Settings } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
@@ -32,6 +35,10 @@ const AbandonedCartsManagement = () => {
   const [carts, setCarts] = useState<AbandonedCart[]>([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState<string | null>(null);
+  const [autoRecoveryEnabled, setAutoRecoveryEnabled] = useState(false);
+  const [recoveryInterval, setRecoveryInterval] = useState("30");
+  const [maxAttempts, setMaxAttempts] = useState("3");
+  const [sendingAll, setSendingAll] = useState(false);
 
   useEffect(() => {
     fetchCarts();
@@ -181,13 +188,93 @@ const AbandonedCartsManagement = () => {
         </Card>
       </div>
 
-      {/* Table */}
+      {/* Auto Recovery Config */}
       <Card className="mt-6">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <ShoppingCart className="w-5 h-5" />
-            Carrinhos Abandonados
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Settings className="w-4 h-4" />
+            Recuperacao Automatica
           </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
+            <div className="flex items-center gap-3">
+              <Switch
+                checked={autoRecoveryEnabled}
+                onCheckedChange={setAutoRecoveryEnabled}
+              />
+              <Label className="text-sm">Enviar WhatsApp automaticamente</Label>
+            </div>
+            {autoRecoveryEnabled && (
+              <>
+                <div className="flex items-center gap-2">
+                  <Label className="text-xs text-muted-foreground whitespace-nowrap">Apos</Label>
+                  <Select value={recoveryInterval} onValueChange={setRecoveryInterval}>
+                    <SelectTrigger className="w-24 h-8 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="5">5 min</SelectItem>
+                      <SelectItem value="15">15 min</SelectItem>
+                      <SelectItem value="30">30 min</SelectItem>
+                      <SelectItem value="60">1 hora</SelectItem>
+                      <SelectItem value="120">2 horas</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Label className="text-xs text-muted-foreground whitespace-nowrap">Max tentativas</Label>
+                  <Select value={maxAttempts} onValueChange={setMaxAttempts}>
+                    <SelectTrigger className="w-16 h-8 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1">1</SelectItem>
+                      <SelectItem value="2">2</SelectItem>
+                      <SelectItem value="3">3</SelectItem>
+                      <SelectItem value="5">5</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </>
+            )}
+          </div>
+          {autoRecoveryEnabled && (
+            <p className="text-xs text-muted-foreground mt-2">
+              Mensagens serao enviadas automaticamente {recoveryInterval} min apos o abandono, ate {maxAttempts} tentativas.
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Table */}
+      <Card className="mt-4">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <ShoppingCart className="w-5 h-5" />
+              Carrinhos Abandonados
+            </CardTitle>
+            {carts.length > 0 && (
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={sendingAll}
+                onClick={async () => {
+                  setSendingAll(true);
+                  const eligible = carts.filter(c => c.recovery_attempts < parseInt(maxAttempts));
+                  for (const cart of eligible) {
+                    await sendRecoveryMessage(cart);
+                  }
+                  setSendingAll(false);
+                  toast.success(`${eligible.length} mensagens enviadas!`);
+                }}
+              >
+                <Send className="w-4 h-4 mr-1" />
+                {sendingAll ? "Enviando..." : `Enviar para todos (${carts.filter(c => c.recovery_attempts < parseInt(maxAttempts)).length})`}
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           {loading ? (

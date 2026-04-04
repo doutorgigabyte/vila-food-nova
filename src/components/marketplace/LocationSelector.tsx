@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { GOOGLE_MAPS_API_KEY } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -81,9 +82,8 @@ export const LocationSelector = ({ onLocationChange }: LocationSelectorProps) =>
         
         try {
           // Reverse geocode using Google Maps API
-          const apiKey = "AIzaSyAIl_jZHOswjHwpXwHpDlnyacOUcRYXVco";
           const response = await fetch(
-            `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${apiKey}&language=pt-BR`
+            `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${GOOGLE_MAPS_API_KEY}&language=pt-BR`
           );
           const data = await response.json();
 

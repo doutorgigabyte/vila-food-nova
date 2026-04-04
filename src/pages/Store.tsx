@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useLayoutEffect } from "react";
 import { Link, useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Search, Store as StoreIcon, Package, ArrowLeft } from "lucide-react";
 import { useStoreData, type StoreProduct } from "@/hooks/useStoreData";
+import { supabase } from "@/integrations/supabase/client";
+import { initAnalytics, trackPageView } from "@/lib/analytics";
 import { useCart, type CartProduct, type EstablishmentInfo } from "@/hooks/useCart";
 import { ProductModal } from "@/components/store/ProductModal";
 import { CartSheet } from "@/components/store/CartSheet";
@@ -18,7 +20,6 @@ import { StoreFloatingCart } from "@/components/store/StoreFloatingCart";
 import { StoreAccountTab } from "@/components/store/StoreAccountTab";
 import StoreBottomNav from "@/components/store/StoreBottomNav";
 import StoreStories from "@/components/store/StoreStories";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { setOrderSourceDirect, getOrderSourceDirect } from "@/hooks/useOrderSource";
 
@@ -39,9 +40,12 @@ const Store = () => {
   }, [slug]);
 
   // Force scroll to top when page loads
-  useEffect(() => {
+  useLayoutEffect(() => {
     window.scrollTo(0, 0);
+    const raf = requestAnimationFrame(() => window.scrollTo(0, 0));
+    return () => cancelAnimationFrame(raf);
   }, [slug]);
+
   const {
     establishment,
     products,
@@ -63,6 +67,28 @@ const Store = () => {
     getTotalItems,
     getTotalPrice,
   } = useCart();
+
+  // Initialize analytics pixels for this establishment
+  useEffect(() => {
+    if (!establishment?.id) return;
+    const loadPixels = async () => {
+      const { data } = await supabase
+        .from("analytics_pixels")
+        .select("facebook_pixel_id, google_analytics_id, tiktok_pixel_id, is_active")
+        .eq("establishment_id", establishment.id)
+        .eq("is_active", true)
+        .maybeSingle();
+      if (data) {
+        initAnalytics({
+          facebookPixelId: data.facebook_pixel_id || undefined,
+          googleAnalyticsId: data.google_analytics_id || undefined,
+          tiktokPixelId: data.tiktok_pixel_id || undefined,
+        });
+        trackPageView(establishment.name);
+      }
+    };
+    loadPixels();
+  }, [establishment?.id]);
 
   const [activeTab, setActiveTab] = useState("loja");
   const [searchTerm, setSearchTerm] = useState("");
@@ -267,6 +293,14 @@ const Store = () => {
         <StoreAccountTab establishmentSlug={establishment.slug} />
       ) : (
         <>
+          {/* Hero Section */}
+          <StoreHero
+            establishment={establishment}
+            cashbackPercentage={5}
+            hasStories={stories && stories.length > 0}
+            storiesCount={stories?.length || 0}
+          />
+
           {/* Stories */}
           {stories && stories.length > 0 && (
             <div className="px-4 pt-2">
@@ -278,14 +312,6 @@ const Store = () => {
               />
             </div>
           )}
-
-          {/* Hero Section */}
-          <StoreHero 
-            establishment={establishment} 
-            cashbackPercentage={5}
-            hasStories={stories && stories.length > 0}
-            storiesCount={stories?.length || 0}
-          />
 
           {/* Promotional Banners */}
           <StoreBanners banners={[]} primaryColor={establishment.primary_color || undefined} />

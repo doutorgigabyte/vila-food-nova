@@ -663,7 +663,7 @@ const EstablishmentsManagement = () => {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 pt-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label>Logo</Label>
@@ -729,7 +729,7 @@ const EstablishmentsManagement = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Nome *</Label>
                 <Input
@@ -792,7 +792,7 @@ const EstablishmentsManagement = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Endereço</Label>
                 <Input
@@ -862,7 +862,7 @@ const EstablishmentsManagement = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Proprietário</Label>
                 <Select 

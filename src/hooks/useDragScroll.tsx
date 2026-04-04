@@ -163,8 +163,6 @@ export const useDragScroll = (options: UseDragScrollOptions = {}) => {
     s.directionLocked = false;
     s.lockedDirection = null;
     
-    setIsDragging(true);
-    
     // Global styles to prevent selection during drag
     document.body.style.userSelect = 'none';
     document.body.style.webkitUserSelect = 'none';
@@ -227,8 +225,9 @@ export const useDragScroll = (options: UseDragScrollOptions = {}) => {
     }
     
     // Mark as moved if threshold exceeded
-    if (Math.abs(scrollDeltaX) > 3 || Math.abs(scrollDeltaY) > 3) {
+    if (!s.hasMoved && (Math.abs(scrollDeltaX) > 3 || Math.abs(scrollDeltaY) > 3)) {
       s.hasMoved = true;
+      setIsDragging(true);
     }
     
     // Apply scroll smoothly

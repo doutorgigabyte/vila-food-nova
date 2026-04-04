@@ -821,43 +821,67 @@ export type Database = {
       }
       delivery_drivers: {
         Row: {
+          avatar_url: string | null
           created_at: string | null
           email: string | null
           establishment_id: string
+          fcm_token: string | null
           id: string
           is_active: boolean | null
           is_available: boolean | null
           license_plate: string | null
           name: string
+          pending_balance: number | null
           phone: string
+          pix_key: string | null
+          pix_key_type: string | null
+          rating: number | null
+          total_deliveries: number | null
+          total_earnings: number | null
           updated_at: string | null
           user_id: string | null
           vehicle_type: string | null
         }
         Insert: {
+          avatar_url?: string | null
           created_at?: string | null
           email?: string | null
           establishment_id: string
+          fcm_token?: string | null
           id?: string
           is_active?: boolean | null
           is_available?: boolean | null
           license_plate?: string | null
           name: string
+          pending_balance?: number | null
           phone: string
+          pix_key?: string | null
+          pix_key_type?: string | null
+          rating?: number | null
+          total_deliveries?: number | null
+          total_earnings?: number | null
           updated_at?: string | null
           user_id?: string | null
           vehicle_type?: string | null
         }
         Update: {
+          avatar_url?: string | null
           created_at?: string | null
           email?: string | null
           establishment_id?: string
+          fcm_token?: string | null
           id?: string
           is_active?: boolean | null
           is_available?: boolean | null
           license_plate?: string | null
           name?: string
+          pending_balance?: number | null
           phone?: string
+          pix_key?: string | null
+          pix_key_type?: string | null
+          rating?: number | null
+          total_deliveries?: number | null
+          total_earnings?: number | null
           updated_at?: string | null
           user_id?: string | null
           vehicle_type?: string | null
@@ -927,12 +951,14 @@ export type Database = {
           delivery_lat: number | null
           delivery_lng: number | null
           distance_km: number | null
+          driver_earnings: number | null
           driver_id: string
           establishment_id: string
           estimated_minutes: number | null
           id: string
           notes: string | null
           order_id: string
+          payment_status: string | null
           picked_up_at: string | null
           pickup_lat: number | null
           pickup_lng: number | null
@@ -950,12 +976,14 @@ export type Database = {
           delivery_lat?: number | null
           delivery_lng?: number | null
           distance_km?: number | null
+          driver_earnings?: number | null
           driver_id: string
           establishment_id: string
           estimated_minutes?: number | null
           id?: string
           notes?: string | null
           order_id: string
+          payment_status?: string | null
           picked_up_at?: string | null
           pickup_lat?: number | null
           pickup_lng?: number | null
@@ -973,12 +1001,14 @@ export type Database = {
           delivery_lat?: number | null
           delivery_lng?: number | null
           distance_km?: number | null
+          driver_earnings?: number | null
           driver_id?: string
           establishment_id?: string
           estimated_minutes?: number | null
           id?: string
           notes?: string | null
           order_id?: string
+          payment_status?: string | null
           picked_up_at?: string | null
           pickup_lat?: number | null
           pickup_lng?: number | null
@@ -1198,6 +1228,242 @@ export type Database = {
           },
         ]
       }
+      localiza_sync_log: {
+        Row: {
+          id: string
+          sync_type: Database["public"]["Enums"]["localiza_sync_type"]
+          direction: Database["public"]["Enums"]["localiza_sync_direction"]
+          status: Database["public"]["Enums"]["localiza_sync_status"]
+          records_processed: number | null
+          records_failed: number | null
+          error_message: string | null
+          details: Json | null
+          started_at: string | null
+          completed_at: string | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          sync_type: Database["public"]["Enums"]["localiza_sync_type"]
+          direction: Database["public"]["Enums"]["localiza_sync_direction"]
+          status?: Database["public"]["Enums"]["localiza_sync_status"]
+          records_processed?: number | null
+          records_failed?: number | null
+          error_message?: string | null
+          details?: Json | null
+          started_at?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          sync_type?: Database["public"]["Enums"]["localiza_sync_type"]
+          direction?: Database["public"]["Enums"]["localiza_sync_direction"]
+          status?: Database["public"]["Enums"]["localiza_sync_status"]
+          records_processed?: number | null
+          records_failed?: number | null
+          error_message?: string | null
+          details?: Json | null
+          started_at?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+        }
+        Relationships: []
+      }
+      localiza_place_mapping: {
+        Row: {
+          id: string
+          establishment_id: string
+          localiza_place_id: string
+          google_place_id: string | null
+          sync_status: Database["public"]["Enums"]["localiza_mapping_status"]
+          last_synced_at: string | null
+          sync_config: Json | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          establishment_id: string
+          localiza_place_id: string
+          google_place_id?: string | null
+          sync_status?: Database["public"]["Enums"]["localiza_mapping_status"]
+          last_synced_at?: string | null
+          sync_config?: Json | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          establishment_id?: string
+          localiza_place_id?: string
+          google_place_id?: string | null
+          sync_status?: Database["public"]["Enums"]["localiza_mapping_status"]
+          last_synced_at?: string | null
+          sync_config?: Json | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "localiza_place_mapping_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: true
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      localiza_product_sync: {
+        Row: {
+          id: string
+          establishment_id: string
+          localiza_place_id: string
+          products_data: Json
+          categories_data: Json
+          synced_at: string | null
+          expires_at: string | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          establishment_id: string
+          localiza_place_id: string
+          products_data?: Json
+          categories_data?: Json
+          synced_at?: string | null
+          expires_at?: string | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          establishment_id?: string
+          localiza_place_id?: string
+          products_data?: Json
+          categories_data?: Json
+          synced_at?: string | null
+          expires_at?: string | null
+          created_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "localiza_product_sync_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: true
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      localiza_review_sync: {
+        Row: {
+          id: string
+          establishment_id: string
+          localiza_place_id: string
+          user_id: string | null
+          source: string
+          source_review_id: string
+          rating: number
+          comment: string | null
+          reviewer_name: string | null
+          synced_at: string | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          establishment_id: string
+          localiza_place_id: string
+          user_id?: string | null
+          source: string
+          source_review_id: string
+          rating: number
+          comment?: string | null
+          reviewer_name?: string | null
+          synced_at?: string | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          establishment_id?: string
+          localiza_place_id?: string
+          user_id?: string | null
+          source?: string
+          source_review_id?: string
+          rating?: number
+          comment?: string | null
+          reviewer_name?: string | null
+          synced_at?: string | null
+          created_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "localiza_review_sync_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      localiza_promotion_sync: {
+        Row: {
+          id: string
+          establishment_id: string
+          localiza_place_id: string
+          title: string
+          description: string | null
+          discount_type: string | null
+          discount_value: number | null
+          coupon_code: string | null
+          image_url: string | null
+          starts_at: string | null
+          expires_at: string | null
+          is_active: boolean | null
+          synced_at: string | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          establishment_id: string
+          localiza_place_id: string
+          title: string
+          description?: string | null
+          discount_type?: string | null
+          discount_value?: number | null
+          coupon_code?: string | null
+          image_url?: string | null
+          starts_at?: string | null
+          expires_at?: string | null
+          is_active?: boolean | null
+          synced_at?: string | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          establishment_id?: string
+          localiza_place_id?: string
+          title?: string
+          description?: string | null
+          discount_type?: string | null
+          discount_value?: number | null
+          coupon_code?: string | null
+          image_url?: string | null
+          starts_at?: string | null
+          expires_at?: string | null
+          is_active?: boolean | null
+          synced_at?: string | null
+          created_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "localiza_promotion_sync_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       establishments: {
         Row: {
           accepts_delivery: boolean | null
@@ -1216,6 +1482,9 @@ export type Database = {
           id: string
           is_open: boolean | null
           latitude: number | null
+          localiza_place_id: string | null
+          localiza_sync_enabled: boolean | null
+          localiza_synced_at: string | null
           logo_url: string | null
           longitude: number | null
           max_delivery_radius_km: number | null
@@ -1263,6 +1532,9 @@ export type Database = {
           id?: string
           is_open?: boolean | null
           latitude?: number | null
+          localiza_place_id?: string | null
+          localiza_sync_enabled?: boolean | null
+          localiza_synced_at?: string | null
           logo_url?: string | null
           longitude?: number | null
           max_delivery_radius_km?: number | null
@@ -1310,6 +1582,9 @@ export type Database = {
           id?: string
           is_open?: boolean | null
           latitude?: number | null
+          localiza_place_id?: string | null
+          localiza_sync_enabled?: boolean | null
+          localiza_synced_at?: string | null
           logo_url?: string | null
           longitude?: number | null
           max_delivery_radius_km?: number | null
@@ -3339,6 +3614,22 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_localiza_sync_status: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      get_localiza_products: {
+        Args: { p_place_id: string }
+        Returns: Json
+      }
+      get_localiza_reviews: {
+        Args: { p_place_id: string }
+        Returns: Json
+      }
+      get_localiza_promotions: {
+        Args: { p_place_id: string }
+        Returns: Json
+      }
       get_public_establishment_by_slug: {
         Args: { p_slug: string }
         Returns: {
@@ -3469,6 +3760,10 @@ export type Database = {
         | "delivered"
         | "cancelled"
       payment_method: "cash" | "pix" | "credit_card" | "debit_card" | "online"
+      localiza_sync_type: "establishments" | "products" | "reviews" | "promotions"
+      localiza_sync_direction: "to_localiza" | "from_localiza" | "bidirectional"
+      localiza_sync_status: "pending" | "running" | "completed" | "failed"
+      localiza_mapping_status: "active" | "paused" | "error"
     }
     CompositeTypes: {
       [_ in never]: never

@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useEstablishment } from "@/hooks/useEstablishment";
+import { useEstablishmentPlan } from "@/hooks/useEstablishmentPlan";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -45,6 +46,7 @@ interface AnalysisStep {
 const AIAnalysisDashboard = () => {
   const { slug } = useParams();
   const { establishment } = useEstablishment(slug);
+  const { hasAIUnlimited, plan } = useEstablishmentPlan(establishment?.id || null);
   const [analyzing, setAnalyzing] = useState(false);
   const [applying, setApplying] = useState(false);
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);

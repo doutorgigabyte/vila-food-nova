@@ -120,7 +120,7 @@ const NotificationCenter = () => {
               )}
             </SheetTitle>
             
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-2">
               <Button
                 variant="ghost"
                 size="icon"
