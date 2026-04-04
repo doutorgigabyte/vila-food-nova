@@ -1,0 +1,510 @@
+{
+  "name": "VilaFood-Master-Router",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "vilafood-webhook",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-1200, 0],
+      "id": "webhook-trigger",
+      "name": "Evolution API Webhook",
+      "webhookId": "vilafood-evolution-webhook"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.data?.key?.fromMe }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.1,
+      "position": [-1000, 0],
+      "id": "filter-own-messages",
+      "name": "Ignora mensagens próprias"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "name": "instance_name",
+              "value": "={{ $json.instance }}",
+              "type": "string"
+            },
+            {
+              "name": "remote_jid",
+              "value": "={{ $json.data?.key?.remoteJid }}",
+              "type": "string"
+            },
+            {
+              "name": "phone",
+              "value": "={{ $json.data?.key?.remoteJid?.replace('@s.whatsapp.net', '') }}",
+              "type": "string"
+            },
+            {
+              "name": "message_id",
+              "value": "={{ $json.data?.key?.id }}",
+              "type": "string"
+            },
+            {
+              "name": "message_text",
+              "value": "={{ $json.data?.message?.conversation || $json.data?.message?.extendedTextMessage?.text || '' }}",
+              "type": "string"
+            },
+            {
+              "name": "message_type",
+              "value": "={{ $json.data?.messageType }}",
+              "type": "string"
+            },
+            {
+              "name": "push_name",
+              "value": "={{ $json.data?.pushName || '' }}",
+              "type": "string"
+            },
+            {
+              "name": "timestamp",
+              "value": "={{ $now.toISO() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [-800, 0],
+      "id": "extract-fields",
+      "name": "Extrai Campos"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://gyagfsjbdaacgmmofqip.supabase.co/rest/v1/rpc/get_establishment_by_instance",
+        "authentication": "none",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5YWdmc2piZGFhY2dtbW9mcWlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4NzIwNjYsImV4cCI6MjA4MDQ0ODA2Nn0.4W0hZwETfoALlpn9_f2NqdKQNJ3DKDRkcs7uC-VbdhE"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"p_instance_name\": \"{{ $json.instance_name }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-600, 0],
+      "id": "fetch-establishment",
+      "name": "Busca Config Estabelecimento"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "empty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.1,
+      "position": [-400, 0],
+      "id": "check-establishment",
+      "name": "Estabelecimento existe?"
+    },
+    {
+      "parameters": {
+        "operation": "push",
+        "list": "=vilafood:debounce:{{ $('extract-fields').item.json.instance_name }}:{{ $('extract-fields').item.json.phone }}",
+        "messageData": "={{ JSON.stringify({ messageId: $('extract-fields').item.json.message_id, mensagem: $('extract-fields').item.json.message_text }) }}",
+        "tail": true
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [-200, 0],
+      "id": "redis-push",
+      "name": "Redis Push Mensagem",
+      "credentials": {
+        "redis": {
+          "id": "REDIS_CREDENTIAL_ID",
+          "name": "Redis VilaFood"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 3,
+        "unit": "seconds"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [0, 0],
+      "id": "debounce-wait",
+      "name": "Debounce 3s"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "propertyName": "mensagens",
+        "key": "=vilafood:debounce:{{ $('extract-fields').item.json.instance_name }}:{{ $('extract-fields').item.json.phone }}",
+        "keyType": "list",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [200, 0],
+      "id": "redis-get",
+      "name": "Redis Get Mensagens",
+      "credentials": {
+        "redis": {
+          "id": "REDIS_CREDENTIAL_ID",
+          "name": "Redis VilaFood"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "key": "=vilafood:debounce:{{ $('extract-fields').item.json.instance_name }}:{{ $('extract-fields').item.json.phone }}"
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [400, 0],
+      "id": "redis-clear",
+      "name": "Redis Limpa Lista",
+      "credentials": {
+        "redis": {
+          "id": "REDIS_CREDENTIAL_ID",
+          "name": "Redis VilaFood"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "name": "aggregated_message",
+              "value": "={{ $json.messages?.join(' ') || $('extract-fields').item.json.message_text }}",
+              "type": "string"
+            },
+            {
+              "name": "establishment",
+              "value": "={{ $('fetch-establishment').item.json }}",
+              "type": "object"
+            },
+            {
+              "name": "instance_name",
+              "value": "={{ $('extract-fields').item.json.instance_name }}",
+              "type": "string"
+            },
+            {
+              "name": "remote_jid",
+              "value": "={{ $('extract-fields').item.json.remote_jid }}",
+              "type": "string"
+            },
+            {
+              "name": "phone",
+              "value": "={{ $('extract-fields').item.json.phone }}",
+              "type": "string"
+            },
+            {
+              "name": "push_name",
+              "value": "={{ $('extract-fields').item.json.push_name }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [600, 0],
+      "id": "prepare-brain-input",
+      "name": "Prepara Input Brain"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "VILAFOOD_AI_BRAIN_WORKFLOW_ID",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "message": "={{ $json.aggregated_message }}",
+            "establishment_id": "={{ $json.establishment.id }}",
+            "instance_name": "={{ $json.instance_name }}",
+            "remote_jid": "={{ $json.remote_jid }}",
+            "phone": "={{ $json.phone }}",
+            "push_name": "={{ $json.push_name }}",
+            "system_prompt": "={{ $json.establishment.system_prompt }}",
+            "menu_json": "={{ JSON.stringify($json.establishment.menu_json) }}",
+            "evolution_api_token": "={{ $json.establishment.evolution_api_token }}",
+            "mercado_pago_token": "={{ $json.establishment.mercado_pago_token }}"
+          }
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [800, 0],
+      "id": "call-brain",
+      "name": "Chama AI Brain"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('fetch-establishment').item.json.evolution_api_url || $env.EVOLUTION_API_URL }}/message/sendText/{{ $('extract-fields').item.json.instance_name }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $('fetch-establishment').item.json.evolution_api_token || $env.EVOLUTION_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"number\": \"{{ $('extract-fields').item.json.remote_jid }}\",\n  \"text\": \"{{ $json.response.replace(/\"/g, '\\\\\"').replace(/\\n/g, '\\\\n') }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1000, 0],
+      "id": "send-response",
+      "name": "Envia Resposta WhatsApp"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/whatsapp_messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_ANON_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "=[\n  {\n    \"establishment_id\": \"{{ $('fetch-establishment').item.json.id }}\",\n    \"remote_jid\": \"{{ $('extract-fields').item.json.remote_jid }}\",\n    \"direction\": \"incoming\",\n    \"message_type\": \"text\",\n    \"content\": \"{{ $('prepare-brain-input').item.json.aggregated_message.replace(/\"/g, '\\\\\"') }}\"\n  },\n  {\n    \"establishment_id\": \"{{ $('fetch-establishment').item.json.id }}\",\n    \"remote_jid\": \"{{ $('extract-fields').item.json.remote_jid }}\",\n    \"direction\": \"outgoing\",\n    \"message_type\": \"text\",\n    \"content\": \"{{ $('call-brain').item.json.response.replace(/\"/g, '\\\\\"') }}\"\n  }\n]",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1200, 0],
+      "id": "log-messages",
+      "name": "Salva Histórico"
+    }
+  ],
+  "connections": {
+    "Evolution API Webhook": {
+      "main": [
+        [
+          {
+            "node": "Ignora mensagens próprias",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ignora mensagens próprias": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Extrai Campos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extrai Campos": {
+      "main": [
+        [
+          {
+            "node": "Busca Config Estabelecimento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca Config Estabelecimento": {
+      "main": [
+        [
+          {
+            "node": "Estabelecimento existe?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Estabelecimento existe?": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Redis Push Mensagem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Redis Push Mensagem": {
+      "main": [
+        [
+          {
+            "node": "Debounce 3s",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Debounce 3s": {
+      "main": [
+        [
+          {
+            "node": "Redis Get Mensagens",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Redis Get Mensagens": {
+      "main": [
+        [
+          {
+            "node": "Redis Limpa Lista",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Redis Limpa Lista": {
+      "main": [
+        [
+          {
+            "node": "Prepara Input Brain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepara Input Brain": {
+      "main": [
+        [
+          {
+            "node": "Chama AI Brain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chama AI Brain": {
+      "main": [
+        [
+          {
+            "node": "Envia Resposta WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Envia Resposta WhatsApp": {
+      "main": [
+        [
+          {
+            "node": "Salva Histórico",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "vilafood-n8n"
+  },
+  "tags": [
+    {
+      "name": "VilaFood",
+      "id": "vilafood-tag"
+    }
+  ]
+}

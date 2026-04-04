@@ -14,24 +14,35 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import { DeliveryConfigTab } from "@/components/dashboard/DeliveryConfigTab";
-import { PaymentGatewaySetup } from "@/components/payment/PaymentGatewaySetup";
-import {
-  Menu,
-  Store,
-  Clock,
-  CreditCard,
-  Truck,
-  Bell,
+import { PaymentGatewayCards } from "@/components/payment/PaymentGatewayCards";
+import { SmartAddressInput, AddressData } from "@/components/address";
+import { 
+  Menu, 
+  Store, 
+  Clock, 
+  CreditCard, 
+  Truck, 
+  Bell, 
   Settings,
   Save,
   Palette,
   Users,
-  RefreshCw,
-  MapPin
+  CheckCircle,
+  XCircle,
+  Loader2,
+  Share2,
+  Instagram,
+  Globe
 } from "lucide-react";
 import { ImageUpload } from "@/components/ImageUpload";
-import { useLocalizaSync } from "@/hooks/useLocalizaSync";
+import { getContrastColor, hasGoodContrast } from "@/lib/colorUtils";
+import { NotificationSoundSelector } from "@/components/settings/NotificationSoundSelector";
+import { WhatsAppNotificationsConfig } from "@/components/settings/WhatsAppNotificationsConfig";
+import { AssociatedDriversList } from "@/components/settings/AssociatedDriversList";
+import { OperatingHoursEditor } from "@/components/settings/OperatingHoursEditor";
+import { useNotificationSound } from "@/hooks/useNotificationSound";
 
+// Removed AvailableGatewaysCard - replaced by PaymentGatewayCards component
 interface Establishment {
   id: string;
   name: string;
@@ -43,11 +54,15 @@ interface Establishment {
   whatsapp: string | null;
   email: string | null;
   address: string | null;
+  address_number: string | null;
   neighborhood: string | null;
   city_id: string | null;
   zip_code: string | null;
+  latitude: number | null;
+  longitude: number | null;
   primary_color: string | null;
   secondary_color: string | null;
+  background_color: string | null;
   min_order_value: number | null;
   avg_delivery_time: number | null;
   delivery_base_fee: number | null;
@@ -83,6 +98,7 @@ const EstablishmentSettings = () => {
     zip_code: "",
     primary_color: "#ea384c",
     secondary_color: "#fbbf24",
+    background_color: "#ffffff",
     min_order_value: 0,
     avg_delivery_time: 30,
     delivery_base_fee: 5,
@@ -94,20 +110,56 @@ const EstablishmentSettings = () => {
     pix_key: "",
     mercado_pago_token: "",
     mp_public_key: "",
+    // Social Media (using correct DB column names)
+    instagram_url: "",
+    facebook_url: "",
+    tiktok_url: "",
+    twitter_url: "",
+    youtube_url: "",
+    website_url: "",
   });
   
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [bannerUrl, setBannerUrl] = useState<string | null>(null);
-
-  const localizaSync = useLocalizaSync(establishment?.id || null);
-  const [operatingHours, setOperatingHours] = useState<Record<string, { open: string; close: string; enabled: boolean }>>({
-    monday: { open: "08:00", close: "22:00", enabled: true },
-    tuesday: { open: "08:00", close: "22:00", enabled: true },
-    wednesday: { open: "08:00", close: "22:00", enabled: true },
-    thursday: { open: "08:00", close: "22:00", enabled: true },
-    friday: { open: "08:00", close: "22:00", enabled: true },
-    saturday: { open: "08:00", close: "22:00", enabled: true },
-    sunday: { open: "08:00", close: "22:00", enabled: false },
+  const [addressData, setAddressData] = useState<AddressData>({
+    cep: "",
+    address: "",
+    number: "",
+    complement: "",
+    neighborhood: "",
+    city: "",
+    state: "",
+    reference: "",
+    lat: undefined,
+    lng: undefined,
+  });
+  const [operatingHours, setOperatingHours] = useState<Record<string, { open: boolean; start: string; end: string }>>({
+    monday: { open: true, start: "08:00", end: "22:00" },
+    tuesday: { open: true, start: "08:00", end: "22:00" },
+    wednesday: { open: true, start: "08:00", end: "22:00" },
+    thursday: { open: true, start: "08:00", end: "22:00" },
+    friday: { open: true, start: "08:00", end: "22:00" },
+    saturday: { open: true, start: "08:00", end: "22:00" },
+    sunday: { open: false, start: "08:00", end: "22:00" },
+  });
+  
+  // Notification settings - use the hook
+  const { 
+    preferences: notificationPrefs, 
+    updatePreferences: updateNotificationPrefs,
+    testSound 
+  } = useNotificationSound();
+  
+  const [whatsappNotificationsEnabled, setWhatsappNotificationsEnabled] = useState(false);
+  const [whatsappNotifications, setWhatsappNotifications] = useState<Record<string, boolean>>({
+    new_order: true,
+    order_ready: true,
+    payment_confirmed: true,
+    delivery_assigned: false,
+    delivery_completed: false,
+    review_received: false,
+    low_stock: false,
+    scheduled_order: false,
   });
 
   useEffect(() => {
@@ -138,6 +190,7 @@ const EstablishmentSettings = () => {
         zip_code: data.zip_code || "",
         primary_color: data.primary_color || "#ea384c",
         secondary_color: data.secondary_color || "#fbbf24",
+        background_color: (data as any).background_color || "#ffffff",
         min_order_value: data.min_order_value || 0,
         avg_delivery_time: data.avg_delivery_time || 30,
         delivery_base_fee: data.delivery_base_fee || 5,
@@ -149,11 +202,42 @@ const EstablishmentSettings = () => {
         pix_key: data.pix_key || "",
         mercado_pago_token: data.mercado_pago_token || "",
         mp_public_key: data.mp_public_key || "",
+        // Social Media
+        instagram_url: data.instagram_url || "",
+        facebook_url: data.facebook_url || "",
+        tiktok_url: data.tiktok_url || "",
+        twitter_url: data.twitter_url || "",
+        youtube_url: data.youtube_url || "",
+        website_url: data.website_url || "",
       });
       setLogoUrl(data.logo_url);
       setBannerUrl(data.banner_url);
+      setAddressData({
+        cep: data.zip_code || "",
+        address: data.address || "",
+        number: data.address_number || "",
+        complement: "",
+        neighborhood: data.neighborhood || "",
+        city: "",
+        state: "",
+        reference: "",
+        lat: data.latitude ?? undefined,
+        lng: data.longitude ?? undefined,
+      });
       if (data.operating_hours) {
-        setOperatingHours(data.operating_hours as any);
+        // Normalizar dados antigos para o novo formato
+        const normalizedHours: Record<string, { open: boolean; start: string; end: string }> = {};
+        const rawHours = data.operating_hours as Record<string, any>;
+        
+        for (const [day, dayData] of Object.entries(rawHours)) {
+          normalizedHours[day] = {
+            open: dayData.enabled ?? dayData.open ?? false,
+            start: dayData.start ?? (typeof dayData.open === 'string' ? dayData.open : "08:00"),
+            end: dayData.end ?? dayData.close ?? "22:00"
+          };
+        }
+        
+        setOperatingHours(normalizedHours);
       }
     } catch (error) {
       console.error("Error fetching establishment:", error);
@@ -168,6 +252,7 @@ const EstablishmentSettings = () => {
     
     setSaving(true);
     try {
+      // Save establishment data
       const { error } = await supabase
         .from("establishments")
         .update({
@@ -176,11 +261,15 @@ const EstablishmentSettings = () => {
           phone: formData.phone,
           whatsapp: formData.whatsapp,
           email: formData.email,
-          address: formData.address,
-          neighborhood: formData.neighborhood,
-          zip_code: formData.zip_code,
+          address: addressData.address,
+          address_number: addressData.number,
+          neighborhood: addressData.neighborhood,
+          zip_code: addressData.cep,
+          latitude: addressData.lat,
+          longitude: addressData.lng,
           primary_color: formData.primary_color,
           secondary_color: formData.secondary_color,
+          background_color: formData.background_color,
           min_order_value: formData.min_order_value,
           avg_delivery_time: formData.avg_delivery_time,
           delivery_base_fee: formData.delivery_base_fee,
@@ -192,14 +281,19 @@ const EstablishmentSettings = () => {
           pix_key: formData.pix_key,
           mercado_pago_token: formData.mercado_pago_token,
           mp_public_key: formData.mp_public_key,
+          // Social Media
+          instagram_url: formData.instagram_url,
+          facebook_url: formData.facebook_url,
+          tiktok_url: formData.tiktok_url,
+          twitter_url: formData.twitter_url,
+          youtube_url: formData.youtube_url,
+          website_url: formData.website_url,
           logo_url: logoUrl,
           banner_url: bannerUrl,
           operating_hours: operatingHours,
           updated_at: new Date().toISOString(),
         })
         .eq("id", establishment.id);
-
-      if (error) throw error;
 
       toast.success("Configurações salvas com sucesso!");
     } catch (error) {
@@ -222,13 +316,13 @@ const EstablishmentSettings = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex">
+      <div className="min-h-screen bg-background flex overflow-hidden">
         <DashboardSidebar 
           isOpen={sidebarOpen} 
           onClose={() => setSidebarOpen(false)}
           establishment={null}
         />
-        <main className="flex-1 lg:ml-64 p-6">
+        <main className="flex-1 lg:ml-64 p-6 overflow-x-hidden">
           <div className="space-y-6">
             <Skeleton className="h-10 w-64" />
             <Skeleton className="h-[600px] w-full" />
@@ -239,32 +333,32 @@ const EstablishmentSettings = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="min-h-screen bg-background flex overflow-hidden">
       <DashboardSidebar 
         isOpen={sidebarOpen} 
         onClose={() => setSidebarOpen(false)}
         establishment={establishment}
       />
       
-      <main className="flex-1 lg:ml-64">
+      <main className="flex-1 lg:ml-64 overflow-x-hidden">
         {/* Header */}
         <header className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b border-border px-4 py-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 min-w-0">
               <Button
                 variant="ghost"
                 size="icon"
-                className="lg:hidden"
+                className="lg:hidden shrink-0"
                 onClick={() => setSidebarOpen(true)}
               >
                 <Menu className="w-5 h-5" />
               </Button>
-              <div>
+              <div className="min-w-0">
                 <h1 className="text-xl font-bold flex items-center gap-2">
-                  <Settings className="w-5 h-5" />
-                  Configurações
+                  <Settings className="w-5 h-5 shrink-0" />
+                  <span className="truncate">Configurações</span>
                 </h1>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground truncate">
                   Gerencie as configurações do seu estabelecimento
                 </p>
               </div>
@@ -278,38 +372,38 @@ const EstablishmentSettings = () => {
 
         <div className="p-6">
           <Tabs defaultValue="profile" className="space-y-6">
-            <TabsList className="flex-wrap h-auto p-1">
-              <TabsTrigger value="profile" className="gap-2">
+            <TabsList className="flex flex-wrap h-auto gap-1 p-1 bg-muted/50">
+              <TabsTrigger value="profile" className="gap-2 text-xs sm:text-sm">
                 <Store className="w-4 h-4" />
-                Perfil
+                <span className="hidden sm:inline">Perfil</span>
               </TabsTrigger>
-              <TabsTrigger value="hours" className="gap-2">
+              <TabsTrigger value="hours" className="gap-2 text-xs sm:text-sm">
                 <Clock className="w-4 h-4" />
-                Horários
+                <span className="hidden sm:inline">Horários</span>
               </TabsTrigger>
-              <TabsTrigger value="payments" className="gap-2">
+              <TabsTrigger value="payments" className="gap-2 text-xs sm:text-sm">
                 <CreditCard className="w-4 h-4" />
-                Pagamentos
+                <span className="hidden sm:inline">Pagamentos</span>
               </TabsTrigger>
-              <TabsTrigger value="delivery" className="gap-2">
+              <TabsTrigger value="delivery" className="gap-2 text-xs sm:text-sm">
                 <Truck className="w-4 h-4" />
-                Delivery
+                <span className="hidden sm:inline">Delivery</span>
               </TabsTrigger>
-              <TabsTrigger value="appearance" className="gap-2">
+              <TabsTrigger value="appearance" className="gap-2 text-xs sm:text-sm">
                 <Palette className="w-4 h-4" />
-                Aparência
+                <span className="hidden sm:inline">Aparência</span>
               </TabsTrigger>
-              <TabsTrigger value="notifications" className="gap-2">
+              <TabsTrigger value="social" className="gap-2 text-xs sm:text-sm">
+                <Share2 className="w-4 h-4" />
+                <span className="hidden sm:inline">Redes</span>
+              </TabsTrigger>
+              <TabsTrigger value="notifications" className="gap-2 text-xs sm:text-sm">
                 <Bell className="w-4 h-4" />
-                Notificações
+                <span className="hidden sm:inline">Sons e Alertas</span>
               </TabsTrigger>
-              <TabsTrigger value="drivers" className="gap-2">
+              <TabsTrigger value="drivers" className="gap-2 text-xs sm:text-sm">
                 <Users className="w-4 h-4" />
-                Entregadores
-              </TabsTrigger>
-              <TabsTrigger value="localiza" className="gap-2">
-                <MapPin className="w-4 h-4" />
-                LocalizAI
+                <span className="hidden sm:inline">Entrega</span>
               </TabsTrigger>
             </TabsList>
 
@@ -372,35 +466,15 @@ const EstablishmentSettings = () => {
                 <Card>
                   <CardHeader>
                     <CardTitle>Endereço</CardTitle>
-                    <CardDescription>Localização do estabelecimento</CardDescription>
+                    <CardDescription>Localização do estabelecimento com mapa interativo</CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="address">Endereço</Label>
-                      <Input
-                        id="address"
-                        value={formData.address}
-                        onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="neighborhood">Bairro</Label>
-                        <Input
-                          id="neighborhood"
-                          value={formData.neighborhood}
-                          onChange={(e) => setFormData({ ...formData, neighborhood: e.target.value })}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="zip_code">CEP</Label>
-                        <Input
-                          id="zip_code"
-                          value={formData.zip_code}
-                          onChange={(e) => setFormData({ ...formData, zip_code: e.target.value })}
-                        />
-                      </div>
-                    </div>
+                  <CardContent>
+                    <SmartAddressInput
+                      value={addressData}
+                      onChange={setAddressData}
+                      showMap={true}
+                      showGpsButton={true}
+                    />
                   </CardContent>
                 </Card>
 
@@ -439,65 +513,25 @@ const EstablishmentSettings = () => {
               <Card>
                 <CardHeader>
                   <CardTitle>Horário de Funcionamento</CardTitle>
-                  <CardDescription>Configure os horários de abertura e fechamento</CardDescription>
+                  <CardDescription>
+                    Configure os horários de abertura e fechamento. 
+                    Você pode criar blocos de horário para vários dias de uma vez.
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    {Object.entries(operatingHours).map(([day, hours]) => (
-                      <div key={day} className="flex items-center gap-4 p-3 rounded-lg border">
-                        <Switch
-                          checked={hours.enabled}
-                          onCheckedChange={(checked) => 
-                            setOperatingHours({
-                              ...operatingHours,
-                              [day]: { ...hours, enabled: checked }
-                            })
-                          }
-                        />
-                        <span className="w-32 font-medium">{dayNames[day]}</span>
-                        <div className="flex items-center gap-2">
-                          <Input
-                            type="time"
-                            value={hours.open}
-                            onChange={(e) =>
-                              setOperatingHours({
-                                ...operatingHours,
-                                [day]: { ...hours, open: e.target.value }
-                              })
-                            }
-                            disabled={!hours.enabled}
-                            className="w-32"
-                          />
-                          <span className="text-muted-foreground">às</span>
-                          <Input
-                            type="time"
-                            value={hours.close}
-                            onChange={(e) =>
-                              setOperatingHours({
-                                ...operatingHours,
-                                [day]: { ...hours, close: e.target.value }
-                              })
-                            }
-                            disabled={!hours.enabled}
-                            className="w-32"
-                          />
-                        </div>
-                        {!hours.enabled && (
-                          <Badge variant="secondary">Fechado</Badge>
-                        )}
-                      </div>
-                    ))}
-                  </div>
+                  <OperatingHoursEditor
+                    value={operatingHours}
+                    onChange={setOperatingHours}
+                  />
                 </CardContent>
               </Card>
             </TabsContent>
 
             {/* Payments Tab */}
             <TabsContent value="payments">
-              <PaymentGatewaySetup 
-                context="establishment" 
-                entityId={establishment?.id || ''} 
-                onConfigured={fetchEstablishment}
+              <PaymentGatewayCards 
+                establishmentId={establishment?.id || ''} 
+                onRefresh={fetchEstablishment}
               />
             </TabsContent>
 
@@ -545,13 +579,13 @@ const EstablishmentSettings = () => {
 
                 <Card>
                   <CardHeader>
-                    <CardTitle>Configuracoes Gerais</CardTitle>
-                    <CardDescription>Pedido minimo e tempo de preparo</CardDescription>
+                    <CardTitle>Taxas e Tempo</CardTitle>
+                    <CardDescription>Configure valores de entrega</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="min_order">Pedido Minimo (R$)</Label>
+                        <Label htmlFor="min_order">Pedido Mínimo (R$)</Label>
                         <Input
                           id="min_order"
                           type="number"
@@ -560,7 +594,7 @@ const EstablishmentSettings = () => {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="avg_time">Tempo Medio de Preparo (min)</Label>
+                        <Label htmlFor="avg_time">Tempo Médio (min)</Label>
                         <Input
                           id="avg_time"
                           type="number"
@@ -569,53 +603,39 @@ const EstablishmentSettings = () => {
                         />
                       </div>
                     </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="base_fee">Taxa Base (R$)</Label>
+                        <Input
+                          id="base_fee"
+                          type="number"
+                          step="0.01"
+                          value={formData.delivery_base_fee}
+                          onChange={(e) => setFormData({ ...formData, delivery_base_fee: Number(e.target.value) })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="fee_km">Taxa por KM (R$)</Label>
+                        <Input
+                          id="fee_km"
+                          type="number"
+                          step="0.01"
+                          value={formData.delivery_fee_per_km}
+                          onChange={(e) => setFormData({ ...formData, delivery_fee_per_km: Number(e.target.value) })}
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="max_radius">Raio Máximo (KM)</Label>
+                      <Input
+                        id="max_radius"
+                        type="number"
+                        value={formData.max_delivery_radius_km}
+                        onChange={(e) => setFormData({ ...formData, max_delivery_radius_km: Number(e.target.value) })}
+                      />
+                    </div>
                   </CardContent>
                 </Card>
-
-                {formData.accepts_delivery && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Truck className="w-4 h-4" />
-                        Taxas de Delivery
-                      </CardTitle>
-                      <CardDescription>Valores cobrados para entrega em domicilio</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="base_fee">Taxa Base (R$)</Label>
-                          <Input
-                            id="base_fee"
-                            type="number"
-                            step="0.01"
-                            value={formData.delivery_base_fee}
-                            onChange={(e) => setFormData({ ...formData, delivery_base_fee: Number(e.target.value) })}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="fee_km">Taxa por KM (R$)</Label>
-                          <Input
-                            id="fee_km"
-                            type="number"
-                            step="0.01"
-                            value={formData.delivery_fee_per_km}
-                            onChange={(e) => setFormData({ ...formData, delivery_fee_per_km: Number(e.target.value) })}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="max_radius">Raio Maximo (KM)</Label>
-                          <Input
-                            id="max_radius"
-                            type="number"
-                            value={formData.max_delivery_radius_km}
-                            onChange={(e) => setFormData({ ...formData, max_delivery_radius_km: Number(e.target.value) })}
-                          />
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
               </div>
             </TabsContent>
 
@@ -624,282 +644,276 @@ const EstablishmentSettings = () => {
               <Card>
                 <CardHeader>
                   <CardTitle>Cores do Tema</CardTitle>
-                  <CardDescription>Personalize as cores do seu cardápio digital</CardDescription>
+                  <CardDescription>Personalize as cores do seu cardápio digital com 3 cores harmoniosas</CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <div className="grid gap-6 md:grid-cols-2">
+                <CardContent className="space-y-6">
+                  <div className="grid gap-6 md:grid-cols-3">
+                    {/* Primary Color */}
                     <div className="space-y-2">
-                      <Label htmlFor="primary_color">Cor Primária</Label>
+                      <Label htmlFor="primary_color" className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: formData.primary_color }} />
+                        Cor Primária
+                      </Label>
+                      <p className="text-xs text-muted-foreground">Botões principais, CTAs, destaques</p>
                       <div className="flex gap-2">
                         <Input
                           id="primary_color"
                           type="color"
                           value={formData.primary_color}
                           onChange={(e) => setFormData({ ...formData, primary_color: e.target.value })}
-                          className="w-16 h-10 p-1"
+                          className="w-14 h-10 p-1 cursor-pointer"
                         />
                         <Input
                           value={formData.primary_color}
                           onChange={(e) => setFormData({ ...formData, primary_color: e.target.value })}
-                          className="flex-1"
+                          className="flex-1 font-mono text-sm"
+                          placeholder="#ea384c"
                         />
                       </div>
                     </div>
+                    
+                    {/* Secondary Color */}
                     <div className="space-y-2">
-                      <Label htmlFor="secondary_color">Cor Secundária</Label>
+                      <Label htmlFor="secondary_color" className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: formData.secondary_color }} />
+                        Cor Secundária
+                      </Label>
+                      <p className="text-xs text-muted-foreground">Ícones, badges, elementos de apoio</p>
                       <div className="flex gap-2">
                         <Input
                           id="secondary_color"
                           type="color"
                           value={formData.secondary_color}
                           onChange={(e) => setFormData({ ...formData, secondary_color: e.target.value })}
-                          className="w-16 h-10 p-1"
+                          className="w-14 h-10 p-1 cursor-pointer"
                         />
                         <Input
                           value={formData.secondary_color}
                           onChange={(e) => setFormData({ ...formData, secondary_color: e.target.value })}
-                          className="flex-1"
+                          className="flex-1 font-mono text-sm"
+                          placeholder="#fbbf24"
+                        />
+                      </div>
+                    </div>
+                    
+                    {/* Background Color */}
+                    <div className="space-y-2">
+                      <Label htmlFor="background_color" className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full border" style={{ backgroundColor: formData.background_color }} />
+                        Cor de Fundo
+                      </Label>
+                      <p className="text-xs text-muted-foreground">Background de cards e áreas suaves</p>
+                      <div className="flex gap-2">
+                        <Input
+                          id="background_color"
+                          type="color"
+                          value={formData.background_color}
+                          onChange={(e) => setFormData({ ...formData, background_color: e.target.value })}
+                          className="w-14 h-10 p-1 cursor-pointer"
+                        />
+                        <Input
+                          value={formData.background_color}
+                          onChange={(e) => setFormData({ ...formData, background_color: e.target.value })}
+                          className="flex-1 font-mono text-sm"
+                          placeholder="#ffffff"
                         />
                       </div>
                     </div>
                   </div>
                   
+                  {/* Contrast Warning */}
+                  {(!hasGoodContrast(formData.primary_color, getContrastColor(formData.primary_color), true) ||
+                    !hasGoodContrast(formData.secondary_color, getContrastColor(formData.secondary_color), true)) && (
+                    <div className="p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg text-sm text-yellow-700 dark:text-yellow-400">
+                      ⚠️ Algumas cores podem ter baixo contraste. Verifique a prévia abaixo.
+                    </div>
+                  )}
+                  
                   {/* Preview */}
                   <div className="mt-6 p-6 rounded-lg border">
                     <p className="text-sm text-muted-foreground mb-4">Prévia do tema:</p>
-                    <div className="flex gap-4">
-                      <Button style={{ backgroundColor: formData.primary_color }}>
-                        Botão Primário
-                      </Button>
-                      <Button style={{ backgroundColor: formData.secondary_color, color: "#000" }}>
-                        Botão Secundário
-                      </Button>
+                    
+                    {/* Simulated Header */}
+                    <div 
+                      className="rounded-lg p-4 mb-4"
+                      style={{ backgroundColor: formData.primary_color }}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span 
+                          className="font-semibold"
+                          style={{ color: getContrastColor(formData.primary_color) }}
+                        >
+                          {formData.name || "Seu Estabelecimento"}
+                        </span>
+                        <div className="flex gap-2">
+                          <span 
+                            className="text-sm px-2 py-1 rounded"
+                            style={{ 
+                              backgroundColor: formData.secondary_color,
+                              color: getContrastColor(formData.secondary_color)
+                            }}
+                          >
+                            Aberto
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Simulated Content Card */}
+                    <div 
+                      className="rounded-lg p-4 border"
+                      style={{ backgroundColor: formData.background_color }}
+                    >
+                      <p 
+                        className="font-medium mb-3"
+                        style={{ color: getContrastColor(formData.background_color) }}
+                      >
+                        Produto Exemplo
+                      </p>
+                      <p 
+                        className="text-sm mb-4 opacity-70"
+                        style={{ color: getContrastColor(formData.background_color) }}
+                      >
+                        Descrição do produto com texto de exemplo.
+                      </p>
+                      <div className="flex gap-3">
+                        <Button 
+                          size="sm"
+                          style={{ 
+                            backgroundColor: formData.primary_color,
+                            color: getContrastColor(formData.primary_color)
+                          }}
+                        >
+                          Adicionar
+                        </Button>
+                        <Button 
+                          size="sm"
+                          variant="outline"
+                          style={{ 
+                            borderColor: formData.secondary_color,
+                            color: formData.secondary_color
+                          }}
+                        >
+                          Ver Detalhes
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </CardContent>
               </Card>
             </TabsContent>
 
-            {/* Notifications Tab */}
-            <TabsContent value="notifications">
+            {/* Social Media Tab */}
+            <TabsContent value="social">
               <Card>
                 <CardHeader>
-                  <CardTitle>Notificações</CardTitle>
-                  <CardDescription>Configure alertas e sons</CardDescription>
+                  <CardTitle className="flex items-center gap-2">
+                    <Share2 className="w-5 h-5" />
+                    Redes Sociais
+                  </CardTitle>
+                  <CardDescription>Links das suas redes sociais (serão exibidos no cardápio e VilaTok TV)</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between p-4 border rounded-lg">
-                    <div>
-                      <p className="font-medium">Som de Novo Pedido</p>
-                      <p className="text-sm text-muted-foreground">Tocar som quando receber novo pedido</p>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="instagram_url" className="flex items-center gap-2">
+                        <Instagram className="w-4 h-4 text-pink-500" />
+                        Instagram
+                      </Label>
+                      <Input
+                        id="instagram_url"
+                        placeholder="@seuinstagram"
+                        value={formData.instagram_url}
+                        onChange={(e) => setFormData({ ...formData, instagram_url: e.target.value })}
+                      />
                     </div>
-                    <Switch defaultChecked />
-                  </div>
-                  <div className="flex items-center justify-between p-4 border rounded-lg">
-                    <div>
-                      <p className="font-medium">Notificação por WhatsApp</p>
-                      <p className="text-sm text-muted-foreground">Receber alertas no WhatsApp</p>
+                    <div className="space-y-2">
+                      <Label htmlFor="facebook_url" className="flex items-center gap-2">
+                        <Globe className="w-4 h-4 text-blue-600" />
+                        Facebook
+                      </Label>
+                      <Input
+                        id="facebook_url"
+                        placeholder="facebook.com/suapagina"
+                        value={formData.facebook_url}
+                        onChange={(e) => setFormData({ ...formData, facebook_url: e.target.value })}
+                      />
                     </div>
-                    <Switch />
-                  </div>
-                  <div className="p-4 border rounded-lg bg-muted/30">
-                    <p className="text-sm text-muted-foreground">
-                      <strong>Nota:</strong> Todas as notificações são internas (dentro da plataforma) ou via WhatsApp. 
-                      E-mail é usado apenas para validação de conta.
-                    </p>
+                    <div className="space-y-2">
+                      <Label htmlFor="tiktok_url">TikTok</Label>
+                      <Input
+                        id="tiktok_url"
+                        placeholder="@seutiktok"
+                        value={formData.tiktok_url}
+                        onChange={(e) => setFormData({ ...formData, tiktok_url: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="youtube_url">YouTube</Label>
+                      <Input
+                        id="youtube_url"
+                        placeholder="youtube.com/@seucanal"
+                        value={formData.youtube_url}
+                        onChange={(e) => setFormData({ ...formData, youtube_url: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="twitter_url">Twitter / X</Label>
+                      <Input
+                        id="twitter_url"
+                        placeholder="@seutwitter"
+                        value={formData.twitter_url}
+                        onChange={(e) => setFormData({ ...formData, twitter_url: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="website_url" className="flex items-center gap-2">
+                        <Globe className="w-4 h-4" />
+                        Website
+                      </Label>
+                      <Input
+                        id="website_url"
+                        placeholder="https://seusite.com.br"
+                        value={formData.website_url}
+                        onChange={(e) => setFormData({ ...formData, website_url: e.target.value })}
+                      />
+                    </div>
                   </div>
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            {/* Notifications Tab - Sons e Alertas */}
+            <TabsContent value="notifications">
+              <div className="grid gap-6 md:grid-cols-2">
+                <NotificationSoundSelector
+                  selectedSound="new-order"
+                  volume={notificationPrefs.volume}
+                  onSoundChange={() => {}}
+                  onVolumeChange={(vol) => updateNotificationPrefs({ volume: vol })}
+                />
+                <WhatsAppNotificationsConfig
+                  enabled={whatsappNotificationsEnabled}
+                  onEnabledChange={setWhatsappNotificationsEnabled}
+                  notifications={whatsappNotifications}
+                  onNotificationChange={(id, enabled) => 
+                    setWhatsappNotifications(prev => ({ ...prev, [id]: enabled }))
+                  }
+                />
+              </div>
+              <div className="mt-6 p-4 border rounded-lg bg-muted/30">
+                <p className="text-sm text-muted-foreground">
+                  <strong>💡 Dica:</strong> Estas são notificações que <strong>você recebe</strong> (novos pedidos, alertas do sistema). 
+                  Para configurar o chatbot e atendimento automático, acesse <strong>WhatsApp</strong> no menu lateral.
+                </p>
+              </div>
             </TabsContent>
 
             {/* Drivers Tab */}
             <TabsContent value="drivers">
-              <DeliveryConfigTab establishmentId={establishment?.id || null} />
-            </TabsContent>
-
-            {/* LocalizAI Sync Tab */}
-            <TabsContent value="localiza">
-              <div className="grid gap-6 md:grid-cols-2">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <MapPin className="w-5 h-5" />
-                      Sincronização LocalizAI
-                    </CardTitle>
-                    <CardDescription>
-                      Sincronize seu estabelecimento com o guia turístico LocalizAI Tamandaré
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="flex items-center justify-between p-4 border rounded-lg">
-                      <div>
-                        <p className="font-medium">Ativar Sincronização</p>
-                        <p className="text-sm text-muted-foreground">
-                          Seu estabelecimento aparecerá no LocalizAI com badge "Vila Food"
-                        </p>
-                      </div>
-                      <Switch
-                        checked={localizaSync.syncEnabled}
-                        disabled={localizaSync.toggling}
-                        onCheckedChange={(checked) => localizaSync.toggleSync(checked)}
-                      />
-                    </div>
-
-                    {localizaSync.syncEnabled && (
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                          <div>
-                            <p className="text-sm font-medium">Status</p>
-                            <p className="text-xs text-muted-foreground">
-                              {localizaSync.mapping
-                                ? `Mapeado: ${localizaSync.mapping.sync_status}`
-                                : "Aguardando primeira sincronização"}
-                            </p>
-                          </div>
-                          <Badge variant={localizaSync.mapping?.sync_status === "active" ? "default" : "secondary"}>
-                            {localizaSync.mapping?.sync_status === "active"
-                              ? "Ativo"
-                              : localizaSync.mapping?.sync_status === "paused"
-                              ? "Pausado"
-                              : localizaSync.mapping?.sync_status === "error"
-                              ? "Erro"
-                              : "Pendente"}
-                          </Badge>
-                        </div>
-
-                        {localizaSync.syncedAt && (
-                          <div className="p-3 bg-muted/50 rounded-lg">
-                            <p className="text-sm font-medium">Última Sincronização</p>
-                            <p className="text-xs text-muted-foreground">
-                              {new Date(localizaSync.syncedAt).toLocaleString("pt-BR")}
-                            </p>
-                          </div>
-                        )}
-
-                        {localizaSync.localizaPlaceId && (
-                          <div className="p-3 bg-muted/50 rounded-lg">
-                            <p className="text-sm font-medium">ID no LocalizAI</p>
-                            <p className="text-xs text-muted-foreground font-mono">
-                              {localizaSync.localizaPlaceId}
-                            </p>
-                          </div>
-                        )}
-
-                        <Button
-                          variant="outline"
-                          className="w-full gap-2"
-                          onClick={() => localizaSync.triggerSync()}
-                        >
-                          <RefreshCw className="w-4 h-4" />
-                          Sincronizar Agora
-                        </Button>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Dados Sincronizados</CardTitle>
-                    <CardDescription>
-                      Informações enviadas para o LocalizAI
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="text-sm space-y-2">
-                      <div className="flex justify-between py-1 border-b">
-                        <span className="text-muted-foreground">Nome</span>
-                        <span className="font-medium">{formData.name || "—"}</span>
-                      </div>
-                      <div className="flex justify-between py-1 border-b">
-                        <span className="text-muted-foreground">Endereço</span>
-                        <span className="font-medium">{formData.address || "—"}</span>
-                      </div>
-                      <div className="flex justify-between py-1 border-b">
-                        <span className="text-muted-foreground">Telefone</span>
-                        <span className="font-medium">{formData.phone || formData.whatsapp || "—"}</span>
-                      </div>
-                      <div className="flex justify-between py-1 border-b">
-                        <span className="text-muted-foreground">Horários</span>
-                        <span className="font-medium">
-                          {Object.values(operatingHours).filter(h => h.enabled).length} dias ativos
-                        </span>
-                      </div>
-                    </div>
-                    <div className="p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg">
-                      <p className="text-xs text-blue-700 dark:text-blue-300">
-                        O VIlaFood é a fonte principal para produtos, preços e horários.
-                        O LocalizAI é fonte principal para reviews e fotos de usuários.
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {localizaSync.syncStatus && (
-                  <Card className="md:col-span-2">
-                    <CardHeader>
-                      <CardTitle>Visão Geral da Sincronização</CardTitle>
-                      <CardDescription>
-                        Estatísticas globais do sistema de sincronização
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div className="text-center p-3 border rounded-lg">
-                          <p className="text-2xl font-bold">{localizaSync.syncStatus.sync_enabled_establishments}</p>
-                          <p className="text-xs text-muted-foreground">Estabelecimentos Habilitados</p>
-                        </div>
-                        <div className="text-center p-3 border rounded-lg">
-                          <p className="text-2xl font-bold">{localizaSync.syncStatus.total_mapped}</p>
-                          <p className="text-xs text-muted-foreground">Mapeamentos Totais</p>
-                        </div>
-                        <div className="text-center p-3 border rounded-lg">
-                          <p className="text-2xl font-bold">{localizaSync.syncStatus.active_mappings}</p>
-                          <p className="text-xs text-muted-foreground">Mapeamentos Ativos</p>
-                        </div>
-                        <div className="text-center p-3 border rounded-lg">
-                          <p className="text-2xl font-bold">
-                            {localizaSync.syncStatus.last_successful_sync
-                              ? new Date(localizaSync.syncStatus.last_successful_sync).toLocaleDateString("pt-BR")
-                              : "—"}
-                          </p>
-                          <p className="text-xs text-muted-foreground">Último Sync OK</p>
-                        </div>
-                      </div>
-
-                      {localizaSync.syncStatus.recent_syncs.length > 0 && (
-                        <div className="mt-4">
-                          <p className="text-sm font-medium mb-2">Sincronizações Recentes</p>
-                          <div className="space-y-2 max-h-48 overflow-y-auto">
-                            {localizaSync.syncStatus.recent_syncs.map((sync) => (
-                              <div key={sync.id} className="flex items-center justify-between p-2 text-xs border rounded">
-                                <div className="flex items-center gap-2">
-                                  <Badge
-                                    variant={
-                                      sync.status === "completed"
-                                        ? "default"
-                                        : sync.status === "failed"
-                                        ? "destructive"
-                                        : "secondary"
-                                    }
-                                    className="text-[10px]"
-                                  >
-                                    {sync.status}
-                                  </Badge>
-                                  <span>{sync.sync_type}</span>
-                                  <span className="text-muted-foreground">{sync.direction}</span>
-                                </div>
-                                <div className="text-muted-foreground">
-                                  {sync.records_processed ?? 0} ok / {sync.records_failed ?? 0} falha
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                )}
+              <div className="space-y-6">
+                <AssociatedDriversList establishmentId={establishment?.id || null} />
+                <DeliveryConfigTab establishmentId={establishment?.id || null} />
               </div>
             </TabsContent>
           </Tabs>

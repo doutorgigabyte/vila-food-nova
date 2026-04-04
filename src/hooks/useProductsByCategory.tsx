@@ -14,6 +14,7 @@ export interface Product {
   establishment_id: string;
   category_id: string | null;
   establishment?: {
+    id: string;
     name: string;
     slug: string;
     segment_id: string | null;
@@ -72,7 +73,7 @@ export const useProductsByMainCategory = (mainCategorySlug: string | null, limit
             .select(`
               id, name, description, price, promotional_price, image_url,
               is_featured, is_active, establishment_id, category_id,
-              establishments (name, slug, segment_id)
+              establishments (id, name, slug, segment_id)
             `)
             .eq("is_active", true)
             .limit(fetchLimit);
@@ -117,14 +118,14 @@ export const useProductsByMainCategory = (mainCategorySlug: string | null, limit
           return;
         }
 
-        // Buscar estabelecimentos com esses segmentos
+        // Buscar estabelecimentos usando função RPC segura
         const { data: establishments } = await supabase
-          .from("establishments")
-          .select("id")
-          .eq("status", "active")
-          .in("segment_id", segmentIds);
+          .rpc("get_public_establishments_filtered", { 
+            p_segment_ids: segmentIds,
+            p_limit: 1000
+          });
 
-        const establishmentIds = (establishments || []).map(e => e.id);
+        const establishmentIds = (establishments || []).map((e: any) => e.id);
 
         if (establishmentIds.length === 0) {
           setProducts([]);
@@ -138,7 +139,7 @@ export const useProductsByMainCategory = (mainCategorySlug: string | null, limit
           .select(`
             id, name, description, price, promotional_price, image_url,
             is_featured, is_active, establishment_id, category_id,
-            establishments (name, slug, segment_id)
+            establishments (id, name, slug, segment_id)
           `)
           .eq("is_active", true)
           .in("establishment_id", establishmentIds)
@@ -187,14 +188,14 @@ export const useProductsBySubcategory = (segmentId: string | null, limit?: numbe
 
         const fetchLimit = limit ? limit * 5 : 200;
 
-        // Buscar estabelecimentos com esse segmento
+        // Buscar estabelecimentos usando função RPC segura
         const { data: establishments } = await supabase
-          .from("establishments")
-          .select("id")
-          .eq("status", "active")
-          .eq("segment_id", segmentId);
+          .rpc("get_public_establishments_by_segment", { 
+            p_segment_id: segmentId,
+            p_limit: 1000
+          });
 
-        const establishmentIds = (establishments || []).map(e => e.id);
+        const establishmentIds = (establishments || []).map((e: any) => e.id);
 
         if (establishmentIds.length === 0) {
           setProducts([]);
@@ -207,7 +208,7 @@ export const useProductsBySubcategory = (segmentId: string | null, limit?: numbe
           .select(`
             id, name, description, price, promotional_price, image_url,
             is_featured, is_active, establishment_id, category_id,
-            establishments (name, slug, segment_id)
+            establishments (id, name, slug, segment_id)
           `)
           .eq("is_active", true)
           .in("establishment_id", establishmentIds)

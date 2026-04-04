@@ -23,6 +23,11 @@ export interface Establishment {
   accepts_pickup: boolean | null;
   accepts_table: boolean | null;
   segment_id: string | null;
+  created_at?: string | null;
+  orders_count?: number;
+  rating_average?: number | null;
+  rating_count?: number | null;
+  delivery_base_fee?: number | null;
 }
 
 export interface Category {
@@ -47,7 +52,7 @@ export interface Product {
   additionals: Json;
 }
 
-export const useEstablishment = (slug: string) => {
+export const useEstablishment = (slug: string | undefined) => {
   const [establishment, setEstablishment] = useState<Establishment | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<Product[]>([]);

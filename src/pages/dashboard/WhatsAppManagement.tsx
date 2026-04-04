@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useState, useEffect, useCallback } from "react";
+import { useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,41 +8,29 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Separator } from "@/components/ui/separator";
-import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdminAccess } from "@/contexts/AdminAccessContext";
+import { useEstablishmentPlan } from "@/hooks/useEstablishmentPlan";
 import { toast } from "sonner";
 import { 
-  ArrowLeft, Loader2, MessageSquare, Bot, Smartphone, Wifi, WifiOff, 
-  RefreshCw, QrCode, Settings, Link2, Copy, ExternalLink, Zap,
-  CreditCard, MapPin, Volume2, Activity, MessageCircle, Check, Plus,
-  Trash2, ChevronRight, Lock, Sparkles, Edit, Send, HeartPulse
+  Loader2, MessageSquare, Bot, Smartphone, Wifi, WifiOff, 
+  RefreshCw, QrCode, Check, Sparkles, MessageCircle, Send,
+  CheckCircle2, XCircle, AlertCircle
 } from "lucide-react";
-import AdminLayout from "@/components/admin/AdminLayout";
-import { ConversationHistory } from "@/components/whatsapp/ConversationHistory";
-import { WhatsAppHealthCheck } from "@/components/whatsapp/WhatsAppHealthCheck";
-import { WhatsAppRealTimeStats } from "@/components/whatsapp/WhatsAppRealTimeStats";
+import DashboardLayout from "@/components/dashboard/DashboardLayout";
+import { HumanTakeoverPanel } from "@/components/whatsapp/HumanTakeoverPanel";
 
 interface WhatsAppInstance {
   id: string;
   instance_name: string | null;
-  instance_id: string | null;
   status: string | null;
   qr_code: string | null;
   ai_enabled: boolean | null;
-  ai_prompt: string | null;
-  evolution_api_url: string | null;
-  evolution_api_key: string | null;
   auto_response_enabled: boolean | null;
-  audio_enabled: boolean | null;
-  pix_enabled: boolean | null;
   whatsapp_level: number;
   keywords_enabled: boolean;
   welcome_message: string | null;
-  business_hours_message: string | null;
-  outside_hours_message: string | null;
 }
 
 interface WhatsAppKeyword {
@@ -50,75 +38,25 @@ interface WhatsAppKeyword {
   category: string;
   keywords: string[];
   response_text: string | null;
-  response_link: string | null;
-  send_menu_link: boolean;
   is_active: boolean;
 }
 
-interface Analytics {
-  messages_today: number;
-  orders_today: number;
-  active_sessions: number;
-}
-
-const DEFAULT_KEYWORDS: Omit<WhatsAppKeyword, 'id'>[] = [
-  { 
-    category: 'menu', 
-    keywords: ['cardápio', 'menu', 'ver produtos', 'o que tem', 'cardapio'],
-    response_text: 'Acesse nosso cardápio digital:',
-    response_link: null,
-    send_menu_link: true,
-    is_active: true
-  },
-  { 
-    category: 'order', 
-    keywords: ['fazer pedido', 'quero pedir', 'encomendar', 'pedir', 'pedido'],
-    response_text: 'Para fazer seu pedido, acesse nosso cardápio:',
-    response_link: null,
-    send_menu_link: true,
-    is_active: true
-  },
-  { 
-    category: 'hours', 
-    keywords: ['horário', 'horario', 'abre que horas', 'funcionamento', 'aberto'],
-    response_text: 'Nosso horário de funcionamento: {HORARIO}',
-    response_link: null,
-    send_menu_link: false,
-    is_active: true
-  },
-  { 
-    category: 'address', 
-    keywords: ['endereço', 'endereco', 'onde fica', 'localização', 'localizacao'],
-    response_text: 'Nosso endereço: {ENDERECO}',
-    response_link: null,
-    send_menu_link: false,
-    is_active: true
-  },
-  { 
-    category: 'delivery', 
-    keywords: ['entrega', 'delivery', 'taxa de entrega', 'frete'],
-    response_text: 'Fazemos entregas! Confira as taxas no cardápio:',
-    response_link: null,
-    send_menu_link: true,
-    is_active: true
-  },
-  { 
-    category: 'human', 
-    keywords: ['atendente', 'falar com alguém', 'humano', 'pessoa', 'atendimento'],
-    response_text: 'Um momento! Estou encaminhando você para um atendente. 👋',
-    response_link: null,
-    send_menu_link: false,
-    is_active: true
-  },
+const DEFAULT_KEYWORDS = [
+  { category: 'menu', keywords: ['cardápio', 'menu', 'ver produtos'], response_text: 'Acesse nosso cardápio digital:', is_active: true },
+  { category: 'order', keywords: ['fazer pedido', 'quero pedir', 'pedido'], response_text: 'Para fazer seu pedido, acesse nosso cardápio:', is_active: true },
+  { category: 'hours', keywords: ['horário', 'funcionamento', 'aberto'], response_text: 'Nosso horário de funcionamento: {HORARIO}', is_active: true },
+  { category: 'address', keywords: ['endereço', 'onde fica', 'localização'], response_text: 'Nosso endereço: {ENDERECO}', is_active: true },
+  { category: 'delivery', keywords: ['entrega', 'delivery', 'frete'], response_text: 'Fazemos entregas! Confira as taxas no cardápio:', is_active: true },
+  { category: 'human', keywords: ['atendente', 'falar com alguém', 'humano'], response_text: 'Um momento! Estou encaminhando você para um atendente. 👋', is_active: true },
 ];
 
-const CATEGORY_LABELS: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
-  menu: { label: 'Cardápio', icon: <MessageSquare className="w-4 h-4" />, color: 'text-green-600' },
-  order: { label: 'Pedido', icon: <Zap className="w-4 h-4" />, color: 'text-blue-600' },
-  hours: { label: 'Horário', icon: <Activity className="w-4 h-4" />, color: 'text-orange-600' },
-  address: { label: 'Endereço', icon: <MapPin className="w-4 h-4" />, color: 'text-purple-600' },
-  delivery: { label: 'Entrega', icon: <Send className="w-4 h-4" />, color: 'text-cyan-600' },
-  human: { label: 'Atendente', icon: <MessageCircle className="w-4 h-4" />, color: 'text-pink-600' },
+const CATEGORY_LABELS: Record<string, { label: string; icon: React.ReactNode }> = {
+  menu: { label: 'Cardápio', icon: <MessageSquare className="w-4 h-4" /> },
+  order: { label: 'Pedido', icon: <Send className="w-4 h-4" /> },
+  hours: { label: 'Horário', icon: <MessageCircle className="w-4 h-4" /> },
+  address: { label: 'Endereço', icon: <MessageCircle className="w-4 h-4" /> },
+  delivery: { label: 'Entrega', icon: <Send className="w-4 h-4" /> },
+  human: { label: 'Atendente', icon: <MessageCircle className="w-4 h-4" /> },
 };
 
 const WhatsAppManagement = () => {
@@ -130,35 +68,20 @@ const WhatsAppManagement = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [connecting, setConnecting] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<'success' | 'error' | null>(null);
   const [establishmentId, setEstablishmentId] = useState<string | null>(null);
   const [establishment, setEstablishment] = useState<any>(null);
-  const [analytics, setAnalytics] = useState<Analytics>({ messages_today: 0, orders_today: 0, active_sessions: 0 });
-  const [copied, setCopied] = useState(false);
-  const [hasAIAccess, setHasAIAccess] = useState(false);
-  const [hasChatbotAccess, setHasChatbotAccess] = useState(true);
+  
+  const { canUseWhatsappChatbot, canUseWhatsappAI } = useEstablishmentPlan(establishmentId);
+  const hasChatbotAccess = canUseWhatsappChatbot();
+  const hasAIAccess = canUseWhatsappAI();
 
-  const [form, setForm] = useState({
-    instance_name: "",
-    evolution_api_url: "",
-    evolution_api_key: "",
-    ai_enabled: false,
-    ai_prompt: "",
-    auto_response_enabled: true,
-    audio_enabled: false,
-    pix_enabled: false,
-    keywords_enabled: true,
-    welcome_message: "",
-    business_hours_message: "",
-    outside_hours_message: "",
-  });
-
-  const defaultPrompt = `Você é um assistente virtual do {NOME_ESTABELECIMENTO}. Ajude os clientes com:
-- Informações sobre o cardápio
-- Realizar pedidos
-- Horários de funcionamento
-- Formas de pagamento
-
-Seja sempre educado e prestativo. Se não souber responder algo, peça para o cliente aguardar atendimento humano.`;
+  const [welcomeMessage, setWelcomeMessage] = useState("");
+  const [aiEnabled, setAiEnabled] = useState(false);
+  const [keywordsEnabled, setKeywordsEnabled] = useState(true);
+  const [pollingActive, setPollingActive] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState("");
 
   useEffect(() => {
     if (user || accessingEstablishmentId) fetchEstablishment();
@@ -168,15 +91,155 @@ Seja sempre educado e prestativo. Se não souber responder algo, peça para o cl
     if (establishmentId) {
       fetchInstance();
       fetchKeywords();
-      fetchAnalytics();
-      checkPlanAccess();
     }
   }, [establishmentId]);
 
+  // Check status on initial load to sync with Evolution API
+  const checkAndSyncStatus = useCallback(async () => {
+    if (!instance?.instance_name || !establishmentId) return;
+
+    try {
+      const { data, error } = await supabase.functions.invoke('evolution-api', {
+        body: {
+          action: 'check_status',
+          instanceName: instance.instance_name,
+          establishmentId,
+        }
+      });
+
+      if (error) {
+        console.warn('Status check error:', error);
+        return;
+      }
+
+        // Evolution API response structure: { success: true, data: { instance: { state: "open" } } }
+        const state = data?.data?.instance?.state || data?.data?.state || data?.state || data?.instance?.state;
+        console.log('Status check - state:', state, 'full response:', JSON.stringify(data));
+
+      if (state === 'open' && instance.status !== 'connected') {
+        // Evolution API says connected but our DB says otherwise - sync it
+        console.log('Syncing status to connected');
+        const { error: updateError } = await supabase
+          .from("whatsapp_instances")
+          .update({ status: 'connected', qr_code: null })
+          .eq("id", instance.id);
+        
+        if (!updateError) {
+          setInstance(prev => prev ? { ...prev, status: 'connected', qr_code: null } : null);
+          toast.success("WhatsApp conectado com sucesso!");
+        } else {
+          console.error('Update error:', updateError);
+        }
+      } else if ((state === 'close' || state === 'connecting') && instance.status === 'connected') {
+        // Evolution API says disconnected but our DB says connected - sync it
+        console.log('Syncing status to disconnected');
+        await supabase
+          .from("whatsapp_instances")
+          .update({ status: 'disconnected' })
+          .eq("id", instance.id);
+        
+        setInstance(prev => prev ? { ...prev, status: 'disconnected' } : null);
+      }
+
+      return state;
+    } catch (err) {
+      console.warn('Status check error:', err);
+      return null;
+    }
+  }, [instance?.instance_name, instance?.status, instance?.id, establishmentId]);
+
+  // Check status on initial load when instance exists
+  useEffect(() => {
+    if (instance?.instance_name && establishmentId) {
+      checkAndSyncStatus();
+    }
+  }, [instance?.instance_name, establishmentId]);
+
+  // Auto-polling when connecting - check status every 5 seconds
+  useEffect(() => {
+    if (!instance?.instance_name || instance?.status !== 'connecting') {
+      setPollingActive(false);
+      return;
+    }
+
+    setPollingActive(true);
+    console.log('Starting auto-polling for connection status...');
+
+    const pollStatus = async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke('evolution-api', {
+          body: {
+            action: 'check_status',
+            instanceName: instance.instance_name,
+            establishmentId,
+          }
+        });
+
+        if (error) {
+          console.warn('Status poll error:', error);
+          return;
+        }
+
+        // Evolution API response structure: { success: true, data: { instance: { state: "open" } } }
+        const state = data?.data?.instance?.state || data?.data?.state || data?.state || data?.instance?.state;
+        console.log('Poll result - state:', state, 'full response:', JSON.stringify(data));
+
+        if (state === 'open') {
+          // Connected! Update database and UI directly
+          console.log('Detected connected state, updating...');
+          const { error: updateError } = await supabase
+            .from("whatsapp_instances")
+            .update({ status: 'connected', qr_code: null })
+            .eq("id", instance.id);
+          
+          if (!updateError) {
+            setInstance(prev => prev ? { ...prev, status: 'connected', qr_code: null } : null);
+            toast.success("WhatsApp conectado com sucesso!");
+            setPollingActive(false);
+          } else {
+            console.error('Update failed:', updateError);
+          }
+        } else if (state === 'close' || state === 'connecting') {
+          // Still connecting, try to refresh QR code
+          const { data: qrData } = await supabase.functions.invoke('evolution-api', {
+            body: {
+              action: 'fetch_qr',
+              instanceName: instance.instance_name,
+              establishmentId,
+            }
+          });
+
+          const newQR = qrData?.data?.base64 || qrData?.base64 || qrData?.data?.code || qrData?.code;
+          if (newQR && newQR !== instance.qr_code) {
+            await supabase
+              .from("whatsapp_instances")
+              .update({ qr_code: newQR })
+              .eq("id", instance.id);
+            
+            setInstance(prev => prev ? { ...prev, qr_code: newQR } : null);
+            console.log('QR code updated');
+          }
+        }
+      } catch (err) {
+        console.warn('Polling error:', err);
+      }
+    };
+
+    // Poll immediately
+    pollStatus();
+
+    // Then poll every 5 seconds
+    const interval = setInterval(pollStatus, 5000);
+
+    return () => {
+      clearInterval(interval);
+      setPollingActive(false);
+    };
+  }, [instance?.instance_name, instance?.status, instance?.id, establishmentId]);
+
   const fetchEstablishment = async () => {
-    let query = supabase.from("establishments").select("id, name, slug, address, plan_id");
+    let query = supabase.from("establishments").select("id, name, slug, whatsapp_instance_name");
     
-    // Priority: Admin context > slug > owner_id
     if (accessingEstablishmentId) {
       query = query.eq("id", accessingEstablishmentId);
     } else if (slug) {
@@ -192,48 +255,20 @@ Seja sempre educado e prestativo. Se não souber responder algo, peça para o cl
     }
   };
 
-  const checkPlanAccess = async () => {
-    if (!establishment?.plan_id) return;
-
-    const { data: plan } = await supabase
-      .from("plans")
-      .select("whatsapp_chatbot, whatsapp_ai_agent")
-      .eq("id", establishment.plan_id)
-      .single();
-
-    setHasChatbotAccess(plan?.whatsapp_chatbot ?? false);
-    setHasAIAccess(plan?.whatsapp_ai_agent ?? false);
-  };
-
   const fetchInstance = async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from("whatsapp_instances")
       .select("*")
       .eq("establishment_id", establishmentId)
       .maybeSingle();
 
-    if (!error && data) {
+    if (data) {
       setInstance(data as WhatsAppInstance);
-      setForm({
-        instance_name: data.instance_name || "",
-        evolution_api_url: data.evolution_api_url || "",
-        evolution_api_key: data.evolution_api_key || "",
-        ai_enabled: data.ai_enabled || false,
-        ai_prompt: data.ai_prompt || defaultPrompt.replace("{NOME_ESTABELECIMENTO}", establishment?.name || ""),
-        auto_response_enabled: data.auto_response_enabled ?? true,
-        audio_enabled: data.audio_enabled || false,
-        pix_enabled: data.pix_enabled || false,
-        keywords_enabled: data.keywords_enabled ?? true,
-        welcome_message: data.welcome_message || "",
-        business_hours_message: data.business_hours_message || "",
-        outside_hours_message: data.outside_hours_message || "",
-      });
-    } else {
-      setForm({
-        ...form,
-        ai_prompt: defaultPrompt.replace("{NOME_ESTABELECIMENTO}", establishment?.name || ""),
-      });
+      setWelcomeMessage(data.welcome_message || "");
+      setAiEnabled(data.ai_enabled || false);
+      setKeywordsEnabled(data.keywords_enabled ?? true);
+      setAiPrompt((data as any).ai_prompt || "");
     }
     setLoading(false);
   };
@@ -248,79 +283,233 @@ Seja sempre educado e prestativo. Se não souber responder algo, peça para o cl
     if (data && data.length > 0) {
       setKeywords(data as WhatsAppKeyword[]);
     } else {
-      // Initialize with defaults
       setKeywords(DEFAULT_KEYWORDS.map((k, i) => ({ ...k, id: `temp-${i}` })) as WhatsAppKeyword[]);
     }
   };
 
-  const fetchAnalytics = async () => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+  const handleConnect = async () => {
+    setConnecting(true);
+    setTestResult(null);
+    
+    try {
+      // Generate instance name from establishment slug or id
+      const instanceName = establishment?.whatsapp_instance_name || 
+                          establishment?.slug || 
+                          `instance-${establishmentId?.slice(0, 8)}`;
 
-    const { count: messagesCount } = await supabase
-      .from("whatsapp_conversations")
-      .select("*", { count: "exact", head: true })
-      .eq("establishment_id", establishmentId)
-      .gte("last_message_at", today.toISOString());
+      console.log('Connecting instance:', instanceName);
+      
+      let qrCode = null;
 
-    setAnalytics({
-      messages_today: messagesCount || 0,
-      orders_today: 0,
-      active_sessions: 0,
-    });
+      // Step 1: Try to create instance (may already exist)
+      const { data: createData, error: createError } = await supabase.functions.invoke('evolution-api', {
+        body: {
+          action: 'create_instance',
+          instanceName,
+          establishmentId,
+        }
+      });
+
+      // Check if instance already exists - this is fine, just proceed to fetch QR
+      const alreadyExists = createData?.data?.alreadyExists || createData?.alreadyExists;
+
+      if (alreadyExists) {
+        console.log('Instance already exists, fetching QR code');
+      } else if (createError) {
+        console.error('Create error:', createError);
+        // Don't throw, try to fetch QR anyway
+      } else if (createData?.success === false && !createData?.error?.includes('already')) {
+        console.error('Create failed:', createData);
+        // Don't throw, try to fetch QR anyway
+      } else {
+        console.log('Instance created/exists:', createData);
+        qrCode = createData?.data?.qrcode?.base64 || createData?.data?.base64 || null;
+      }
+
+      // Step 2: Always try to fetch QR code if we don't have one
+      if (!qrCode) {
+        console.log('Fetching QR code via connect endpoint');
+        const { data: qrData, error: qrError } = await supabase.functions.invoke('evolution-api', {
+          body: {
+            action: 'fetch_qr',
+            instanceName,
+            establishmentId,
+          }
+        });
+
+        if (qrError) {
+          console.warn('QR fetch error:', qrError);
+        } else {
+          console.log('QR data received:', qrData);
+          qrCode = qrData?.data?.base64 || qrData?.base64 || qrData?.data?.code || qrData?.code || null;
+        }
+      }
+
+      // Create or update instance record in database
+      const { data: existingInstance } = await supabase
+        .from("whatsapp_instances")
+        .select("id")
+        .eq("establishment_id", establishmentId)
+        .maybeSingle();
+
+      if (existingInstance) {
+        await supabase
+          .from("whatsapp_instances")
+          .update({ 
+            instance_name: instanceName,
+            status: qrCode ? 'connecting' : 'disconnected', 
+            qr_code: qrCode
+          })
+          .eq("id", existingInstance.id);
+      } else {
+        await supabase
+          .from("whatsapp_instances")
+          .insert({
+            establishment_id: establishmentId,
+            instance_name: instanceName,
+            status: qrCode ? 'connecting' : 'disconnected',
+            qr_code: qrCode,
+            whatsapp_level: 1,
+            keywords_enabled: true,
+          });
+      }
+
+      await fetchInstance();
+      
+      if (qrCode) {
+        toast.success("Escaneie o QR Code para conectar!");
+      } else {
+        toast.info("Instância criada. Clique em 'Atualizar QR' para gerar o código.");
+      }
+    } catch (error: any) {
+      console.error('Connect error:', error);
+      toast.error(error.message || "Erro ao conectar. Tente novamente.");
+    } finally {
+      setConnecting(false);
+    }
   };
 
-  const handleSave = async () => {
+  const handleRefreshQR = async () => {
+    if (!instance?.instance_name) return;
+    
+    setConnecting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('evolution-api', {
+        body: {
+          action: 'fetch_qr',
+          instanceName: instance.instance_name,
+          establishmentId,
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.qrcode?.base64) {
+        await supabase
+          .from("whatsapp_instances")
+          .update({ qr_code: data.qrcode.base64 })
+          .eq("id", instance.id);
+        fetchInstance();
+        toast.success("QR Code atualizado!");
+      }
+    } catch (error) {
+      toast.error("Erro ao atualizar QR Code");
+    } finally {
+      setConnecting(false);
+    }
+  };
+
+  const handleTestConnection = async () => {
+    setTesting(true);
+    setTestResult(null);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('evolution-api', {
+        body: {
+          action: 'check_status',
+          instanceName: instance?.instance_name,
+          establishmentId,
+        }
+      });
+
+      if (error) throw error;
+
+      const state = data?.state || data?.instance?.state;
+      
+      if (state === 'open') {
+        setTestResult('success');
+        await supabase
+          .from("whatsapp_instances")
+          .update({ status: 'connected' })
+          .eq("id", instance?.id);
+        fetchInstance();
+        toast.success("WhatsApp conectado com sucesso!");
+      } else {
+        setTestResult('error');
+        toast.error("WhatsApp ainda não conectado. Escaneie o QR Code.");
+      }
+    } catch (error) {
+      setTestResult('error');
+      toast.error("Erro ao testar conexão");
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  const handleDisconnect = async () => {
+    if (!instance?.instance_name) return;
+    
+    try {
+      await supabase.functions.invoke('evolution-api', {
+        body: {
+          action: 'disconnect',
+          instanceName: instance.instance_name,
+          establishmentId,
+        }
+      });
+
+      await supabase
+        .from("whatsapp_instances")
+        .update({ status: 'disconnected', qr_code: null })
+        .eq("id", instance.id);
+      
+      fetchInstance();
+      setTestResult(null);
+      toast.success("WhatsApp desconectado");
+    } catch (error) {
+      toast.error("Erro ao desconectar");
+    }
+  };
+
+  const handleSaveSettings = async () => {
     setSaving(true);
     try {
-      const instanceData = {
-        instance_name: form.instance_name || null,
-        evolution_api_url: form.evolution_api_url || null,
-        evolution_api_key: form.evolution_api_key || null,
-        ai_enabled: form.ai_enabled,
-        ai_prompt: form.ai_prompt || null,
-        auto_response_enabled: form.auto_response_enabled,
-        audio_enabled: form.audio_enabled,
-        pix_enabled: form.pix_enabled,
-        keywords_enabled: form.keywords_enabled,
-        welcome_message: form.welcome_message || null,
-        business_hours_message: form.business_hours_message || null,
-        outside_hours_message: form.outside_hours_message || null,
-        establishment_id: establishmentId,
-        whatsapp_level: form.ai_enabled ? 2 : 1,
-      };
-
       if (instance) {
-        const { error } = await supabase
+        await supabase
           .from("whatsapp_instances")
-          .update(instanceData)
+          .update({
+            welcome_message: welcomeMessage,
+            ai_enabled: aiEnabled,
+            keywords_enabled: keywordsEnabled,
+            whatsapp_level: aiEnabled ? 2 : 1,
+            ai_prompt: aiPrompt || null,
+          })
           .eq("id", instance.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from("whatsapp_instances").insert(instanceData);
-        if (error) throw error;
       }
 
       // Save keywords
       for (const keyword of keywords) {
         if (keyword.id.startsWith('temp-')) {
-          // Insert new
           await supabase.from("whatsapp_keywords").insert({
             establishment_id: establishmentId,
             category: keyword.category,
             keywords: keyword.keywords,
             response_text: keyword.response_text,
-            response_link: keyword.response_link,
-            send_menu_link: keyword.send_menu_link,
             is_active: keyword.is_active,
           });
         } else {
-          // Update existing
           await supabase.from("whatsapp_keywords").update({
-            keywords: keyword.keywords,
             response_text: keyword.response_text,
-            response_link: keyword.response_link,
-            send_menu_link: keyword.send_menu_link,
             is_active: keyword.is_active,
           }).eq("id", keyword.id);
         }
@@ -329,71 +518,10 @@ Seja sempre educado e prestativo. Se não souber responder algo, peça para o cl
       toast.success("Configurações salvas!");
       fetchInstance();
       fetchKeywords();
-    } catch (error: unknown) {
-      toast.error(error instanceof Error ? error.message : "Erro ao salvar configurações");
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao salvar");
     } finally {
       setSaving(false);
-    }
-  };
-
-  const handleConnect = async () => {
-    if (!form.evolution_api_url || !form.evolution_api_key) {
-      toast.error("Preencha a URL e API Key da Evolution API");
-      return;
-    }
-
-    setConnecting(true);
-    try {
-      const instanceName = form.instance_name || establishment?.name.toLowerCase().replace(/\s/g, "_");
-      
-      const response = await fetch(`${form.evolution_api_url}/instance/create`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "apikey": form.evolution_api_key,
-        },
-        body: JSON.stringify({
-          instanceName,
-          qrcode: true,
-          integration: "WHATSAPP-BAILEYS",
-        }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Erro ao criar instância");
-      }
-
-      const data = await response.json();
-      setForm(prev => ({ ...prev, instance_name: instanceName }));
-      
-      const instanceData = {
-        instance_name: instanceName,
-        instance_id: data.instance?.instanceId || instanceName,
-        evolution_api_url: form.evolution_api_url,
-        evolution_api_key: form.evolution_api_key,
-        status: "connecting",
-        qr_code: data.qrcode?.base64 || null,
-        ai_enabled: form.ai_enabled,
-        ai_prompt: form.ai_prompt,
-        auto_response_enabled: form.auto_response_enabled,
-        keywords_enabled: form.keywords_enabled,
-        establishment_id: establishmentId,
-        whatsapp_level: 1,
-      };
-
-      if (instance) {
-        await supabase.from("whatsapp_instances").update(instanceData).eq("id", instance.id);
-      } else {
-        await supabase.from("whatsapp_instances").insert(instanceData);
-      }
-
-      toast.success("Instância criada! Escaneie o QR Code para conectar.");
-      fetchInstance();
-    } catch (error: unknown) {
-      toast.error(error instanceof Error ? error.message : "Erro ao conectar");
-    } finally {
-      setConnecting(false);
     }
   };
 
@@ -401,506 +529,373 @@ Seja sempre educado e prestativo. Se não souber responder algo, peça para o cl
     setKeywords(prev => prev.map((k, i) => i === index ? { ...k, [field]: value } : k));
   };
 
-  const getStatusBadge = (status: string | null) => {
-    switch (status) {
+  const getStatusDisplay = () => {
+    switch (instance?.status) {
       case "connected":
-        return <Badge className="bg-green-500">Conectado</Badge>;
-      case "disconnected":
-        return <Badge variant="destructive">Desconectado</Badge>;
+        return (
+          <div className="flex items-center gap-2 text-green-600">
+            <Wifi className="w-5 h-5" />
+            <span className="font-medium">Conectado</span>
+            <Badge variant="outline" className="ml-2 text-green-600 border-green-600">
+              Online
+            </Badge>
+          </div>
+        );
       case "connecting":
-        return <Badge variant="secondary">Conectando...</Badge>;
+        return (
+          <div className="flex items-center gap-2 text-yellow-600">
+            <Loader2 className="w-5 h-5 animate-spin" />
+            <span className="font-medium">Aguardando conexão...</span>
+            {pollingActive && (
+              <Badge variant="outline" className="ml-2 text-yellow-600 border-yellow-600 animate-pulse">
+                Verificando a cada 5s
+              </Badge>
+            )}
+          </div>
+        );
       default:
-        return <Badge variant="outline">Não configurado</Badge>;
+        return (
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <WifiOff className="w-5 h-5" />
+            <span className="font-medium">Desconectado</span>
+          </div>
+        );
     }
   };
 
-  // Progress calculation
-  const progressSteps = [
-    { label: 'Configurar Evolution API', done: !!form.evolution_api_url && !!form.evolution_api_key },
-    { label: 'Criar Instância', done: !!instance?.instance_name },
-    { label: 'Conectar WhatsApp', done: instance?.status === 'connected' },
-    { label: 'Configurar Palavras-Chave', done: keywords.some(k => k.is_active) },
-    { label: 'Testar Funcionamento', done: analytics.messages_today > 0 },
-  ];
-  const completedSteps = progressSteps.filter(s => s.done).length;
-  const progressPercent = Math.round((completedSteps / progressSteps.length) * 100);
-
-  const baseUrl = slug ? `/painel/${slug}` : '/painel';
+  if (loading) {
+    return (
+      <DashboardLayout title="WhatsApp" establishment={establishment}>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
-    <AdminLayout 
-      title="WhatsApp" 
-      icon={MessageSquare} 
-      breadcrumb="WhatsApp"
-    >
-      <div className="space-y-6">
-        {/* Progress Card */}
-        <Card className="border-primary/20 bg-gradient-to-r from-primary/5 to-transparent">
-          <CardHeader className="pb-3">
+    <DashboardLayout title="WhatsApp" establishment={establishment}>
+      <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="flex items-center gap-3">
+          <div className="p-3 rounded-xl bg-green-500/10">
+            <Smartphone className="w-8 h-8 text-green-500" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold">WhatsApp</h1>
+            <p className="text-muted-foreground">Atendimento automático via WhatsApp</p>
+          </div>
+        </div>
+
+        {/* Connection Card */}
+        <Card>
+          <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <MessageSquare className="w-5 h-5 text-primary" />
-                Configuração do WhatsApp
-              </CardTitle>
-              <Badge variant={progressPercent === 100 ? "default" : "secondary"}>
-                {progressPercent}% completo
-              </Badge>
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <MessageCircle className="w-5 h-5" />
+                  Conexão
+                </CardTitle>
+                <CardDescription>
+                  Conecte seu WhatsApp Business para atendimento automático
+                </CardDescription>
+              </div>
+              {getStatusDisplay()}
             </div>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <Progress value={progressPercent} className="h-2" />
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-              {progressSteps.map((step, i) => (
-                <div 
-                  key={i} 
-                  className={`flex items-center gap-2 p-2 rounded-lg text-xs ${
-                    step.done ? 'bg-green-500/10 text-green-700' : 'bg-muted/50 text-muted-foreground'
-                  }`}
-                >
-                  {step.done ? (
-                    <Check className="w-4 h-4 text-green-500 flex-shrink-0" />
-                  ) : (
-                    <div className="w-4 h-4 rounded-full border-2 border-muted-foreground/30 flex-shrink-0" />
-                  )}
-                  <span className="truncate">{step.label}</span>
+          <CardContent className="space-y-6">
+            {/* Not connected or connecting without QR - Show connect button */}
+            {(!instance || instance.status === 'disconnected' || (instance.status === 'connecting' && !instance.qr_code)) && (
+              <div className="text-center py-8">
+                <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-green-500/10 flex items-center justify-center">
+                  <Smartphone className="w-10 h-10 text-green-500" />
                 </div>
-              ))}
-            </div>
+                <h3 className="text-lg font-semibold mb-2">Conecte seu WhatsApp</h3>
+                <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                  Clique no botão abaixo para gerar um QR Code. 
+                  Escaneie com seu WhatsApp Business para ativar o atendimento automático.
+                </p>
+                <Button 
+                  size="lg" 
+                  onClick={handleConnect} 
+                  disabled={connecting}
+                  className="gap-2"
+                >
+                  {connecting ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <QrCode className="w-5 h-5" />
+                  )}
+                  {instance?.status === 'connecting' ? 'Gerar QR Code' : 'Conectar WhatsApp'}
+                </Button>
+              </div>
+            )}
+
+            {/* Connecting - Show QR Code */}
+            {instance?.status === 'connecting' && instance.qr_code && (
+              <div className="text-center py-4">
+                <h3 className="text-lg font-semibold mb-4">Escaneie o QR Code</h3>
+                <div className="bg-white p-4 rounded-xl inline-block shadow-lg mb-4">
+                  <img 
+                    src={instance.qr_code.startsWith('data:') ? instance.qr_code : `data:image/png;base64,${instance.qr_code}`}
+                    alt="QR Code WhatsApp"
+                    className="w-64 h-64"
+                  />
+                </div>
+                <p className="text-muted-foreground mb-4">
+                  Abra o WhatsApp no seu celular → Menu (⋮) → Aparelhos conectados → Conectar um aparelho
+                </p>
+                <div className="flex items-center justify-center gap-3">
+                  <Button variant="outline" onClick={handleRefreshQR} disabled={connecting}>
+                    <RefreshCw className={`w-4 h-4 mr-2 ${connecting ? 'animate-spin' : ''}`} />
+                    Atualizar QR
+                  </Button>
+                  <Button onClick={handleTestConnection} disabled={testing}>
+                    {testing ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <Check className="w-4 h-4 mr-2" />
+                    )}
+                    Testar Conexão
+                  </Button>
+                </div>
+
+                {testResult === 'success' && (
+                  <div className="mt-4 p-3 bg-green-500/10 rounded-lg flex items-center justify-center gap-2 text-green-600">
+                    <CheckCircle2 className="w-5 h-5" />
+                    <span>WhatsApp conectado com sucesso!</span>
+                  </div>
+                )}
+                {testResult === 'error' && (
+                  <div className="mt-4 p-3 bg-red-500/10 rounded-lg flex items-center justify-center gap-2 text-red-600">
+                    <XCircle className="w-5 h-5" />
+                    <span>Ainda não conectado. Escaneie o QR Code primeiro.</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Connected - Show status */}
+            {instance?.status === 'connected' && (
+              <div className="text-center py-4">
+                <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-green-500/10 flex items-center justify-center">
+                  <CheckCircle2 className="w-10 h-10 text-green-500" />
+                </div>
+                <h3 className="text-lg font-semibold mb-2 text-green-600">WhatsApp Conectado!</h3>
+                <p className="text-muted-foreground mb-6">
+                  Seu atendimento automático está ativo. Configure as respostas abaixo.
+                </p>
+                <Button variant="outline" onClick={handleDisconnect}>
+                  <WifiOff className="w-4 h-4 mr-2" />
+                  Desconectar
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
 
-        {/* Analytics Cards */}
-        <div className="grid grid-cols-3 gap-4">
-          <Card>
-            <CardContent className="p-4 text-center">
-              <MessageCircle className="w-6 h-6 mx-auto mb-2 text-primary" />
-              <p className="text-2xl font-bold">{analytics.messages_today}</p>
-              <p className="text-xs text-muted-foreground">Mensagens hoje</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 text-center">
-              <Zap className="w-6 h-6 mx-auto mb-2 text-green-500" />
-              <p className="text-2xl font-bold">{analytics.orders_today}</p>
-              <p className="text-xs text-muted-foreground">Pedidos via WhatsApp</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 text-center">
-              <Activity className="w-6 h-6 mx-auto mb-2 text-blue-500" />
-              <p className="text-2xl font-bold">{analytics.active_sessions}</p>
-              <p className="text-xs text-muted-foreground">Conversas ativas</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-          </div>
-        ) : (
-          <Tabs defaultValue="connection" className="w-full">
-            <TabsList className="grid w-full grid-cols-6">
-              <TabsTrigger value="connection" className="gap-2">
-                <Smartphone className="w-4 h-4" />
-                <span className="hidden sm:inline">Conexão</span>
-              </TabsTrigger>
-              <TabsTrigger value="chatbot" className="gap-2">
-                <MessageSquare className="w-4 h-4" />
-                <span className="hidden sm:inline">Chatbot</span>
-              </TabsTrigger>
-              <TabsTrigger value="ai-agent" className="gap-2 relative">
-                <Bot className="w-4 h-4" />
-                <span className="hidden sm:inline">Agente IA</span>
-                {!hasAIAccess && <Lock className="w-3 h-3 absolute -top-1 -right-1" />}
-              </TabsTrigger>
+        {/* Settings - Only show when connected */}
+        {instance?.status === 'connected' && (
+          <Tabs defaultValue="messages" className="space-y-4">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="messages" className="gap-2">
-                <Send className="w-4 h-4" />
+                <MessageSquare className="w-4 h-4" />
                 <span className="hidden sm:inline">Mensagens</span>
               </TabsTrigger>
-              <TabsTrigger value="history" className="gap-2">
-                <MessageCircle className="w-4 h-4" />
-                <span className="hidden sm:inline">Histórico</span>
+              <TabsTrigger value="keywords" className="gap-2">
+                <Send className="w-4 h-4" />
+                <span className="hidden sm:inline">Respostas</span>
               </TabsTrigger>
-              <TabsTrigger value="monitoring" className="gap-2">
-                <HeartPulse className="w-4 h-4" />
-                <span className="hidden sm:inline">Monitor</span>
-              </TabsTrigger>
+              {hasAIAccess && (
+                <TabsTrigger value="ai" className="gap-2">
+                  <Sparkles className="w-4 h-4" />
+                  <span className="hidden sm:inline">IA</span>
+                </TabsTrigger>
+              )}
             </TabsList>
 
-            {/* Connection Tab */}
-            <TabsContent value="connection" className="space-y-4 mt-4">
+            {/* Messages Tab */}
+            <TabsContent value="messages">
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Smartphone className="w-5 h-5" />
-                    Status da Conexão
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      {instance?.status === "connected" ? (
-                        <Wifi className="w-8 h-8 text-green-500" />
-                      ) : (
-                        <WifiOff className="w-8 h-8 text-muted-foreground" />
-                      )}
-                      <div>
-                        <p className="font-medium">WhatsApp Business</p>
-                        {getStatusBadge(instance?.status)}
-                      </div>
-                    </div>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={handleConnect}
-                      disabled={connecting || !form.evolution_api_url}
-                    >
-                      {connecting ? (
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      ) : (
-                        <RefreshCw className="w-4 h-4 mr-2" />
-                      )}
-                      {instance?.status === "connected" ? "Reconectar" : "Conectar"}
-                    </Button>
-                  </div>
-
-                  {instance?.qr_code && instance.status !== "connected" && (
-                    <div className="mt-6 flex flex-col items-center">
-                      <p className="text-sm text-muted-foreground mb-4">
-                        Escaneie o QR Code com o WhatsApp do seu celular
-                      </p>
-                      <div className="p-4 bg-white rounded-lg">
-                        <img
-                          src={instance.qr_code.startsWith("data:") ? instance.qr_code : `data:image/png;base64,${instance.qr_code}`}
-                          alt="QR Code WhatsApp"
-                          className="w-48 h-48"
-                        />
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Settings className="w-5 h-5" />
-                    Evolution API
-                  </CardTitle>
+                  <CardTitle>Mensagem de Boas-Vindas</CardTitle>
                   <CardDescription>
-                    Configure a conexão com sua instância da Evolution API
+                    Mensagem enviada automaticamente quando um cliente entra em contato
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="evolution_api_url">URL da Evolution API</Label>
-                    <Input
-                      id="evolution_api_url"
-                      value={form.evolution_api_url}
-                      onChange={(e) => setForm({ ...form, evolution_api_url: e.target.value })}
-                      placeholder="https://sua-evolution-api.com"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="evolution_api_key">API Key</Label>
-                    <Input
-                      id="evolution_api_key"
-                      type="password"
-                      value={form.evolution_api_key}
-                      onChange={(e) => setForm({ ...form, evolution_api_key: e.target.value })}
-                      placeholder="Sua chave da API"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="instance_name">Nome da Instância</Label>
-                    <Input
-                      id="instance_name"
-                      value={form.instance_name}
-                      onChange={(e) => setForm({ ...form, instance_name: e.target.value })}
-                      placeholder={establishment?.name?.toLowerCase().replace(/\s/g, "_") || "minha_loja"}
-                    />
-                  </div>
+                  <Textarea
+                    value={welcomeMessage}
+                    onChange={(e) => setWelcomeMessage(e.target.value)}
+                    placeholder="Olá! 👋 Bem-vindo ao nosso estabelecimento! Como posso ajudar?"
+                    rows={4}
+                  />
+                  <Button onClick={handleSaveSettings} disabled={saving}>
+                    {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                    Salvar
+                  </Button>
                 </CardContent>
               </Card>
             </TabsContent>
 
-            {/* Chatbot Tab (Nível 1) */}
-            <TabsContent value="chatbot" className="space-y-4 mt-4">
-              {!hasChatbotAccess && (
-                <Card className="border-amber-500/30 bg-amber-500/5 mb-4">
-                  <CardContent className="p-6 text-center space-y-3">
-                    <Lock className="w-10 h-10 mx-auto text-amber-500" />
-                    <h3 className="text-lg font-semibold">Chatbot - Recurso do Plano Mensal+</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Atualize seu plano para usar o chatbot automatico por WhatsApp.
-                    </p>
-                  </CardContent>
-                </Card>
-              )}
+            {/* Keywords Tab */}
+            <TabsContent value="keywords">
               <Card>
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div>
-                      <CardTitle className="flex items-center gap-2">
-                        <MessageSquare className="w-5 h-5 text-green-600" />
-                        Chatbot com Palavras-Chave
-                      </CardTitle>
+                      <CardTitle>Respostas Automáticas</CardTitle>
                       <CardDescription>
-                        Respostas automáticas baseadas em palavras-chave (Nível 1)
+                        Configure respostas para palavras-chave comuns
                       </CardDescription>
                     </div>
-                    <Switch
-                      checked={form.keywords_enabled}
-                      onCheckedChange={(checked) => setForm({ ...form, keywords_enabled: checked })}
-                    />
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="keywords-switch">Ativar</Label>
+                      <Switch
+                        id="keywords-switch"
+                        checked={keywordsEnabled}
+                        onCheckedChange={setKeywordsEnabled}
+                      />
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/20">
-                    <p className="text-sm text-green-700">
-                      <strong>Como funciona:</strong> Quando o cliente envia uma mensagem contendo uma das palavras-chave configuradas, o sistema responde automaticamente com a mensagem correspondente.
-                    </p>
-                  </div>
-
-                  <div className="space-y-3">
-                    {keywords.map((keyword, index) => {
-                      const config = CATEGORY_LABELS[keyword.category] || { label: keyword.category, icon: <MessageSquare className="w-4 h-4" />, color: 'text-gray-600' };
-                      
-                      return (
-                        <Card key={keyword.id} className={`${!keyword.is_active ? 'opacity-50' : ''}`}>
-                          <CardContent className="p-4">
-                            <div className="flex items-start justify-between gap-4">
-                              <div className="flex-1 space-y-3">
-                                <div className="flex items-center gap-2">
-                                  <div className={config.color}>{config.icon}</div>
-                                  <span className="font-medium">{config.label}</span>
-                                  <Switch
-                                    checked={keyword.is_active}
-                                    onCheckedChange={(checked) => updateKeyword(index, 'is_active', checked)}
-                                  />
-                                </div>
-                                
-                                <div className="space-y-2">
-                                  <Label className="text-xs text-muted-foreground">Palavras-chave (separadas por vírgula)</Label>
-                                  <Input
-                                    value={keyword.keywords.join(', ')}
-                                    onChange={(e) => updateKeyword(index, 'keywords', e.target.value.split(',').map(k => k.trim()))}
-                                    placeholder="palavra1, palavra2, palavra3"
-                                    className="text-sm"
-                                  />
-                                </div>
-
-                                <div className="space-y-2">
-                                  <Label className="text-xs text-muted-foreground">Resposta automática</Label>
-                                  <Textarea
-                                    value={keyword.response_text || ''}
-                                    onChange={(e) => updateKeyword(index, 'response_text', e.target.value)}
-                                    placeholder="Digite a resposta..."
-                                    rows={2}
-                                    className="text-sm"
-                                  />
-                                </div>
-
-                                <div className="flex items-center gap-2">
-                                  <Switch
-                                    checked={keyword.send_menu_link}
-                                    onCheckedChange={(checked) => updateKeyword(index, 'send_menu_link', checked)}
-                                  />
-                                  <Label className="text-xs">Enviar link do cardápio junto</Label>
-                                </div>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      );
-                    })}
-                  </div>
+                  {keywords.map((keyword, index) => (
+                    <div key={keyword.id} className="p-4 border rounded-lg space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          {CATEGORY_LABELS[keyword.category]?.icon}
+                          <span className="font-medium">
+                            {CATEGORY_LABELS[keyword.category]?.label || keyword.category}
+                          </span>
+                        </div>
+                        <Switch
+                          checked={keyword.is_active}
+                          onCheckedChange={(v) => updateKeyword(index, 'is_active', v)}
+                        />
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        Palavras: {keyword.keywords.join(', ')}
+                      </div>
+                      <Textarea
+                        value={keyword.response_text || ''}
+                        onChange={(e) => updateKeyword(index, 'response_text', e.target.value)}
+                        placeholder="Resposta automática..."
+                        rows={2}
+                        disabled={!keyword.is_active}
+                      />
+                    </div>
+                  ))}
+                  <Button onClick={handleSaveSettings} disabled={saving} className="w-full">
+                    {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                    Salvar Respostas
+                  </Button>
                 </CardContent>
               </Card>
             </TabsContent>
 
-            {/* AI Agent Tab (Nível 2) */}
-            <TabsContent value="ai-agent" className="space-y-4 mt-4">
-              {!hasAIAccess ? (
-                <Card className="border-amber-500/30 bg-amber-500/5">
-                  <CardContent className="p-8 text-center space-y-4">
-                    <Lock className="w-12 h-12 mx-auto text-amber-500" />
-                    <h3 className="text-xl font-semibold">Agente IA - Recurso Premium</h3>
-                    <p className="text-muted-foreground max-w-md mx-auto">
-                      O Agente IA permite vendas conversacionais completas, com carrinho de compras, 
-                      cálculo de frete e pagamento PIX diretamente pelo WhatsApp.
-                    </p>
-                    <Button className="gap-2">
-                      <Sparkles className="w-4 h-4" />
-                      Fazer Upgrade do Plano
+            {/* AI Tab */}
+            {hasAIAccess && (
+              <TabsContent value="ai">
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle className="flex items-center gap-2">
+                          <Sparkles className="w-5 h-5 text-purple-500" />
+                          Agente IA
+                        </CardTitle>
+                        <CardDescription>
+                          Ative a inteligência artificial para atendimento avançado
+                        </CardDescription>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Label htmlFor="ai-switch">Ativar IA</Label>
+                        <Switch
+                          id="ai-switch"
+                          checked={aiEnabled}
+                          onCheckedChange={setAiEnabled}
+                        />
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {aiEnabled ? (
+                      <>
+                        <div className="p-4 bg-purple-500/10 rounded-lg">
+                          <div className="flex items-start gap-3">
+                            <Bot className="w-8 h-8 text-purple-500 mt-1" />
+                            <div>
+                              <h4 className="font-medium text-purple-700 dark:text-purple-300">
+                                Agente IA Ativado
+                              </h4>
+                              <p className="text-sm text-muted-foreground mt-1">
+                                A IA irá responder clientes automaticamente, recomendar produtos, 
+                                gerenciar pedidos e processar pagamentos via PIX.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="ai-prompt">Prompt do Agente IA (System Prompt)</Label>
+                          <Textarea
+                            id="ai-prompt"
+                            value={aiPrompt}
+                            onChange={(e) => setAiPrompt(e.target.value)}
+                            placeholder={`Você é um atendente virtual de ${establishment?.name || 'nossa loja'}. Seja cordial e prestativo. Responda perguntas sobre produtos, horário de funcionamento e faça pedidos. Sempre confirme os detalhes do pedido antes de finalizar.`}
+                            rows={6}
+                            className="font-mono text-sm"
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Este prompt define a personalidade e instruções do agente IA. Use variáveis como {"{NOME}"} para o nome da loja.
+                          </p>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="p-4 bg-muted rounded-lg text-center">
+                        <Bot className="w-12 h-12 text-muted-foreground mx-auto mb-2" />
+                        <p className="text-sm text-muted-foreground">
+                          Ative a IA para habilitar atendimento inteligente 24/7
+                        </p>
+                      </div>
+                    )}
+                    <Button onClick={handleSaveSettings} disabled={saving} className="w-full">
+                      {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                      Salvar Configurações
                     </Button>
                   </CardContent>
                 </Card>
-              ) : (
-                <>
-                  <Card>
-                    <CardHeader>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <CardTitle className="flex items-center gap-2">
-                            <Bot className="w-5 h-5 text-blue-600" />
-                            Agente IA Conversacional
-                          </CardTitle>
-                          <CardDescription>
-                            Vendas completas com IA (Nível 2 - Premium)
-                          </CardDescription>
-                        </div>
-                        <Switch
-                          checked={form.ai_enabled}
-                          onCheckedChange={(checked) => setForm({ ...form, ai_enabled: checked })}
-                        />
-                      </div>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/20 space-y-2">
-                        <p className="text-sm font-medium text-blue-700">Recursos do Agente IA:</p>
-                        <ul className="text-sm text-blue-700/80 space-y-1">
-                          <li className="flex items-center gap-2"><Check className="w-4 h-4" /> Busca inteligente de produtos</li>
-                          <li className="flex items-center gap-2"><Check className="w-4 h-4" /> Carrinho de compras via chat</li>
-                          <li className="flex items-center gap-2"><Check className="w-4 h-4" /> Validação de endereço com Google Maps</li>
-                          <li className="flex items-center gap-2"><Check className="w-4 h-4" /> Cálculo automático de frete</li>
-                          <li className="flex items-center gap-2"><Check className="w-4 h-4" /> Geração de QR Code PIX</li>
-                          <li className="flex items-center gap-2"><Check className="w-4 h-4" /> Envio de imagens dos produtos</li>
-                        </ul>
-                      </div>
 
-                      <div className="space-y-2">
-                        <Label>Prompt Personalizado</Label>
-                        <Textarea
-                          value={form.ai_prompt}
-                          onChange={(e) => setForm({ ...form, ai_prompt: e.target.value })}
-                          placeholder="Instruções para o agente IA..."
-                          rows={6}
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          Personalize como o agente deve se comportar e responder aos clientes.
-                        </p>
-                      </div>
-
-                      <Separator />
-
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                          <div className="space-y-0.5">
-                            <Label className="flex items-center gap-2">
-                              <Volume2 className="w-4 h-4" />
-                              Respostas em Áudio
-                            </Label>
-                            <p className="text-xs text-muted-foreground">
-                              IA responde com mensagens de voz
-                            </p>
-                          </div>
-                          <Switch
-                            checked={form.audio_enabled}
-                            onCheckedChange={(checked) => setForm({ ...form, audio_enabled: checked })}
-                          />
-                        </div>
-
-                        <div className="flex items-center justify-between">
-                          <div className="space-y-0.5">
-                            <Label className="flex items-center gap-2">
-                              <CreditCard className="w-4 h-4" />
-                              Pagamento PIX no Chat
-                            </Label>
-                            <p className="text-xs text-muted-foreground">
-                              Gerar QR Code PIX diretamente no WhatsApp
-                            </p>
-                          </div>
-                          <Switch
-                            checked={form.pix_enabled}
-                            onCheckedChange={(checked) => setForm({ ...form, pix_enabled: checked })}
-                          />
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </>
-              )}
-            </TabsContent>
-
-            {/* Auto Messages Tab */}
-            <TabsContent value="messages" className="space-y-4 mt-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Send className="w-5 h-5" />
-                    Mensagens Automáticas
-                  </CardTitle>
-                  <CardDescription>
-                    Configure mensagens enviadas automaticamente em cada situação
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>Mensagem de Boas-Vindas</Label>
-                    <Textarea
-                      value={form.welcome_message}
-                      onChange={(e) => setForm({ ...form, welcome_message: e.target.value })}
-                      placeholder="Olá! Bem-vindo ao {NOME_LOJA}! 👋"
-                      rows={2}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Enviada quando um novo cliente inicia conversa
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Horário Comercial</Label>
-                    <Textarea
-                      value={form.business_hours_message}
-                      onChange={(e) => setForm({ ...form, business_hours_message: e.target.value })}
-                      placeholder="Estamos abertos! Como posso ajudar?"
-                      rows={2}
+                {/* Human Takeover Panel */}
+                {aiEnabled && establishmentId && (
+                  <div className="mt-4">
+                    <HumanTakeoverPanel 
+                      establishmentId={establishmentId} 
+                      instanceId={instance?.id}
                     />
                   </div>
-
-                  <div className="space-y-2">
-                    <Label>Fora do Horário</Label>
-                    <Textarea
-                      value={form.outside_hours_message}
-                      onChange={(e) => setForm({ ...form, outside_hours_message: e.target.value })}
-                      placeholder="Estamos fechados no momento. Nosso horário: {HORARIO}"
-                      rows={2}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* History Tab */}
-            <TabsContent value="history" className="space-y-4 mt-4">
-              <ConversationHistory establishmentId={establishmentId} />
-            </TabsContent>
-
-            {/* Monitoring Tab */}
-            <TabsContent value="monitoring" className="space-y-6 mt-4">
-              <WhatsAppRealTimeStats establishmentId={establishmentId} />
-              <WhatsAppHealthCheck 
-                establishmentId={establishmentId}
-                instanceId={instance?.instance_id || undefined}
-                evolutionApiUrl={form.evolution_api_url || undefined}
-                evolutionApiKey={form.evolution_api_key || undefined}
-              />
-            </TabsContent>
+                )}
+              </TabsContent>
+            )}
           </Tabs>
         )}
 
-        {/* Save Button */}
-        <div className="flex justify-end">
-          <Button onClick={handleSave} disabled={saving} size="lg" className="gap-2">
-            {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-            <Check className="w-4 h-4" />
-            Salvar Configurações
-          </Button>
-        </div>
+        {/* Upgrade prompt if no chatbot access */}
+        {!hasChatbotAccess && (
+          <Card className="border-yellow-500/50 bg-yellow-500/5">
+            <CardContent className="p-6 text-center">
+              <AlertCircle className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2">Recurso Premium</h3>
+              <p className="text-muted-foreground mb-4">
+                O atendimento via WhatsApp está disponível nos planos Premium.
+                Entre em contato para fazer upgrade.
+              </p>
+            </CardContent>
+          </Card>
+        )}
       </div>
-    </AdminLayout>
+    </DashboardLayout>
   );
 };
 

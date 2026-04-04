@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -55,6 +55,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useDragToCart } from "@/hooks/useDragToCart";
 import { PDVPaymentModal } from "@/components/pdv/PDVPaymentModal";
+import { StoreClosedModal } from "@/components/pdv/StoreClosedModal";
+import { useStoreOpenStatus } from "@/hooks/useStoreOpenStatus";
 import type { Json } from "@/integrations/supabase/types";
 
 interface Category {
@@ -92,6 +94,7 @@ interface Establishment {
 
 const PDV = () => {
   const { slug } = useParams<{ slug: string }>();
+  const navigate = useNavigate();
   const isMobile = useIsMobile();
   
   const [establishment, setEstablishment] = useState<Establishment | null>(null);
@@ -133,8 +136,16 @@ const PDV = () => {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showCustomerModal, setShowCustomerModal] = useState(false);
   const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
+  const [showStoreClosedModal, setShowStoreClosedModal] = useState(false);
   const [processingOrder, setProcessingOrder] = useState(false);
   const [generatingPix, setGeneratingPix] = useState(false);
+
+  // Store open status hook
+  const { 
+    isOpen: storeIsOpen, 
+    loading: storeStatusLoading, 
+    openStore 
+  } = useStoreOpenStatus(establishment?.id);
 
   // Drag and drop
   const addToCart = useCallback((product: Product) => {
@@ -167,11 +178,72 @@ const PDV = () => {
 
   const { dragState, dropZoneRef, handlers } = useDragToCart(addToCart);
 
+  // Fetch user's establishment if no slug provided
   useEffect(() => {
-    if (slug) {
-      fetchData();
-    }
-  }, [slug]);
+    const fetchUserEstablishment = async () => {
+      if (slug) {
+        fetchData(slug);
+        return;
+      }
+
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          navigate('/auth');
+          return;
+        }
+
+        // Check if super_admin - they need to select an establishment
+        const { data: isSuperAdmin } = await supabase.rpc('has_role', {
+          _user_id: user.id,
+          _role: 'super_admin'
+        });
+
+        if (isSuperAdmin) {
+          // Super admin without slug - redirect to admin dashboard
+          toast.error('Selecione um estabelecimento para acessar o PDV');
+          navigate('/admin');
+          return;
+        }
+
+        // Try to find user's establishment as owner
+        let { data: estData } = await supabase
+          .from('establishments')
+          .select('slug')
+          .eq('owner_id', user.id)
+          .single();
+
+        // If not owner, check establishment_users
+        if (!estData) {
+          const { data: estUser } = await supabase
+            .from('establishment_users')
+            .select('establishments(slug)')
+            .eq('user_id', user.id)
+            .eq('is_active', true)
+            .limit(1)
+            .single();
+          
+          if (estUser?.establishments) {
+            estData = estUser.establishments as { slug: string };
+          }
+        }
+
+        if (estData?.slug) {
+          // Redirect to the correct URL with slug
+          navigate(`/painel/${estData.slug}/pdv`, { replace: true });
+        } else {
+          toast.error('Nenhum estabelecimento encontrado');
+          navigate('/painel');
+        }
+      } catch (error) {
+        console.error('Error fetching user establishment:', error);
+        toast.error('Erro ao carregar estabelecimento');
+        setLoading(false);
+      }
+    };
+
+    fetchUserEstablishment();
+  }, [slug, navigate]);
 
   // Auto-detect touch device for token mode
   useEffect(() => {
@@ -181,15 +253,13 @@ const PDV = () => {
     }
   }, [isMobile]);
 
-  const fetchData = async () => {
-    if (!slug) return;
-    
+  const fetchData = async (establishmentSlug: string) => {
     try {
       // Fetch establishment by slug
       const { data: estData, error: estError } = await supabase
         .from('establishments')
         .select('id, name, whatsapp, pix_key, mercado_pago_token, delivery_base_fee, delivery_fee_per_km, point_terminal_id, point_device_name')
-        .eq('slug', slug)
+        .eq('slug', establishmentSlug)
         .single();
 
       if (estError) throw estError;
@@ -500,6 +570,27 @@ const PDV = () => {
     // Reset payment method when closing
     setPaymentMethod('cash');
   }, []);
+
+  // Handle initiating a sale - check if store is open
+  const handleInitiateSale = useCallback(() => {
+    if (storeIsOpen === false) {
+      setShowStoreClosedModal(true);
+      return;
+    }
+    setShowPaymentModal(true);
+  }, [storeIsOpen]);
+
+  // Handle opening store and continuing with sale
+  const handleOpenStoreAndContinue = useCallback(async () => {
+    try {
+      await openStore();
+      setShowStoreClosedModal(false);
+      setShowPaymentModal(true);
+      toast.success("Loja aberta com sucesso!");
+    } catch (error) {
+      toast.error("Erro ao abrir a loja");
+    }
+  }, [openStore]);
 
   // Process order
   const processOrder = useCallback(async (paymentId?: string) => {
@@ -919,7 +1010,7 @@ const PDV = () => {
                 <MessageCircle className="w-4 h-4 mr-1" />
                 WhatsApp
               </Button>
-              <Button className="h-10 text-xs" disabled={cart.length === 0} onClick={() => setShowPaymentModal(true)}>
+              <Button className="h-10 text-xs" disabled={cart.length === 0} onClick={handleInitiateSale}>
                 <Receipt className="w-4 h-4 mr-1" />
                 Finalizar
               </Button>
@@ -1228,7 +1319,7 @@ const PDV = () => {
                   <Button 
                     className="h-10 text-xs" 
                     disabled={cart.length === 0}
-                    onClick={() => setShowPaymentModal(true)}
+                    onClick={handleInitiateSale}
                   >
                     <Receipt className="w-4 h-4 mr-1" />
                     Finalizar
@@ -1460,6 +1551,15 @@ const PDV = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Store Closed Modal */}
+      <StoreClosedModal
+        isOpen={showStoreClosedModal}
+        onClose={() => setShowStoreClosedModal(false)}
+        onOpenStore={handleOpenStoreAndContinue}
+        loading={storeStatusLoading}
+        storeName={establishment?.name}
+      />
     </div>
   );
 };

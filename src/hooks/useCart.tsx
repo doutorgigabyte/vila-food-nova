@@ -2,6 +2,8 @@ import { createContext, useContext, useState, useEffect, ReactNode } from "react
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { safeLocalStorage } from "@/lib/utils";
+import { trackAddToCart as trackAddToCartAnalytics } from "@/lib/analytics";
+import { CartConflictDialog } from "@/components/cart/CartConflictDialog";
 
 export interface CartProduct {
   id: string;
@@ -10,13 +12,36 @@ export interface CartProduct {
   promotional_price: number | null;
   image_url: string | null;
   establishment_id: string;
+  product_type?: string; // 'drink', 'frozen', 'fresh', etc.
+  temperature_options?: string[]; // Custom options like ['gelada', 'ambiente']
 }
 
 export interface CartItem {
   product: CartProduct;
   quantity: number;
   observation: string;
+  selectedTemperature?: 'gelada' | 'ambiente' | 'congelada' | 'in_natura';
 }
+
+// Helper to get temperature options based on product type
+export const getTemperatureOptions = (productType?: string, customOptions?: string[]): ('gelada' | 'ambiente' | 'congelada' | 'in_natura')[] => {
+  // If has custom options, use them
+  if (customOptions && customOptions.length > 0) {
+    return customOptions as ('gelada' | 'ambiente' | 'congelada' | 'in_natura')[];
+  }
+  
+  // Based on product type
+  switch (productType) {
+    case 'drink':
+      return ['gelada', 'ambiente'];
+    case 'frozen':
+      return ['congelada'];
+    case 'fresh':
+      return ['gelada', 'in_natura'];
+    default:
+      return []; // No temperature selector
+  }
+};
 
 export interface EstablishmentInfo {
   id: string;
@@ -29,6 +54,15 @@ export interface EstablishmentInfo {
   min_order_value: number;
   accepts_pickup: boolean;
   accepts_delivery: boolean;
+  is_open?: boolean;
+  operating_hours?: Record<string, { open: boolean; start: string; end: string }> | null;
+}
+
+interface PendingCartProduct {
+  product: CartProduct;
+  establishmentInfo: EstablishmentInfo;
+  quantity: number;
+  observation: string;
 }
 
 interface CartContextType {
@@ -38,6 +72,7 @@ interface CartContextType {
   isLoaded: boolean;
   addToCart: (product: CartProduct, establishmentInfo: EstablishmentInfo, quantity?: number, observation?: string) => Promise<boolean>;
   updateQuantity: (productId: string, delta: number) => void;
+  updateItemTemperature: (productId: string, temperature: CartItem['selectedTemperature']) => void;
   removeFromCart: (productId: string) => void;
   clearCart: () => void;
   clearEstablishmentCart: (establishmentId: string) => void;
@@ -59,6 +94,13 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [establishments, setEstablishments] = useState<Map<string, EstablishmentInfo>>(new Map());
   const [currentVilaId, setCurrentVilaId] = useState<string | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [pendingProduct, setPendingProduct] = useState<PendingCartProduct | null>(null);
+
+  // Helper to validate if string is a valid UUID
+  const isValidUUID = (str: string): boolean => {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(str);
+  };
 
   // Load cart from localStorage on mount
   useEffect(() => {
@@ -67,16 +109,24 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       const storedEstablishments = safeLocalStorage.getItem(ESTABLISHMENTS_STORAGE_KEY);
       
       if (storedItems) {
-        setItems(JSON.parse(storedItems));
+        const parsedItems = JSON.parse(storedItems) as CartItem[];
+        // Filter out items with invalid establishment_id (slug instead of UUID)
+        const validItems = parsedItems.filter(item => isValidUUID(item.product.establishment_id));
+        if (validItems.length !== parsedItems.length) {
+          console.warn('[Cart] Removed items with invalid establishment_id (slug instead of UUID)');
+        }
+        setItems(validItems);
       }
       if (storedEstablishments) {
-        const estArr = JSON.parse(storedEstablishments);
-        const estMap = new Map<string, EstablishmentInfo>(estArr);
+        const estArr = JSON.parse(storedEstablishments) as [string, EstablishmentInfo][];
+        // Filter out establishments with invalid IDs
+        const validEstArr = estArr.filter(([key, value]) => isValidUUID(key) && isValidUUID(value.id));
+        const estMap = new Map<string, EstablishmentInfo>(validEstArr);
         setEstablishments(estMap);
         
         // Set current vila from first establishment
-        if (estArr.length > 0) {
-          setCurrentVilaId(estArr[0][1].vila_id);
+        if (validEstArr.length > 0) {
+          setCurrentVilaId(validEstArr[0][1].vila_id);
         }
       }
     } catch (error) {
@@ -171,15 +221,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       
       if (!currentVilaId || !newVilaId || currentVilaId !== newVilaId) {
         // Different vila or no vila - show confirmation dialog
-        const confirmed = window.confirm(
-          "Você tem itens de outro estabelecimento no carrinho. Deseja esvaziar o carrinho e adicionar este produto?"
-        );
-        
-        if (confirmed) {
-          clearCart();
-        } else {
-          return false;
-        }
+        setPendingProduct({ product, establishmentInfo, quantity, observation });
+        return false;
       } else {
         // Same vila - allow multi-establishment cart
         toast.info(
@@ -212,6 +255,29 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       }
     });
 
+    // Track analytics event
+    try {
+      trackAddToCartAnalytics({
+        id: product.id,
+        name: product.name,
+        price: product.promotional_price || product.price,
+        quantity
+      });
+    } catch (err) {
+      console.error('[Analytics] Error tracking add to cart:', err);
+    }
+
+    // Dispatch custom event for cart animation
+    window.dispatchEvent(new CustomEvent('cart-item-added', { 
+      detail: { productName: product.name, quantity } 
+    }));
+
+    // Show success toast with product name
+    toast.success(`${product.name} adicionado ao carrinho!`, {
+      duration: 2000,
+      position: 'top-center',
+    });
+
     return true;
   };
 
@@ -232,6 +298,16 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     setTimeout(() => {
       cleanupEstablishments();
     }, 0);
+  };
+
+  const updateItemTemperature = (productId: string, temperature: CartItem['selectedTemperature']) => {
+    setItems((prevItems) =>
+      prevItems.map((item) =>
+        item.product.id === productId
+          ? { ...item, selectedTemperature: temperature }
+          : item
+      )
+    );
   };
 
   const removeFromCart = (productId: string) => {
@@ -273,6 +349,64 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     setCurrentVilaId(null);
     safeLocalStorage.removeItem(CART_STORAGE_KEY);
     safeLocalStorage.removeItem(ESTABLISHMENTS_STORAGE_KEY);
+  };
+
+  // Handle cart conflict confirmation
+  const confirmReplaceCart = async () => {
+    if (pendingProduct) {
+      // Clear cart first
+      setItems([]);
+      setEstablishments(new Map());
+      setCurrentVilaId(null);
+      
+      // Add the pending product
+      const { product, establishmentInfo, quantity, observation } = pendingProduct;
+      
+      // Add establishment info
+      const newEstablishments = new Map<string, EstablishmentInfo>();
+      newEstablishments.set(product.establishment_id, establishmentInfo);
+      setEstablishments(newEstablishments);
+      setCurrentVilaId(establishmentInfo.vila_id);
+      
+      // Add item
+      setItems([{ product, quantity, observation }]);
+      
+      // Track analytics
+      try {
+        trackAddToCartAnalytics({
+          id: product.id,
+          name: product.name,
+          price: product.promotional_price || product.price,
+          quantity
+        });
+      } catch (err) {
+        console.error('[Analytics] Error tracking add to cart:', err);
+      }
+      
+      // Dispatch animation event
+      window.dispatchEvent(new CustomEvent('cart-item-added', { 
+        detail: { productName: product.name, quantity } 
+      }));
+      
+      toast.success(`${product.name} adicionado ao carrinho!`, {
+        duration: 2000,
+        position: 'top-center',
+      });
+      
+      setPendingProduct(null);
+    }
+  };
+
+  const cancelReplaceCart = () => {
+    setPendingProduct(null);
+  };
+
+  // Get current establishment name for dialog
+  const getCurrentEstablishmentName = (): string | undefined => {
+    if (establishments.size > 0) {
+      return establishments.values().next().value?.name;
+    }
+    return undefined;
   };
 
   const clearEstablishmentCart = (establishmentId: string) => {
@@ -326,6 +460,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         isLoaded,
         addToCart,
         updateQuantity,
+        updateItemTemperature,
         removeFromCart,
         clearCart,
         clearEstablishmentCart,
@@ -338,6 +473,13 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       }}
     >
       {children}
+      <CartConflictDialog
+        isOpen={!!pendingProduct}
+        currentEstablishment={getCurrentEstablishmentName()}
+        newEstablishment={pendingProduct?.establishmentInfo.name}
+        onConfirm={confirmReplaceCart}
+        onCancel={cancelReplaceCart}
+      />
     </CartContext.Provider>
   );
 };

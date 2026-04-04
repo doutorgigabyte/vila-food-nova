@@ -535,7 +535,7 @@ const EstablishmentsManagement = () => {
         </Button>
       </div>
 
-      {/* Table */}
+      {/* Establishments List */}
       <Card>
         <CardContent className="p-0">
           {loading ? (
@@ -543,110 +543,196 @@ const EstablishmentsManagement = () => {
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-muted/50">
-                    <TableHead></TableHead>
-                    <TableHead>SUBDOMÍNIO</TableHead>
-                    <TableHead>NOME</TableHead>
-                    <TableHead>E-MAIL</TableHead>
-                    <TableHead>CIDADE</TableHead>
-                    <TableHead>STATUS</TableHead>
-                    <TableHead className="text-right">AÇÕES</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredEstablishments.map((est) => (
-                    <TableRow key={est.id}>
-                      <TableCell className="w-16">
-                        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center overflow-hidden">
+            <>
+              {/* Mobile Cards View */}
+              <div className="block md:hidden divide-y">
+                {filteredEstablishments.map((est) => (
+                  <div key={est.id} className="p-4 space-y-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 overflow-hidden">
                           {est.logo_url ? (
-                            <img src={est.logo_url} alt="" className="w-10 h-10 object-cover" />
+                            <img src={est.logo_url} alt="" className="w-12 h-12 object-cover" />
                           ) : (
-                            <Store className="w-5 h-5 text-primary" />
+                            <Store className="w-6 h-6 text-primary" />
                           )}
                         </div>
-                      </TableCell>
-                      <TableCell>
-                        <Link 
-                          to={`/loja/${est.slug}`} 
-                          target="_blank"
-                          className="text-primary hover:underline"
-                        >
-                          {est.slug}
-                        </Link>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-primary font-medium">{est.name}</span>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {est.email || "—"}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {est.neighborhood || "—"}
-                      </TableCell>
-                      <TableCell>
-                        <Select
-                          value={est.status}
-                          onValueChange={(value) => updateStatus(est.id, value as "active" | "pending" | "suspended" | "inactive")}
-                        >
-                          <SelectTrigger className="w-28 h-8">
-                            {getStatusBadge(est.status)}
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="active">Ativo</SelectItem>
-                            <SelectItem value="pending">Pendente</SelectItem>
-                            <SelectItem value="suspended">Suspenso</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center justify-end gap-1">
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            title="Acessar Painel"
-                            onClick={() => handleAccessPanel(est)}
-                            className="text-primary hover:text-primary"
+                        <div className="min-w-0">
+                          <p className="font-medium truncate">{est.name}</p>
+                          <Link 
+                            to={`/loja/${est.slug}`} 
+                            target="_blank"
+                            className="text-xs text-primary hover:underline"
                           >
-                            <LayoutDashboard className="w-4 h-4" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="icon"
-                            title="Destacar"
-                            onClick={() => toggleFeatured(est.id, est.is_featured || false)}
-                          >
-                            <Star className={`w-4 h-4 ${est.is_featured ? "fill-yellow-500 text-yellow-500" : ""}`} />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            title="Editar"
-                            onClick={() => openEditDialog(est)}
-                          >
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            title="Excluir" 
-                            className="text-destructive hover:text-destructive"
-                            onClick={() => {
-                              setDeletingId(est.id);
-                              setDeleteDialogOpen(true);
-                            }}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
+                            {est.slug}
+                          </Link>
                         </div>
-                      </TableCell>
+                      </div>
+                      <div className="flex gap-1 shrink-0">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => handleAccessPanel(est)}
+                          className="text-primary"
+                        >
+                          <LayoutDashboard className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={() => toggleFeatured(est.id, est.is_featured || false)}
+                        >
+                          <Star className={`w-4 h-4 ${est.is_featured ? "fill-yellow-500 text-yellow-500" : ""}`} />
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2 items-center">
+                      <Select
+                        value={est.status}
+                        onValueChange={(value) => updateStatus(est.id, value as "active" | "pending" | "suspended" | "inactive")}
+                      >
+                        <SelectTrigger className="w-28 h-7 text-xs">
+                          {getStatusBadge(est.status)}
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="active">Ativo</SelectItem>
+                          <SelectItem value="pending">Pendente</SelectItem>
+                          <SelectItem value="suspended">Suspenso</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {est.email && (
+                        <span className="text-xs text-muted-foreground truncate max-w-[150px]">{est.email}</span>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-muted-foreground">{est.neighborhood || "Sem localização"}</span>
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="sm" onClick={() => openEditDialog(est)}>
+                          <Edit className="w-4 h-4 mr-1" /> Editar
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          className="text-destructive"
+                          onClick={() => {
+                            setDeletingId(est.id);
+                            setDeleteDialogOpen(true);
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop Table View */}
+              <div className="hidden md:block overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/50">
+                      <TableHead></TableHead>
+                      <TableHead>SUBDOMÍNIO</TableHead>
+                      <TableHead>NOME</TableHead>
+                      <TableHead>E-MAIL</TableHead>
+                      <TableHead>CIDADE</TableHead>
+                      <TableHead>STATUS</TableHead>
+                      <TableHead className="text-right">AÇÕES</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredEstablishments.map((est) => (
+                      <TableRow key={est.id}>
+                        <TableCell className="w-16">
+                          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center overflow-hidden">
+                            {est.logo_url ? (
+                              <img src={est.logo_url} alt="" className="w-10 h-10 object-cover" />
+                            ) : (
+                              <Store className="w-5 h-5 text-primary" />
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Link 
+                            to={`/loja/${est.slug}`} 
+                            target="_blank"
+                            className="text-primary hover:underline"
+                          >
+                            {est.slug}
+                          </Link>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-primary font-medium">{est.name}</span>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {est.email || "—"}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {est.neighborhood || "—"}
+                        </TableCell>
+                        <TableCell>
+                          <Select
+                            value={est.status}
+                            onValueChange={(value) => updateStatus(est.id, value as "active" | "pending" | "suspended" | "inactive")}
+                          >
+                            <SelectTrigger className="w-28 h-8">
+                              {getStatusBadge(est.status)}
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="active">Ativo</SelectItem>
+                              <SelectItem value="pending">Pendente</SelectItem>
+                              <SelectItem value="suspended">Suspenso</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center justify-end gap-1">
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              title="Acessar Painel"
+                              onClick={() => handleAccessPanel(est)}
+                              className="text-primary hover:text-primary"
+                            >
+                              <LayoutDashboard className="w-4 h-4" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="icon"
+                              title="Destacar"
+                              onClick={() => toggleFeatured(est.id, est.is_featured || false)}
+                            >
+                              <Star className={`w-4 h-4 ${est.is_featured ? "fill-yellow-500 text-yellow-500" : ""}`} />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              title="Editar"
+                              onClick={() => openEditDialog(est)}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              title="Excluir" 
+                              className="text-destructive hover:text-destructive"
+                              onClick={() => {
+                                setDeletingId(est.id);
+                                setDeleteDialogOpen(true);
+                              }}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
@@ -673,6 +759,7 @@ const EstablishmentsManagement = () => {
                   currentImage={formData.logo_url}
                   onUpload={(url) => setFormData(prev => ({ ...prev, logo_url: url }))}
                   bucket="establishments"
+                  establishmentId={editingEstablishment?.id}
                 />
                 <Button
                   type="button"
@@ -705,6 +792,7 @@ const EstablishmentsManagement = () => {
                   onUpload={(url) => setFormData(prev => ({ ...prev, banner_url: url }))}
                   bucket="establishments"
                   aspectRatio="banner"
+                  establishmentId={editingEstablishment?.id}
                 />
                 <Button
                   type="button"

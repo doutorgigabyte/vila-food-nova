@@ -1,7 +1,6 @@
-import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react";
+import { createContext, useContext, useEffect, useState, ReactNode, useCallback, useMemo } from "react";
 import { useNotifications, Notification, NotificationType, NOTIFICATION_CONFIG } from "@/hooks/useNotifications";
 import { useNotificationSound } from "@/hooks/useNotificationSound";
-import { useParams } from "react-router-dom";
 import NotificationToast from "./NotificationToast";
 import NewOrderModal from "./NewOrderModal";
 
@@ -19,6 +18,7 @@ interface NotificationContextType {
     data?: Record<string, any>
   ) => Promise<void>;
   showToast: (notification: Notification) => void;
+  stopNotificationSound: () => void;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
@@ -37,8 +37,17 @@ interface NotificationProviderProps {
 }
 
 export const NotificationProvider = ({ children, establishmentId }: NotificationProviderProps) => {
-  const params = useParams();
-  const estId = establishmentId || params.slug;
+  // Get context from URL using window.location (safe approach that doesn't require Router hooks)
+  const getContextFromUrl = useMemo(() => {
+    const pathname = typeof window !== 'undefined' ? window.location.pathname : '/';
+    const isInAdminContext = pathname.startsWith('/admin');
+    const isInEstablishmentContext = pathname.startsWith('/painel/');
+    
+    return {
+      isInAdminContext,
+      isInEstablishmentContext,
+    };
+  }, []);
   
   const {
     notifications,
@@ -48,18 +57,29 @@ export const NotificationProvider = ({ children, establishmentId }: Notification
     markAllAsRead,
     dismissNotification,
     createNotification,
-  } = useNotifications(estId);
+  } = useNotifications(establishmentId, { 
+    isInAdminContext: getContextFromUrl.isInAdminContext, 
+    isInEstablishmentContext: getContextFromUrl.isInEstablishmentContext 
+  });
 
-  const { playNotification } = useNotificationSound();
+  const { playNotification, stopSound } = useNotificationSound();
 
   // Estado para toasts visíveis
   const [visibleToasts, setVisibleToasts] = useState<Notification[]>([]);
   
   // Estado para modal de novo pedido
   const [orderModal, setOrderModal] = useState<Notification | null>(null);
+  
+  // Tracking para notificações já processadas
+  const [processedIds, setProcessedIds] = useState<Set<string>>(new Set());
 
   // Processar nova notificação
   const processNotification = useCallback((notification: Notification) => {
+    // Evitar processar a mesma notificação duas vezes
+    if (processedIds.has(notification.id)) return;
+    
+    setProcessedIds(prev => new Set([...prev, notification.id]));
+    
     const config = NOTIFICATION_CONFIG[notification.type];
 
     // Tocar som
@@ -75,7 +95,7 @@ export const NotificationProvider = ({ children, establishmentId }: Notification
       // Toast normal
       setVisibleToasts(prev => [...prev, notification]);
     }
-  }, [playNotification]);
+  }, [playNotification, processedIds]);
 
   // Mostrar toast manualmente
   const showToast = useCallback((notification: Notification) => {
@@ -87,10 +107,11 @@ export const NotificationProvider = ({ children, establishmentId }: Notification
     setVisibleToasts(prev => prev.filter(t => t.id !== id));
   }, []);
 
-  // Fechar modal de pedido
+  // Fechar modal de pedido e parar som
   const closeOrderModal = useCallback(() => {
+    stopSound();
     setOrderModal(null);
-  }, []);
+  }, [stopSound]);
 
   // Monitorar novas notificações
   useEffect(() => {
@@ -102,11 +123,11 @@ export const NotificationProvider = ({ children, establishmentId }: Notification
       const now = Date.now();
       const isNew = (now - createdAt) < 5000;
 
-      if (isNew && !latestNotification.is_read) {
+      if (isNew && !latestNotification.is_read && !processedIds.has(latestNotification.id)) {
         processNotification(latestNotification);
       }
     }
-  }, [notifications, processNotification]);
+  }, [notifications, processNotification, processedIds]);
 
   // Auto-remover toasts após 5 segundos
   useEffect(() => {
@@ -129,6 +150,7 @@ export const NotificationProvider = ({ children, establishmentId }: Notification
         dismissNotification,
         createNotification,
         showToast,
+        stopNotificationSound: stopSound,
       }}
     >
       {children}
@@ -151,6 +173,7 @@ export const NotificationProvider = ({ children, establishmentId }: Notification
           notification={orderModal}
           onClose={closeOrderModal}
           onConfirm={async () => {
+            stopSound();
             await markAsRead(orderModal.id);
             closeOrderModal();
           }}

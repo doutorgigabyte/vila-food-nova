@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -9,8 +9,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { ArrowLeft, Plus, Trash2, Download, QrCode, Loader2, Utensils, Truck, Table2 } from "lucide-react";
-
+import { Plus, Trash2, Download, QrCode, Loader2, Utensils, Truck, Table2 } from "lucide-react";
+import { StyledQRCode } from "@/components/ui/StyledQRCode";
+import DashboardLayout from "@/components/dashboard/DashboardLayout";
+import { useEstablishment } from "@/hooks/useEstablishment";
 interface QRCodeEntry {
   id: string;
   type: string;
@@ -21,6 +23,8 @@ interface QRCodeEntry {
 
 const QRCodeManagement = () => {
   const { user } = useAuth();
+  const { slug } = useParams<{ slug: string }>();
+  const { establishment } = useEstablishment(slug);
   const [qrcodes, setQrcodes] = useState<QRCodeEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -35,19 +39,21 @@ const QRCodeManagement = () => {
   });
 
   useEffect(() => {
-    if (user) fetchEstablishment();
-  }, [user]);
+    if (user && slug) fetchEstablishment();
+  }, [user, slug]);
 
   useEffect(() => {
     if (establishmentId) fetchQRCodes();
   }, [establishmentId]);
 
   const fetchEstablishment = async () => {
+    // First try to get establishment by slug from URL
     const { data } = await supabase
       .from("establishments")
       .select("id, slug")
-      .eq("owner_id", user?.id)
+      .eq("slug", slug)
       .maybeSingle();
+    
     if (data) {
       setEstablishmentId(data.id);
       setEstablishmentSlug(data.slug);
@@ -115,24 +121,93 @@ const QRCodeManagement = () => {
   };
 
   const generateQRCodeImage = (url: string) => {
-    return `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(url)}`;
+    // Using higher error correction (H) to allow logo overlay
+    return `https://api.qrserver.com/v1/create-qr-code/?size=300x300&ecc=H&data=${encodeURIComponent(url)}`;
   };
+
+  const QRCodeWithLogo = ({ url, qrcodeId }: { url: string; qrcodeId: string }) => (
+    <div id={`qr-${qrcodeId}`} className="relative inline-block p-2 bg-white rounded-lg border border-border">
+      <StyledQRCode 
+        url={url}
+        size={160}
+        primaryColor="#ea580c"
+        useThemedLogo={true}
+      />
+    </div>
+  );
 
   const handleDownload = async (qrcode: QRCodeEntry) => {
     const url = getQRCodeUrl(qrcode);
-    const imageUrl = generateQRCodeImage(url);
     
-    const response = await fetch(imageUrl);
-    const blob = await response.blob();
-    const downloadUrl = window.URL.createObjectURL(blob);
+    // Find the QR code canvas rendered by react-qrcode-logo
+    const qrContainer = document.getElementById(`qr-${qrcode.id}`);
+    if (!qrContainer) {
+      // Fallback to old method
+      const qrImageUrl = generateQRCodeImage(url);
+      const canvas = document.createElement("canvas");
+      canvas.width = 300;
+      canvas.height = 300;
+      const ctx = canvas.getContext("2d");
+      
+      if (!ctx) {
+        toast.error("Erro ao gerar imagem");
+        return;
+      }
+      
+      const qrImage = new Image();
+      qrImage.crossOrigin = "anonymous";
+      
+      qrImage.onload = async () => {
+        ctx.drawImage(qrImage, 0, 0, 300, 300);
+        
+        const logo = new Image();
+        logo.src = "/images/qrcode-logo.png";
+        
+        logo.onload = () => {
+          const logoSize = 60;
+          const logoX = (300 - logoSize) / 2;
+          const logoY = (300 - logoSize) / 2;
+          
+          ctx.fillStyle = "white";
+          ctx.fillRect(logoX - 5, logoY - 5, logoSize + 10, logoSize + 10);
+          ctx.drawImage(logo, logoX, logoY, logoSize, logoSize);
+          
+          canvas.toBlob((blob) => {
+            if (blob) {
+              const downloadUrl = window.URL.createObjectURL(blob);
+              const link = document.createElement("a");
+              link.href = downloadUrl;
+              link.download = `qrcode-${qrcode.type}${qrcode.table_number ? `-mesa-${qrcode.table_number}` : ""}.png`;
+              link.click();
+              window.URL.revokeObjectURL(downloadUrl);
+              toast.success("QR Code baixado!");
+            }
+          }, "image/png");
+        };
+      };
+      
+      qrImage.src = qrImageUrl;
+      return;
+    }
     
-    const link = document.createElement("a");
-    link.href = downloadUrl;
-    link.download = `qrcode-${qrcode.type}${qrcode.table_number ? `-mesa-${qrcode.table_number}` : ""}.png`;
-    link.click();
+    // Get canvas from react-qrcode-logo
+    const canvas = qrContainer.querySelector('canvas');
+    if (!canvas) {
+      toast.error("Erro ao gerar imagem");
+      return;
+    }
     
-    window.URL.revokeObjectURL(downloadUrl);
-    toast.success("QR Code baixado!");
+    canvas.toBlob((blob) => {
+      if (blob) {
+        const downloadUrl = window.URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = downloadUrl;
+        link.download = `qrcode-${qrcode.type}${qrcode.table_number ? `-mesa-${qrcode.table_number}` : ""}.png`;
+        link.click();
+        window.URL.revokeObjectURL(downloadUrl);
+        toast.success("QR Code baixado!");
+      }
+    }, "image/png");
   };
 
   const getTypeIcon = (type: string) => {
@@ -154,25 +229,15 @@ const QRCodeManagement = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b border-border">
-        <div className="flex items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-3">
-            <Link to="/painel">
-              <Button variant="ghost" size="icon">
-                <ArrowLeft className="w-5 h-5" />
-              </Button>
-            </Link>
-            <h1 className="text-lg font-semibold">QR Codes</h1>
-          </div>
-          <Button onClick={() => setIsDialogOpen(true)}>
-            <Plus className="w-4 h-4 mr-2" />
-            Novo QR Code
-          </Button>
-        </div>
-      </header>
+    <DashboardLayout title="QR Codes" establishment={establishment}>
+      <div className="flex justify-end mb-4">
+        <Button onClick={() => setIsDialogOpen(true)}>
+          <Plus className="w-4 h-4 mr-2" />
+          Novo QR Code
+        </Button>
+      </div>
 
-      <div className="p-4 md:p-6 space-y-6">
+      <div className="space-y-6">
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
@@ -209,11 +274,7 @@ const QRCodeManagement = () => {
                   </div>
                   
                   <div className="flex justify-center mb-4">
-                    <img
-                      src={generateQRCodeImage(getQRCodeUrl(qrcode))}
-                      alt="QR Code"
-                      className="w-40 h-40 rounded-lg border border-border"
-                    />
+                    <QRCodeWithLogo url={getQRCodeUrl(qrcode)} qrcodeId={qrcode.id} />
                   </div>
 
                   <div className="flex gap-2">
@@ -295,7 +356,7 @@ const QRCodeManagement = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </DashboardLayout>
   );
 };
 

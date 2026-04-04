@@ -1,13 +1,14 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo, memo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Store } from "lucide-react";
+import { Store, Loader2 } from "lucide-react";
 import { Establishment } from "@/hooks/useEstablishment";
 import EstablishmentCard from "./EstablishmentCard";
 import RestaurantFilters from "./RestaurantFilters";
 import { useCategoryTitle } from "@/hooks/useEstablishmentsByCategory";
 import { getCategoryTheme } from "@/lib/categoryThemes";
 import { cn } from "@/lib/utils";
+import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 
 interface AllRestaurantsProps {
   establishments: Establishment[];
@@ -16,7 +17,7 @@ interface AllRestaurantsProps {
   subcategory?: string | null;
 }
 
-const AllRestaurants = ({ establishments, loading, mainCategory, subcategory }: AllRestaurantsProps) => {
+const AllRestaurants = memo(({ establishments, loading, mainCategory, subcategory }: AllRestaurantsProps) => {
   // All hooks must be called before any early returns
   const [activeFilter, setActiveFilter] = useState("all");
   const [sortBy, setSortBy] = useState("recommended");
@@ -24,45 +25,59 @@ const AllRestaurants = ({ establishments, loading, mainCategory, subcategory }: 
   const theme = getCategoryTheme(mainCategory || null);
 
   // Filter and sort establishments - memoized for performance
-  // MUST be called before any early returns to maintain hook order
   const filteredEstablishments = useMemo(() => {
-    let filtered = establishments.filter((est: any) => {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    let filtered = establishments.filter((est) => {
       switch (activeFilter) {
-        case "new": {
-          // Recém-chegados - establishments created in last 30 days
-          const thirtyDaysAgo = new Date();
-          thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-          return est.created_at ? new Date(est.created_at) >= thirtyDaysAgo : false;
-        }
+        case "new":
+          if (est.created_at) {
+            return new Date(est.created_at) >= thirtyDaysAgo;
+          }
+          return false;
         case "popular":
-          // Popular - establishments that are currently open
           return est.is_open === true;
         case "top_rated":
-          // Melhor avaliados - featured / with lowest delivery times
-          return (est.avg_delivery_time || 999) <= 45;
+          return true;
         default:
           return true;
       }
     });
 
-    // Sort establishments
-    return [...filtered].sort((a: any, b: any) => {
+    return [...filtered].sort((a, b) => {
       switch (sortBy) {
         case "rating":
-          // Sort by open status first, then by name
-          return (b.is_open ? 1 : 0) - (a.is_open ? 1 : 0) || a.name.localeCompare(b.name);
+          const aRating = a.rating_average || 0;
+          const bRating = b.rating_average || 0;
+          if (bRating !== aRating) return bRating - aRating;
+          return (b.rating_count || 0) - (a.rating_count || 0);
         case "delivery_time":
           return (a.avg_delivery_time || 999) - (b.avg_delivery_time || 999);
         case "distance":
-          // Sort by neighborhood alphabetically as proxy for distance
-          return (a.neighborhood || "").localeCompare(b.neighborhood || "");
+          return (a.min_order_value || 999) - (b.min_order_value || 999);
         default:
-          // Recommended - open first, then by delivery time
-          return (b.is_open ? 1 : 0) - (a.is_open ? 1 : 0)
-            || (a.avg_delivery_time || 999) - (b.avg_delivery_time || 999);
+          const aScore = a.is_open ? 0 : 1;
+          const bScore = b.is_open ? 0 : 1;
+          if (aScore !== bScore) return aScore - bScore;
+          const aR = a.rating_average || 0;
+          const bR = b.rating_average || 0;
+          if (bR !== aR) return bR - aR;
+          return (a.name || '').localeCompare(b.name || '');
       }
     });
   }, [establishments, activeFilter, sortBy]);
+
+  // Infinite scroll with initial 12 items, load 8 more each time
+  const { 
+    displayedItems, 
+    hasMore, 
+    isLoading: loadingMore, 
+    observerRef 
+  } = useInfiniteScroll(filteredEstablishments, {
+    initialPageSize: 12,
+    pageSize: 8
+  });
 
   if (loading) {
     return (
@@ -127,13 +142,27 @@ const AllRestaurants = ({ establishments, loading, mainCategory, subcategory }: 
         />
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {filteredEstablishments.map((est) => (
+          {displayedItems.map((est) => (
             <EstablishmentCard key={est.id} establishment={est} />
           ))}
         </div>
+
+        {/* Infinite scroll trigger */}
+        {hasMore && (
+          <div ref={observerRef} className="flex justify-center py-8">
+            {loadingMore && (
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Loader2 className="w-5 h-5 animate-spin" />
+                <span className="text-sm">Carregando mais...</span>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </section>
   );
-};
+});
+
+AllRestaurants.displayName = "AllRestaurants";
 
 export default AllRestaurants;

@@ -532,22 +532,39 @@ export function PDVPaymentModal({
                       Cobrar na Maquineta
                     </Button>
 
-                    <div className="relative">
+                    <div className="relative my-4">
                       <div className="absolute inset-0 flex items-center">
                         <span className="w-full border-t" />
                       </div>
                       <div className="relative flex justify-center text-xs uppercase">
-                        <span className="bg-background px-2 text-muted-foreground">ou</span>
+                        <span className="bg-background px-2 text-muted-foreground">ou registre manualmente</span>
                       </div>
                     </div>
 
-                    <Button 
-                      variant="outline" 
-                      className="w-full"
-                      onClick={() => onSuccessRef.current('credit_card')}
-                    >
-                      Registrar Pagamento Manual
-                    </Button>
+                    <div className="grid grid-cols-2 gap-3">
+                      <Button 
+                        variant="outline" 
+                        className="h-12 flex-col"
+                        onClick={() => {
+                          toast.success('Pagamento em crédito registrado!');
+                          onSuccessRef.current('credit_card');
+                        }}
+                      >
+                        <CreditCard className="h-4 w-4 mb-1" />
+                        <span className="text-xs">Crédito</span>
+                      </Button>
+                      <Button 
+                        variant="outline"
+                        className="h-12 flex-col"
+                        onClick={() => {
+                          toast.success('Pagamento em débito registrado!');
+                          onSuccessRef.current('debit_card');
+                        }}
+                      >
+                        <CreditCard className="h-4 w-4 mb-1" />
+                        <span className="text-xs">Débito</span>
+                      </Button>
+                    </div>
                   </div>
                 )}
 
@@ -623,7 +640,10 @@ export function PDVPaymentModal({
                   <Button 
                     variant="outline" 
                     className="h-14 flex-col"
-                    onClick={() => onSuccessRef.current('credit_card')}
+                    onClick={() => {
+                      toast.success('Pagamento em crédito registrado!');
+                      onSuccessRef.current('credit_card');
+                    }}
                   >
                     <CreditCard className="h-5 w-5 mb-1" />
                     Crédito
@@ -631,7 +651,10 @@ export function PDVPaymentModal({
                   <Button 
                     variant="outline"
                     className="h-14 flex-col"
-                    onClick={() => onSuccessRef.current('debit_card')}
+                    onClick={() => {
+                      toast.success('Pagamento em débito registrado!');
+                      onSuccessRef.current('debit_card');
+                    }}
                   >
                     <CreditCard className="h-5 w-5 mb-1" />
                     Débito

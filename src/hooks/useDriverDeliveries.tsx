@@ -31,6 +31,8 @@ export interface DeliveryTracking {
     id: string;
     order_number: number;
     total: number;
+    delivery_fee: number | null;
+    delivery_type: string | null;
     delivery_address: any;
     items: any[];
     payment_method: string;
@@ -71,22 +73,32 @@ export const useDriverDeliveries = () => {
 
   // Fetch driver profile
   const fetchDriverProfile = useCallback(async () => {
-    if (!user?.id) return null;
-
-    const { data, error } = await supabase
-      .from('delivery_drivers')
-      .select('*')
-      .eq('user_id', user.id)
-      .single();
-
-    if (error) {
-      console.error('Error fetching driver profile:', error);
+    if (!user?.id) {
+      setIsLoading(false);
       return null;
     }
 
-    setDriverProfile(data);
-    setIsOnline(data?.is_available ?? false);
-    return data;
+    try {
+      const { data, error } = await supabase
+        .from('delivery_drivers')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (error) {
+        console.error('Error fetching driver profile:', error);
+        setIsLoading(false);
+        return null;
+      }
+
+      setDriverProfile(data);
+      setIsOnline(data?.is_available ?? false);
+      return data;
+    } catch (err) {
+      console.error('Error in fetchDriverProfile:', err);
+      setIsLoading(false);
+      return null;
+    }
   }, [user?.id]);
 
   // Fetch deliveries
@@ -103,6 +115,8 @@ export const useDriverDeliveries = () => {
             id,
             order_number,
             total,
+            delivery_fee,
+            delivery_type,
             delivery_address,
             items,
             payment_method,
@@ -157,6 +171,9 @@ export const useDriverDeliveries = () => {
     status: DeliveryStatus,
     additionalData?: Partial<DeliveryTracking>
   ) => {
+    // Buscar o delivery para pegar o order_id
+    const delivery = deliveries.find(d => d.id === deliveryId);
+    
     const updateData: any = { 
       status,
       ...additionalData
@@ -176,6 +193,32 @@ export const useDriverDeliveries = () => {
     if (error) {
       toast.error('Erro ao atualizar entrega');
       return false;
+    }
+
+    // Sincronizar status do pedido (orders) com o delivery_tracking
+    if (delivery?.order_id) {
+      const orderStatusMap: Record<DeliveryStatus, string | null> = {
+        assigned: null, // Não atualiza orders
+        accepted: 'delivering',
+        picked_up: 'delivering',
+        in_transit: 'delivering',
+        delivered: 'delivered',
+        cancelled: 'cancelled',
+        problem: null
+      };
+
+      const newOrderStatus = orderStatusMap[status];
+      if (newOrderStatus) {
+        const orderUpdateData: any = { status: newOrderStatus };
+        if (status === 'delivered') {
+          orderUpdateData.delivered_at = new Date().toISOString();
+        }
+        
+        await supabase
+          .from('orders')
+          .update(orderUpdateData)
+          .eq('id', delivery.order_id);
+      }
     }
 
     await fetchDeliveries();

@@ -127,16 +127,54 @@ serve(async (req) => {
        * Atualiza status do pedido e registra transação
        */
       case 'payment': {
-        // Buscar detalhes do pagamento
-        const paymentResponse = await fetch(
+        // Primeiro, tentar buscar com token global da plataforma
+        let paymentResponse = await fetch(
           `https://api.mercadopago.com/v1/payments/${data.id}`,
           {
             headers: { 'Authorization': `Bearer ${MP_ACCESS_TOKEN}` },
           }
         );
 
+        // Se falhar, pode ser pagamento do lojista - buscar transação para pegar o token dele
         if (!paymentResponse.ok) {
-          console.error('Failed to fetch payment details');
+          console.log('Payment not found with platform token, trying to find merchant token...');
+          
+          // Tentar buscar pelo user_id (collector_id do MP) 
+          const { data: establishment } = await supabase
+            .from('establishments')
+            .select('mercado_pago_token')
+            .eq('mp_user_id', payload.user_id)
+            .single();
+          
+          if (establishment?.mercado_pago_token) {
+            console.log('Found merchant token, retrying payment fetch...');
+            paymentResponse = await fetch(
+              `https://api.mercadopago.com/v1/payments/${data.id}`,
+              {
+                headers: { 'Authorization': `Bearer ${establishment.mercado_pago_token}` },
+              }
+            );
+          }
+        }
+
+        if (!paymentResponse.ok) {
+          console.error('Failed to fetch payment details with all available tokens');
+          // Ainda assim, tentar atualizar pelo external_reference se tiver na mp_transactions
+          const { data: pendingTx } = await supabase
+            .from('mp_transactions')
+            .select('order_id, establishment_id')
+            .eq('mp_payment_id', data.id)
+            .single();
+          
+          if (pendingTx?.order_id) {
+            // Assumir aprovado se chegou webhook payment.created e não conseguiu buscar
+            // O status será corrigido pelo próximo webhook ou pela consulta manual
+            console.log('Updating order to pending status as fallback');
+            await supabase
+              .from('orders')
+              .update({ status: 'pending' })
+              .eq('id', pendingTx.order_id);
+          }
           break;
         }
 
@@ -398,6 +436,29 @@ async function processAffiliateCommission(
       .from('affiliates')
       .update({ total_earnings: commissionAmount })
       .eq('id', affiliate.id);
+
+    // Enviar notificação WhatsApp para o afiliado
+    const { data: affiliateProfile } = await supabase
+      .from('profiles')
+      .select('phone, full_name')
+      .eq('id', (referral.affiliates as { user_id: string }).user_id)
+      .single();
+
+    if (affiliateProfile?.phone) {
+      try {
+        await supabase.functions.invoke('whatsapp-notification', {
+          body: {
+            phone: affiliateProfile.phone,
+            message: `💰 *Nova Comissão Recebida!*\n\nOlá ${affiliateProfile.full_name || 'Parceiro'}!\n\nVocê acabou de receber uma comissão de *R$ ${commissionAmount.toFixed(2)}* pela assinatura de um estabelecimento que você indicou.\n\n📊 Acesse seu painel de afiliado para mais detalhes.\n\nObrigado pela parceria!`,
+            type: 'affiliate_payout',
+            instanceType: 'system',
+          },
+        });
+        console.log('Affiliate notification sent to:', affiliateProfile.phone);
+      } catch (notifError) {
+        console.error('Failed to send affiliate notification:', notifError);
+      }
+    }
 
     console.log('Affiliate commission processed:', {
       affiliate_id: affiliate.id,

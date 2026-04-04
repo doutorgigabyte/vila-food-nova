@@ -11,7 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { 
   Plus, Minus, ClipboardList, Users, DollarSign, Trash2, Check, 
   Search, Clock, CreditCard, QrCode, Banknote, Receipt, 
-  ChefHat, Grid3X3, LayoutGrid, X, Printer, Split, Send
+  ChefHat, Grid3X3, LayoutGrid, X, Printer, Split, Send, History
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -78,6 +78,45 @@ const WaiterApp = () => {
   const [splitCount, setSplitCount] = useState(1);
   const [establishmentId, setEstablishmentId] = useState<string | null>(null);
   const [userName, setUserName] = useState<string>("");
+  const [historyDialog, setHistoryDialog] = useState(false);
+  const [tabHistory, setTabHistory] = useState<any[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+
+  // Helper to log tab history
+  const logTabHistory = async (tabId: string, action: string, details: any = {}) => {
+    if (!establishmentId) return;
+    try {
+      await supabase.from("waiter_tab_history").insert({
+        tab_id: tabId,
+        establishment_id: establishmentId,
+        action,
+        details,
+        user_name: userName
+      });
+    } catch (error) {
+      console.error("Error logging tab history:", error);
+    }
+  };
+
+  // Fetch tab history
+  const fetchTabHistory = async (tabId: string) => {
+    setLoadingHistory(true);
+    try {
+      const { data, error } = await supabase
+        .from("waiter_tab_history")
+        .select("*")
+        .eq("tab_id", tabId)
+        .order("created_at", { ascending: false });
+      
+      if (!error && data) {
+        setTabHistory(data);
+      }
+    } catch (error) {
+      console.error("Error fetching tab history:", error);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
 
   useEffect(() => {
     fetchData();
@@ -169,8 +208,8 @@ const WaiterApp = () => {
       if (tabsRes.data) {
         setTabs(tabsRes.data.map(t => ({
           ...t,
-          items: (t.items as unknown as TabItem[]) || []
-        })));
+          items: Array.isArray(t.items) ? (t.items as unknown as TabItem[]) : []
+        } as Tab)));
       }
       if (productsRes.data) setProducts(productsRes.data);
       if (categoriesRes.data) setCategories(categoriesRes.data);
@@ -246,7 +285,11 @@ const WaiterApp = () => {
         throw new Error("Nenhum dado retornado ao criar comanda");
       }
 
-      const newTabData = { ...data, items: data.items || [] };
+      const newTabData: Tab = { 
+        ...data, 
+        items: Array.isArray(data.items) ? (data.items as unknown as TabItem[]) : [],
+        notes: data.notes || undefined
+      };
       setTabs([newTabData, ...tabs]);
       setSelectedTab(newTabData);
       setNewTabDialog(false);
@@ -299,6 +342,13 @@ const WaiterApp = () => {
       setSelectedTab(updatedTab);
       setTabs(tabs.map(t => t.id === selectedTab.id ? updatedTab : t));
       toast.success(`${product.name} adicionado`);
+      
+      // Log history
+      logTabHistory(selectedTab.id, existingItem ? 'item_updated' : 'item_added', {
+        product_name: product.name,
+        quantity: existingItem ? existingItem.quantity + 1 : 1,
+        price: product.price
+      });
     }
   };
 
@@ -325,27 +375,114 @@ const WaiterApp = () => {
       const updatedTab = { ...selectedTab, items: newItems, subtotal, total };
       setSelectedTab(updatedTab);
       setTabs(tabs.map(t => t.id === selectedTab.id ? updatedTab : t));
+      
+      // Log history for quantity change
+      const item = selectedTab.items.find(i => i.product_id === productId && i.sent_to_kitchen === sentToKitchen);
+      if (item) {
+        const action = delta > 0 ? 'item_updated' : (item.quantity + delta <= 0 ? 'item_removed' : 'item_updated');
+        logTabHistory(selectedTab.id, action, {
+          product_name: item.product_name,
+          quantity_change: delta,
+          new_quantity: Math.max(0, item.quantity + delta)
+        });
+      }
     }
   };
 
   const sendToKitchen = async () => {
-    if (!selectedTab) return;
+    if (!selectedTab || !establishmentId) return;
 
-    const newItems = selectedTab.items.map(i => ({
-      ...i,
-      sent_to_kitchen: true
-    }));
+    const itemsToSend = selectedTab.items.filter(i => !i.sent_to_kitchen);
+    if (itemsToSend.length === 0) {
+      toast.warning("Nenhum item novo para enviar");
+      return;
+    }
 
-    const { error } = await supabase
-      .from("waiter_tabs")
-      .update({ items: newItems as unknown as any })
-      .eq("id", selectedTab.id);
+    try {
+      // 1. Criar pedido na tabela orders com status 'preparing'
+      const orderItems = itemsToSend.map(i => ({
+        product_id: i.product_id,
+        name: i.product_name,
+        quantity: i.quantity,
+        price: i.price,
+        notes: i.notes || null
+      }));
 
-    if (!error) {
+      const subtotal = itemsToSend.reduce((acc, i) => acc + (i.price * i.quantity), 0);
+
+      const { data: orderResult, error: orderError } = await supabase.rpc('create_order', {
+        p_establishment_id: establishmentId,
+        p_delivery_type: 'table',
+        p_payment_method: 'pending',
+        p_items: orderItems,
+        p_subtotal: subtotal,
+        p_total: subtotal,
+        p_table_number: selectedTab.table_number,
+        p_order_source: 'comanda'
+      });
+
+      const result = orderResult as { success: boolean; id?: string; order_number?: number; error?: string } | null;
+      
+      if (orderError || !result?.success) {
+        console.error("Erro ao criar pedido:", orderError || result?.error);
+        toast.error("Erro ao criar pedido para cozinha");
+        return;
+      }
+
+      // Atualizar status para 'preparing' (RPC cria com 'pending')
+      const { error: statusError } = await supabase
+        .from('orders')
+        .update({ status: 'preparing' })
+        .eq('id', result.id!);
+
+      if (statusError) {
+        console.error("Erro ao atualizar status:", statusError);
+      }
+
+      const order = { id: result.id!, order_number: result.order_number! };
+
+      // 2. Marcar itens como enviados na comanda
+      const newItems = selectedTab.items.map(i => ({
+        ...i,
+        sent_to_kitchen: true,
+        order_id: order.id
+      }));
+
+      const { error: updateError } = await supabase
+        .from("waiter_tabs")
+        .update({ items: newItems as unknown as any })
+        .eq("id", selectedTab.id);
+
+      if (updateError) {
+        console.error("Erro ao atualizar comanda:", updateError);
+      }
+
+      // 3. Criar notificação para cozinha
+      await supabase.from('notifications').insert({
+        establishment_id: establishmentId,
+        type: 'new_order',
+        priority: 'critical',
+        title: `Pedido #${order.order_number} - ${selectedTab.table_number}`,
+        message: `${itemsToSend.length} ${itemsToSend.length === 1 ? 'item' : 'itens'} para preparo`,
+        target_roles: ['manager', 'kitchen'],
+        data: { order_id: order.id, table_number: selectedTab.table_number }
+      });
+
       const updatedTab = { ...selectedTab, items: newItems };
       setSelectedTab(updatedTab);
       setTabs(tabs.map(t => t.id === selectedTab.id ? updatedTab : t));
-      toast.success("Pedido enviado para a cozinha!");
+      toast.success(`Pedido #${order.order_number} enviado para a cozinha!`);
+      
+      // Log history
+      logTabHistory(selectedTab.id, 'sent_to_kitchen', {
+        order_id: order.id,
+        order_number: order.order_number,
+        items_count: itemsToSend.length,
+        items: itemsToSend.map(i => ({ name: i.product_name, quantity: i.quantity }))
+      });
+    } catch (error) {
+      console.error("Erro ao enviar para cozinha:", error);
+      toast.error("Erro ao enviar pedido para cozinha");
     }
   };
 
@@ -362,6 +499,13 @@ const WaiterApp = () => {
       .eq("id", selectedTab.id);
 
     if (!error) {
+      // Log history before clearing selection
+      logTabHistory(selectedTab.id, 'tab_closed', {
+        payment_method: paymentMethod,
+        split_count: splitCount,
+        total: selectedTab.total
+      });
+      
       setTabs(tabs.filter(t => t.id !== selectedTab.id));
       setSelectedTab(null);
       setCloseTabDialog(false);
@@ -656,10 +800,21 @@ const WaiterApp = () => {
                     <span className="text-primary">R$ {(selectedTab.total || 0).toFixed(2)}</span>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-3 gap-2">
                     <Button variant="outline" size="sm">
                       <Printer className="w-4 h-4 mr-1" />
                       Imprimir
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => {
+                        fetchTabHistory(selectedTab.id);
+                        setHistoryDialog(true);
+                      }}
+                    >
+                      <History className="w-4 h-4 mr-1" />
+                      Histórico
                     </Button>
                     <Dialog open={closeTabDialog} onOpenChange={setCloseTabDialog}>
                       <DialogTrigger asChild>
@@ -815,6 +970,73 @@ const WaiterApp = () => {
               Abrir Comanda
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Histórico */}
+      <Dialog open={historyDialog} onOpenChange={setHistoryDialog}>
+        <DialogContent className="max-w-md max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <History className="w-5 h-5" />
+              Histórico de Alterações
+            </DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="flex-1 -mx-6 px-6">
+            {loadingHistory ? (
+              <div className="text-center py-8 text-muted-foreground">
+                Carregando histórico...
+              </div>
+            ) : tabHistory.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                Nenhuma alteração registrada
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {tabHistory.map((entry) => (
+                  <div key={entry.id} className="p-3 bg-muted/50 rounded-lg border">
+                    <div className="flex items-center justify-between mb-1">
+                      <Badge variant={
+                        entry.action === 'item_added' ? 'default' :
+                        entry.action === 'item_removed' ? 'destructive' :
+                        entry.action === 'sent_to_kitchen' ? 'secondary' :
+                        entry.action === 'tab_closed' ? 'outline' : 'secondary'
+                      }>
+                        {entry.action === 'item_added' && 'Item Adicionado'}
+                        {entry.action === 'item_removed' && 'Item Removido'}
+                        {entry.action === 'item_updated' && 'Item Atualizado'}
+                        {entry.action === 'sent_to_kitchen' && 'Enviado à Cozinha'}
+                        {entry.action === 'tab_closed' && 'Comanda Fechada'}
+                        {entry.action === 'discount_applied' && 'Desconto Aplicado'}
+                      </Badge>
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(entry.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                    <p className="text-sm">
+                      {entry.details?.product_name && (
+                        <span className="font-medium">{entry.details.product_name}</span>
+                      )}
+                      {entry.details?.quantity && (
+                        <span> × {entry.details.quantity}</span>
+                      )}
+                      {entry.details?.items_count && (
+                        <span>{entry.details.items_count} itens</span>
+                      )}
+                      {entry.details?.payment_method && (
+                        <span>Pagamento: {entry.details.payment_method}</span>
+                      )}
+                    </p>
+                    {entry.user_name && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Por: {entry.user_name}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </ScrollArea>
         </DialogContent>
       </Dialog>
     </DashboardLayout>

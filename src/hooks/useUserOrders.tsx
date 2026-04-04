@@ -21,11 +21,38 @@ export interface UserOrder {
   observations: string | null;
   created_at: string;
   estimated_time: number | null;
+  has_review?: boolean;
+  review_token?: string | null;
   establishments?: {
     name: string;
     slug: string;
     logo_url: string | null;
   };
+}
+
+interface RpcOrderResult {
+  id: string;
+  order_number: number;
+  establishment_id: string;
+  customer_id: string;
+  status: string;
+  delivery_type: string;
+  payment_method: string;
+  items: Json;
+  subtotal: number;
+  delivery_fee: number | null;
+  discount: number | null;
+  total: number;
+  delivery_address: Json | null;
+  table_number: string | null;
+  observations: string | null;
+  created_at: string;
+  estimated_time: number | null;
+  establishment_name: string;
+  establishment_slug: string;
+  establishment_logo_url: string | null;
+  has_review: boolean;
+  review_token: string | null;
 }
 
 export const useUserOrders = () => {
@@ -41,37 +68,46 @@ export const useUserOrders = () => {
     }
 
     try {
-      // First get customer record for this user
-      const { data: customer } = await supabase
-        .from('customers')
-        .select('id')
-        .eq('user_id', user.id)
-        .single();
+      // Use RPC function that bypasses RLS issues
+      const { data, error } = await supabase.rpc('get_user_orders');
 
-      if (!customer) {
-        setOrders([]);
-        setLoading(false);
-        return;
+      if (error) {
+        console.error('[useUserOrders] RPC error:', error);
+        throw error;
       }
 
-      // Fetch orders for this customer
-      const { data, error } = await supabase
-        .from('orders')
-        .select(`
-          *,
-          establishments (
-            name,
-            slug,
-            logo_url
-          )
-        `)
-        .eq('customer_id', customer.id)
-        .order('created_at', { ascending: false });
+      // Transform RPC result to match UserOrder interface
+      const transformedOrders: UserOrder[] = (data as RpcOrderResult[] || []).map(order => ({
+        id: order.id,
+        order_number: order.order_number,
+        establishment_id: order.establishment_id,
+        customer_id: order.customer_id,
+        status: order.status as UserOrder['status'],
+        delivery_type: order.delivery_type as UserOrder['delivery_type'],
+        payment_method: order.payment_method as UserOrder['payment_method'],
+        items: order.items,
+        subtotal: order.subtotal,
+        delivery_fee: order.delivery_fee,
+        discount: order.discount,
+        total: order.total,
+        delivery_address: order.delivery_address,
+        table_number: order.table_number,
+        observations: order.observations,
+        created_at: order.created_at,
+        estimated_time: order.estimated_time,
+        has_review: order.has_review,
+        review_token: order.review_token,
+        establishments: {
+          name: order.establishment_name,
+          slug: order.establishment_slug,
+          logo_url: order.establishment_logo_url,
+        },
+      }));
 
-      if (error) throw error;
-      setOrders((data as UserOrder[]) || []);
+      setOrders(transformedOrders);
     } catch (error) {
-      console.error('Error fetching user orders:', error);
+      console.error('[useUserOrders] Error:', error);
+      setOrders([]);
     } finally {
       setLoading(false);
     }

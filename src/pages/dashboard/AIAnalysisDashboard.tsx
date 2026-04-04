@@ -7,7 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { 
   Brain, Sparkles, Image, FileText, Store, AlertTriangle, Loader2, 
   Zap, Crown, CheckCircle, Camera, Palette, Tag, DollarSign, 
-  Layout, Lightbulb, ChevronRight, RefreshCw, Search
+  Layout, Lightbulb, ChevronRight, RefreshCw, Search, Lock, Edit, X
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useEstablishment } from "@/hooks/useEstablishment";
@@ -15,6 +15,8 @@ import { useEstablishmentPlan } from "@/hooks/useEstablishmentPlan";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 
 interface Suggestion {
   type: 'description' | 'photo' | 'banner' | 'logo' | 'general' | 'pricing' | 'promotion' | 'design';
@@ -35,6 +37,8 @@ interface AnalysisResult {
   logo_score: number;
   products_analyzed: number;
   suggestions: Suggestion[];
+  improved_description?: string;
+  strategic_report?: string;
 }
 
 interface AnalysisStep {
@@ -46,12 +50,20 @@ interface AnalysisStep {
 const AIAnalysisDashboard = () => {
   const { slug } = useParams();
   const { establishment } = useEstablishment(slug);
-  const { hasAIUnlimited, plan } = useEstablishmentPlan(establishment?.id || null);
+  const { planFeatures, canUseAI } = useEstablishmentPlan(establishment?.id);
+  const hasAIAccess = canUseAI();
   const [analyzing, setAnalyzing] = useState(false);
   const [applying, setApplying] = useState(false);
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
-  const [hasUnlimited, setHasUnlimited] = useState(false);
   const [credits, setCredits] = useState(0);
+  
+  // Confirmation modal state
+  const [confirmModal, setConfirmModal] = useState<{
+    open: boolean;
+    type: 'description' | 'action' | null;
+    suggestion: Suggestion | null;
+    editedValue: string;
+  }>({ open: false, type: null, suggestion: null, editedValue: '' });
   const [analysisSteps, setAnalysisSteps] = useState<AnalysisStep[]>([
     { id: 'connect', label: 'Conectando com seu cardápio digital', status: 'pending' },
     { id: 'extract', label: 'Extraindo informações do menu', status: 'pending' },
@@ -61,31 +73,8 @@ const AIAnalysisDashboard = () => {
     { id: 'generate', label: 'Gerando diagnóstico personalizado', status: 'pending' },
   ]);
 
-  useEffect(() => {
-    if (establishment?.id) {
-      loadLatestAnalysis();
-      checkPlanStatus();
-    }
-  }, [establishment?.id]);
-
-  const checkPlanStatus = async () => {
+  const checkCredits = async () => {
     if (!establishment?.id) return;
-    
-    // Check if establishment has unlimited AI via plan
-    const { data: estData } = await supabase
-      .from('establishments')
-      .select('plan_id')
-      .eq('id', establishment.id)
-      .single();
-    
-    if (estData?.plan_id) {
-      const { data: plan } = await supabase
-        .from('plans')
-        .select('ai_unlimited')
-        .eq('id', estData.plan_id)
-        .single();
-      if (plan?.ai_unlimited) setHasUnlimited(true);
-    }
 
     const { data: creditsData } = await supabase
       .from('ai_credits')
@@ -94,6 +83,13 @@ const AIAnalysisDashboard = () => {
       .single();
     if (creditsData) setCredits(creditsData.credits_balance || 0);
   };
+
+  useEffect(() => {
+    if (establishment?.id) {
+      loadLatestAnalysis();
+      checkCredits();
+    }
+  }, [establishment?.id]);
 
   const loadLatestAnalysis = async () => {
     if (!establishment?.id) return;
@@ -113,7 +109,9 @@ const AIAnalysisDashboard = () => {
         banner_score: data.banner_score || 0,
         logo_score: data.logo_score || 0,
         products_analyzed: data.products_analyzed || 0,
-        suggestions: (data.suggestions as unknown as Suggestion[]) || []
+        suggestions: (data.suggestions as unknown as Suggestion[]) || [],
+        improved_description: undefined,
+        strategic_report: undefined
       });
     }
   };
@@ -155,7 +153,11 @@ const AIAnalysisDashboard = () => {
         s.id === 'generate' ? { ...s, status: 'complete' } : s
       ));
       
-      setAnalysis(response.data);
+      setAnalysis({
+        ...response.data,
+        improved_description: response.data.improved_description,
+        strategic_report: response.data.strategic_report
+      });
       toast.success("Análise concluída!");
     } catch (error: unknown) {
       toast.error("Erro na análise: " + (error instanceof Error ? error.message : 'Erro'));
@@ -184,6 +186,52 @@ const AIAnalysisDashboard = () => {
     } catch (error: unknown) {
       toast.error("Erro: " + (error instanceof Error ? error.message : 'Erro'));
     } finally { setApplying(false); }
+  };
+
+  const openConfirmModal = (suggestion: Suggestion) => {
+    if (suggestion.action === 'improve_description') {
+      setConfirmModal({
+        open: true,
+        type: 'description',
+        suggestion,
+        editedValue: suggestion.target_name || ''
+      });
+    } else {
+      // For other actions, apply directly
+      applySingleAction(suggestion);
+    }
+  };
+
+  const confirmAndApply = async () => {
+    if (!confirmModal.suggestion || !establishment?.id) return;
+    
+    setApplying(true);
+    try {
+      const actionToApply = {
+        ...confirmModal.suggestion,
+        target_name: confirmModal.editedValue
+      };
+      
+      const response = await supabase.functions.invoke('apply-ai-improvements', {
+        body: { 
+          establishmentId: establishment.id, 
+          actions: [{ 
+            type: actionToApply.action, 
+            target_id: actionToApply.target_id, 
+            target_name: actionToApply.target_name 
+          }] 
+        }
+      });
+      
+      if (response.error) throw new Error(response.error.message);
+      toast.success("Melhoria aplicada com sucesso!");
+      setConfirmModal({ open: false, type: null, suggestion: null, editedValue: '' });
+      await loadLatestAnalysis();
+    } catch (error: unknown) {
+      toast.error("Erro: " + (error instanceof Error ? error.message : 'Erro'));
+    } finally { 
+      setApplying(false); 
+    }
   };
 
   const applySingleAction = async (suggestion: Suggestion) => {
@@ -428,6 +476,23 @@ const AIAnalysisDashboard = () => {
                   </div>
                 </div>
               )}
+
+              {/* Strategic Report */}
+              {analysis.strategic_report && (
+                <div className="bg-primary/10 border border-primary/30 rounded-lg p-4 max-w-2xl mx-auto mt-4">
+                  <div className="flex items-start gap-3">
+                    <Brain className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-primary mb-1">
+                        Análise Estratégica IA
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {analysis.strategic_report}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -585,7 +650,7 @@ const AIAnalysisDashboard = () => {
                   )}
                 </Button>
 
-                {!hasUnlimited && (
+                {!planFeatures.aiUnlimited && (
                   <p className="text-xs text-muted-foreground mt-3">
                     Custo: {analysis.suggestions.filter(s => s.action).length} créditos de IA
                   </p>
@@ -656,12 +721,17 @@ const AIAnalysisDashboard = () => {
                       <Button 
                         size="sm" 
                         variant="outline"
-                        onClick={() => applySingleAction(suggestion)}
+                        onClick={() => openConfirmModal(suggestion)}
                         disabled={applying}
                         className="flex-shrink-0"
                       >
                         {applying ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : suggestion.action === 'improve_description' ? (
+                          <>
+                            <Edit className="w-4 h-4 mr-1" />
+                            Revisar e Aplicar
+                          </>
                         ) : (
                           <>
                             <Sparkles className="w-4 h-4 mr-1" />
@@ -673,6 +743,90 @@ const AIAnalysisDashboard = () => {
                   </div>
                 ))}
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Confirmation Modal */}
+          <Dialog open={confirmModal.open} onOpenChange={(open) => !open && setConfirmModal({ open: false, type: null, suggestion: null, editedValue: '' })}>
+            <DialogContent className="sm:max-w-lg">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <Edit className="w-5 h-5 text-primary" />
+                  Revisar e Confirmar Melhoria
+                </DialogTitle>
+                <DialogDescription>
+                  A IA gerou uma sugestão de texto otimizado. Você pode editar antes de aplicar.
+                </DialogDescription>
+              </DialogHeader>
+              
+              {confirmModal.type === 'description' && (
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Nova descrição sugerida:</label>
+                    <Textarea
+                      value={confirmModal.editedValue}
+                      onChange={(e) => setConfirmModal(prev => ({ ...prev, editedValue: e.target.value }))}
+                      placeholder="Descrição do estabelecimento..."
+                      className="min-h-[120px]"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {confirmModal.editedValue.length}/200 caracteres
+                    </p>
+                  </div>
+                  
+                  <div className="p-3 bg-muted/50 rounded-lg">
+                    <p className="text-xs text-muted-foreground mb-1">Prévia:</p>
+                    <p className="text-sm italic">"{confirmModal.editedValue}"</p>
+                  </div>
+                </div>
+              )}
+
+              <DialogFooter className="gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setConfirmModal({ open: false, type: null, suggestion: null, editedValue: '' })}
+                >
+                  <X className="w-4 h-4 mr-1" />
+                  Cancelar
+                </Button>
+                <Button 
+                  onClick={confirmAndApply}
+                  disabled={applying || !confirmModal.editedValue.trim()}
+                >
+                  {applying ? (
+                    <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                  ) : (
+                    <CheckCircle className="w-4 h-4 mr-1" />
+                  )}
+                  Aplicar Melhoria
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  // Plan restriction check
+  if (!hasAIAccess) {
+    return (
+      <DashboardLayout title="Diagnóstico IA">
+        <div className="min-h-[70vh] flex items-center justify-center">
+          <Card className="max-w-lg text-center border-amber-500/30 bg-amber-500/5">
+            <CardContent className="py-12">
+              <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-amber-500/20 flex items-center justify-center">
+                <Lock className="w-10 h-10 text-amber-500" />
+              </div>
+              <h2 className="text-2xl font-bold mb-2">Diagnóstico IA - Recurso Premium</h2>
+              <p className="text-muted-foreground mb-6">
+                O Diagnóstico Inteligente com IA analisa seu cardápio e gera sugestões personalizadas para aumentar suas vendas.
+                Este recurso está disponível apenas em planos premium.
+              </p>
+              <Button size="lg" className="px-8">
+                <Sparkles className="w-5 h-5 mr-2" />
+                Fazer Upgrade do Plano
+              </Button>
             </CardContent>
           </Card>
         </div>
@@ -714,7 +868,7 @@ const AIAnalysisDashboard = () => {
               Analisar Meu Cardápio
             </Button>
 
-            {hasUnlimited ? (
+            {planFeatures.aiUnlimited ? (
               <p className="text-xs text-muted-foreground mt-4 flex items-center justify-center gap-1">
                 <Crown className="w-3 h-3 text-amber-500" />
                 Plano Premium - Análises ilimitadas

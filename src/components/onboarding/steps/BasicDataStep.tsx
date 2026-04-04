@@ -1,0 +1,527 @@
+import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { 
+  ArrowLeft, 
+  ArrowRight, 
+  Store, 
+  Phone, 
+  MessageCircle,
+  Building2,
+  Check,
+  X,
+  MapPin,
+  AlertTriangle,
+  Mail,
+  FileText,
+  Image,
+  Instagram,
+  Users,
+  HelpCircle
+} from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useVilas } from "@/hooks/useVilas";
+import { OnboardingData } from "../OnboardingWizard";
+import { ImageUpload } from "@/components/ImageUpload";
+import { SmartAddressInput, AddressData } from "@/components/address/SmartAddressInput";
+import { useServiceCities, validateServiceCity } from "@/hooks/useActiveRegion";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
+interface BasicDataStepProps {
+  data: OnboardingData;
+  updateData: (updates: Partial<OnboardingData>) => void;
+  onNext: () => void;
+  onBack: () => void;
+}
+
+// Formatação de CNPJ/CPF
+const formatCnpjCpf = (value: string) => {
+  const numbers = value.replace(/\D/g, "");
+  if (numbers.length <= 11) {
+    // CPF: 000.000.000-00
+    return numbers
+      .replace(/(\d{3})(\d)/, "$1.$2")
+      .replace(/(\d{3})(\d)/, "$1.$2")
+      .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+  } else {
+    // CNPJ: 00.000.000/0000-00
+    return numbers
+      .replace(/(\d{2})(\d)/, "$1.$2")
+      .replace(/(\d{3})(\d)/, "$1.$2")
+      .replace(/(\d{3})(\d)/, "$1/$2")
+      .replace(/(\d{4})(\d{1,2})$/, "$1-$2");
+  }
+};
+
+// Formatação de telefone
+const formatPhone = (value: string) => {
+  const numbers = value.replace(/\D/g, "");
+  if (numbers.length <= 10) {
+    return numbers
+      .replace(/(\d{2})(\d)/, "($1) $2")
+      .replace(/(\d{4})(\d)/, "$1-$2");
+  }
+  return numbers
+    .replace(/(\d{2})(\d)/, "($1) $2")
+    .replace(/(\d{5})(\d)/, "$1-$2");
+};
+
+export const BasicDataStep = ({ data, updateData, onNext, onBack }: BasicDataStepProps) => {
+  const { vilas } = useVilas();
+  const { cities: serviceCities } = useServiceCities();
+  const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null);
+  const [checkingSlug, setCheckingSlug] = useState(false);
+  const [cityValidation, setCityValidation] = useState<{ valid: boolean; message: string } | null>(null);
+
+  // Address state for SmartAddressInput
+  const [addressState, setAddressState] = useState<AddressData>({
+    cep: data.zipCode || "",
+    address: data.address || "",
+    number: data.addressNumber || "",
+    complement: data.addressComplement || "",
+    neighborhood: data.neighborhood || "",
+    city: data.city || "",
+    state: data.state || "",
+    reference: "",
+    lat: data.latitude || undefined,
+    lng: data.longitude || undefined,
+  });
+
+  useEffect(() => {
+    if (!data.subdomain || data.subdomain.length < 3) {
+      setSlugAvailable(null);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setCheckingSlug(true);
+      const { data: existing } = await supabase
+        .from("establishments")
+        .select("id")
+        .eq("slug", data.subdomain)
+        .maybeSingle();
+      
+      setSlugAvailable(!existing);
+      setCheckingSlug(false);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [data.subdomain]);
+
+  const handleSubdomainChange = (value: string) => {
+    const sanitized = value.toLowerCase().replace(/[^a-z0-9-]/g, "");
+    updateData({ subdomain: sanitized });
+  };
+
+  const handleAddressChange = (newAddress: AddressData) => {
+    setAddressState(newAddress);
+    
+    // Update onboarding data
+    updateData({
+      address: newAddress.address,
+      addressNumber: newAddress.number,
+      addressComplement: newAddress.complement,
+      neighborhood: newAddress.neighborhood,
+      city: newAddress.city,
+      state: newAddress.state,
+      zipCode: newAddress.cep,
+      latitude: newAddress.lat || null,
+      longitude: newAddress.lng || null,
+    });
+    
+    // Validate city against service area
+    if (newAddress.city && serviceCities.length > 0) {
+      const matchedCity = validateServiceCity(newAddress.city, serviceCities);
+      if (matchedCity) {
+        setCityValidation({ 
+          valid: true, 
+          message: `${matchedCity.name} está na nossa área de atendimento!` 
+        });
+      } else {
+        const availableCities = serviceCities.map(c => c.name).join(", ");
+        setCityValidation({ 
+          valid: false, 
+          message: `No momento, atendemos apenas: ${availableCities}. Em breve expandiremos para sua região!` 
+        });
+      }
+    }
+  };
+
+  const handlePhoneChange = (value: string) => {
+    updateData({ phone: formatPhone(value) });
+  };
+
+  const handleWhatsAppChange = (value: string) => {
+    updateData({ whatsapp: formatPhone(value) });
+  };
+
+  const handleCnpjCpfChange = (value: string) => {
+    updateData({ cnpjCpf: formatCnpjCpf(value) });
+  };
+
+  const isValid = 
+    data.establishmentName.trim().length >= 3 &&
+    data.phone.replace(/\D/g, "").length >= 10 &&
+    data.subdomain.length >= 3 &&
+    slugAvailable === true &&
+    (cityValidation === null || cityValidation.valid);
+
+  return (
+    <div className="space-y-6">
+      {/* Seção 1: Imagens */}
+      <Card className="p-6">
+        <div className="flex items-center gap-2 mb-6">
+          <Image className="w-5 h-5 text-primary" />
+          <h3 className="font-semibold">Identidade Visual</h3>
+        </div>
+
+        <div className="grid gap-6 md:grid-cols-[220px_1fr]">
+          {/* Logo */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <Label className="text-sm font-medium">Logo</Label>
+              <span className="text-xs text-muted-foreground whitespace-nowrap">até 2MB</span>
+            </div>
+
+            <div className="w-32 sm:w-40">
+              <ImageUpload
+                currentImage={data.logoUrl}
+                onUpload={(url) => updateData({ logoUrl: url })}
+                bucket="establishments"
+                aspectRatio="square"
+                className="w-full"
+                establishmentId="onboarding"
+              />
+            </div>
+
+            <p className="text-xs text-muted-foreground">
+              Quadrada. Recomendado fundo transparente (PNG/WebP).
+            </p>
+          </div>
+
+          {/* Banner */}
+          <div className="space-y-3 min-w-0">
+            <div className="flex items-center justify-between gap-3">
+              <Label className="text-sm font-medium">Banner (opcional)</Label>
+              <span className="text-xs text-muted-foreground whitespace-nowrap">até 5MB</span>
+            </div>
+
+            <ImageUpload
+              currentImage={data.bannerUrl}
+              onUpload={(url) => updateData({ bannerUrl: url })}
+              bucket="establishments"
+              aspectRatio="video"
+              className="w-full"
+              establishmentId="onboarding"
+            />
+
+            <span className="text-xs text-muted-foreground">
+              Aparece no topo do cardápio • 16:9
+            </span>
+          </div>
+        </div>
+      </Card>
+
+      {/* Seção 2: Identificação */}
+      <Card className="p-6 space-y-4">
+        <div className="flex items-center gap-2 mb-2">
+          <Store className="w-5 h-5 text-primary" />
+          <h3 className="font-semibold">Dados do Estabelecimento</h3>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="name">Nome do estabelecimento *</Label>
+            <Input 
+              id="name" 
+              placeholder="Ex: Pizzaria do João" 
+              value={data.establishmentName} 
+              onChange={(e) => updateData({ establishmentName: e.target.value })} 
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="cnpjCpf">CNPJ ou CPF</Label>
+            <div className="relative">
+              <FileText className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input 
+                id="cnpjCpf" 
+                placeholder="00.000.000/0000-00" 
+                className="pl-10" 
+                value={data.cnpjCpf} 
+                onChange={(e) => handleCnpjCpfChange(e.target.value)}
+                maxLength={18}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="description">Descrição do estabelecimento</Label>
+          <Textarea 
+            id="description" 
+            placeholder="Conte um pouco sobre seu negócio, especialidades, diferenciais..." 
+            value={data.description} 
+            onChange={(e) => updateData({ description: e.target.value })}
+            className="min-h-[80px] resize-none"
+            maxLength={500}
+          />
+          <p className="text-xs text-muted-foreground text-right">{data.description?.length || 0}/500</p>
+        </div>
+      </Card>
+
+      {/* Seção 3: Contato */}
+      <Card className="p-6 space-y-4">
+        <div className="flex items-center gap-2 mb-2">
+          <Phone className="w-5 h-5 text-primary" />
+          <h3 className="font-semibold">Contato</h3>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="phone">Telefone *</Label>
+            <div className="relative">
+              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input 
+                id="phone" 
+                placeholder="(00) 00000-0000" 
+                className="pl-10" 
+                value={data.phone} 
+                onChange={(e) => handlePhoneChange(e.target.value)}
+                maxLength={15}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="whatsapp">WhatsApp</Label>
+            <div className="relative">
+              <MessageCircle className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input 
+                id="whatsapp" 
+                placeholder="(00) 00000-0000" 
+                className="pl-10" 
+                value={data.whatsapp} 
+                onChange={(e) => handleWhatsAppChange(e.target.value)}
+                maxLength={15}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="email">Email comercial</Label>
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input 
+                id="email" 
+                type="email"
+                placeholder="contato@seurestaurante.com" 
+                className="pl-10" 
+                value={data.email} 
+                onChange={(e) => updateData({ email: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="instagram">Instagram</Label>
+            <div className="relative">
+              <Instagram className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input 
+                id="instagram" 
+                placeholder="@seurestaurante" 
+                className="pl-10" 
+                value={data.instagramUrl} 
+                onChange={(e) => updateData({ instagramUrl: e.target.value })}
+              />
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      {/* Seção 4: Localização */}
+      <Card className="p-6 space-y-4">
+        <div className="flex items-center gap-2 mb-2">
+          <MapPin className="w-5 h-5 text-primary" />
+          <h3 className="font-semibold">Localização do Estabelecimento</h3>
+        </div>
+
+        <p className="text-sm text-muted-foreground">
+          Use sua localização atual ou busque o endereço pelo mapa. Validaremos automaticamente com Google Maps.
+        </p>
+
+        <SmartAddressInput
+          value={addressState}
+          onChange={handleAddressChange}
+          showMap={true}
+          showGpsButton={true}
+          compact={false}
+        />
+
+        {cityValidation && (
+          <motion.div 
+            initial={{ opacity: 0, y: -10 }} 
+            animate={{ opacity: 1, y: 0 }} 
+            className={`flex items-start gap-2 text-sm p-3 rounded-lg ${
+              cityValidation.valid 
+                ? "bg-green-500/10 text-green-600 border border-green-500/20" 
+                : "bg-destructive/10 text-destructive border border-destructive/20"
+            }`}
+          >
+            {cityValidation.valid ? (
+              <Check className="w-4 h-4 flex-shrink-0 mt-0.5" />
+            ) : (
+              <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+            )}
+            <span>{cityValidation.message}</span>
+          </motion.div>
+        )}
+      </Card>
+
+      {/* Seção 5: Link da Loja */}
+      <Card className="p-6 space-y-4">
+        <div className="flex items-center gap-2 mb-2">
+          <Building2 className="w-5 h-5 text-primary" />
+          <h3 className="font-semibold">Link da sua loja</h3>
+        </div>
+
+        <div className="space-y-3">
+          <Label htmlFor="subdomain">Escolha seu endereço web *</Label>
+          <div className="flex items-center rounded-lg border bg-muted/30 overflow-hidden">
+            <span className="px-3 py-2.5 text-sm text-muted-foreground bg-muted/50 border-r whitespace-nowrap">
+              https://
+            </span>
+            <Input 
+              id="subdomain" 
+              placeholder="minhaloja" 
+              value={data.subdomain} 
+              onChange={(e) => handleSubdomainChange(e.target.value)}
+              className="border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
+            />
+            <span className="px-3 py-2.5 text-sm text-muted-foreground bg-muted/50 border-l whitespace-nowrap">
+              .vilafood.delivery
+            </span>
+          </div>
+          
+          {data.subdomain.length >= 3 && (
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              className={`flex items-center gap-2 text-sm ${
+                checkingSlug ? "text-muted-foreground" : slugAvailable ? "text-green-600" : "text-destructive"
+              }`}
+            >
+              {checkingSlug ? (
+                <span>Verificando disponibilidade...</span>
+              ) : slugAvailable ? (
+                <>
+                  <Check className="w-4 h-4" />
+                  <span>Disponível! Seu link será: <strong>{data.subdomain}.vilafood.delivery</strong></span>
+                </>
+              ) : (
+                <>
+                  <X className="w-4 h-4" />
+                  <span>Este link já está em uso, tente outro</span>
+                </>
+              )}
+            </motion.div>
+          )}
+        </div>
+      </Card>
+
+      {/* Seção 6: Vilas */}
+      {vilas.length > 0 && (
+        <Card className="p-6 space-y-5 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+          <div className="flex items-center gap-2">
+            <Users className="w-5 h-5 text-primary" />
+            <h3 className="font-semibold">Faz parte de uma Vila?</h3>
+          </div>
+
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Uma <strong className="text-foreground">Vila</strong> é um espaço físico que reúne vários estabelecimentos no mesmo local.
+            </p>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="flex items-start gap-3 p-3 rounded-lg bg-background/60 border border-border/50">
+                <span className="text-xl">🍔</span>
+                <div>
+                  <p className="font-medium text-sm">Food Parks</p>
+                  <p className="text-xs text-muted-foreground">Praças de alimentação ao ar livre</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3 p-3 rounded-lg bg-background/60 border border-border/50">
+                <span className="text-xl">🏢</span>
+                <div>
+                  <p className="font-medium text-sm">Galerias</p>
+                  <p className="text-xs text-muted-foreground">Centros comerciais</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3 p-3 rounded-lg bg-background/60 border border-border/50">
+                <span className="text-xl">🌳</span>
+                <div>
+                  <p className="font-medium text-sm">Praças</p>
+                  <p className="text-xs text-muted-foreground">Áreas públicas com quiosques</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3 p-3 rounded-lg bg-background/60 border border-border/50">
+                <span className="text-xl">🏪</span>
+                <div>
+                  <p className="font-medium text-sm">Food Courts</p>
+                  <p className="text-xs text-muted-foreground">Praças de shopping</p>
+                </div>
+              </div>
+            </div>
+
+            <p className="text-xs text-muted-foreground">
+              Se seu negócio está dentro de um desses locais, marque abaixo. Isso ajuda clientes a encontrarem você!
+            </p>
+          </div>
+
+          <div className="flex items-center space-x-3 pt-2 border-t border-border/50">
+            <Checkbox 
+              id="belongs-to-vila" 
+              checked={data.belongsToVila} 
+              onCheckedChange={(checked) => updateData({ belongsToVila: checked as boolean, vilaId: checked ? data.vilaId : "" })} 
+            />
+            <Label htmlFor="belongs-to-vila" className="cursor-pointer text-sm">
+              Sim, meu estabelecimento faz parte de uma Vila
+            </Label>
+          </div>
+
+          {data.belongsToVila && (
+            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}>
+              <Select value={data.vilaId} onValueChange={(val) => updateData({ vilaId: val })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Escolha a Vila" />
+                </SelectTrigger>
+                <SelectContent>
+                  {vilas.map((vila) => (
+                    <SelectItem key={vila.id} value={vila.id}>{vila.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </motion.div>
+          )}
+        </Card>
+      )}
+
+      <div className="flex gap-3">
+        <Button variant="outline" onClick={onBack} className="flex-1">
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Voltar
+        </Button>
+        <Button onClick={onNext} disabled={!isValid} className="flex-1">
+          Continuar
+          <ArrowRight className="w-4 h-4 ml-2" />
+        </Button>
+      </div>
+    </div>
+  );
+};

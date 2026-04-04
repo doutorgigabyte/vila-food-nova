@@ -22,12 +22,15 @@ import {
   Store,
   ShoppingCart,
   Package,
-  Rocket,
   Database,
   Heart,
   Tag,
   UserCheck,
-  Image
+  Image,
+  Wallet,
+  MessageCircle,
+  FileText,
+  Lightbulb
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import logo from "@/assets/logo.png";
@@ -36,6 +39,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import QuickEstablishmentSearch from "./QuickEstablishmentSearch";
 
 interface NavItem {
   icon: React.ElementType;
@@ -69,24 +73,37 @@ const navItems: NavItem[] = [
   { icon: CreditCard, label: "Planos", href: "/admin/planos" },
   { icon: Gift, label: "Assinaturas", href: "/admin/assinaturas" },
   { icon: Ticket, label: "Vouchers", href: "/admin/vouchers" },
-  { 
+{ 
     icon: ShoppingCart, 
     label: "Catálogo",
     children: [
       { icon: Package, label: "Produtos", href: "/admin/produtos" },
       { icon: Layers, label: "Categorias", href: "/admin/categorias" },
+      { icon: Lightbulb, label: "Sugestões", href: "/admin/sugestoes-categorias" },
       { icon: ShoppingCart, label: "Pedidos", href: "/admin/pedidos" },
     ]
   },
   { icon: BarChart3, label: "Relatórios", href: "/admin/relatorios" },
+  { icon: Wallet, label: "Financeiro", href: "/admin/financeiro" },
+  { 
+    icon: MessageCircle, 
+    label: "WhatsApp",
+    children: [
+      { icon: MessageCircle, label: "Instâncias", href: "/admin/whatsapp" },
+      { icon: FileText, label: "CRM & Disparos", href: "/admin/crm-disparos" },
+    ]
+  },
   { 
     icon: Shield, 
     label: "Sistema",
     children: [
       { icon: Heart, label: "Health Check", href: "/admin/health" },
-      { icon: BarChart3, label: "Progresso", href: "/admin/progresso" },
-      { icon: Rocket, label: "Roadmap", href: "/admin/roadmap" },
+      { icon: Shield, label: "Central de Segurança", href: "/admin/central-seguranca" },
+      { icon: FileText, label: "Documentação Segurança", href: "/admin/documentacao-seguranca" },
+      { icon: BarChart3, label: "Diagnóstico Pixels", href: "/admin/diagnostico-pixels" },
+      { icon: BarChart3, label: "Progresso Checklist", href: "/admin/progresso" },
       { icon: Database, label: "Migração", href: "/admin/migracao" },
+      { icon: Database, label: "Migração Externa", href: "/admin/migracao-externa" },
       { icon: Database, label: "Banco de Dados", href: "/admin/banco-dados" },
       { icon: Image, label: "Preencher Imagens", href: "/admin/preencher-imagens" },
     ]
@@ -149,6 +166,11 @@ const AdminSidebar = ({ isOpen, onClose }: AdminSidebarProps) => {
           >
             <X className="w-5 h-5" />
           </Button>
+        </div>
+
+        {/* Quick Establishment Search */}
+        <div className="px-3 py-2 border-b border-border">
+          <QuickEstablishmentSearch />
         </div>
 
         {/* Navigation */}

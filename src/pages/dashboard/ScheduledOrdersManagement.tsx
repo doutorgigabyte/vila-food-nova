@@ -57,15 +57,28 @@ const ScheduledOrdersManagement = () => {
 
       const { data } = await supabase
         .from("scheduled_orders")
-        .select("*, customers(name, phone)")
+        .select("*")
         .eq("establishment_id", establishment.id)
         .in("status", ["pending", "confirmed"])
         .order("scheduled_for", { ascending: true });
 
       if (data) {
+        // Buscar dados dos clientes pelos customer_id (que são user_ids)
+        const customerIds = data.map(o => o.customer_id).filter(Boolean);
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, full_name, phone")
+          .in("id", customerIds);
+
+        const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+
         setOrders(data.map(o => ({
           ...o,
-          items: (o.items as unknown as OrderItem[]) || []
+          items: (o.items as unknown as OrderItem[]) || [],
+          customers: profileMap.get(o.customer_id) ? {
+            name: profileMap.get(o.customer_id)?.full_name || "Cliente",
+            phone: profileMap.get(o.customer_id)?.phone || ""
+          } : undefined
         })));
       }
     } catch (error) {

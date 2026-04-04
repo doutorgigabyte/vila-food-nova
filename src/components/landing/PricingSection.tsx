@@ -1,67 +1,42 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Check, Star, Loader2 } from "lucide-react";
-import { usePlans } from "@/hooks/usePlans";
-
-const defaultFeatures = {
-  grátis: [
-    "Até 50 produtos",
-    "Subdomínio personalizado",
-    "Gestão de pedidos",
-    "QR Code do cardápio",
-    "Suporte por e-mail",
-  ],
-  mensal: [
-    "Produtos ilimitados",
-    "WhatsApp com IA",
-    "PIX integrado",
-    "Cupons de desconto",
-    "Banners promocionais",
-    "Relatórios básicos",
-    "Marketplace da cidade",
-  ],
-  anual: [
-    "Tudo do Mensal",
-    "Pedidos ilimitados",
-    "Relatórios avançados",
-    "Suporte prioritário",
-    "Multi-funcionários",
-    "VilaTok Stories",
-    "Economia de 30%",
-  ],
-};
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { usePlans, type Plan } from "@/hooks/usePlans";
+import { cn } from "@/lib/utils";
 
 const PricingSection = () => {
+  const [isYearly, setIsYearly] = useState(false);
   const { data: plans, isLoading } = usePlans();
 
-  // Map plans from database to display format
-  const getDisplayPlans = () => {
-    if (!plans || plans.length === 0) {
-      return [
-        { name: "Grátis", price: "0", period: "/mês", features: defaultFeatures.grátis, popular: false, cta: "Começar Grátis" },
-        { name: "Mensal", price: "49,90", period: "/mês", features: defaultFeatures.mensal, popular: true, cta: "Escolher Plano" },
-        { name: "Anual", price: "419", period: "/ano", features: defaultFeatures.anual, popular: false, cta: "Economizar 30%" },
-      ];
-    }
-
-    return plans.slice(0, 3).map((plan) => {
-      const nameLower = plan.name.toLowerCase();
-      const isPopular = nameLower === "mensal";
-      const isAnnual = nameLower === "anual";
-      const isFree = plan.price === 0;
-
-      return {
-        name: plan.name,
-        price: plan.price === 0 ? "0" : plan.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 }).replace('.', ','),
-        period: isAnnual ? "/ano" : "/mês",
-        features: plan.features || defaultFeatures[nameLower as keyof typeof defaultFeatures] || defaultFeatures.mensal,
-        popular: isPopular,
-        cta: isFree ? "Começar Grátis" : isAnnual ? "Economizar 30%" : "Escolher Plano",
-      };
-    });
+  const getPrice = (plan: Plan) => {
+    if (plan.price === 0) return "0";
+    const price = isYearly ? (plan.price_yearly || plan.price * 12 * 0.8) : (plan.price_monthly || plan.price);
+    return price.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).replace(".", ",");
   };
 
-  const displayPlans = getDisplayPlans();
+  const getPeriod = (plan: Plan) => {
+    if (plan.price === 0) return "";
+    return isYearly ? "/mês*" : "/mês";
+  };
+
+  const getCTA = (plan: Plan) => {
+    if (plan.price === 0) return "Começar Grátis";
+    if (plan.is_popular) return "Escolher Plano";
+    return "Selecionar";
+  };
+
+  const getSubtitle = (plan: Plan) => {
+    switch (plan.slug) {
+      case "gratuito": return "Para começar";
+      case "starter": return "Para crescer";
+      case "pro": return "O mais escolhido";
+      case "business": return "Para redes";
+      default: return plan.description || "";
+    }
+  };
 
   return (
     <section id="pricing" className="py-16 md:py-24 bg-background relative overflow-hidden">
@@ -78,9 +53,39 @@ const PricingSection = () => {
             Escolha o plano{" "}
             <span className="gradient-text">ideal</span>
           </h2>
-          <p className="text-base md:text-lg text-muted-foreground max-w-2xl mx-auto px-4">
+          <p className="text-base md:text-lg text-muted-foreground max-w-2xl mx-auto px-4 mb-8">
             Sem taxas escondidas. Cancele quando quiser. Comece grátis hoje.
           </p>
+
+          {/* Toggle Mensal/Anual */}
+          <div className="flex items-center justify-center gap-4">
+            <Label 
+              htmlFor="pricing-toggle" 
+              className={cn(
+                "cursor-pointer transition-colors",
+                !isYearly ? "font-semibold text-foreground" : "text-muted-foreground"
+              )}
+            >
+              Mensal
+            </Label>
+            <Switch
+              id="pricing-toggle"
+              checked={isYearly}
+              onCheckedChange={setIsYearly}
+            />
+            <Label 
+              htmlFor="pricing-toggle" 
+              className={cn(
+                "cursor-pointer transition-colors",
+                isYearly ? "font-semibold text-foreground" : "text-muted-foreground"
+              )}
+            >
+              Anual
+              <span className="ml-2 px-2 py-0.5 text-xs bg-green-500/10 text-green-600 rounded-full font-medium">
+                -20%
+              </span>
+            </Label>
+          </div>
         </div>
 
         {isLoading ? (
@@ -88,50 +93,76 @@ const PricingSection = () => {
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 max-w-6xl mx-auto">
-            {displayPlans.map((plan, index) => (
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
+            {plans?.map((plan) => (
               <div
-                key={plan.name}
-                className={`relative p-6 md:p-8 rounded-2xl transition-all duration-300 hover:-translate-y-2 ${
-                  plan.popular
-                    ? "bg-gradient-dark text-white shadow-elevated md:scale-105 order-first md:order-none"
+                key={plan.id}
+                className={cn(
+                  "relative p-6 rounded-2xl transition-all duration-300 hover:-translate-y-2",
+                  plan.is_popular
+                    ? "bg-gradient-dark text-white shadow-elevated lg:scale-105 z-10"
                     : "bg-card border border-border hover:shadow-elevated"
-                }`}
+                )}
               >
-                {plan.popular && (
-                  <div className="absolute -top-3 md:-top-4 left-1/2 -translate-x-1/2 px-3 md:px-4 py-1 md:py-1.5 rounded-full bg-gradient-primary text-primary-foreground text-xs md:text-sm font-semibold flex items-center gap-1.5 shadow-glow whitespace-nowrap">
+                {plan.is_popular && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-full bg-gradient-primary text-primary-foreground text-xs font-semibold flex items-center gap-1.5 shadow-glow whitespace-nowrap">
                     <Star size={12} fill="currentColor" />
                     Mais Popular
                   </div>
                 )}
 
-                <div className="mb-4 md:mb-6">
-                  <h3 className={`text-lg md:text-xl font-semibold mb-1 ${plan.popular ? "text-white" : "text-foreground"}`}>
+                <div className="mb-4">
+                  <h3 className={cn("text-lg font-semibold mb-1", plan.is_popular ? "text-white" : "text-foreground")}>
                     {plan.name}
                   </h3>
-                  <p className={`text-xs md:text-sm ${plan.popular ? "text-white/70" : "text-muted-foreground"}`}>
-                    {plan.name === "Grátis" ? "Para começar" : plan.name === "Mensal" ? "O mais escolhido" : "Melhor economia"}
+                  <p className={cn("text-xs", plan.is_popular ? "text-white/70" : "text-muted-foreground")}>
+                    {getSubtitle(plan)}
                   </p>
                 </div>
 
-                <div className="mb-4 md:mb-6">
-                  <span className={`text-4xl md:text-5xl font-bold ${plan.popular ? "text-white" : "text-foreground"}`}>
-                    R${plan.price}
+                <div className="mb-4">
+                  <span className={cn("text-4xl font-bold", plan.is_popular ? "text-white" : "text-foreground")}>
+                    R${getPrice(plan)}
                   </span>
-                  <span className={`text-base md:text-lg ${plan.popular ? "text-white/70" : "text-muted-foreground"}`}>
-                    {plan.period}
+                  <span className={cn("text-sm", plan.is_popular ? "text-white/70" : "text-muted-foreground")}>
+                    {getPeriod(plan)}
                   </span>
+                  {isYearly && plan.price > 0 && (
+                    <p className={cn("text-xs mt-1", plan.is_popular ? "text-green-300" : "text-green-600")}>
+                      *cobrado anualmente
+                    </p>
+                  )}
                 </div>
 
-                <ul className="space-y-2 md:space-y-3 mb-6 md:mb-8">
-                  {plan.features.map((feature) => (
-                    <li key={feature} className="flex items-start gap-2 md:gap-3">
-                      <div className={`w-4 h-4 md:w-5 md:h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
-                        plan.popular ? "bg-white/20" : "bg-accent/20"
-                      }`}>
-                        <Check size={10} className={plan.popular ? "text-white" : "text-accent"} />
+                {/* Limites principais */}
+                <div className={cn(
+                  "mb-4 pb-4 border-b text-xs space-y-1",
+                  plan.is_popular ? "border-white/20 text-white/80" : "border-border text-muted-foreground"
+                )}>
+                  <div className="flex justify-between">
+                    <span>Produtos</span>
+                    <span className="font-medium">{plan.max_products === -1 ? "Ilimitado" : plan.max_products}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Pedidos/mês</span>
+                    <span className="font-medium">{plan.max_orders === -1 ? "Ilimitado" : plan.max_orders}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Vídeos</span>
+                    <span className="font-medium">{plan.max_videos === -1 ? "Ilimitado" : plan.max_videos}</span>
+                  </div>
+                </div>
+
+                <ul className="space-y-2 mb-6">
+                  {(plan.features || []).slice(0, 6).map((feature, index) => (
+                    <li key={index} className="flex items-start gap-2">
+                      <div className={cn(
+                        "w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5",
+                        plan.is_popular ? "bg-white/20" : "bg-accent/20"
+                      )}>
+                        <Check size={10} className={plan.is_popular ? "text-white" : "text-accent"} />
                       </div>
-                      <span className={`text-xs md:text-sm leading-relaxed ${plan.popular ? "text-white/90" : "text-muted-foreground"}`}>
+                      <span className={cn("text-xs leading-relaxed", plan.is_popular ? "text-white/90" : "text-muted-foreground")}>
                         {feature}
                       </span>
                     </li>
@@ -140,11 +171,11 @@ const PricingSection = () => {
 
                 <Link to="/cadastro-estabelecimento">
                   <Button
-                    variant={plan.popular ? "hero" : "outline"}
-                    className={`w-full ${plan.popular ? "" : "hover:bg-primary hover:text-primary-foreground"}`}
+                    variant={plan.is_popular ? "hero" : "outline"}
+                    className={cn("w-full", !plan.is_popular && "hover:bg-primary hover:text-primary-foreground")}
                     size="lg"
                   >
-                    {plan.cta}
+                    {getCTA(plan)}
                   </Button>
                 </Link>
               </div>
@@ -152,8 +183,11 @@ const PricingSection = () => {
           </div>
         )}
 
-        <div className="text-center mt-8 md:mt-12">
-          <p className="text-sm md:text-base text-muted-foreground">
+        <div className="text-center mt-8 md:mt-12 space-y-2">
+          <p className="text-sm text-muted-foreground">
+            Taxa de marketplace: apenas 5% + R$1 por pedido no marketplace
+          </p>
+          <p className="text-sm text-muted-foreground">
             Precisa de um plano customizado?{" "}
             <a href="https://wa.me/5581999999999" className="text-primary font-semibold hover:underline">
               Fale conosco

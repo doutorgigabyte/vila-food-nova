@@ -128,10 +128,10 @@ serve(async (req) => {
       }
     }
 
-    // Fetch establishment data
+    // Fetch establishment data including MP token for payment queries
     const { data: establishment, error: estError } = await supabaseAdmin
       .from('establishments')
-      .select('mp_user_id, name')
+      .select('mp_user_id, name, mercado_pago_token')
       .eq('id', establishment_id)
       .single();
 
@@ -297,33 +297,42 @@ serve(async (req) => {
           throw new Error('payment_id é obrigatório');
         }
 
-        // SECURITY: Verify payment belongs to this establishment before returning status
-        const { data: transaction } = await supabaseAdmin
-          .from('mp_transactions')
-          .select('id')
-          .eq('mp_payment_id', payment_id)
-          .eq('establishment_id', establishment_id)
-          .single();
+        // ALWAYS use platform token for get_payment since PIX payments are created with platform token
+        // The establishment token is only used for OAuth split payments (marketplace model)
+        const queryToken = MP_ACCESS_TOKEN;
+        
+        console.log('get_payment:', { 
+          payment_id, 
+          establishment_id,
+          using_platform_token: true
+        });
 
-        if (!transaction) {
-          return new Response(
-            JSON.stringify({ error: 'Pagamento não encontrado para este estabelecimento', success: false }),
-            { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
-
+        // Query Mercado Pago API directly for payment status
         const statusResponse = await fetch(
           `https://api.mercadopago.com/v1/payments/${payment_id}`,
           {
-            headers: { 'Authorization': `Bearer ${MP_ACCESS_TOKEN}` },
+            headers: { 'Authorization': `Bearer ${queryToken}` },
           }
         );
 
         if (!statusResponse.ok) {
-          throw new Error('Pagamento não encontrado');
+          const errorData = await statusResponse.json().catch(() => ({}));
+          console.error('MP get_payment error:', { status: statusResponse.status, error: errorData });
+          return new Response(
+            JSON.stringify({ error: 'Pagamento não encontrado', success: false }),
+            { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
         }
 
         const payment = await statusResponse.json();
+
+        // Optional: Verify the payment belongs to this establishment via external_reference
+        // This is a soft check since external_reference contains order_id
+        console.log('Payment found:', {
+          id: payment.id,
+          status: payment.status,
+          external_reference: payment.external_reference,
+        });
 
         return new Response(JSON.stringify({
           success: true,

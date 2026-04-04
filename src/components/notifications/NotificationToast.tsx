@@ -30,6 +30,14 @@ const NOTIFICATION_ICONS: Record<NotificationType, React.ElementType> = {
   new_review: Star,
   new_customer: Users,
   table_call: Bell,
+  // Admin notification types
+  admin_support_request: AlertTriangle,
+  admin_payment_alert: CreditCard,
+  admin_system_maintenance: AlertTriangle,
+  admin_new_establishment: ShoppingBag,
+  // Customer notification types
+  customer_order_update: ShoppingBag,
+  customer_delivery_update: Truck,
 };
 
 const PRIORITY_STYLES = {

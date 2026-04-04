@@ -1,35 +1,78 @@
+import { lazy, Suspense, useEffect } from "react";
 import Navbar from "@/components/landing/Navbar";
 import HeroSection from "@/components/landing/HeroSection";
-import TrustBadgesSection from "@/components/landing/TrustBadgesSection";
-import UniqueSellingPointsSection from "@/components/landing/UniqueSellingPointsSection";
-import PlatformOverviewSection from "@/components/landing/PlatformOverviewSection";
-import ComparisonSection from "@/components/landing/ComparisonSection";
-import UseCasesSection from "@/components/landing/UseCasesSection";
-import HowItWorksSection from "@/components/landing/HowItWorksSection";
-import FeaturesSection from "@/components/landing/FeaturesSection";
-import PricingSection from "@/components/landing/PricingSection";
-import TestimonialsSection from "@/components/landing/TestimonialsSection";
-import FAQSection from "@/components/landing/FAQSection";
-import CTASection from "@/components/landing/CTASection";
-import Footer from "@/components/landing/Footer";
+import IFoodCalculator from "@/components/landing/IFoodCalculator";
+
+// Lazy load sections below the fold for performance
+const TrustBadgesSection = lazy(() => import("@/components/landing/TrustBadgesSection"));
+const AllFeaturesSection = lazy(() => import("@/components/landing/AllFeaturesSection"));
+const VilasConceptSection = lazy(() => import("@/components/landing/VilasConceptSection"));
+const ComparisonSection = lazy(() => import("@/components/landing/ComparisonSection"));
+const HowItWorksSection = lazy(() => import("@/components/landing/HowItWorksSection"));
+const PricingSection = lazy(() => import("@/components/landing/PricingSection"));
+const TestimonialsSection = lazy(() => import("@/components/landing/TestimonialsSection"));
+const FAQSection = lazy(() => import("@/components/landing/FAQSection"));
+const CTASection = lazy(() => import("@/components/landing/CTASection"));
+const Footer = lazy(() => import("@/components/landing/Footer"));
+
+// Simple loading skeleton
+const SectionSkeleton = () => (
+  <div className="py-16 md:py-24 flex items-center justify-center">
+    <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+  </div>
+);
 
 const Conheca = () => {
+  // Scroll to top on mount
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   return (
     <main className="min-h-screen bg-background">
       <Navbar />
       <HeroSection />
-      <TrustBadgesSection />
-      <UniqueSellingPointsSection />
-      <PlatformOverviewSection />
-      <ComparisonSection />
-      <UseCasesSection />
-      <HowItWorksSection />
-      <FeaturesSection />
-      <PricingSection />
-      <TestimonialsSection />
-      <FAQSection />
-      <CTASection />
-      <Footer />
+      <IFoodCalculator />
+      
+      <Suspense fallback={<SectionSkeleton />}>
+        <TrustBadgesSection />
+      </Suspense>
+      
+      <Suspense fallback={<SectionSkeleton />}>
+        <AllFeaturesSection />
+      </Suspense>
+      
+      <Suspense fallback={<SectionSkeleton />}>
+        <VilasConceptSection />
+      </Suspense>
+      
+      <Suspense fallback={<SectionSkeleton />}>
+        <ComparisonSection />
+      </Suspense>
+      
+      <Suspense fallback={<SectionSkeleton />}>
+        <HowItWorksSection />
+      </Suspense>
+      
+      <Suspense fallback={<SectionSkeleton />}>
+        <PricingSection />
+      </Suspense>
+      
+      <Suspense fallback={<SectionSkeleton />}>
+        <TestimonialsSection />
+      </Suspense>
+      
+      <Suspense fallback={<SectionSkeleton />}>
+        <FAQSection />
+      </Suspense>
+      
+      <Suspense fallback={<SectionSkeleton />}>
+        <CTASection />
+      </Suspense>
+      
+      <Suspense fallback={<SectionSkeleton />}>
+        <Footer />
+      </Suspense>
     </main>
   );
 };

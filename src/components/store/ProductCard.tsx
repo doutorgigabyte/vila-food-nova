@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, memo, useMemo, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Package } from "lucide-react";
+import { Package, Wrench, Download, Leaf, Clock } from "lucide-react";
 import { PriceWithDiscount } from "@/components/ui/price";
 import type { StoreProduct } from "@/hooks/useStoreData";
 
@@ -10,21 +10,60 @@ interface ProductCardProps {
   onClick: () => void;
 }
 
-export const ProductCard = ({ product, onClick }: ProductCardProps) => {
+export const ProductCard = memo(({ product, onClick }: ProductCardProps) => {
   const [imageError, setImageError] = useState(false);
   
-  // Safe discount calculation
-  const hasPromo = Boolean(
-    product.promotional_price && 
-    product.promotional_price > 0 && 
-    product.promotional_price < product.price
-  );
-  const displayPrice = hasPromo ? product.promotional_price! : product.price;
-  const discount = hasPromo 
-    ? Math.round(((product.price - product.promotional_price!) / product.price) * 100) 
-    : 0;
+  // Memoized discount calculation
+  const { hasPromo, displayPrice, discount } = useMemo(() => {
+    const promo = Boolean(
+      product.promotional_price && 
+      product.promotional_price > 0 && 
+      product.promotional_price < product.price
+    );
+    return {
+      hasPromo: promo,
+      displayPrice: promo ? product.promotional_price! : product.price,
+      discount: promo 
+        ? Math.round(((product.price - product.promotional_price!) / product.price) * 100) 
+        : 0
+    };
+  }, [product.price, product.promotional_price]);
 
   const showImage = product.image_url && !imageError;
+
+  // Memoized category badge
+  const categoryBadge = useMemo(() => {
+    const productCategory = (product as any).product_category;
+    const productType = (product as any).product_type;
+    
+    if (productCategory === 'service' || productType === 'service') {
+      return (
+        <Badge variant="secondary" className="text-[10px] px-1.5 py-0 shrink-0 gap-1 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+          <Wrench className="w-2.5 h-2.5" />
+          Serviço
+        </Badge>
+      );
+    }
+    if (productCategory === 'digital' || productType === 'digital') {
+      return (
+        <Badge variant="secondary" className="text-[10px] px-1.5 py-0 shrink-0 gap-1 bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">
+          <Download className="w-2.5 h-2.5" />
+          Digital
+        </Badge>
+      );
+    }
+    if (productCategory === 'perishable' || productType === 'perishable') {
+      return (
+        <Badge variant="secondary" className="text-[10px] px-1.5 py-0 shrink-0 gap-1 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+          <Leaf className="w-2.5 h-2.5" />
+          Perecível
+        </Badge>
+      );
+    }
+    return null;
+  }, [product]);
+
+  const serviceDuration = (product as any).service_duration;
 
   return (
     <Card 
@@ -47,11 +86,18 @@ export const ProductCard = ({ product, onClick }: ProductCardProps) => {
                     Destaque
                   </Badge>
                 )}
+                {categoryBadge}
               </div>
               {product.description && (
                 <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
                   {product.description}
                 </p>
+              )}
+              {serviceDuration && (
+                <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
+                  <Clock className="w-3 h-3" />
+                  <span>{serviceDuration} min</span>
+                </div>
               )}
             </div>
             <div className="mt-2">
@@ -82,4 +128,6 @@ export const ProductCard = ({ product, onClick }: ProductCardProps) => {
       </CardContent>
     </Card>
   );
-};
+});
+
+ProductCard.displayName = "ProductCard";

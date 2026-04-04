@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__Claude_Preview__preview_start",
+      "Bash(timeout 15 npx vite --port 8080 --host)",
+      "Read(//c/xampp/htdocs/vilafood-whatsapp-bot/**)",
+      "Bash(timeout 5 npx tsx src/index.ts)",
+      "Bash(curl -s http://localhost:3333/api/health)",
+      "Bash(python3 -m json.tool)",
+      "Bash(curl -s -X POST http://localhost:3333/webhook/whatsapp -H \"Content-Type: application/json\" -d '{:*)",
+      "Bash(curl -s http://localhost:8080/)",
+      "Bash(curl -s http://localhost:3333/)",
+      "Bash(npx tsc:*)",
+      "Bash(npm run:*)",
+      "Bash(ls -la '\"\"-files --others --exclude-standard\"\"')",
+      "Bash(rm -f '\"\"-files --others --exclude-standard\"\"')",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git pull:*)",
+      "Bash(git stash:*)",
+      "Bash(git checkout:*)"
+    ]
+  }
+}

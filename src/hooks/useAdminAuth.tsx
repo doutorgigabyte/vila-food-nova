@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 
@@ -7,17 +6,15 @@ export const useAdminAuth = () => {
   const { user, loading: authLoading } = useAuth();
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
-  const location = useLocation();
 
   useEffect(() => {
     const checkAdminRole = async () => {
       if (authLoading) return;
       
       if (!user) {
+        // No user - not an admin, but don't redirect (let component handle it)
+        setIsAdmin(false);
         setLoading(false);
-        // Salvar a página atual para redirecionar após login
-        navigate('/auth', { state: { from: location.pathname } });
         return;
       }
 
@@ -29,34 +26,31 @@ export const useAdminAuth = () => {
         });
 
         if (error) {
-          console.error('Error checking admin role:', error);
+          console.error('[useAdminAuth] Error checking admin role:', error);
           setIsAdmin(false);
           setLoading(false);
-          navigate('/marketplace');
           return;
         }
 
         if (!data) {
-          console.log('User is not super_admin');
+          console.log('[useAdminAuth] User is not super_admin, user_id:', user.id);
           setIsAdmin(false);
           setLoading(false);
-          navigate('/marketplace');
           return;
         }
 
-        console.log('User is super_admin');
+        console.log('[useAdminAuth] User is super_admin');
         setIsAdmin(true);
         setLoading(false);
       } catch (error) {
-        console.error('Error checking admin role:', error);
+        console.error('[useAdminAuth] Error checking admin role:', error);
         setIsAdmin(false);
         setLoading(false);
-        navigate('/marketplace');
       }
     };
 
     checkAdminRole();
-  }, [user, authLoading, navigate, location.pathname]);
+  }, [user, authLoading]);
 
   return { isAdmin, loading: loading || authLoading, user };
 };

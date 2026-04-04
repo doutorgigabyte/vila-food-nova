@@ -1,13 +1,30 @@
+import { useState, useEffect, useCallback } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Home, Heart, ShoppingBag, ClipboardList, User, Flame } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCart } from "@/hooks/useCart";
-// import { motion } from "framer-motion"; // Temporarily disabled - needs npm install
 
 const MobileBottomNav = () => {
   const location = useLocation();
   const { items } = useCart();
   const cartCount = items.reduce((acc, item) => acc + item.quantity, 0);
+  const [isAnimating, setIsAnimating] = useState(false);
+
+  // Listen for cart-item-added event
+  useEffect(() => {
+    const handleCartItemAdded = () => {
+      setIsAnimating(true);
+      // Haptic feedback
+      if (navigator.vibrate) {
+        navigator.vibrate([50, 30, 50]);
+      }
+      // Reset animation after it completes
+      setTimeout(() => setIsAnimating(false), 600);
+    };
+
+    window.addEventListener('cart-item-added', handleCartItemAdded);
+    return () => window.removeEventListener('cart-item-added', handleCartItemAdded);
+  }, []);
 
   // Haptic feedback for touch devices
   const triggerHaptic = () => {
@@ -54,15 +71,21 @@ const MobileBottomNav = () => {
                 aria-current={isActive ? 'page' : undefined}
               >
                 <div 
-                  className="relative flex items-center justify-center w-14 h-14 rounded-full bg-primary shadow-lg shadow-primary/30 text-primary-foreground touch-target active:scale-90 transition-transform duration-200"
+                  className={cn(
+                    "relative flex items-center justify-center w-14 h-14 rounded-full bg-primary shadow-lg shadow-primary/30 text-primary-foreground touch-target transition-transform duration-200",
+                    isAnimating && "animate-cart-pop"
+                  )}
                   role="button"
                   tabIndex={-1}
                 >
-                  <Icon className="w-6 h-6" aria-hidden="true" />
+                  <Icon className={cn("w-6 h-6", isAnimating && "animate-cart-bounce")} aria-hidden="true" />
                   {item.count && item.count > 0 && (
                     <span 
-                      className="absolute -top-1 -right-1 w-5 h-5 bg-accent text-accent-foreground text-xs font-bold rounded-full flex items-center justify-center animate-in zoom-in duration-300"
-                      key={item.count}
+                      className={cn(
+                        "absolute -top-1 -right-1 w-5 h-5 bg-accent text-accent-foreground text-xs font-bold rounded-full flex items-center justify-center",
+                        isAnimating ? "animate-badge-ping" : "animate-in zoom-in duration-300"
+                      )}
+                      key={`${item.count}-${isAnimating}`}
                       aria-label={`${item.count} ${item.count === 1 ? 'item no carrinho' : 'itens no carrinho'}`}
                     >
                       {item.count > 9 ? "9+" : item.count}

@@ -38,6 +38,18 @@ interface Order {
   } | null;
 }
 
+interface RecentOrder {
+  id: string;
+  order_number: number;
+  status: string;
+  total: number;
+  created_at: string;
+  customer?: {
+    name: string;
+    phone: string;
+  } | null;
+}
+
 export const useDashboardData = (establishmentId: string | null) => {
   const [stats, setStats] = useState<DashboardStats>({
     todaySales: 0,
@@ -53,8 +65,10 @@ export const useDashboardData = (establishmentId: string | null) => {
     },
   });
   const [pendingOrders, setPendingOrders] = useState<Order[]>([]);
-  const [recentOrders, setRecentOrders] = useState<Order[]>([]);
+  const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]);
   const [loading, setLoading] = useState(true);
+  const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+  const [isConnected, setIsConnected] = useState(false);
 
   const fetchData = async () => {
     if (!establishmentId) return;
@@ -69,43 +83,53 @@ export const useDashboardData = (establishmentId: string | null) => {
       const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
       const monthISO = monthStart.toISOString();
 
-      // Fetch today's orders with source info
-      const { data: todayOrders } = await supabase
-        .from('orders')
-        .select('total, status, order_source, platform_fee')
-        .eq('establishment_id', establishmentId)
-        .gte('created_at', todayISO);
-
-      // Fetch month's orders with source info
-      const { data: monthOrders } = await supabase
-        .from('orders')
-        .select('total, status, order_source, platform_fee')
-        .eq('establishment_id', establishmentId)
-        .gte('created_at', monthISO);
-
-      // Fetch pending orders with customer data
-      const { data: pending } = await supabase
-        .from('orders')
-        .select(`
-          *,
-          customer:customers(name, phone)
-        `)
-        .eq('establishment_id', establishmentId)
-        .in('status', ['pending', 'confirmed', 'preparing'])
-        .order('created_at', { ascending: false })
-        .limit(10);
-
-      // Fetch recent completed orders
-      const { data: recent } = await supabase
-        .from('orders')
-        .select(`
-          *,
-          customer:customers(name, phone)
-        `)
-        .eq('establishment_id', establishmentId)
-        .in('status', ['delivered', 'cancelled', 'ready'])
-        .order('created_at', { ascending: false })
-        .limit(5);
+      // Execute all queries in parallel for better performance
+      const [
+        { data: todayOrders },
+        { data: monthOrders },
+        { data: pending },
+        { data: recent }
+      ] = await Promise.all([
+        // Today's orders - only fields needed for calculations
+        supabase
+          .from('orders')
+          .select('total, status, order_source, platform_fee')
+          .eq('establishment_id', establishmentId)
+          .gte('created_at', todayISO),
+        
+        // Month's orders - only fields needed for calculations
+        supabase
+          .from('orders')
+          .select('total, status, order_source, platform_fee')
+          .eq('establishment_id', establishmentId)
+          .gte('created_at', monthISO),
+        
+        // Pending and confirmed orders with customer data
+        supabase
+          .from('orders')
+          .select(`
+            id, order_number, customer_id, status, delivery_type, payment_method,
+            items, subtotal, delivery_fee, total, delivery_address, observations, created_at,
+            payment_confirmed_at, customer_name,
+            customer:customers(name, phone)
+          `)
+          .eq('establishment_id', establishmentId)
+          .in('status', ['pending', 'awaiting_payment', 'confirmed'])
+          .order('created_at', { ascending: false })
+          .limit(15),
+        
+        // Recent completed orders - only fields needed for display
+        supabase
+          .from('orders')
+          .select(`
+            id, order_number, status, total, created_at,
+            customer:customers(name, phone)
+          `)
+          .eq('establishment_id', establishmentId)
+          .in('status', ['delivered', 'cancelled', 'ready'])
+          .order('created_at', { ascending: false })
+          .limit(5)
+      ]);
 
       // Calculate stats
       const todaySales = todayOrders
@@ -143,6 +167,7 @@ export const useDashboardData = (establishmentId: string | null) => {
 
       setPendingOrders(pending || []);
       setRecentOrders(recent || []);
+      setLastUpdate(new Date());
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {
@@ -169,15 +194,18 @@ export const useDashboardData = (establishmentId: string | null) => {
             fetchData();
           }
         )
-        .subscribe();
+        .subscribe((status) => {
+          setIsConnected(status === 'SUBSCRIBED');
+        });
 
       return () => {
         supabase.removeChannel(channel);
+        setIsConnected(false);
       };
     }
   }, [establishmentId]);
 
-  return { stats, pendingOrders, recentOrders, loading, refetch: fetchData };
+  return { stats, pendingOrders, recentOrders, loading, refetch: fetchData, lastUpdate, isConnected };
 };
 
 export const useUserEstablishment = () => {
@@ -190,27 +218,33 @@ export const useUserEstablishment = () => {
 
   useEffect(() => {
     const fetchUserEstablishment = async () => {
+      console.log('[useUserEstablishment] Starting fetch, user.id:', user?.id, 'slug:', slug);
+      
       if (!user?.id) {
+        console.log('[useUserEstablishment] No user, exiting');
         setLoading(false);
         return;
       }
 
       try {
         // Check if user is super_admin
-        const { data: isAdmin } = await supabase.rpc('has_role', {
+        const { data: isAdmin, error: adminError } = await supabase.rpc('has_role', {
           _user_id: user.id,
           _role: 'super_admin'
         });
 
+        console.log('[useUserEstablishment] super_admin check:', isAdmin, 'error:', adminError);
         setIsSuperAdmin(!!isAdmin);
 
         // If super_admin and slug is provided, load that establishment
         if (isAdmin && slug) {
-          const { data: estBySlug } = await supabase
+          const { data: estBySlug, error: slugError } = await supabase
             .from('establishments')
             .select('*')
             .eq('slug', slug)
             .single();
+
+          console.log('[useUserEstablishment] Super admin slug lookup:', estBySlug?.name, 'error:', slugError);
 
           if (estBySlug) {
             setEstablishment(estBySlug);
@@ -220,23 +254,50 @@ export const useUserEstablishment = () => {
           }
         }
 
-        // First check if user owns an establishment
-        const { data: owned } = await supabase
+        // First check if user owns ANY establishment (without slug filter)
+        const { data: ownedEstablishments, error: ownedError } = await supabase
           .from('establishments')
           .select('*')
-          .eq('owner_id', user.id)
-          .limit(1)
-          .single();
+          .eq('owner_id', user.id);
 
-        if (owned) {
-          setEstablishment(owned);
-          setEstablishmentId(owned.id);
-          setLoading(false);
-          return;
+        console.log('[useUserEstablishment] Owner check result:', 
+          ownedEstablishments?.length || 0, 'establishments found',
+          'names:', ownedEstablishments?.map(e => e.name).join(', ') || 'none',
+          'slugs:', ownedEstablishments?.map(e => e.slug).join(', ') || 'none',
+          'error:', ownedError
+        );
+
+        if (ownedEstablishments && ownedEstablishments.length > 0) {
+          // User owns at least one establishment
+          if (slug) {
+            // If slug is provided, find the matching establishment
+            const matchingEst = ownedEstablishments.find(e => e.slug === slug);
+            if (matchingEst) {
+              console.log('[useUserEstablishment] Found matching establishment by slug:', matchingEst.name);
+              setEstablishment(matchingEst);
+              setEstablishmentId(matchingEst.id);
+              setLoading(false);
+              return;
+            } else {
+              // Slug doesn't match any owned establishment - use the first one anyway
+              console.log('[useUserEstablishment] Slug mismatch, using first owned:', ownedEstablishments[0].name);
+              setEstablishment(ownedEstablishments[0]);
+              setEstablishmentId(ownedEstablishments[0].id);
+              setLoading(false);
+              return;
+            }
+          } else {
+            // No slug provided, use the first owned establishment
+            console.log('[useUserEstablishment] No slug, using first owned:', ownedEstablishments[0].name);
+            setEstablishment(ownedEstablishments[0]);
+            setEstablishmentId(ownedEstablishments[0].id);
+            setLoading(false);
+            return;
+          }
         }
 
         // Check establishment_users table
-        const { data: userEst } = await supabase
+        const { data: userEst, error: userEstError } = await supabase
           .from('establishment_users')
           .select(`
             establishment_id,
@@ -246,14 +307,18 @@ export const useUserEstablishment = () => {
           .eq('user_id', user.id)
           .eq('is_active', true)
           .limit(1)
-          .single();
+          .maybeSingle();
+
+        console.log('[useUserEstablishment] Establishment user check:', userEst?.role || 'null', 'error:', userEstError);
 
         if (userEst) {
           setEstablishment(userEst.establishments);
           setEstablishmentId(userEst.establishment_id);
+        } else {
+          console.log('[useUserEstablishment] No establishment found for user');
         }
       } catch (error) {
-        console.error('Error fetching user establishment:', error);
+        console.error('[useUserEstablishment] Error fetching user establishment:', error);
       } finally {
         setLoading(false);
       }

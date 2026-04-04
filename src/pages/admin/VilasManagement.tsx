@@ -168,7 +168,7 @@ const VilasManagement = () => {
   );
 
   return (
-    <AdminLayout title="Vilas Gastronômicas" icon={MapPin} breadcrumb="Vilas">
+    <AdminLayout title="Vilas" icon={MapPin} breadcrumb="Vilas">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="relative max-w-sm flex-1">

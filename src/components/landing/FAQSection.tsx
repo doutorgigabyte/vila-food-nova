@@ -21,7 +21,7 @@ const faqCategories = [
       },
       {
         question: "Posso usar meu próprio domínio?",
-        answer: "Sim! Nos planos pagos você pode conectar seu próprio domínio (ex: www.minhaloja.com.br) ou usar nosso subdomínio gratuito (minhaloja.vilafood.com.br)."
+        answer: "Sim! Nos planos pagos você pode conectar seu próprio domínio (ex: www.minhaloja.com.br) ou usar nosso subdomínio gratuito (minhaloja.vilafood.delivery)."
       },
       {
         question: "Como é feita a migração de outra plataforma?",

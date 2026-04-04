@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import AdminLayout from '@/components/admin/AdminLayout';
-import { ShoppingCart, Search, Eye, Clock, CheckCircle, XCircle, Truck, ChefHat, Package } from 'lucide-react';
+import { ShoppingCart, Search, Eye, Clock, CheckCircle, XCircle, Truck, ChefHat, Package, RotateCcw, UserX, CreditCard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -13,8 +13,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { useAuditLog } from '@/hooks/useAuditLog';
 
 const statusConfig: Record<string, { label: string; color: string; icon: any }> = {
+  awaiting_payment: { label: 'Aguardando Pgto', color: 'bg-amber-500', icon: CreditCard },
   pending: { label: 'Pendente', color: 'bg-yellow-500', icon: Clock },
   confirmed: { label: 'Confirmado', color: 'bg-blue-500', icon: CheckCircle },
   preparing: { label: 'Preparando', color: 'bg-orange-500', icon: ChefHat },
@@ -22,10 +24,14 @@ const statusConfig: Record<string, { label: string; color: string; icon: any }> 
   delivering: { label: 'Em Entrega', color: 'bg-purple-500', icon: Truck },
   delivered: { label: 'Entregue', color: 'bg-green-700', icon: CheckCircle },
   cancelled: { label: 'Cancelado', color: 'bg-red-500', icon: XCircle },
+  refunded: { label: 'Reembolsado', color: 'bg-blue-600', icon: RotateCcw },
+  returned: { label: 'Devolvido', color: 'bg-amber-600', icon: RotateCcw },
+  customer_absent: { label: 'Cliente Ausente', color: 'bg-red-400', icon: UserX },
 };
 
 const AdminOrdersManagement = () => {
   const queryClient = useQueryClient();
+  const { logAction } = useAuditLog();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterEstablishment, setFilterEstablishment] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -66,7 +72,8 @@ const AdminOrdersManagement = () => {
 
   // Update status mutation
   const updateStatusMutation = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+    mutationFn: async ({ id, status, order }: { id: string; status: string; order?: any }) => {
+      const oldStatus = order?.status;
       const updateData: any = { status };
       if (status === 'delivered') {
         updateData.delivered_at = new Date().toISOString();
@@ -79,6 +86,60 @@ const AdminOrdersManagement = () => {
         .update(updateData)
         .eq('id', id);
       if (error) throw error;
+
+      // Log status change to audit_logs
+      await logAction({
+        action: 'status_change',
+        entityType: 'order',
+        entityId: id,
+        oldData: { status: oldStatus },
+        newData: { status }
+      });
+
+      // Criar notificações quando status muda
+      if (status === 'confirmed' && order?.establishment_id) {
+        await supabase.from('notifications').insert({
+          establishment_id: order.establishment_id,
+          type: 'order_confirmed',
+          priority: 'high',
+          title: `Pedido #${order.order_number} confirmado!`,
+          message: 'Novo pedido para preparação na cozinha',
+          target_roles: ['manager', 'kitchen'],
+          data: { order_id: id, order_number: order.order_number }
+        });
+      }
+
+      if (status === 'ready' && order?.establishment_id) {
+        await supabase.from('notifications').insert({
+          establishment_id: order.establishment_id,
+          type: 'order_ready',
+          priority: 'high',
+          title: `Pedido #${order.order_number} pronto!`,
+          message: 'Pedido pronto para entrega/retirada',
+          target_roles: ['manager', 'cashier', 'waiter', 'delivery'],
+          data: { order_id: id, order_number: order.order_number }
+        });
+
+        // Se for delivery, criar solicitação de entrega para motoristas
+        if (order.delivery_type === 'delivery') {
+          const expiresAt = new Date();
+          expiresAt.setMinutes(expiresAt.getMinutes() + 5);
+
+          await supabase.from('delivery_requests').insert({
+            order_id: id,
+            establishment_id: order.establishment_id,
+            status: 'pending',
+            calculated_fee: order.delivery_fee || 0,
+            driver_earnings: order.delivery_fee || 0,
+            expires_at: expiresAt.toISOString(),
+            pickup_address: order.establishments?.address || '',
+            delivery_address: order.delivery_address 
+              ? `${order.delivery_address.street}, ${order.delivery_address.number} - ${order.delivery_address.neighborhood}`
+              : '',
+            customer_name: order.delivery_address?.name || 'Cliente'
+          });
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
@@ -333,7 +394,7 @@ const AdminOrdersManagement = () => {
                 <Select 
                   value={selectedOrder.status} 
                   onValueChange={(status) => {
-                    updateStatusMutation.mutate({ id: selectedOrder.id, status });
+                    updateStatusMutation.mutate({ id: selectedOrder.id, status, order: selectedOrder });
                     setSelectedOrder({ ...selectedOrder, status });
                   }}
                 >

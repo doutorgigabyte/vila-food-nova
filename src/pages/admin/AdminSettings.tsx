@@ -13,7 +13,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import AdminSidebar from "@/components/admin/AdminSidebar";
-import { PaymentGatewaySetup } from "@/components/payment/PaymentGatewaySetup";
+import { MercadoPagoOAuth } from "@/components/payment/MercadoPagoOAuth";
+import { N8nTemplatesDownload } from "@/components/admin/N8nTemplatesDownload";
 import { 
   Menu, 
   Globe, 
@@ -25,7 +26,10 @@ import {
   Save,
   Key,
   Database,
-  Bell
+  Bell,
+  Bot,
+  ToggleLeft,
+  Loader2
 } from "lucide-react";
 
 const AdminSettings = () => {
@@ -39,7 +43,7 @@ const AdminSettings = () => {
   const [platformSettings, setPlatformSettings] = useState({
     platform_name: "VilaFood",
     platform_description: "Plataforma de delivery e cardápio digital",
-    support_email: "suporte@vilafood.com.br",
+    support_email: "suporte@vilafood.delivery",
     support_phone: "",
   });
   
@@ -74,6 +78,72 @@ const AdminSettings = () => {
     audit_log_retention_days: 90,
   });
 
+  // Gateway settings
+  const [gatewaySettings, setGatewaySettings] = useState({
+    mercadopago_enabled: true,
+    pagseguro_enabled: true,
+    pix_static_enabled: true,
+    cash_enabled: true,
+  });
+  const [gatewaysLoading, setGatewaysLoading] = useState(true);
+
+  // Load gateway settings on mount
+  useEffect(() => {
+    const loadGatewaySettings = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('platform_settings')
+          .select('setting_key, setting_value')
+          .in('setting_key', [
+            'gateway_mercadopago_enabled',
+            'gateway_pagseguro_enabled',
+            'gateway_pix_static_enabled',
+            'gateway_cash_enabled'
+          ]);
+
+        if (error) throw error;
+
+        if (data) {
+          const settings = { ...gatewaySettings };
+          data.forEach((row: any) => {
+            const key = row.setting_key.replace('gateway_', '').replace('_enabled', '_enabled');
+            const value = row.setting_value === 'true' || row.setting_value === true;
+            if (row.setting_key === 'gateway_mercadopago_enabled') settings.mercadopago_enabled = value;
+            if (row.setting_key === 'gateway_pagseguro_enabled') settings.pagseguro_enabled = value;
+            if (row.setting_key === 'gateway_pix_static_enabled') settings.pix_static_enabled = value;
+            if (row.setting_key === 'gateway_cash_enabled') settings.cash_enabled = value;
+          });
+          setGatewaySettings(settings);
+        }
+      } catch (error) {
+        console.error('Error loading gateway settings:', error);
+      } finally {
+        setGatewaysLoading(false);
+      }
+    };
+
+    loadGatewaySettings();
+  }, []);
+
+  const handleGatewayToggle = async (gateway: keyof typeof gatewaySettings, value: boolean) => {
+    const settingKey = `gateway_${gateway.replace('_enabled', '')}_enabled`;
+    
+    try {
+      const { error } = await supabase
+        .from('platform_settings')
+        .update({ setting_value: value.toString(), updated_at: new Date().toISOString() })
+        .eq('setting_key', settingKey);
+
+      if (error) throw error;
+
+      setGatewaySettings(prev => ({ ...prev, [gateway]: value }));
+      toast.success(`Gateway ${value ? 'ativado' : 'desativado'} com sucesso`);
+    } catch (error) {
+      console.error('Error updating gateway:', error);
+      toast.error('Erro ao atualizar gateway');
+    }
+  };
+
   const handleSave = async () => {
     setSaving(true);
     try {
@@ -89,64 +159,73 @@ const AdminSettings = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="min-h-screen bg-background flex overflow-hidden">
       <AdminSidebar 
         isOpen={sidebarOpen} 
         onClose={() => setSidebarOpen(false)}
       />
       
-      <main className="flex-1 lg:ml-64">
+      <main className="flex-1 lg:ml-64 overflow-x-hidden">
         {/* Header */}
         <header className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b border-border px-4 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3 min-w-0">
               <Button
                 variant="ghost"
                 size="icon"
-                className="lg:hidden"
+                className="lg:hidden shrink-0"
                 onClick={() => setSidebarOpen(true)}
               >
                 <Menu className="w-5 h-5" />
               </Button>
-              <div>
-                <h1 className="text-xl font-bold flex items-center gap-2">
-                  <Settings className="w-5 h-5" />
-                  Configurações da Plataforma
+              <div className="min-w-0">
+                <h1 className="text-lg sm:text-xl font-bold flex items-center gap-2">
+                  <Settings className="w-5 h-5 shrink-0" />
+                  <span className="hidden sm:inline truncate">Configurações da Plataforma</span>
+                  <span className="sm:hidden">Configurações</span>
                 </h1>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block truncate">
                   Gerencie as configurações globais do VilaFood
                 </p>
               </div>
             </div>
-            <Button onClick={handleSave} disabled={saving}>
+            <Button onClick={handleSave} disabled={saving} className="w-full sm:w-auto shrink-0">
               <Save className="w-4 h-4 mr-2" />
-              {saving ? "Salvando..." : "Salvar Alterações"}
+              {saving ? "Salvando..." : "Salvar"}
             </Button>
           </div>
         </header>
 
-        <div className="p-6">
+        <div className="p-6 overflow-x-auto">
           <Tabs defaultValue="platform" className="space-y-6">
-            <TabsList className="flex-wrap h-auto p-1">
-              <TabsTrigger value="platform" className="gap-2">
+            <TabsList className="flex flex-wrap h-auto p-1 w-full justify-start gap-1">
+              <TabsTrigger value="platform" className="gap-2 text-xs sm:text-sm">
                 <Globe className="w-4 h-4" />
-                Plataforma
+                <span className="hidden sm:inline">Plataforma</span>
               </TabsTrigger>
-              <TabsTrigger value="financial" className="gap-2">
+              <TabsTrigger value="financial" className="gap-2 text-xs sm:text-sm">
                 <Wallet className="w-4 h-4" />
-                Financeiro
+                <span className="hidden sm:inline">Financeiro</span>
               </TabsTrigger>
-              <TabsTrigger value="payments" className="gap-2">
+              <TabsTrigger value="payments" className="gap-2 text-xs sm:text-sm">
                 <CreditCard className="w-4 h-4" />
-                Pagamentos
+                <span className="hidden sm:inline">Pagamentos</span>
               </TabsTrigger>
-              <TabsTrigger value="integrations" className="gap-2">
+              <TabsTrigger value="gateways" className="gap-2 text-xs sm:text-sm">
+                <ToggleLeft className="w-4 h-4" />
+                <span className="hidden sm:inline">Gateways</span>
+              </TabsTrigger>
+              <TabsTrigger value="integrations" className="gap-2 text-xs sm:text-sm">
                 <Link2 className="w-4 h-4" />
-                Integrações
+                <span className="hidden sm:inline">Integrações</span>
               </TabsTrigger>
-              <TabsTrigger value="security" className="gap-2">
+              <TabsTrigger value="n8n" className="gap-2 text-xs sm:text-sm">
+                <Bot className="w-4 h-4" />
+                <span className="hidden sm:inline">n8n / IA</span>
+              </TabsTrigger>
+              <TabsTrigger value="security" className="gap-2 text-xs sm:text-sm">
                 <Shield className="w-4 h-4" />
-                Segurança
+                <span className="hidden sm:inline">Segurança</span>
               </TabsTrigger>
             </TabsList>
 
@@ -282,31 +361,129 @@ const AdminSettings = () => {
             {/* Payments Tab */}
             <TabsContent value="payments">
               <div className="space-y-6">
-                {/* Admin Gateway Setup */}
-                <PaymentGatewaySetup 
-                  context="admin" 
-                  entityId="platform" 
-                />
+                {/* Mercado Pago OAuth - Platform Level */}
+                <MercadoPagoOAuth context="admin" />
+              </div>
+            </TabsContent>
 
-                {/* Additional Platform Payment Settings */}
+            {/* Gateways Tab */}
+            <TabsContent value="gateways">
+              <div className="space-y-6">
                 <Card>
                   <CardHeader>
-                    <CardTitle>PIX da Plataforma</CardTitle>
-                    <CardDescription>Chave PIX para recebimento de taxas da plataforma</CardDescription>
+                    <CardTitle className="flex items-center gap-2">
+                      <ToggleLeft className="w-5 h-5" />
+                      Gateways de Pagamento
+                    </CardTitle>
+                    <CardDescription>
+                      Ative ou desative os gateways disponíveis para os estabelecimentos
+                    </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="platform_pix">Chave PIX Master</Label>
-                      <Input
-                        id="platform_pix"
-                        value={paymentSettings.platform_pix_key}
-                        onChange={(e) => setPaymentSettings({ ...paymentSettings, platform_pix_key: e.target.value })}
-                        placeholder="CPF, CNPJ, E-mail ou Telefone"
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Todas as taxas do marketplace serão creditadas nesta chave
-                      </p>
-                    </div>
+                    {gatewaysLoading ? (
+                      <div className="flex items-center justify-center py-8">
+                        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                      </div>
+                    ) : (
+                      <>
+                        {/* Mercado Pago */}
+                        <div className="flex items-center justify-between p-4 border rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+                              <CreditCard className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                            </div>
+                            <div>
+                              <p className="font-medium">Mercado Pago</p>
+                              <p className="text-sm text-muted-foreground">
+                                PIX, Cartão de Crédito/Débito, Checkout Pro
+                              </p>
+                            </div>
+                          </div>
+                          <Switch
+                            checked={gatewaySettings.mercadopago_enabled}
+                            onCheckedChange={(checked) => handleGatewayToggle('mercadopago_enabled', checked)}
+                          />
+                        </div>
+
+                        {/* PagSeguro */}
+                        <div className="flex items-center justify-between p-4 border rounded-lg opacity-60">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
+                              <CreditCard className="w-5 h-5 text-green-600 dark:text-green-400" />
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <p className="font-medium">PagSeguro (PagBank)</p>
+                                <Badge variant="secondary" className="text-xs">Em breve</Badge>
+                              </div>
+                              <p className="text-sm text-muted-foreground">
+                                PIX, Cartão de Crédito/Débito</p>
+                              <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                                Aguardando homologação PagBank</p>
+                            </div>
+                          </div>
+                          <Switch
+                            checked={false}
+                            disabled={true}
+                          />
+                        </div>
+
+                        {/* PIX Estático */}
+                        <div className="flex items-center justify-between p-4 border rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 bg-teal-100 dark:bg-teal-900 rounded-lg">
+                              <Wallet className="w-5 h-5 text-teal-600 dark:text-teal-400" />
+                            </div>
+                            <div>
+                              <p className="font-medium">PIX Estático</p>
+                              <p className="text-sm text-muted-foreground">
+                                Chave PIX manual (sem integração automática)
+                              </p>
+                            </div>
+                          </div>
+                          <Switch
+                            checked={gatewaySettings.pix_static_enabled}
+                            onCheckedChange={(checked) => handleGatewayToggle('pix_static_enabled', checked)}
+                          />
+                        </div>
+
+                        {/* Dinheiro */}
+                        <div className="flex items-center justify-between p-4 border rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 bg-yellow-100 dark:bg-yellow-900 rounded-lg">
+                              <Wallet className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
+                            </div>
+                            <div>
+                              <p className="font-medium">Dinheiro / Na Entrega</p>
+                              <p className="text-sm text-muted-foreground">
+                                Pagamento em dinheiro ou cartão na entrega
+                              </p>
+                            </div>
+                          </div>
+                          <Switch
+                            checked={gatewaySettings.cash_enabled}
+                            onCheckedChange={(checked) => handleGatewayToggle('cash_enabled', checked)}
+                          />
+                        </div>
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Informações</CardTitle>
+                  </CardHeader>
+                  <CardContent className="text-sm text-muted-foreground space-y-2">
+                    <p>
+                      • Os gateways desativados aqui não aparecerão nas opções de pagamento dos estabelecimentos.
+                    </p>
+                    <p>
+                      • Cada estabelecimento ainda precisa configurar suas próprias credenciais para os gateways ativos.
+                    </p>
+                    <p>
+                      • Desativar um gateway não afeta pagamentos já iniciados.
+                    </p>
                   </CardContent>
                 </Card>
               </div>
@@ -377,6 +554,11 @@ const AdminSettings = () => {
                   </CardContent>
                 </Card>
               </div>
+            </TabsContent>
+
+            {/* n8n / AI Templates Tab */}
+            <TabsContent value="n8n">
+              <N8nTemplatesDownload />
             </TabsContent>
 
             {/* Security Tab */}

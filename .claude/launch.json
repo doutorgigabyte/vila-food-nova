@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "vilafood",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["vite", "--port", "8080", "--host"],
+      "port": 8080
+    },
+    {
+      "name": "whatsapp-bot",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["tsx", "watch", "../vilafood-whatsapp-bot/src/index.ts"],
+      "port": 3333
+    }
+  ]
+}

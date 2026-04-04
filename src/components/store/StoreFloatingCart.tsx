@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -11,6 +12,24 @@ interface StoreFloatingCartProps {
 }
 
 export const StoreFloatingCart = ({ itemCount, total, onClick, primaryColor }: StoreFloatingCartProps) => {
+  const [isAnimating, setIsAnimating] = useState(false);
+
+  // Listen for cart-item-added event
+  useEffect(() => {
+    const handleCartItemAdded = () => {
+      setIsAnimating(true);
+      // Haptic feedback
+      if (navigator.vibrate) {
+        navigator.vibrate([50, 30, 50]);
+      }
+      // Reset animation after it completes
+      setTimeout(() => setIsAnimating(false), 600);
+    };
+
+    window.addEventListener('cart-item-added', handleCartItemAdded);
+    return () => window.removeEventListener('cart-item-added', handleCartItemAdded);
+  }, []);
+
   if (itemCount === 0) return null;
 
   const bgStyle = primaryColor
@@ -23,15 +42,21 @@ export const StoreFloatingCart = ({ itemCount, total, onClick, primaryColor }: S
         className={cn(
           "w-full h-14 rounded-xl shadow-xl text-white font-semibold",
           "flex items-center justify-between px-4",
-          "hover:scale-[1.02] active:scale-[0.98] transition-transform touch-manipulation"
+          "hover:scale-[1.02] active:scale-[0.98] transition-transform touch-manipulation",
+          isAnimating && "animate-cart-pop"
         )}
         style={primaryColor ? bgStyle : undefined}
         onClick={onClick}
       >
         <div className="flex items-center gap-3">
           <div className="relative">
-            <ShoppingCart className="w-5 h-5" />
-            <span className="absolute -top-2 -right-2 w-5 h-5 bg-white text-primary text-xs font-bold rounded-full flex items-center justify-center">
+            <ShoppingCart className={cn("w-5 h-5", isAnimating && "animate-cart-bounce")} />
+            <span 
+              className={cn(
+                "absolute -top-2 -right-2 w-5 h-5 bg-white text-primary text-xs font-bold rounded-full flex items-center justify-center",
+                isAnimating && "animate-badge-ping"
+              )}
+            >
               {itemCount}
             </span>
           </div>

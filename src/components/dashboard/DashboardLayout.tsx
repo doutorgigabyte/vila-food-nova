@@ -1,6 +1,7 @@
 import { useState, ReactNode } from "react";
 import { Button } from "@/components/ui/button";
-import { Bell, Menu } from "lucide-react";
+import { Menu, ExternalLink, Settings } from "lucide-react";
+import { Link } from "react-router-dom";
 import DashboardSidebar from "./DashboardSidebar";
 
 interface DashboardLayoutProps {
@@ -25,8 +26,11 @@ const DashboardLayout = ({
 }: DashboardLayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  const storeUrl = establishment?.slug ? `/${establishment.slug}` : "#";
+  const settingsUrl = establishment?.slug ? `/painel/${establishment.slug}/configuracoes` : "/painel/configuracoes";
+
   return (
-    <div className="min-h-screen bg-muted/30 flex w-full">
+    <div className="min-h-screen bg-muted/30 flex w-full overflow-hidden">
       <DashboardSidebar 
         isOpen={sidebarOpen} 
         onClose={() => setSidebarOpen(false)}
@@ -35,32 +39,50 @@ const DashboardLayout = ({
         establishment={establishment}
       />
 
-      <main className="flex-1 lg:ml-64">
+      <main className="flex-1 lg:ml-64 overflow-x-hidden">
         {/* Header */}
         <header className="sticky top-0 z-40 bg-background border-b border-border">
           <div className="flex items-center justify-between px-4 md:px-6 py-4">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 min-w-0">
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="lg:hidden"
+                className="lg:hidden shrink-0"
                 onClick={() => setSidebarOpen(true)}
               >
                 <Menu className="w-5 h-5" />
               </Button>
-              <h1 className="text-xl font-semibold">{title}</h1>
+              <h1 className="text-xl font-semibold truncate">{title}</h1>
             </div>
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="icon" className="relative">
-                <Bell className="w-5 h-5" />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-primary rounded-full" />
+            <div className="flex items-center gap-2 shrink-0">
+              {/* Ver Loja Button */}
+              <Button 
+                asChild
+                className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                size="sm"
+              >
+                <a href={storeUrl} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="w-4 h-4 mr-1.5" />
+                  <span className="hidden sm:inline">Ver Loja</span>
+                </a>
+              </Button>
+              
+              {/* Settings Button */}
+              <Button 
+                asChild
+                variant="ghost" 
+                size="icon"
+              >
+                <Link to={settingsUrl}>
+                  <Settings className="w-5 h-5" />
+                </Link>
               </Button>
             </div>
           </div>
         </header>
 
         {/* Content */}
-        <div className="p-4 md:p-6 space-y-6">
+        <div className="p-4 md:p-6 space-y-6 overflow-x-auto">
           {children}
         </div>
       </main>

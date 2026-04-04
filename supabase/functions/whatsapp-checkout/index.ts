@@ -7,7 +7,22 @@ const corsHeaders = {
 };
 
 interface CheckoutRequest {
-  session_id: string;
+  // Legacy: session-based checkout
+  session_id?: string;
+  // N8N Multi-tenant: instance-based checkout
+  instance_name?: string;
+  remote_jid?: string;
+  establishment_id?: string;
+  customer_phone?: string;
+  customer_name?: string;
+  cart?: Array<{
+    product_id: string;
+    name: string;
+    quantity: number;
+    price: number;
+    observations?: string;
+  }>;
+  // Common fields
   delivery_type: 'delivery' | 'pickup' | 'table';
   payment_method: 'pix' | 'cash' | 'card' | 'credit' | 'debit';
   delivery_address?: {
@@ -23,6 +38,160 @@ interface CheckoutRequest {
   change_for?: number;
   observations?: string;
   table_number?: string;
+  // N8N: Generate PIX automatically
+  generate_pix?: boolean;
+}
+
+interface PaymentGatewayResult {
+  gateway: 'mercadopago' | 'pagseguro' | 'none';
+  available: boolean;
+  token?: string;
+}
+
+// Determina qual gateway de pagamento usar
+async function determinePaymentGateway(
+  supabase: any,
+  establishmentId: string,
+  establishment: any
+): Promise<PaymentGatewayResult> {
+  console.log('Determining payment gateway for establishment:', establishmentId);
+  
+  // 1. Verificar configuração global da plataforma
+  const { data: platformSettings } = await supabase
+    .from('platform_settings')
+    .select('mercadopago_enabled, pagseguro_enabled')
+    .single();
+  
+  const mpGlobalEnabled = platformSettings?.mercadopago_enabled !== false; // default true
+  const psGlobalEnabled = platformSettings?.pagseguro_enabled === true; // default false (em homologação)
+  
+  console.log('Platform settings - MP:', mpGlobalEnabled, 'PS:', psGlobalEnabled);
+  
+  // 2. Verificar tokens do estabelecimento
+  const hasMercadoPagoToken = !!establishment.mercado_pago_token;
+  const hasPagSeguroToken = !!establishment.pagseguro_token;
+  
+  console.log('Establishment tokens - MP:', hasMercadoPagoToken, 'PS:', hasPagSeguroToken);
+  
+  // 3. Prioridade: Mercado Pago > PagSeguro > Nenhum
+  if (mpGlobalEnabled && hasMercadoPagoToken) {
+    return {
+      gateway: 'mercadopago',
+      available: true,
+      token: establishment.mercado_pago_token
+    };
+  }
+  
+  if (psGlobalEnabled && hasPagSeguroToken) {
+    return {
+      gateway: 'pagseguro',
+      available: true,
+      token: establishment.pagseguro_token
+    };
+  }
+  
+  // Nenhum gateway disponível
+  return {
+    gateway: 'none',
+    available: false
+  };
+}
+
+// Gera PIX via Mercado Pago
+async function generateMercadoPagoPix(
+  supabaseUrl: string,
+  anonKey: string,
+  establishmentId: string,
+  orderId: string,
+  total: number,
+  orderNumber: string,
+  establishmentName: string,
+  customerPhone: string,
+  customerName: string
+): Promise<any> {
+  const pixResponse = await fetch(
+    `${supabaseUrl}/functions/v1/mercadopago-pix`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${anonKey}`,
+      },
+      body: JSON.stringify({
+        establishment_id: establishmentId,
+        order_id: orderId,
+        amount: total,
+        description: `Pedido #${orderNumber} - ${establishmentName}`,
+        payer: {
+          email: `${customerPhone}@whatsapp.customer`,
+          name: customerName,
+        },
+      }),
+    }
+  );
+
+  if (pixResponse.ok) {
+    const pix = await pixResponse.json();
+    if (pix.success) {
+      return {
+        qr_code: pix.qr_code,
+        qr_code_base64: pix.qr_code_base64,
+        payment_id: pix.payment_id,
+        copy_paste: pix.qr_code,
+        gateway: 'mercadopago'
+      };
+    }
+  }
+  return null;
+}
+
+// Gera PIX via PagSeguro
+async function generatePagSeguroPix(
+  supabaseUrl: string,
+  anonKey: string,
+  establishmentId: string,
+  orderId: string,
+  total: number,
+  orderNumber: string,
+  establishmentName: string,
+  customerPhone: string,
+  customerName: string
+): Promise<any> {
+  const pixResponse = await fetch(
+    `${supabaseUrl}/functions/v1/pagseguro-pix`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${anonKey}`,
+      },
+      body: JSON.stringify({
+        establishment_id: establishmentId,
+        order_id: orderId,
+        amount: total,
+        description: `Pedido #${orderNumber} - ${establishmentName}`,
+        payer: {
+          email: `${customerPhone}@whatsapp.customer`,
+          name: customerName,
+          phone: customerPhone,
+        },
+      }),
+    }
+  );
+
+  if (pixResponse.ok) {
+    const pix = await pixResponse.json();
+    if (pix.success) {
+      return {
+        qr_code: pix.qr_code || pix.pix_code,
+        qr_code_base64: pix.qr_code_base64,
+        payment_id: pix.charge_id || pix.payment_id,
+        copy_paste: pix.qr_code || pix.pix_code,
+        gateway: 'pagseguro'
+      };
+    }
+  }
+  return null;
 }
 
 serve(async (req) => {
@@ -36,53 +205,115 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+
     const body: CheckoutRequest = await req.json();
     const { 
-      session_id, 
+      session_id,
+      instance_name,
+      remote_jid,
       delivery_type, 
       payment_method, 
       delivery_address, 
       change_for, 
       observations,
-      table_number 
+      table_number,
+      generate_pix 
     } = body;
 
     console.log('Checkout request:', JSON.stringify(body, null, 2));
 
-    // Get session with cart
-    const { data: session, error: sessionError } = await supabase
-      .from('whatsapp_sessions')
-      .select('*, establishments(*)')
-      .eq('id', session_id)
-      .single();
-
-    if (sessionError || !session) {
-      return new Response(JSON.stringify({ error: 'Session not found' }), {
-        status: 404,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    const cart = session.cart as Array<{
+    let cart: Array<{
       product_id: string;
       name: string;
       quantity: number;
       price: number;
       observations?: string;
     }>;
+    let establishment: any;
+    let establishmentId: string;
+    let customerPhone: string;
+    let customerName: string;
+    let sessionId: string | null = null;
 
-    if (!cart || cart.length === 0) {
-      return new Response(JSON.stringify({
-        success: false,
-        error: 'Carrinho vazio',
-        message: '🛒 Seu carrinho está vazio! Adicione alguns itens antes de finalizar o pedido.',
+    // N8N Multi-tenant mode: resolve by instance_name
+    if (instance_name && !session_id) {
+      console.log('N8N mode: resolving by instance_name:', instance_name);
+      
+      const { data: est, error: estError } = await supabase
+        .from('establishments')
+        .select('*')
+        .eq('whatsapp_instance_name', instance_name)
+        .single();
+
+      if (estError || !est) {
+        console.error('Establishment not found for instance:', instance_name);
+        return new Response(JSON.stringify({ 
+          error: 'Establishment not found',
+          message: '❌ Estabelecimento não encontrado para esta instância.' 
+        }), {
+          status: 404,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      establishment = est;
+      establishmentId = est.id;
+      customerPhone = body.customer_phone || remote_jid?.replace('@s.whatsapp.net', '') || '';
+      customerName = body.customer_name || 'Cliente WhatsApp';
+      cart = body.cart || [];
+
+      if (!cart || cart.length === 0) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: 'Carrinho vazio',
+          message: '🛒 Carrinho vazio! Adicione itens antes de finalizar.',
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    } 
+    // Legacy session-based mode
+    else if (session_id) {
+      const { data: session, error: sessionError } = await supabase
+        .from('whatsapp_sessions')
+        .select('*, establishments(*)')
+        .eq('id', session_id)
+        .single();
+
+      if (sessionError || !session) {
+        return new Response(JSON.stringify({ error: 'Session not found' }), {
+          status: 404,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      sessionId = session_id;
+      establishment = session.establishments;
+      establishmentId = session.establishment_id;
+      customerPhone = session.customer_phone;
+      customerName = session.customer_name || 'Cliente WhatsApp';
+      cart = session.cart as typeof cart;
+
+      if (!cart || cart.length === 0) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: 'Carrinho vazio',
+          message: '🛒 Seu carrinho está vazio! Adicione alguns itens antes de finalizar o pedido.',
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    } else {
+      return new Response(JSON.stringify({ 
+        error: 'Missing session_id or instance_name',
+        message: '❌ Parâmetros insuficientes para checkout.' 
       }), {
+        status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-
-    const establishment = session.establishments;
-    const establishmentId = session.establishment_id;
 
     // Calculate subtotal
     const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
@@ -107,12 +338,12 @@ serve(async (req) => {
       if (delivery_address.latitude && delivery_address.longitude) {
         try {
           const deliveryResponse = await fetch(
-            `${Deno.env.get('SUPABASE_URL')}/functions/v1/calculate-delivery`,
+            `${supabaseUrl}/functions/v1/calculate-delivery`,
             {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`,
+                'Authorization': `Bearer ${anonKey}`,
               },
               body: JSON.stringify({
                 establishment_id: establishmentId,
@@ -155,7 +386,7 @@ serve(async (req) => {
     let { data: customer } = await supabase
       .from('customers')
       .select('id')
-      .eq('phone', session.customer_phone)
+      .eq('phone', customerPhone)
       .eq('establishment_id', establishmentId)
       .single();
 
@@ -164,8 +395,8 @@ serve(async (req) => {
         .from('customers')
         .insert({
           establishment_id: establishmentId,
-          name: session.customer_name || 'Cliente WhatsApp',
-          phone: session.customer_phone,
+          name: customerName,
+          phone: customerPhone,
           addresses: delivery_address ? [delivery_address] : [],
         })
         .select()
@@ -212,23 +443,24 @@ serve(async (req) => {
       throw orderError;
     }
 
-    // Clear cart and update session
-    await supabase
-      .from('whatsapp_sessions')
-      .update({ 
-        cart: [],
-        context: {
-          ...((session.context as object) || {}),
-          last_order_id: order.id,
-          last_order_number: order.order_number,
-        }
-      })
-      .eq('id', session_id);
+    // Clear cart and update session (only for legacy mode)
+    if (sessionId) {
+      await supabase
+        .from('whatsapp_sessions')
+        .update({ 
+          cart: [],
+          context: {
+            last_order_id: order.id,
+            last_order_number: order.order_number,
+          }
+        })
+        .eq('id', sessionId);
+    }
 
     // Log analytics
     await supabase.from('whatsapp_analytics').insert({
       establishment_id: establishmentId,
-      session_id,
+      session_id: sessionId,
       event_type: 'order_created',
       event_data: {
         order_id: order.id,
@@ -237,8 +469,65 @@ serve(async (req) => {
         items_count: cart.length,
         delivery_type,
         payment_method,
+        source: instance_name ? 'n8n' : 'legacy',
       },
     });
+
+    // Generate PIX if requested (N8N mode) - with multi-gateway support
+    let pixData = null;
+    if (generate_pix && payment_method === 'pix') {
+      // Determinar qual gateway usar
+      const gatewayResult = await determinePaymentGateway(supabase, establishmentId, establishment);
+      
+      console.log('Gateway determination result:', gatewayResult);
+      
+      if (gatewayResult.available) {
+        try {
+          if (gatewayResult.gateway === 'mercadopago') {
+            pixData = await generateMercadoPagoPix(
+              supabaseUrl,
+              anonKey,
+              establishmentId,
+              order.id,
+              total,
+              order.order_number,
+              establishment.name,
+              customerPhone,
+              customerName
+            );
+          } else if (gatewayResult.gateway === 'pagseguro') {
+            pixData = await generatePagSeguroPix(
+              supabaseUrl,
+              anonKey,
+              establishmentId,
+              order.id,
+              total,
+              order.order_number,
+              establishment.name,
+              customerPhone,
+              customerName
+            );
+          }
+          
+          if (pixData) {
+            console.log(`PIX generated successfully via ${gatewayResult.gateway} for order:`, order.order_number);
+          }
+        } catch (pixError) {
+          console.error('Error generating PIX:', pixError);
+        }
+      } else {
+        console.log('No payment gateway available for PIX generation');
+        // Se tem PIX key estática, usar como fallback
+        if (establishment.pix_key) {
+          pixData = {
+            copy_paste: establishment.pix_key,
+            gateway: 'static',
+            is_static: true
+          };
+          console.log('Using static PIX key as fallback');
+        }
+      }
+    }
 
     // Build confirmation message
     let confirmationMessage = `🎉 *Pedido #${order.order_number} confirmado!*\n\n`;
@@ -272,6 +561,17 @@ serve(async (req) => {
 
     confirmationMessage += `\nObrigado pela preferência! 🙏`;
 
+    // Add PIX instructions if generated
+    if (pixData) {
+      confirmationMessage += `\n\n💳 *Pagamento PIX:*\n`;
+      if (pixData.is_static) {
+        confirmationMessage += `Copie a chave PIX abaixo e pague no seu banco:\n\n`;
+      } else {
+        confirmationMessage += `Copie o código abaixo e pague no seu banco:\n\n`;
+      }
+      confirmationMessage += `\`${pixData.copy_paste}\``;
+    }
+
     return new Response(JSON.stringify({
       success: true,
       order_id: order.id,
@@ -283,6 +583,11 @@ serve(async (req) => {
       message: confirmationMessage,
       payment_method,
       delivery_type,
+      // N8N fields
+      pix: pixData,
+      payment_gateway: pixData?.gateway || 'none',
+      customer_phone: customerPhone,
+      establishment_name: establishment.name,
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

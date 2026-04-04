@@ -16,6 +16,7 @@ export const useAuditLog = () => {
   const { user } = useAuth();
 
   const logAction = useCallback(async (data: AuditLogData) => {
+    // Ignorar logs para usuários não autenticados (anonymous checkout)
     if (!user) return;
 
     try {
@@ -30,7 +31,10 @@ export const useAuditLog = () => {
         metadata: data.metadata || {}
       }]);
     } catch (error) {
-      console.error('Failed to log audit action:', error);
+      // Silenciar erros de RLS para não poluir console
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('Audit log skipped (likely RLS):', error);
+      }
     }
   }, [user]);
 

@@ -2,13 +2,12 @@ import { Link } from "react-router-dom";
 import { Heart, Plus, Clock } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { useFavorites } from "@/hooks/useFavorites";
 import { useCart } from "@/hooks/useCart";
 import { PriceWithDiscount } from "@/components/ui/price";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useState, memo, useCallback, useMemo } from "react";
 
 interface Product {
   id: string;
@@ -19,6 +18,7 @@ interface Product {
   image_url?: string | null;
   is_active?: boolean | null;
   establishment?: {
+    id: string;
     name: string;
     slug: string;
     is_open?: boolean | null;
@@ -31,26 +31,29 @@ interface ProductOfferCardProps {
   className?: string;
 }
 
-const ProductOfferCard = ({ product, variant = "default", className }: ProductOfferCardProps) => {
+const ProductOfferCard = memo(({ product, variant = "default", className }: ProductOfferCardProps) => {
   const { isProductFavorite, toggleFavoriteProduct } = useFavorites();
   const { addToCart } = useCart();
   const isFavorite = isProductFavorite(product.id);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
   
-  const discount = product.promotional_price && product.promotional_price < product.price
-    ? Math.round(((product.price - product.promotional_price) / product.price) * 100)
-    : null;
+  const discount = useMemo(() => 
+    product.promotional_price && product.promotional_price < product.price
+      ? Math.round(((product.price - product.promotional_price) / product.price) * 100)
+      : null,
+    [product.price, product.promotional_price]
+  );
   
   const isAvailable = product.is_active !== false && product.establishment?.is_open !== false;
 
-  const handleFavoriteClick = (e: React.MouseEvent) => {
+  const handleFavoriteClick = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     toggleFavoriteProduct(product.id);
-  };
+  }, [product.id, toggleFavoriteProduct]);
 
-  const handleAddToCart = (e: React.MouseEvent) => {
+  const handleAddToCart = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     
@@ -65,11 +68,11 @@ const ProductOfferCard = ({ product, variant = "default", className }: ProductOf
       price: product.price,
       promotional_price: product.promotional_price,
       image_url: product.image_url,
-      establishment_id: product.establishment.slug,
+      establishment_id: product.establishment.id,
     };
     
     const establishmentInfo = {
-      id: product.establishment.slug,
+      id: product.establishment.id,
       name: product.establishment.name,
       slug: product.establishment.slug,
       logo_url: null,
@@ -82,7 +85,7 @@ const ProductOfferCard = ({ product, variant = "default", className }: ProductOf
     
     addToCart(cartProduct, establishmentInfo);
     toast.success(`${product.name} adicionado ao carrinho`);
-  };
+  }, [product, addToCart]);
 
   // When used in a grid, cards should fill the grid cell (no fixed width)
   const isGridContext = !className?.includes('scroll-card') && variant === 'large';
@@ -92,10 +95,10 @@ const ProductOfferCard = ({ product, variant = "default", className }: ProductOf
     return (
       <Link 
         to={`/produto/${product.id}`}
-        className={cn("block group snap-center", className)}
+        className={cn("block group snap-center flex-shrink-0", className)}
       >
-        <Card className="overflow-hidden hover:shadow-elevated transition-all relative border-0 shadow-soft w-56 md:w-64 rounded-2xl group-hover:scale-[1.02]">
-          <div className="relative overflow-hidden bg-muted aspect-[3/4]">
+        <Card className="overflow-hidden hover:shadow-elevated transition-all relative border-0 shadow-soft w-52 md:w-56 h-72 md:h-80 rounded-2xl group-hover:scale-[1.02]">
+          <div className="relative overflow-hidden bg-muted h-full">
             {/* Skeleton while loading */}
             {!imageLoaded && !imageError && product.image_url && (
               <div className="absolute inset-0 skeleton-shimmer" />
@@ -154,7 +157,7 @@ const ProductOfferCard = ({ product, variant = "default", className }: ProductOf
             </button>
             
             {/* Gradient overlay for text */}
-            <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+            <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
             
             {/* Content overlay */}
             <div className="absolute inset-x-0 bottom-0 p-3 text-white">
@@ -179,20 +182,21 @@ const ProductOfferCard = ({ product, variant = "default", className }: ProductOf
     );
   }
 
-  // Default/compact variants
+  // Default/compact variants - fixed dimensions
+  const cardWidth = variant === "compact" ? "w-36" : "w-44";
+  const cardHeight = variant === "compact" ? "h-52" : "h-60";
+  const imageHeight = variant === "compact" ? "h-28" : "h-32";
+
   return (
     <Link 
       to={`/produto/${product.id}`}
-      className={cn("block", className)}
+      className={cn("block flex-shrink-0", className)}
     >
       <Card className={cn(
         "overflow-hidden hover:shadow-lg transition-all relative rounded-2xl border-0 shadow-soft card-hover",
-        variant === "compact" ? "w-36 md:w-44" : "w-40 md:w-52"
+        cardWidth, cardHeight
       )}>
-        <div className={cn(
-          "relative overflow-hidden bg-muted",
-          variant === "compact" ? "h-28" : "h-32 md:h-36"
-        )}>
+        <div className={cn("relative overflow-hidden bg-muted", imageHeight)}>
           {/* Skeleton while loading */}
           {!imageLoaded && !imageError && product.image_url && (
             <div className="absolute inset-0 skeleton-shimmer" />
@@ -286,6 +290,8 @@ const ProductOfferCard = ({ product, variant = "default", className }: ProductOf
       </Card>
     </Link>
   );
-};
+});
+
+ProductOfferCard.displayName = "ProductOfferCard";
 
 export default ProductOfferCard;

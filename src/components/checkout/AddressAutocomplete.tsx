@@ -4,6 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { MapPin, Navigation, Check, Loader2 } from "lucide-react";
+import { useActiveRegion } from "@/hooks/useActiveRegion";
 
 interface AddressData {
   cep: string;
@@ -31,14 +32,19 @@ import { GOOGLE_MAPS_API_KEY } from '@/lib/constants';
 const AddressAutocomplete = ({ 
   value, 
   onChange, 
-  establishmentLat = -8.7576, 
-  establishmentLng = -35.1031 
+  establishmentLat, 
+  establishmentLng 
 }: AddressAutocompleteProps) => {
+  // Use active region for defaults and location bias
+  const { region } = useActiveRegion();
+  const defaultLat = establishmentLat ?? region.center_lat;
+  const defaultLng = establishmentLng ?? region.center_lng;
   const [isMapLoaded, setIsMapLoaded] = useState(false);
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
   const [showMap, setShowMap] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [suggestions, setSuggestions] = useState<google.maps.places.AutocompletePrediction[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
@@ -54,17 +60,33 @@ const AddressAutocomplete = ({
       return;
     }
 
+    const existingScript = document.querySelector(`script[src*="maps.googleapis.com"]`);
+    if (existingScript) {
+      existingScript.addEventListener("load", () => setIsMapLoaded(true));
+      return;
+    }
+
     const script = document.createElement("script");
     script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places,marker&v=weekly`;
     script.async = true;
     script.defer = true;
     script.onload = () => setIsMapLoaded(true);
     document.head.appendChild(script);
-
-    return () => {
-      // Cleanup if needed
-    };
   }, []);
+
+  // Initialize autocomplete and places services BEFORE map is visible
+  useEffect(() => {
+    if (!isMapLoaded) return;
+    
+    autocompleteServiceRef.current = new google.maps.places.AutocompleteService();
+    geocoderRef.current = new google.maps.Geocoder();
+    
+    // Create PlacesService with a temporary div - allows selection before map is shown
+    if (!placesServiceRef.current) {
+      const tempDiv = document.createElement('div');
+      placesServiceRef.current = new google.maps.places.PlacesService(tempDiv);
+    }
+  }, [isMapLoaded]);
 
   // Initialize map when loaded and showMap is true
   useEffect(() => {
@@ -74,8 +96,8 @@ const AddressAutocomplete = ({
       const { Map } = await google.maps.importLibrary("maps") as google.maps.MapsLibrary;
       const { AdvancedMarkerElement } = await google.maps.importLibrary("marker") as google.maps.MarkerLibrary;
 
-      const initialLat = value.lat || establishmentLat;
-      const initialLng = value.lng || establishmentLng;
+      const initialLat = value.lat || defaultLat;
+      const initialLng = value.lng || defaultLng;
 
       const map = new Map(mapRef.current!, {
         center: { lat: initialLat, lng: initialLng },
@@ -114,15 +136,13 @@ const AddressAutocomplete = ({
 
       mapInstanceRef.current = map;
       markerRef.current = marker;
-
-      // Initialize services
-      autocompleteServiceRef.current = new google.maps.places.AutocompleteService();
+      
+      // Update PlacesService with map for better results (optional but recommended)
       placesServiceRef.current = new google.maps.places.PlacesService(map);
-      geocoderRef.current = new google.maps.Geocoder();
     };
 
     initMap();
-  }, [isMapLoaded, showMap, value.lat, value.lng, establishmentLat, establishmentLng]);
+  }, [isMapLoaded, showMap, value.lat, value.lng, defaultLat, defaultLng]);
 
   // Reverse geocode to get address from coordinates
   const reverseGeocode = useCallback(async (lat: number, lng: number) => {
@@ -155,30 +175,38 @@ const AddressAutocomplete = ({
     }
   }, [onChange, value]);
 
-  // Handle search input
+  // Handle search input with location bias for active region
   const handleSearchChange = useCallback((query: string) => {
     setSearchQuery(query);
     
     if (!autocompleteServiceRef.current || query.length < 3) {
       setSuggestions([]);
+      setShowSuggestions(false);
       return;
     }
 
+    // Apply location bias to prioritize results from active region (Tamandaré)
     autocompleteServiceRef.current.getPlacePredictions(
       {
         input: query,
         componentRestrictions: { country: "br" },
         types: ["address"],
+        locationBias: {
+          center: { lat: region.center_lat, lng: region.center_lng },
+          radius: region.bias_radius_meters,
+        },
       },
       (predictions, status) => {
         if (status === google.maps.places.PlacesServiceStatus.OK && predictions) {
           setSuggestions(predictions);
+          setShowSuggestions(true);
         } else {
           setSuggestions([]);
+          setShowSuggestions(false);
         }
       }
     );
-  }, []);
+  }, [region.center_lat, region.center_lng, region.bias_radius_meters]);
 
   // Handle suggestion selection
   const handleSelectSuggestion = useCallback((placeId: string, description: string) => {
@@ -216,6 +244,7 @@ const AddressAutocomplete = ({
 
           setSearchQuery(description);
           setSuggestions([]);
+          setShowSuggestions(false);
           setShowMap(true);
         }
       }
@@ -261,32 +290,36 @@ const AddressAutocomplete = ({
       <div className="space-y-2">
         <Label>Buscar endereço</Label>
         <div className="relative">
-          <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
           <Input
             placeholder="Digite seu endereço..."
             value={searchQuery}
             onChange={(e) => handleSearchChange(e.target.value)}
+            onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
             className="pl-10"
           />
-        </div>
-        
-        {/* Suggestions dropdown */}
-        {suggestions.length > 0 && (
-          <Card className="absolute z-50 w-full mt-1 max-h-60 overflow-auto">
-            <CardContent className="p-0">
+          
+          {/* Suggestions dropdown */}
+          {showSuggestions && suggestions.length > 0 && (
+            <div className="absolute left-0 right-0 z-[100] mt-1 max-h-60 overflow-auto bg-background border border-border rounded-lg shadow-xl">
               {suggestions.map((suggestion) => (
                 <button
                   key={suggestion.place_id}
-                  onClick={() => handleSelectSuggestion(suggestion.place_id, suggestion.description)}
-                  className="w-full px-4 py-3 text-left hover:bg-muted transition-colors border-b last:border-0 flex items-start gap-3"
+                  type="button"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleSelectSuggestion(suggestion.place_id, suggestion.description);
+                  }}
+                  className="w-full px-4 py-3 text-left hover:bg-accent transition-colors border-b border-border last:border-0 flex items-start gap-3 cursor-pointer"
                 >
                   <MapPin className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-                  <span className="text-sm">{suggestion.description}</span>
+                  <span className="text-sm text-foreground">{suggestion.description}</span>
                 </button>
               ))}
-            </CardContent>
-          </Card>
-        )}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* GPS Button */}

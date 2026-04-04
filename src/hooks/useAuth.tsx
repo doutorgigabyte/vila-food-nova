@@ -6,8 +6,8 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null; data?: any }>;
-  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, fullName: string, acceptedTerms?: boolean) => Promise<{ error: Error | null; data?: any }>;
+  signIn: (email: string, password: string, rememberMe?: boolean) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   resendConfirmationEmail: (email: string) => Promise<{ error: Error | null }>;
   verifyOtp: (email: string, token: string) => Promise<{ error: Error | null; data?: any }>;
@@ -68,11 +68,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       (event, session) => {
         console.log('Auth state changed:', event, session?.user?.id);
         
-        // Handle SIGNED_OUT event explicitly
-        if (event === 'SIGNED_OUT' || !session) {
+        // CRITICAL: Only clear storage on EXPLICIT SIGNED_OUT event
+        // Do NOT clear on !session as this can happen during page transitions
+        if (event === 'SIGNED_OUT') {
+          console.log('Explicit SIGNED_OUT event - clearing storage');
           setSession(null);
           setUser(null);
-          // Clear all storage on sign out
+          // Clear all storage on explicit sign out only
           safeLocalStorage.clear();
           safeSessionStorage.clear();
           // Clear Supabase-related storage
@@ -86,10 +88,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               safeLocalStorage.removeItem(key);
             }
           });
-        } else {
+        } else if (session) {
+          // Only update state if we have a valid session
           setSession(session);
-          setUser(session?.user ?? null);
+          setUser(session.user ?? null);
+        } else if (!session && event === 'INITIAL_SESSION') {
+          // Initial load with no session - just update state, don't clear storage
+          setSession(null);
+          setUser(null);
         }
+        // For other events without session (TOKEN_REFRESHED failure, etc), 
+        // don't clear storage - let the next getSession() handle it
         setLoading(false);
       }
     );
@@ -131,7 +140,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
-  const signUp = async (email: string, password: string, fullName: string) => {
+  const signUp = async (email: string, password: string, fullName: string, acceptedTerms?: boolean) => {
     const redirectUrl = `${window.location.origin}/auth?verified=true`;
     
     const { data, error } = await supabase.auth.signUp({
@@ -140,7 +149,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       options: {
         emailRedirectTo: redirectUrl,
         data: {
-          full_name: fullName
+          full_name: fullName,
+          accepted_terms: acceptedTerms || false,
+          terms_accepted_at: acceptedTerms ? new Date().toISOString() : null
         }
       }
     });
@@ -151,11 +162,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return { error: error as Error | null, data };
   };
 
-  const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
+  const signIn = async (email: string, password: string, rememberMe?: boolean) => {
+    // If not remembering, we need to handle session differently
+    const { error, data } = await supabase.auth.signInWithPassword({
       email,
       password
     });
+    
+    if (!error && data.session) {
+      // Store remember me preference
+      if (rememberMe) {
+        try {
+          localStorage.setItem('vilafood_remember_me', 'true');
+        } catch (e) {
+          console.error('Error setting remember me:', e);
+        }
+      } else {
+        try {
+          localStorage.removeItem('vilafood_remember_me');
+          // For non-remember sessions, we'll rely on Supabase's default behavior
+          // but mark that user didn't want to be remembered
+          sessionStorage.setItem('vilafood_session_only', 'true');
+        } catch (e) {
+          console.error('Error clearing remember me:', e);
+        }
+      }
+    }
     
     return { error: error as Error | null };
   };

@@ -21,7 +21,7 @@ interface CartItem {
 
 interface AbandonedCart {
   id: string;
-  customer_phone: string;
+  masked_phone: string;
   customer_name: string | null;
   items: CartItem[];
   total: number;
@@ -29,6 +29,7 @@ interface AbandonedCart {
   last_recovery_at: string | null;
   recovered: boolean;
   created_at: string;
+  updated_at: string;
 }
 
 const AbandonedCartsManagement = () => {
@@ -57,15 +58,12 @@ const AbandonedCartsManagement = () => {
 
       if (!establishment) return;
 
+      // Use RPC to get masked data
       const { data } = await supabase
-        .from("abandoned_carts")
-        .select("*")
-        .eq("establishment_id", establishment.id)
-        .eq("recovered", false)
-        .order("created_at", { ascending: false });
+        .rpc("get_establishment_abandoned_carts", { p_establishment_id: establishment.id });
 
       if (data) {
-        setCarts(data.map(c => ({
+        setCarts(data.map((c: any) => ({
           ...c,
           items: (c.items as unknown as CartItem[]) || []
         })));
@@ -91,13 +89,25 @@ const AbandonedCartsManagement = () => {
 
       if (!establishment) return;
 
+      // Get full phone number from database for sending (this is allowed via RLS for establishment owner)
+      const { data: cartData } = await supabase
+        .from("abandoned_carts")
+        .select("customer_phone")
+        .eq("id", cart.id)
+        .single();
+
+      if (!cartData?.customer_phone) {
+        toast.error("Telefone não encontrado");
+        return;
+      }
+
       // Call WhatsApp notification function
       const itemsList = cart.items.map(i => `${i.quantity}x ${i.name}`).join("\n");
       const message = `Olá ${cart.customer_name || ""}! 👋\n\nVimos que você deixou alguns itens no carrinho:\n\n${itemsList}\n\nTotal: R$ ${cart.total.toFixed(2)}\n\nQue tal finalizar seu pedido? Estamos com tudo preparado para você! 🛒\n\nAcesse: ${window.location.origin}/loja/${establishment.slug}`;
 
       const { error } = await supabase.functions.invoke("whatsapp-notification", {
         body: {
-          phone: cart.customer_phone,
+          phone: cartData.customer_phone,
           message,
           establishment_id: establishment.id
         }
@@ -303,7 +313,7 @@ const AbandonedCartsManagement = () => {
                         <p className="font-medium">{cart.customer_name || "Cliente"}</p>
                         <p className="text-sm text-muted-foreground flex items-center gap-1">
                           <Phone className="w-3 h-3" />
-                          {cart.customer_phone}
+                          {cart.masked_phone}
                         </p>
                       </div>
                     </TableCell>

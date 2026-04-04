@@ -1,0 +1,535 @@
+{
+  "name": "VilaFood-AI-Brain",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            { "name": "message" },
+            { "name": "establishment_id" },
+            { "name": "instance_name" },
+            { "name": "remote_jid" },
+            { "name": "phone" },
+            { "name": "push_name" },
+            { "name": "system_prompt" },
+            { "name": "menu_json" },
+            { "name": "evolution_api_token" },
+            { "name": "mercado_pago_token" }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [-800, 0],
+      "id": "workflow-trigger",
+      "name": "Input do Router"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/functions/v1/whatsapp-cart",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_ANON_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"establishment_id\": \"{{ $json.establishment_id }}\",\n  \"customer_phone\": \"{{ $json.phone }}\",\n  \"customer_name\": \"{{ $json.push_name }}\",\n  \"action\": \"get_or_create_session\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-600, 0],
+      "id": "get-customer",
+      "name": "Busca/Cria Customer",
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/get_chat_history",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_ANON_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"p_establishment_id\": \"{{ $('workflow-trigger').item.json.establishment_id }}\",\n  \"p_remote_jid\": \"{{ $('workflow-trigger').item.json.remote_jid }}\",\n  \"p_limit\": 20\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-600, 200],
+      "id": "get-chat-history",
+      "name": "Busca Histórico Chat",
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "name": "text",
+              "value": "={{ $('workflow-trigger').item.json.message }}",
+              "type": "string"
+            },
+            {
+              "name": "session_id",
+              "value": "={{ $('workflow-trigger').item.json.instance_name }}:{{ $('workflow-trigger').item.json.phone }}",
+              "type": "string"
+            },
+            {
+              "name": "date_time",
+              "value": "={{ $now.format('yyyy-MM-dd') }}",
+              "type": "string"
+            },
+            {
+              "name": "week_day",
+              "value": "={{ $today.weekdayLong }}",
+              "type": "string"
+            },
+            {
+              "name": "horario",
+              "value": "={{ $now.format('HH:mm:ss') }}",
+              "type": "string"
+            },
+            {
+              "name": "customer_name",
+              "value": "={{ $('get-customer').item.json?.customer?.name || $('workflow-trigger').item.json.push_name || '' }}",
+              "type": "string"
+            },
+            {
+              "name": "customer_address",
+              "value": "={{ $('get-customer').item.json?.customer?.address || '' }}",
+              "type": "string"
+            },
+            {
+              "name": "customer_phone",
+              "value": "={{ $('workflow-trigger').item.json.phone }}",
+              "type": "string"
+            },
+            {
+              "name": "chat_history",
+              "value": "={{ $('get-chat-history').item.json?.history || '' }}",
+              "type": "string"
+            },
+            {
+              "name": "cart",
+              "value": "={{ JSON.stringify($('get-customer').item.json?.session?.cart || []) }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [-400, 100],
+      "id": "prepare-context",
+      "name": "Prepara Contexto"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.text }}",
+        "options": {
+          "systemMessage": "={{ $('workflow-trigger').item.json.system_prompt }}\n\n---\n\n### Cardápio\n\n{{ $('workflow-trigger').item.json.menu_json }}\n\n---\n\n### Dados do Cliente\n\nNome: {{ $json.customer_name }}\nTelefone: {{ $json.customer_phone }}\nEndereço: {{ $json.customer_address }}\n\n---\n\n### Carrinho Atual\n\n{{ $json.cart }}\n\n---\n\n### Contexto\n\nData/Hora: {{ $json.date_time }} {{ $json.horario }}\nDia da Semana: {{ $json.week_day }}\n\n---\n\n### Histórico da Conversa\n\n{{ $json.chat_history }}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [-100, 100],
+      "id": "ai-agent",
+      "name": "VilaFood AI Agent"
+    },
+    {
+      "parameters": {
+        "model": "gemini-2.5-flash",
+        "options": {
+          "temperature": 0.1
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [100, 300],
+      "id": "gemini-model",
+      "name": "Google Gemini",
+      "credentials": {
+        "googleGeminiApi": {
+          "id": "GEMINI_CREDENTIAL_ID",
+          "name": "Google Gemini VilaFood"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdOption": "customKey",
+        "sessionKey": "={{ $('prepare-context').item.json.session_id }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [100, 450],
+      "id": "memory",
+      "name": "Window Memory"
+    },
+    {
+      "parameters": {
+        "name": "search_menu",
+        "description": "Busca produtos no cardápio do estabelecimento. Use para encontrar itens, preços e descrições.",
+        "workflowId": {
+          "__rl": true,
+          "value": "VILAFOOD_TOOLS_MENU_WORKFLOW_ID",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "query": "={{ $fromAI('query', 'Termo de busca no cardápio', 'string') }}",
+            "establishment_id": "={{ $('workflow-trigger').item.json.establishment_id }}",
+            "menu_json": "={{ $('workflow-trigger').item.json.menu_json }}"
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.1,
+      "position": [-200, 400],
+      "id": "tool-search-menu",
+      "name": "search_menu"
+    },
+    {
+      "parameters": {
+        "name": "send_product_photo",
+        "description": "Envia foto de um produto do cardápio para o cliente via WhatsApp",
+        "workflowId": {
+          "__rl": true,
+          "value": "VILAFOOD_TOOLS_SEND_PHOTO_WORKFLOW_ID",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "product_id": "={{ $fromAI('product_id', 'ID do produto para enviar foto', 'string') }}",
+            "establishment_id": "={{ $('workflow-trigger').item.json.establishment_id }}",
+            "instance_name": "={{ $('workflow-trigger').item.json.instance_name }}",
+            "remote_jid": "={{ $('workflow-trigger').item.json.remote_jid }}",
+            "evolution_api_token": "={{ $('workflow-trigger').item.json.evolution_api_token }}"
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.1,
+      "position": [0, 400],
+      "id": "tool-send-photo",
+      "name": "send_product_photo"
+    },
+    {
+      "parameters": {
+        "name": "save_customer",
+        "description": "Salva ou atualiza dados do cliente: nome, endereço, email, CPF, coordenadas",
+        "workflowId": {
+          "__rl": true,
+          "value": "VILAFOOD_TOOLS_CUSTOMER_WORKFLOW_ID",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "function": "update",
+            "establishment_id": "={{ $('workflow-trigger').item.json.establishment_id }}",
+            "phone": "={{ $('workflow-trigger').item.json.phone }}",
+            "name": "={{ $fromAI('name', 'Nome completo do cliente', 'string') }}",
+            "email": "={{ $fromAI('email', 'Email do cliente', 'string') }}",
+            "cpf": "={{ $fromAI('cpf', 'CPF do cliente', 'string') }}",
+            "address": "={{ $fromAI('address', 'Endereço completo', 'string') }}",
+            "lat": "={{ $fromAI('lat', 'Latitude', 'string') }}",
+            "lng": "={{ $fromAI('lng', 'Longitude', 'string') }}",
+            "city": "={{ $fromAI('city', 'Cidade', 'string') }}",
+            "uf": "={{ $fromAI('uf', 'Estado UF', 'string') }}",
+            "cep": "={{ $fromAI('cep', 'CEP', 'string') }}"
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.1,
+      "position": [200, 400],
+      "id": "tool-save-customer",
+      "name": "save_customer"
+    },
+    {
+      "parameters": {
+        "name": "find_customer_location",
+        "description": "Geocodifica endereço do cliente usando Google Maps. Retorna lat, lng, distância até o estabelecimento",
+        "workflowId": {
+          "__rl": true,
+          "value": "VILAFOOD_TOOLS_LOCATION_WORKFLOW_ID",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "address": "={{ $fromAI('address', 'Endereço completo para geocodificar', 'string') }}",
+            "establishment_id": "={{ $('workflow-trigger').item.json.establishment_id }}"
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.1,
+      "position": [400, 400],
+      "id": "tool-location",
+      "name": "find_customer_location"
+    },
+    {
+      "parameters": {
+        "name": "add_to_cart",
+        "description": "Adiciona produto ao carrinho do cliente",
+        "workflowId": {
+          "__rl": true,
+          "value": "VILAFOOD_TOOLS_CART_WORKFLOW_ID",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "action": "add",
+            "establishment_id": "={{ $('workflow-trigger').item.json.establishment_id }}",
+            "phone": "={{ $('workflow-trigger').item.json.phone }}",
+            "product_id": "={{ $fromAI('product_id', 'ID do produto', 'string') }}",
+            "product_name": "={{ $fromAI('product_name', 'Nome do produto', 'string') }}",
+            "quantity": "={{ $fromAI('quantity', 'Quantidade', 'number') }}",
+            "price": "={{ $fromAI('price', 'Preço unitário', 'number') }}",
+            "observations": "={{ $fromAI('observations', 'Observações do item', 'string') }}"
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.1,
+      "position": [-400, 400],
+      "id": "tool-add-cart",
+      "name": "add_to_cart"
+    },
+    {
+      "parameters": {
+        "name": "create_order_pix",
+        "description": "Finaliza pedido e gera QR Code PIX para pagamento. Use após confirmar todos os itens e endereço com o cliente.",
+        "workflowId": {
+          "__rl": true,
+          "value": "VILAFOOD_TOOLS_ORDER_WORKFLOW_ID",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "establishment_id": "={{ $('workflow-trigger').item.json.establishment_id }}",
+            "instance_name": "={{ $('workflow-trigger').item.json.instance_name }}",
+            "remote_jid": "={{ $('workflow-trigger').item.json.remote_jid }}",
+            "customer_phone": "={{ $('workflow-trigger').item.json.phone }}",
+            "customer_name": "={{ $('prepare-context').item.json.customer_name }}",
+            "delivery_type": "={{ $fromAI('delivery_type', 'Tipo: delivery ou pickup', 'string') }}",
+            "delivery_address": "={{ $fromAI('delivery_address', 'Endereço de entrega JSON', 'string') }}",
+            "mercado_pago_token": "={{ $('workflow-trigger').item.json.mercado_pago_token }}"
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.1,
+      "position": [600, 400],
+      "id": "tool-create-order",
+      "name": "create_order_pix"
+    },
+    {
+      "parameters": {
+        "jsCode": "return {\n  response: $('ai-agent').item.json.output\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [200, 100],
+      "id": "format-response",
+      "name": "Formata Resposta"
+    }
+  ],
+  "connections": {
+    "Input do Router": {
+      "main": [
+        [
+          {
+            "node": "Busca/Cria Customer",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Busca Histórico Chat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca/Cria Customer": {
+      "main": [
+        [
+          {
+            "node": "Prepara Contexto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca Histórico Chat": {
+      "main": [
+        [
+          {
+            "node": "Prepara Contexto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepara Contexto": {
+      "main": [
+        [
+          {
+            "node": "VilaFood AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "VilaFood AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Formata Resposta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "VilaFood AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Window Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "VilaFood AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "search_menu": {
+      "ai_tool": [
+        [
+          {
+            "node": "VilaFood AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "send_product_photo": {
+      "ai_tool": [
+        [
+          {
+            "node": "VilaFood AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "save_customer": {
+      "ai_tool": [
+        [
+          {
+            "node": "VilaFood AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "find_customer_location": {
+      "ai_tool": [
+        [
+          {
+            "node": "VilaFood AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "add_to_cart": {
+      "ai_tool": [
+        [
+          {
+            "node": "VilaFood AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "create_order_pix": {
+      "ai_tool": [
+        [
+          {
+            "node": "VilaFood AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "vilafood-n8n"
+  },
+  "tags": [
+    {
+      "name": "VilaFood",
+      "id": "vilafood-tag"
+    }
+  ]
+}

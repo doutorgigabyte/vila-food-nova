@@ -35,6 +35,8 @@ interface Product {
   preparation_time: number | null;
   variations: any[] | null;
   additionals: any[] | null;
+  product_type?: string | null;
+  temperature_options?: string[] | null;
   category: {
     id: string;
     name: string;
@@ -82,6 +84,7 @@ const ProductDetail = () => {
         .select(`
           id, name, description, price, promotional_price, image_url,
           is_active, is_featured, preparation_time, variations, additionals,
+          product_type, temperature_options,
           category:categories(id, name),
           establishment:establishments(
             id, name, slug, logo_url, is_open, vila_id,
@@ -115,6 +118,8 @@ const ProductDetail = () => {
       promotional_price: product.promotional_price,
       image_url: product.image_url,
       establishment_id: product.establishment.id,
+      product_type: product.product_type || undefined,
+      temperature_options: product.temperature_options || undefined,
     };
 
     const establishmentInfo: EstablishmentInfo = {

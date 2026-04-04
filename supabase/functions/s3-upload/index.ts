@@ -15,8 +15,8 @@ const ALLOWED_IMAGE_CONTENT_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'i
 const ALLOWED_VIDEO_CONTENT_TYPES = ['video/mp4', 'video/webm', 'video/quicktime'];
 const ALLOWED_CONTENT_TYPES = [...ALLOWED_IMAGE_CONTENT_TYPES, ...ALLOWED_VIDEO_CONTENT_TYPES];
 
-const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
-const MAX_VIDEO_SIZE = 50 * 1024 * 1024; // 50MB
+const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_VIDEO_SIZE = 100 * 1024 * 1024; // 100MB
 
 serve(async (req) => {
   // Handle CORS preflight
@@ -62,47 +62,70 @@ serve(async (req) => {
       );
     }
 
-    if (!establishmentId || establishmentId === 'general') {
-      return new Response(
-        JSON.stringify({ error: 'ID do estabelecimento é obrigatório' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // SECURITY: Verify user owns the establishment
+    // SECURITY: Create admin client for authorization checks
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    const { data: establishment, error: estError } = await supabaseAdmin
-      .from('establishments')
-      .select('owner_id')
-      .eq('id', establishmentId)
+    // Check if user is super_admin (can upload without establishmentId)
+    const { data: userRole } = await supabaseAdmin
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .eq('role', 'super_admin')
       .single();
 
-    if (estError || !establishment) {
-      return new Response(
-        JSON.stringify({ error: 'Estabelecimento não encontrado' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    const isSuperAdmin = !!userRole;
 
-    if (establishment.owner_id !== user.id) {
-      // Check if user is super_admin
-      const { data: userRole } = await supabaseAdmin
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .eq('role', 'super_admin')
+    // Check for special onboarding case - user is creating a new establishment
+    const isOnboarding = establishmentId === 'onboarding';
+
+    // If not super_admin and not onboarding, establishmentId is required
+    if (!establishmentId || establishmentId === 'general') {
+      if (!isSuperAdmin) {
+        return new Response(
+          JSON.stringify({ error: 'ID do estabelecimento é obrigatório' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      // Super admin uploading without establishment - use 'system' folder
+    } else if (isOnboarding) {
+      // Onboarding: authenticated user is creating a new establishment
+      // Use their user ID as folder to keep files organized
+      console.log(`Onboarding upload for user: ${user.id}`);
+    } else {
+      // Verify establishment exists and user has access
+      const { data: establishment, error: estError } = await supabaseAdmin
+        .from('establishments')
+        .select('owner_id')
+        .eq('id', establishmentId)
         .single();
 
-      if (!userRole) {
+      if (estError || !establishment) {
+        return new Response(
+          JSON.stringify({ error: 'Estabelecimento não encontrado' }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      if (establishment.owner_id !== user.id && !isSuperAdmin) {
         return new Response(
           JSON.stringify({ error: 'Você não tem permissão para fazer upload neste estabelecimento' }),
           { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
+    }
+
+    // Determine the folder for upload
+    let uploadEstablishmentId: string;
+    if (isOnboarding) {
+      // For onboarding, use 'onboarding/{user_id}' pattern
+      uploadEstablishmentId = `onboarding/${user.id}`;
+    } else if (establishmentId && establishmentId !== 'general') {
+      uploadEstablishmentId = establishmentId;
+    } else {
+      uploadEstablishmentId = 'system';
     }
 
     // SECURITY: Validate file size based on type
@@ -161,7 +184,7 @@ serve(async (req) => {
     const now = new Date();
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, '0');
-    const key = `_uploads/${type}/${establishmentId}/${year}/${month}/${fileName}`;
+    const key = `_uploads/${type}/${uploadEstablishmentId}/${year}/${month}/${fileName}`;
 
     console.log(`Uploading to S3: ${key}`);
 

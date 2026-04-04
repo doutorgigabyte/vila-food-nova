@@ -56,12 +56,27 @@ const CouponsManagement = () => {
   }, [establishmentId]);
 
   const fetchEstablishment = async () => {
-    const { data } = await supabase
+    // First try to find as owner
+    const { data: ownerData } = await supabase
       .from("establishments")
       .select("id")
       .eq("owner_id", user?.id)
       .maybeSingle();
-    if (data) setEstablishmentId(data.id);
+    
+    if (ownerData) {
+      setEstablishmentId(ownerData.id);
+      return;
+    }
+    
+    // Then try via establishment_users
+    const { data: memberData } = await supabase
+      .from("establishment_users")
+      .select("establishment_id")
+      .eq("user_id", user?.id)
+      .eq("is_active", true)
+      .maybeSingle();
+    
+    if (memberData) setEstablishmentId(memberData.establishment_id);
   };
 
   const fetchCoupons = async () => {

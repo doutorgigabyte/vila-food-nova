@@ -53,15 +53,14 @@ export default function StoryScheduler({ onSchedule, onBack, onSkip }: StorySche
     );
   }, []);
 
-  const MAX_REPOSTS_PER_DAY = 3;
-
   const toggleTime = useCallback((time: string) => {
     setSelectedTimes(prev => {
       if (prev.includes(time)) {
         return prev.filter(t => t !== time);
       }
-      if (prev.length >= MAX_REPOSTS_PER_DAY) {
-        return prev; // Limit reached
+      // Limit to max 3 times per day
+      if (prev.length >= 3) {
+        return prev;
       }
       return [...prev, time].sort();
     });
@@ -183,7 +182,7 @@ export default function StoryScheduler({ onSchedule, onBack, onSkip }: StorySche
             {/* Times Selector */}
             <div>
               <Label className="text-xs text-muted-foreground mb-2 block">
-                Horários de Repostagem (max {MAX_REPOSTS_PER_DAY}x/dia)
+                Horários de Repostagem (máx. 3 por dia)
               </Label>
               <div className="flex flex-wrap gap-1.5">
                 {PRESET_TIMES.map(time => (

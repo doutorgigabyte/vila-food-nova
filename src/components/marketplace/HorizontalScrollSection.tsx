@@ -32,10 +32,8 @@ const HorizontalScrollSection = ({
 
   // Use drag scroll hook for mouse + touch drag support
   const { scrollRef, isDragging, handlers, scroll } = useDragScroll({
-    direction: "horizontal",
     momentum: true,
     friction: 0.92,
-    sensitivity: 1,
   });
 
   // Update scroll button visibility

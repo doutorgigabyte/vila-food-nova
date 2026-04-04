@@ -22,7 +22,15 @@ export type NotificationType =
   | 'maintenance'
   | 'new_review'
   | 'new_customer'
-  | 'table_call';
+  | 'table_call'
+  // Admin-only notification types
+  | 'admin_support_request'
+  | 'admin_payment_alert'
+  | 'admin_system_maintenance'
+  | 'admin_new_establishment'
+  // Customer-only notification types  
+  | 'customer_order_update'
+  | 'customer_delivery_update';
 
 export type NotificationPriority = 'critical' | 'high' | 'medium' | 'low';
 
@@ -236,14 +244,102 @@ export const NOTIFICATION_CONFIG: Record<NotificationType, NotificationConfig> =
     showModal: true,
     vibrate: true,
   },
+  // Admin-only notifications
+  admin_support_request: {
+    type: 'admin_support_request',
+    title: 'Nova Solicitação de Suporte',
+    hasSound: true,
+    soundFile: 'notification.mp3',
+    priority: 'high',
+    targetRoles: [],
+    showModal: false,
+    vibrate: false,
+  },
+  admin_payment_alert: {
+    type: 'admin_payment_alert',
+    title: 'Alerta de Pagamento',
+    hasSound: true,
+    soundFile: 'alert.mp3',
+    priority: 'high',
+    targetRoles: [],
+    showModal: true,
+    vibrate: true,
+  },
+  admin_system_maintenance: {
+    type: 'admin_system_maintenance',
+    title: 'Manutenção do Sistema',
+    hasSound: false,
+    soundFile: '',
+    priority: 'medium',
+    targetRoles: [],
+    showModal: false,
+    vibrate: false,
+  },
+  admin_new_establishment: {
+    type: 'admin_new_establishment',
+    title: 'Novo Estabelecimento',
+    hasSound: true,
+    soundFile: 'success.mp3',
+    priority: 'low',
+    targetRoles: [],
+    showModal: false,
+    vibrate: false,
+  },
+  // Customer-only notifications
+  customer_order_update: {
+    type: 'customer_order_update',
+    title: 'Atualização do Pedido',
+    hasSound: true,
+    soundFile: 'notification.mp3',
+    priority: 'high',
+    targetRoles: [],
+    showModal: false,
+    vibrate: true,
+  },
+  customer_delivery_update: {
+    type: 'customer_delivery_update',
+    title: 'Atualização da Entrega',
+    hasSound: true,
+    soundFile: 'delivery.mp3',
+    priority: 'high',
+    targetRoles: [],
+    showModal: false,
+    vibrate: true,
+  },
 };
 
-export const useNotifications = (establishmentId?: string) => {
+// Admin-only notification types for filtering
+const ADMIN_NOTIFICATION_TYPES: NotificationType[] = [
+  'admin_support_request',
+  'admin_payment_alert', 
+  'admin_system_maintenance',
+  'admin_new_establishment',
+];
+
+// Customer-only notification types
+const CUSTOMER_NOTIFICATION_TYPES: NotificationType[] = [
+  'customer_order_update',
+  'customer_delivery_update',
+];
+
+export interface NotificationContextOptions {
+  isInAdminContext?: boolean;
+  isInEstablishmentContext?: boolean;
+}
+
+export const useNotifications = (establishmentId?: string, contextOptions?: NotificationContextOptions) => {
   const { user } = useAuth();
   const { establishmentRole, appRole } = useUserRole();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
+
+  // Context passed from provider (which has access to Router)
+  const isInAdminContext = contextOptions?.isInAdminContext ?? false;
+  const isInEstablishmentContext = contextOptions?.isInEstablishmentContext ?? false;
+
+  // Verificar se é um cliente comum (sem role de estabelecimento)
+  const isCustomer = !establishmentRole && appRole !== 'super_admin';
 
   // Buscar notificações iniciais
   const fetchNotifications = useCallback(async () => {
@@ -257,7 +353,14 @@ export const useNotifications = (establishmentId?: string) => {
         .order('created_at', { ascending: false })
         .limit(50);
 
-      if (establishmentId) {
+      // Clientes comuns só veem suas próprias notificações (user_id específico)
+      if (isCustomer) {
+        query = query.eq('user_id', user.id);
+      } else if (isInAdminContext && appRole === 'super_admin') {
+        // Super admin em contexto admin - filtragem por tipo será feita client-side
+        // Não aplicamos filtro de establishment_id para ver notificações admin globais
+      } else if (establishmentId) {
+        // Staff do estabelecimento vê notificações do estabelecimento
         query = query.eq('establishment_id', establishmentId);
       }
 
@@ -265,12 +368,23 @@ export const useNotifications = (establishmentId?: string) => {
 
       if (error) throw error;
 
-      // Filtrar por role do usuário
+      // Filtrar por role do usuário (só aplica para staff, não clientes)
       const filteredNotifications = (data || []).filter((n: any) => {
-        // Super admin vê tudo
-        if (appRole === 'super_admin') return true;
+        // Clientes só veem notificações destinadas a eles (já filtrado pela query)
+        if (isCustomer) {
+          // Verificar se é uma notificação para cliente
+          return n.target_roles?.includes('customer') || !n.target_roles?.length;
+        }
         
-        // Se não tem target_roles, é para todos
+        // Super admin em contexto admin só vê notificações admin
+        if (isInAdminContext && appRole === 'super_admin') {
+          return ADMIN_NOTIFICATION_TYPES.includes(n.type);
+        }
+        
+        // Super admin em contexto de estabelecimento vê tudo do estabelecimento
+        if (appRole === 'super_admin' && isInEstablishmentContext) return true;
+        
+        // Se não tem target_roles, é para todos do estabelecimento
         if (!n.target_roles || n.target_roles.length === 0) return true;
         
         // Verificar se o role do usuário está nos target_roles
@@ -289,7 +403,7 @@ export const useNotifications = (establishmentId?: string) => {
     } finally {
       setLoading(false);
     }
-  }, [user, establishmentId, appRole, establishmentRole]);
+  }, [user, establishmentId, appRole, establishmentRole, isCustomer, isInAdminContext, isInEstablishmentContext]);
 
   // Marcar como lida
   const markAsRead = useCallback(async (notificationId: string) => {
@@ -350,15 +464,15 @@ export const useNotifications = (establishmentId?: string) => {
     
     const { error } = await supabase
       .from('notifications')
-      .insert({
+      .insert([{
         establishment_id: targetEstablishmentId || establishmentId,
-        type,
+        type: type as any,
         priority: config.priority,
         title,
         message,
         data: data || {},
         target_roles: config.targetRoles,
-      });
+      }]);
 
     if (error) {
       console.error('Error creating notification:', error);
@@ -371,6 +485,14 @@ export const useNotifications = (establishmentId?: string) => {
 
     fetchNotifications();
 
+    // Definir filtro baseado no tipo de usuário
+    let realtimeFilter: string | undefined;
+    if (isCustomer) {
+      realtimeFilter = `user_id=eq.${user.id}`;
+    } else if (establishmentId) {
+      realtimeFilter = `establishment_id=eq.${establishmentId}`;
+    }
+
     // Criar canal para realtime
     const channel = supabase
       .channel('notifications-changes')
@@ -380,17 +502,30 @@ export const useNotifications = (establishmentId?: string) => {
           event: 'INSERT',
           schema: 'public',
           table: 'notifications',
-          filter: establishmentId ? `establishment_id=eq.${establishmentId}` : undefined,
+          filter: realtimeFilter,
         },
         (payload: RealtimePostgresChangesPayload<Notification>) => {
           const newNotification = payload.new as Notification;
           
           // Verificar se o usuário deve receber esta notificação
-          const shouldReceive = 
-            appRole === 'super_admin' ||
-            !newNotification.target_roles?.length ||
-            (establishmentRole && newNotification.target_roles.includes(establishmentRole)) ||
-            establishmentRole === 'manager';
+          let shouldReceive = false;
+          
+          if (isCustomer) {
+            // Cliente só recebe notificações direcionadas a ele
+            shouldReceive = newNotification.user_id === user.id && 
+              (newNotification.target_roles?.includes('customer') || !newNotification.target_roles?.length);
+          } else if (isInAdminContext && appRole === 'super_admin') {
+            // Super admin em contexto admin só recebe notificações admin
+            shouldReceive = ADMIN_NOTIFICATION_TYPES.includes(newNotification.type);
+          } else if (isInEstablishmentContext && appRole === 'super_admin') {
+            // Super admin em contexto de estabelecimento recebe notificações do estabelecimento
+            shouldReceive = newNotification.establishment_id === establishmentId;
+          } else {
+            shouldReceive = 
+              !newNotification.target_roles?.length ||
+              (establishmentRole && newNotification.target_roles.includes(establishmentRole)) ||
+              establishmentRole === 'manager';
+          }
 
           if (shouldReceive) {
             setNotifications(prev => [newNotification, ...prev]);
@@ -403,7 +538,7 @@ export const useNotifications = (establishmentId?: string) => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, establishmentId, appRole, establishmentRole, fetchNotifications]);
+  }, [user, establishmentId, appRole, establishmentRole, isCustomer, fetchNotifications]);
 
   return {
     notifications,

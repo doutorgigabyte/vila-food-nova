@@ -5,26 +5,29 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
-import { Utensils, Mail, Lock, User, Phone, ArrowLeft, Eye, EyeOff, CheckCircle, RefreshCw } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Mail, Lock, User, Phone, ArrowLeft, Eye, EyeOff, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
+import { ProfileTypeSelector, ProfileType } from "@/components/checkout/ProfileTypeSelector";
+import { PasswordStrengthIndicator } from "@/components/auth/PasswordStrengthIndicator";
+import { validatePassword } from "@/lib/passwordValidation";
+import logoHorizontal from "@/assets/logo-horizontal.png";
 
 const Auth = () => {
   const navigate = useNavigate();
-  const { user, signIn, signUp, resendConfirmationEmail, verifyOtp, loading } = useAuth();
+  const { user, signIn, signUp, resendConfirmationEmail, loading } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [activeTab, setActiveTab] = useState("login");
   const [emailVerificationSent, setEmailVerificationSent] = useState(false);
   const [pendingEmail, setPendingEmail] = useState<string>("");
   const [resendingEmail, setResendingEmail] = useState(false);
-  const [otpCode, setOtpCode] = useState("");
-  const [verifyingOtp, setVerifyingOtp] = useState(false);
   
   // Login form state
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
   
   // Register form state
   const [registerName, setRegisterName] = useState("");
@@ -32,6 +35,8 @@ const Auth = () => {
   const [registerPhone, setRegisterPhone] = useState("");
   const [registerPassword, setRegisterPassword] = useState("");
   const [registerConfirmPassword, setRegisterConfirmPassword] = useState("");
+  const [profileType, setProfileType] = useState<ProfileType>("customer");
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   // Redirect if already logged in
   useEffect(() => {
@@ -48,7 +53,7 @@ const Auth = () => {
     }
     
     setIsLoading(true);
-    const { error } = await signIn(loginEmail, loginPassword);
+    const { error } = await signIn(loginEmail, loginPassword, rememberMe);
     setIsLoading(false);
     
     if (error) {
@@ -70,17 +75,22 @@ const Auth = () => {
       toast.error("Preencha todos os campos obrigatórios");
       return;
     }
+    if (!acceptedTerms) {
+      toast.error("Você precisa aceitar os Termos de Uso e Política de Privacidade");
+      return;
+    }
     if (registerPassword !== registerConfirmPassword) {
       toast.error("As senhas não coincidem");
       return;
     }
-    if (registerPassword.length < 6) {
-      toast.error("A senha deve ter pelo menos 6 caracteres");
+    const passwordValidation = validatePassword(registerPassword);
+    if (!passwordValidation.isValid) {
+      toast.error("A senha não atende aos requisitos mínimos de segurança");
       return;
     }
     
     setIsLoading(true);
-    const { error, data } = await signUp(registerEmail, registerPassword, registerName);
+    const { error, data } = await signUp(registerEmail, registerPassword, registerName, acceptedTerms);
     setIsLoading(false);
     
     if (error) {
@@ -94,17 +104,27 @@ const Auth = () => {
     
     // Check if email confirmation is required
     if (data?.user && !data?.session) {
-      // Email confirmation required
       setEmailVerificationSent(true);
       setPendingEmail(registerEmail);
       toast.success("Verifique seu e-mail para confirmar a conta!");
       return;
     }
     
-    // If session exists, user is already confirmed (shouldn't happen with email confirmation enabled)
+    // If session exists, redirect based on profile type
     if (data?.session) {
       toast.success("Conta criada com sucesso!");
-      navigate('/marketplace');
+      
+      // Redirect based on profile type
+      switch (profileType) {
+        case "merchant":
+          navigate('/cadastro-estabelecimento');
+          break;
+        case "driver":
+          navigate('/entregador/cadastro');
+          break;
+        default:
+          navigate('/marketplace');
+      }
     }
   };
 
@@ -150,13 +170,8 @@ const Auth = () => {
 
         <Card className="glass border-border/50">
           <CardHeader className="text-center pb-2">
-            <div className="flex items-center justify-center gap-2 mb-4">
-              <div className="p-2 bg-primary/10 rounded-xl">
-                <Utensils className="w-8 h-8 text-primary" />
-              </div>
-              <span className="text-2xl font-bold">
-                Vila<span className="text-primary">Food</span>
-              </span>
+            <div className="flex items-center justify-center mb-4">
+              <img src={logoHorizontal} alt="VilaFood" className="h-12" />
             </div>
             <CardTitle className="text-xl">Bem-vindo de volta!</CardTitle>
             <CardDescription>
@@ -219,6 +234,20 @@ const Auth = () => {
                     </div>
                   </div>
 
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="remember-me" 
+                      checked={rememberMe}
+                      onCheckedChange={(checked) => setRememberMe(checked === true)}
+                    />
+                    <Label 
+                      htmlFor="remember-me" 
+                      className="text-sm font-normal cursor-pointer"
+                    >
+                      Permanecer conectado
+                    </Label>
+                  </div>
+
                   <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading ? "Entrando..." : "Entrar"}
                   </Button>
@@ -257,6 +286,12 @@ const Auth = () => {
               {/* Register Tab */}
               <TabsContent value="register">
                 <form onSubmit={handleRegister} className="space-y-4">
+                  {/* Profile Type Selector */}
+                  <ProfileTypeSelector
+                    value={profileType}
+                    onChange={setProfileType}
+                  />
+
                   <div className="space-y-2">
                     <Label htmlFor="register-name">Nome completo *</Label>
                     <div className="relative">
@@ -309,7 +344,7 @@ const Auth = () => {
                       <Input
                         id="register-password"
                         type={showPassword ? "text" : "password"}
-                        placeholder="Mínimo 6 caracteres"
+                        placeholder="Crie uma senha forte"
                         className="pl-10 pr-10"
                         value={registerPassword}
                         onChange={(e) => setRegisterPassword(e.target.value)}
@@ -322,6 +357,7 @@ const Auth = () => {
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
+                    <PasswordStrengthIndicator password={registerPassword} />
                   </div>
 
                   <div className="space-y-2">
@@ -339,19 +375,34 @@ const Auth = () => {
                     </div>
                   </div>
 
-                  <p className="text-xs text-muted-foreground">
-                    Ao criar uma conta, você concorda com nossos{" "}
-                    <Link to="/termos" className="text-primary hover:underline">
-                      Termos de Uso
-                    </Link>{" "}
-                    e{" "}
-                    <Link to="/privacidade" className="text-primary hover:underline">
-                      Política de Privacidade
-                    </Link>
-                    .
-                  </p>
+                  <div className="flex items-start space-x-2">
+                    <Checkbox 
+                      id="accept-terms" 
+                      checked={acceptedTerms}
+                      onCheckedChange={(checked) => setAcceptedTerms(checked === true)}
+                      className="mt-1"
+                    />
+                    <Label 
+                      htmlFor="accept-terms" 
+                      className="text-sm font-normal cursor-pointer leading-relaxed"
+                    >
+                      Li e aceito os{" "}
+                      <Link to="/termos" className="text-primary hover:underline" target="_blank">
+                        Termos de Uso
+                      </Link>{" "}
+                      e{" "}
+                      <Link to="/privacidade" className="text-primary hover:underline" target="_blank">
+                        Política de Privacidade
+                      </Link>
+                      . *
+                    </Label>
+                  </div>
 
-                  <Button type="submit" className="w-full" disabled={isLoading}>
+                  <Button 
+                    type="submit" 
+                    className="w-full" 
+                    disabled={isLoading || !acceptedTerms || !validatePassword(registerPassword).isValid}
+                  >
                     {isLoading ? "Criando conta..." : "Criar conta"}
                   </Button>
                 </form>
@@ -360,7 +411,7 @@ const Auth = () => {
           </CardContent>
         </Card>
 
-        {/* Email Verification Screen with OTP */}
+        {/* Email Verification Screen */}
         {emailVerificationSent && (
           <Card className="mt-4 glass border-border/50">
             <CardContent className="pt-6">
@@ -371,58 +422,12 @@ const Auth = () => {
                 <div>
                   <CardTitle className="text-xl mb-2">Verifique seu e-mail</CardTitle>
                   <CardDescription>
-                    Enviamos um codigo de verificacao para <strong>{pendingEmail}</strong>
+                    Enviamos um link de confirmação para <strong>{pendingEmail}</strong>
                   </CardDescription>
                 </div>
-
-                <div className="space-y-3">
-                  <p className="text-sm text-muted-foreground">
-                    Digite o codigo de 6 digitos recebido no e-mail:
-                  </p>
-                  <div className="flex justify-center">
-                    <InputOTP
-                      maxLength={6}
-                      value={otpCode}
-                      onChange={setOtpCode}
-                    >
-                      <InputOTPGroup>
-                        <InputOTPSlot index={0} />
-                        <InputOTPSlot index={1} />
-                        <InputOTPSlot index={2} />
-                        <InputOTPSlot index={3} />
-                        <InputOTPSlot index={4} />
-                        <InputOTPSlot index={5} />
-                      </InputOTPGroup>
-                    </InputOTP>
-                  </div>
-
-                  <Button
-                    className="w-full"
-                    disabled={otpCode.length !== 6 || verifyingOtp}
-                    onClick={async () => {
-                      setVerifyingOtp(true);
-                      try {
-                        const { error } = await verifyOtp(pendingEmail, otpCode);
-                        if (error) {
-                          toast.error("Codigo invalido ou expirado. Tente novamente.");
-                          setOtpCode("");
-                        } else {
-                          toast.success("E-mail verificado com sucesso!");
-                          navigate("/marketplace");
-                        }
-                      } catch {
-                        toast.error("Erro ao verificar codigo.");
-                      } finally {
-                        setVerifyingOtp(false);
-                      }
-                    }}
-                  >
-                    {verifyingOtp ? "Verificando..." : "Verificar"}
-                  </Button>
-                </div>
-
-                <div className="text-sm text-muted-foreground">
-                  <p>Nao recebeu? Verifique sua caixa de spam.</p>
+                <div className="space-y-2 text-sm text-muted-foreground">
+                  <p>Clique no link no e-mail para ativar sua conta.</p>
+                  <p>Não recebeu o e-mail? Verifique sua caixa de spam.</p>
                 </div>
                 <div className="flex flex-col gap-2">
                   <Button
@@ -439,7 +444,7 @@ const Auth = () => {
                     ) : (
                       <>
                         <RefreshCw className="w-4 h-4 mr-2" />
-                        Reenviar codigo
+                        Reenviar e-mail
                       </>
                     )}
                   </Button>
@@ -448,7 +453,6 @@ const Auth = () => {
                     onClick={() => {
                       setEmailVerificationSent(false);
                       setPendingEmail("");
-                      setOtpCode("");
                       setActiveTab("login");
                     }}
                     className="w-full"
@@ -459,18 +463,6 @@ const Auth = () => {
               </div>
             </CardContent>
           </Card>
-        )}
-
-        {/* Register as establishment */}
-        {!emailVerificationSent && (
-          <div className="mt-6 text-center">
-            <p className="text-muted-foreground text-sm">
-              Tem um estabelecimento?{" "}
-              <Link to="/cadastro-estabelecimento" className="text-primary font-medium hover:underline">
-                Cadastre-se aqui
-              </Link>
-            </p>
-          </div>
         )}
       </div>
     </div>

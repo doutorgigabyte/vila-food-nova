@@ -59,10 +59,8 @@ const PlatformBannerSlider = ({ banners = defaultBanners }: PlatformBannerSlider
   const [activeIndex, setActiveIndex] = useState(0);
 
   const { scrollRef, isDragging, handlers } = useDragScroll({
-    direction: "horizontal",
     momentum: true,
     friction: 0.92,
-    sensitivity: 1,
   });
 
   // Track scroll position for iOS-style snap

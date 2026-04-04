@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { MapPin, Store, ChevronRight, ChevronLeft } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +8,8 @@ import { useVilas, Vila } from "@/hooks/useVilas";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useDragScroll } from "@/hooks/useDragScroll";
+import { cn } from "@/lib/utils";
+import { Link } from "react-router-dom";
 
 interface VilaWithCount extends Vila {
   establishmentCount: number;
@@ -16,19 +18,18 @@ interface VilaWithCount extends Vila {
 const VilasSection = () => {
   const { vilas, loading } = useVilas();
   const [vilasWithCount, setVilasWithCount] = useState<VilaWithCount[]>([]);
-  const { scrollRef, isDragging, handlers, scroll } = useDragScroll();
+  const { scrollRef, isDragging, wasClick, handlers, scroll, scrollStyles } = useDragScroll();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchCounts = async () => {
       if (vilas.length === 0) return;
 
+      // Use secure RPC function that doesn't expose sensitive data
       const vilasData: VilaWithCount[] = await Promise.all(
         vilas.map(async (vila) => {
-          const { count } = await supabase
-            .from('establishments')
-            .select('*', { count: 'exact', head: true })
-            .eq('vila_id', vila.id)
-            .eq('status', 'active');
+          const { data: count } = await supabase
+            .rpc('count_public_establishments_by_vila', { p_vila_id: vila.id });
 
           return {
             ...vila,
@@ -74,11 +75,11 @@ const VilasSection = () => {
             </div>
             <div>
               <h2 className="text-lg md:text-xl font-bold text-foreground flex items-center gap-2">
-                Vilas Gastronômicas
+                Vilas
                 <MapPin className="w-4 h-4 text-primary md:hidden" />
               </h2>
               <p className="text-xs md:text-sm text-muted-foreground hidden md:block">
-                Explore os melhores polos de alimentação
+                Polos comerciais com múltiplas lojas
               </p>
             </div>
           </div>
@@ -104,18 +105,27 @@ const VilasSection = () => {
           <div
             ref={scrollRef}
             {...handlers}
-            className={`flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth pb-2 select-none ${
+            className={cn(
+              "flex gap-4 overflow-x-auto scrollbar-hide pb-2 select-none",
               isDragging ? "cursor-grabbing" : "cursor-grab"
-            }`}
-            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            )}
+            style={{
+              ...scrollStyles,
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none',
+              scrollSnapType: isDragging ? 'none' : 'x proximity',
+            }}
           >
             {vilasWithCount.map((vila) => (
               <div 
                 key={vila.id} 
-                className="flex-shrink-0"
-                style={{ pointerEvents: isDragging ? 'none' : 'auto' }}
+                className="flex-shrink-0 cursor-pointer"
+                onClick={() => {
+                  if (wasClick()) {
+                    navigate(`/vila/${vila.slug}`);
+                  }
+                }}
               >
-                <Link to={`/vila/${vila.slug}`}>
                 <Card className="w-72 md:w-80 overflow-hidden hover:shadow-lg transition-all duration-300 border-border/50 hover:border-primary/30">
                   <div className="relative h-28 md:h-32 bg-gradient-to-br from-primary/20 to-accent/20 overflow-hidden">
                     {vila.image_url ? (
@@ -154,7 +164,6 @@ const VilasSection = () => {
                     )}
                   </CardContent>
                 </Card>
-                </Link>
               </div>
             ))}
           </div>

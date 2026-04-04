@@ -18,7 +18,9 @@ import {
   Store,
   Menu,
   ShoppingBag,
-  RefreshCw
+  RefreshCw,
+  Wifi,
+  WifiOff
 } from "lucide-react";
 import { toast } from "sonner";
 import { useDashboardData, useUserEstablishment } from "@/hooks/useDashboardData";
@@ -27,17 +29,21 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
+import { useAutoStoreStatus } from "@/hooks/useAutoStoreStatus";
 
 const EstablishmentDashboard = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { establishmentId, establishment, loading: estLoading, isSuperAdmin } = useUserEstablishment();
-  const { stats, pendingOrders, recentOrders, loading, refetch } = useDashboardData(establishmentId);
+  const { stats, pendingOrders, recentOrders, loading, refetch, lastUpdate, isConnected } = useDashboardData(establishmentId);
   
   const [isOpen, setIsOpen] = useState(establishment?.is_open ?? false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const baseUrl = isSuperAdmin && establishment?.slug ? `/painel/${establishment.slug}` : '/painel';
+
+  // Auto-update store status based on operating hours
+  useAutoStoreStatus(establishmentId, establishment?.operating_hours, establishment?.is_open);
 
   useEffect(() => {
     if (establishment) {
@@ -67,13 +73,13 @@ const EstablishmentDashboard = () => {
   const handleAcceptOrder = async (orderId: string) => {
     const { error } = await supabase
       .from('orders')
-      .update({ status: 'confirmed' })
+      .update({ status: 'preparing' })
       .eq('id', orderId);
 
     if (error) {
       toast.error("Erro ao aceitar pedido");
     } else {
-      toast.success("Pedido aceito!");
+      toast.success("Pedido enviado para preparo!");
       refetch();
     }
   };
@@ -128,6 +134,18 @@ const EstablishmentDashboard = () => {
     }
   };
 
+  // Debug logging
+  useEffect(() => {
+    console.log('[EstablishmentDashboard] Debug:', {
+      user_id: user?.id,
+      user_email: user?.email,
+      estLoading,
+      establishmentId,
+      establishment_name: establishment?.name,
+      isSuperAdmin
+    });
+  }, [user, estLoading, establishmentId, establishment, isSuperAdmin]);
+
   if (estLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -137,6 +155,7 @@ const EstablishmentDashboard = () => {
   }
 
   if (!establishmentId) {
+    console.log('[EstablishmentDashboard] No establishment found for user:', user?.id, user?.email);
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="max-w-md w-full">
@@ -146,8 +165,11 @@ const EstablishmentDashboard = () => {
             <p className="text-muted-foreground mb-4">
               Você não possui um estabelecimento cadastrado ou não tem permissão de acesso.
             </p>
+            <p className="text-xs text-muted-foreground mb-4">
+              ID do usuário: {user?.id?.slice(0, 8)}...
+            </p>
             <Button asChild>
-              <Link to="/cadastrar-estabelecimento">Cadastrar estabelecimento</Link>
+              <Link to="/cadastro-estabelecimento">Cadastrar estabelecimento</Link>
             </Button>
           </CardContent>
         </Card>
@@ -167,22 +189,39 @@ const EstablishmentDashboard = () => {
       />
 
       {/* Main Content */}
-      <main className="flex-1 lg:ml-64">
+      <main className="flex-1 lg:ml-64 overflow-x-hidden">
         {/* Top Bar */}
         <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b border-border">
           <div className="flex items-center justify-between px-4 py-3">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 min-w-0">
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="lg:hidden"
+                className="lg:hidden shrink-0"
                 onClick={() => setSidebarOpen(true)}
               >
                 <Menu className="w-5 h-5" />
               </Button>
-              <h1 className="text-lg font-semibold">Dashboard</h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-lg font-semibold truncate">Dashboard</h1>
+                {isConnected ? (
+                  <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
+                    <Wifi className="w-3 h-3" />
+                    <span className="hidden sm:inline">Ao vivo</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <WifiOff className="w-3 h-3" />
+                  </div>
+                )}
+              </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
+              {lastUpdate && (
+                <span className="text-xs text-muted-foreground hidden md:block">
+                  Atualizado às {lastUpdate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                </span>
+              )}
               <Button variant="ghost" size="icon" onClick={refetch}>
                 <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
               </Button>
@@ -201,7 +240,7 @@ const EstablishmentDashboard = () => {
           </div>
         </header>
 
-        <div className="p-4 md:p-6 space-y-6">
+        <div className="p-4 md:p-6 space-y-6 overflow-x-auto">
           {/* Stats Cards */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <Card>
@@ -341,9 +380,9 @@ const EstablishmentDashboard = () => {
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Clock className="w-5 h-5 text-yellow-500" />
-                  Pedidos Pendentes
-                  {stats.pendingOrders > 0 && (
-                    <Badge variant="destructive">{stats.pendingOrders}</Badge>
+                  Novos Pedidos
+                  {pendingOrders.length > 0 && (
+                    <Badge variant="destructive">{pendingOrders.length}</Badge>
                   )}
                 </CardTitle>
                 <Link to="/painel/pedidos">
@@ -364,14 +403,45 @@ const EstablishmentDashboard = () => {
                   <p>Nenhum pedido pendente</p>
                 </div>
               ) : (
-                pendingOrders.map((order) => (
-                  <div key={order.id} className="p-4 bg-muted/50 rounded-lg">
+                pendingOrders.map((order) => {
+                  const isAwaitingPayment = order.status === 'awaiting_payment';
+                  const isPayOnDelivery = ['cash', 'card_on_delivery', 'pix_on_delivery'].includes(order.payment_method);
+                  const isConfirmed = order.status === 'confirmed';
+                  
+                  return (
+                  <div key={order.id} className={`p-4 rounded-lg ${isConfirmed ? 'bg-green-500/10 border border-green-500/30' : isAwaitingPayment ? 'bg-yellow-500/10 border border-yellow-500/30' : 'bg-muted/50'}`}>
                     <div className="flex items-start justify-between mb-3">
                       <div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                           <span className="font-bold">#{order.order_number}</span>
                           <Badge variant="outline">
                             {order.delivery_type === "delivery" ? "Delivery" : "Retirada"}
+                          </Badge>
+                          {/* Payment status badges */}
+                          {isAwaitingPayment && (
+                            <Badge variant="secondary" className="bg-yellow-500/20 text-yellow-700 dark:text-yellow-400">
+                              ⏳ Aguardando Pagamento
+                            </Badge>
+                          )}
+                          {isPayOnDelivery && !isAwaitingPayment && (
+                            <Badge variant="secondary" className="bg-orange-500/20 text-orange-700 dark:text-orange-400">
+                              💵 Pagar na Entrega
+                            </Badge>
+                          )}
+                          {isConfirmed && (
+                            <Badge variant="secondary" className="bg-green-500/20 text-green-700 dark:text-green-400">
+                              ✅ Pagamento Confirmado
+                            </Badge>
+                          )}
+                          {/* Payment method */}
+                          <Badge variant="outline" className="text-xs">
+                            {order.payment_method === "pix" ? "PIX" :
+                             order.payment_method === "credit_card" ? "Crédito" :
+                             order.payment_method === "debit_card" ? "Débito" :
+                             order.payment_method === "cash" ? "Dinheiro" :
+                             order.payment_method === "card_on_delivery" ? "Cartão Entrega" :
+                             order.payment_method === "pix_on_delivery" ? "PIX Entrega" :
+                             order.payment_method || "N/A"}
                           </Badge>
                           <span className="text-sm text-muted-foreground">
                             {formatOrderTime(order.created_at)}
@@ -402,14 +472,21 @@ const EstablishmentDashboard = () => {
                       </p>
                     )}
                     <div className="flex gap-2">
-                      <Button 
-                        size="sm" 
-                        className="flex-1"
-                        onClick={() => handleAcceptOrder(order.id)}
-                      >
-                        <CheckCircle className="w-4 h-4 mr-2" />
-                        Aceitar
-                      </Button>
+                      {!isAwaitingPayment && (
+                        <Button 
+                          size="sm" 
+                          className="flex-1"
+                          onClick={() => handleAcceptOrder(order.id)}
+                        >
+                          <CheckCircle className="w-4 h-4 mr-2" />
+                          {isConfirmed ? 'Preparar' : 'Aceitar'}
+                        </Button>
+                      )}
+                      {isAwaitingPayment && (
+                        <Badge variant="outline" className="flex-1 justify-center py-2 text-yellow-600">
+                          Aguardando confirmação de pagamento
+                        </Badge>
+                      )}
                       <Button 
                         size="sm" 
                         variant="outline"
@@ -428,7 +505,8 @@ const EstablishmentDashboard = () => {
                       </Button>
                     </div>
                   </div>
-                ))
+                );
+                })
               )}
             </CardContent>
           </Card>

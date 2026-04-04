@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { 
   Table,
   TableBody,
@@ -17,18 +18,47 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Label } from "@/components/ui/label";
 import { 
   Search,
   CreditCard,
   RefreshCw,
   XCircle,
   DollarSign,
-  Gift
+  Gift,
+  MoreVertical,
+  CheckCircle,
+  Ban,
+  Clock,
+  Plus,
+  Building2
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import AdminLayout from "@/components/admin/AdminLayout";
-import { format } from "date-fns";
+import { format, addMonths, addYears } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 interface Subscription {
@@ -39,49 +69,188 @@ interface Subscription {
   starts_at: string;
   expires_at: string | null;
   created_at: string;
-  establishment?: { name: string; slug: string };
-  plan?: { name: string; price: number };
+  establishment?: { id: string; name: string; slug: string };
+  plan?: { id: string; name: string; price: number; billing_period: string };
+}
+
+interface Establishment {
+  id: string;
+  name: string;
+  slug: string;
+}
+
+interface Plan {
+  id: string;
+  name: string;
+  price: number;
+  billing_period: string;
 }
 
 const SubscriptionsManagement = () => {
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
+  const [establishments, setEstablishments] = useState<Establishment[]>([]);
+  const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  
+  // Dialog states
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [selectedSub, setSelectedSub] = useState<Subscription | null>(null);
+  
+  // Create form
+  const [newSubForm, setNewSubForm] = useState({
+    establishment_id: "",
+    plan_id: "",
+  });
 
   useEffect(() => {
-    fetchSubscriptions();
+    fetchData();
   }, []);
 
-  const fetchSubscriptions = async () => {
+  const fetchData = async () => {
     try {
-      const { data: subs, error: subsError } = await supabase
-        .from("subscriptions")
-        .select("*")
-        .order("created_at", { ascending: false });
+      const [subsRes, estRes, plansRes] = await Promise.all([
+        supabase.from("subscriptions").select("*").order("created_at", { ascending: false }),
+        supabase.from("establishments").select("id, name, slug"),
+        supabase.from("plans").select("id, name, price, billing_period").eq("is_active", true),
+      ]);
 
-      if (subsError) throw subsError;
+      if (subsRes.error) throw subsRes.error;
 
-      const { data: establishments } = await supabase
-        .from("establishments")
-        .select("id, name, slug");
-
-      const { data: plans } = await supabase
-        .from("plans")
-        .select("id, name, price");
-
-      const enrichedSubs = subs?.map(sub => ({
+      const enrichedSubs = subsRes.data?.map(sub => ({
         ...sub,
-        establishment: establishments?.find(e => e.id === sub.establishment_id),
-        plan: plans?.find(p => p.id === sub.plan_id),
+        establishment: estRes.data?.find(e => e.id === sub.establishment_id),
+        plan: plansRes.data?.find(p => p.id === sub.plan_id),
       })) || [];
 
       setSubscriptions(enrichedSubs);
+      setEstablishments(estRes.data || []);
+      setPlans(plansRes.data || []);
     } catch (error) {
-      console.error("Error fetching subscriptions:", error);
-      toast({ title: "Erro ao carregar assinaturas", variant: "destructive" });
+      console.error("Error fetching data:", error);
+      toast({ title: "Erro ao carregar dados", variant: "destructive" });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCreateSubscription = async () => {
+    if (!newSubForm.establishment_id || !newSubForm.plan_id) {
+      toast({ title: "Selecione estabelecimento e plano", variant: "destructive" });
+      return;
+    }
+
+    try {
+      const plan = plans.find(p => p.id === newSubForm.plan_id);
+      const startsAt = new Date();
+      const expiresAt = plan?.billing_period === "yearly" 
+        ? addYears(startsAt, 1) 
+        : addMonths(startsAt, 1);
+
+      const { error } = await supabase.from("subscriptions").insert({
+        establishment_id: newSubForm.establishment_id,
+        plan_id: newSubForm.plan_id,
+        status: "active",
+        starts_at: startsAt.toISOString(),
+        expires_at: expiresAt.toISOString(),
+      });
+
+      if (error) throw error;
+
+      // Update establishment plan_id
+      await supabase
+        .from("establishments")
+        .update({ plan_id: newSubForm.plan_id })
+        .eq("id", newSubForm.establishment_id);
+
+      toast({ title: "Assinatura criada com sucesso!" });
+      setCreateDialogOpen(false);
+      setNewSubForm({ establishment_id: "", plan_id: "" });
+      fetchData();
+    } catch (error) {
+      console.error("Error creating subscription:", error);
+      toast({ title: "Erro ao criar assinatura", variant: "destructive" });
+    }
+  };
+
+  const handleActivateSubscription = async (sub: Subscription) => {
+    try {
+      const plan = sub.plan;
+      const startsAt = new Date();
+      const expiresAt = plan?.billing_period === "yearly" 
+        ? addYears(startsAt, 1) 
+        : addMonths(startsAt, 1);
+
+      const { error } = await supabase
+        .from("subscriptions")
+        .update({ 
+          status: "active",
+          starts_at: startsAt.toISOString(),
+          expires_at: expiresAt.toISOString(),
+        })
+        .eq("id", sub.id);
+
+      if (error) throw error;
+
+      // Update establishment plan_id
+      await supabase
+        .from("establishments")
+        .update({ plan_id: sub.plan_id })
+        .eq("id", sub.establishment_id);
+
+      toast({ title: "Assinatura ativada!" });
+      fetchData();
+    } catch (error) {
+      console.error("Error activating subscription:", error);
+      toast({ title: "Erro ao ativar assinatura", variant: "destructive" });
+    }
+  };
+
+  const handleCancelSubscription = async () => {
+    if (!selectedSub) return;
+
+    try {
+      const { error } = await supabase
+        .from("subscriptions")
+        .update({ status: "cancelled" })
+        .eq("id", selectedSub.id);
+
+      if (error) throw error;
+
+      toast({ title: "Assinatura cancelada" });
+      setCancelDialogOpen(false);
+      setSelectedSub(null);
+      fetchData();
+    } catch (error) {
+      console.error("Error cancelling subscription:", error);
+      toast({ title: "Erro ao cancelar assinatura", variant: "destructive" });
+    }
+  };
+
+  const handleRenewSubscription = async (sub: Subscription) => {
+    try {
+      const plan = sub.plan;
+      const expiresAt = plan?.billing_period === "yearly" 
+        ? addYears(new Date(), 1) 
+        : addMonths(new Date(), 1);
+
+      const { error } = await supabase
+        .from("subscriptions")
+        .update({ 
+          status: "active",
+          expires_at: expiresAt.toISOString(),
+        })
+        .eq("id", sub.id);
+
+      if (error) throw error;
+
+      toast({ title: "Assinatura renovada!" });
+      fetchData();
+    } catch (error) {
+      console.error("Error renewing subscription:", error);
+      toast({ title: "Erro ao renovar assinatura", variant: "destructive" });
     }
   };
 
@@ -112,6 +281,11 @@ const SubscriptionsManagement = () => {
     cancelled: subscriptions.filter(s => s.status === "cancelled").length,
     mrr: totalRevenue
   };
+
+  // Get establishments without active subscription
+  const availableEstablishments = establishments.filter(est => 
+    !subscriptions.some(sub => sub.establishment_id === est.id && sub.status === "active")
+  );
 
   return (
     <AdminLayout title="Gestão de Assinaturas">
@@ -195,9 +369,13 @@ const SubscriptionsManagement = () => {
               <SelectItem value="pending">Pendentes</SelectItem>
             </SelectContent>
           </Select>
+          <Button onClick={() => setCreateDialogOpen(true)} className="gap-2">
+            <Plus className="w-4 h-4" />
+            Nova Assinatura
+          </Button>
         </div>
 
-        {/* Table */}
+        {/* Subscriptions List */}
         <Card>
           <CardContent className="p-0">
             {loading ? (
@@ -211,45 +389,235 @@ const SubscriptionsManagement = () => {
                 <p className="text-muted-foreground mt-1">Não há assinaturas com os filtros selecionados</p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Estabelecimento</TableHead>
-                      <TableHead>Plano</TableHead>
-                      <TableHead>Valor</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Início</TableHead>
-                      <TableHead>Expira</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredSubscriptions.map((sub) => (
-                      <TableRow key={sub.id}>
-                        <TableCell>
-                          <div className="font-medium">{sub.establishment?.name || '-'}</div>
-                          <div className="text-xs text-muted-foreground">{sub.establishment?.slug}</div>
-                        </TableCell>
-                        <TableCell>{sub.plan?.name || '-'}</TableCell>
-                        <TableCell>
+              <>
+                {/* Mobile Cards View */}
+                <div className="block md:hidden divide-y">
+                  {filteredSubscriptions.map((sub) => (
+                    <div key={sub.id} className="p-4 space-y-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="font-medium truncate">{sub.establishment?.name || '-'}</p>
+                          <p className="text-xs text-muted-foreground">{sub.establishment?.slug}</p>
+                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreVertical className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            {sub.status !== "active" && (
+                              <DropdownMenuItem onClick={() => handleActivateSubscription(sub)}>
+                                <CheckCircle className="w-4 h-4 mr-2 text-green-500" />
+                                Ativar
+                              </DropdownMenuItem>
+                            )}
+                            {sub.status === "active" && (
+                              <>
+                                <DropdownMenuItem onClick={() => handleRenewSubscription(sub)}>
+                                  <RefreshCw className="w-4 h-4 mr-2 text-blue-500" />
+                                  Renovar
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  onClick={() => {
+                                    setSelectedSub(sub);
+                                    setCancelDialogOpen(true);
+                                  }}
+                                  className="text-destructive"
+                                >
+                                  <Ban className="w-4 h-4 mr-2" />
+                                  Cancelar
+                                </DropdownMenuItem>
+                              </>
+                            )}
+                            {(sub.status === "expired" || sub.status === "cancelled") && (
+                              <DropdownMenuItem onClick={() => handleActivateSubscription(sub)}>
+                                <Clock className="w-4 h-4 mr-2 text-orange-500" />
+                                Reativar
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                      <div className="flex flex-wrap gap-2 items-center">
+                        {getStatusBadge(sub.status)}
+                        <Badge variant="outline">{sub.plan?.name || '-'}</Badge>
+                        <span className="text-sm font-medium">
                           {sub.plan?.price ? `R$ ${sub.plan.price.toFixed(2)}` : '-'}
-                        </TableCell>
-                        <TableCell>{getStatusBadge(sub.status)}</TableCell>
-                        <TableCell>
-                          {sub.starts_at ? format(new Date(sub.starts_at), 'dd/MM/yyyy', { locale: ptBR }) : '-'}
-                        </TableCell>
-                        <TableCell>
-                          {sub.expires_at ? format(new Date(sub.expires_at), 'dd/MM/yyyy', { locale: ptBR }) : '-'}
-                        </TableCell>
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>Início: {sub.starts_at ? format(new Date(sub.starts_at), 'dd/MM/yy', { locale: ptBR }) : '-'}</span>
+                        <span>Expira: {sub.expires_at ? format(new Date(sub.expires_at), 'dd/MM/yy', { locale: ptBR }) : '-'}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Desktop Table View */}
+                <div className="hidden md:block overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Estabelecimento</TableHead>
+                        <TableHead>Plano</TableHead>
+                        <TableHead>Valor</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Início</TableHead>
+                        <TableHead>Expira</TableHead>
+                        <TableHead className="w-[50px]"></TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredSubscriptions.map((sub) => (
+                        <TableRow key={sub.id}>
+                          <TableCell>
+                            <div className="font-medium">{sub.establishment?.name || '-'}</div>
+                            <div className="text-xs text-muted-foreground">{sub.establishment?.slug}</div>
+                          </TableCell>
+                          <TableCell>{sub.plan?.name || '-'}</TableCell>
+                          <TableCell>
+                            {sub.plan?.price ? `R$ ${sub.plan.price.toFixed(2)}` : '-'}
+                          </TableCell>
+                          <TableCell>{getStatusBadge(sub.status)}</TableCell>
+                          <TableCell>
+                            {sub.starts_at ? format(new Date(sub.starts_at), 'dd/MM/yyyy', { locale: ptBR }) : '-'}
+                          </TableCell>
+                          <TableCell>
+                            {sub.expires_at ? format(new Date(sub.expires_at), 'dd/MM/yyyy', { locale: ptBR }) : '-'}
+                          </TableCell>
+                          <TableCell>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon">
+                                  <MoreVertical className="w-4 h-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                {sub.status !== "active" && (
+                                  <DropdownMenuItem onClick={() => handleActivateSubscription(sub)}>
+                                    <CheckCircle className="w-4 h-4 mr-2 text-green-500" />
+                                    Ativar
+                                  </DropdownMenuItem>
+                                )}
+                                {sub.status === "active" && (
+                                  <>
+                                    <DropdownMenuItem onClick={() => handleRenewSubscription(sub)}>
+                                      <RefreshCw className="w-4 h-4 mr-2 text-blue-500" />
+                                      Renovar
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem 
+                                      onClick={() => {
+                                        setSelectedSub(sub);
+                                        setCancelDialogOpen(true);
+                                      }}
+                                      className="text-destructive"
+                                    >
+                                      <Ban className="w-4 h-4 mr-2" />
+                                      Cancelar
+                                    </DropdownMenuItem>
+                                  </>
+                                )}
+                                {(sub.status === "expired" || sub.status === "cancelled") && (
+                                  <DropdownMenuItem onClick={() => handleActivateSubscription(sub)}>
+                                    <Clock className="w-4 h-4 mr-2 text-orange-500" />
+                                    Reativar
+                                  </DropdownMenuItem>
+                                )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </>
             )}
           </CardContent>
         </Card>
       </div>
+
+      {/* Create Subscription Dialog */}
+      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Nova Assinatura</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Estabelecimento</Label>
+              <Select 
+                value={newSubForm.establishment_id} 
+                onValueChange={(v) => setNewSubForm(prev => ({ ...prev, establishment_id: v }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o estabelecimento" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableEstablishments.map(est => (
+                    <SelectItem key={est.id} value={est.id}>
+                      <div className="flex items-center gap-2">
+                        <Building2 className="w-4 h-4" />
+                        {est.name}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {availableEstablishments.length === 0 && (
+                <p className="text-xs text-muted-foreground">
+                  Todos os estabelecimentos já possuem assinatura ativa
+                </p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label>Plano</Label>
+              <Select 
+                value={newSubForm.plan_id} 
+                onValueChange={(v) => setNewSubForm(prev => ({ ...prev, plan_id: v }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o plano" />
+                </SelectTrigger>
+                <SelectContent>
+                  {plans.map(plan => (
+                    <SelectItem key={plan.id} value={plan.id}>
+                      {plan.name} - R$ {plan.price.toFixed(2)}/{plan.billing_period === "yearly" ? "ano" : "mês"}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button 
+              className="w-full" 
+              onClick={handleCreateSubscription}
+              disabled={!newSubForm.establishment_id || !newSubForm.plan_id}
+            >
+              Criar Assinatura
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cancel Confirmation Dialog */}
+      <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancelar assinatura?</AlertDialogTitle>
+            <AlertDialogDescription>
+              A assinatura de "{selectedSub?.establishment?.name}" será cancelada. 
+              O estabelecimento perderá acesso aos recursos do plano.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setSelectedSub(null)}>Voltar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleCancelSubscription} className="bg-destructive text-destructive-foreground">
+              Cancelar Assinatura
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AdminLayout>
   );
 };

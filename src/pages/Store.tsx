@@ -1,25 +1,29 @@
-import { useState, useMemo, useEffect, useLayoutEffect } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Link, useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { Helmet } from "react-helmet-async";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Search, Store as StoreIcon, Package, ArrowLeft } from "lucide-react";
 import { useStoreData, type StoreProduct } from "@/hooks/useStoreData";
-import { supabase } from "@/integrations/supabase/client";
-import { initAnalytics, trackPageView } from "@/lib/analytics";
 import { useCart, type CartProduct, type EstablishmentInfo } from "@/hooks/useCart";
+import { useProductKits } from "@/hooks/useProductKits";
 import { ProductModal } from "@/components/store/ProductModal";
 import { CartSheet } from "@/components/store/CartSheet";
 import { StoreHero } from "@/components/store/StoreHero";
 import { StoreBanners } from "@/components/store/StoreBanners";
 import { StoreCategoryNav } from "@/components/store/StoreCategoryNav";
 import { StoreProductGrid } from "@/components/store/StoreProductGrid";
+import { StoreKitsSection } from "@/components/store/StoreKitsSection";
 import { StoreInfoTab } from "@/components/store/StoreInfoTab";
 import { StoreFloatingCart } from "@/components/store/StoreFloatingCart";
 import { StoreAccountTab } from "@/components/store/StoreAccountTab";
 import StoreBottomNav from "@/components/store/StoreBottomNav";
-import StoreStories from "@/components/store/StoreStories";
+import { StoreVilaTok, type StoreVideo } from "@/components/store/StoreVilaTok";
+import StoreReviewsSection from "@/components/store/StoreReviewsSection";
+import { ServiceRequestModal } from "@/components/products/ServiceRequestModal";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { setOrderSourceDirect, getOrderSourceDirect } from "@/hooks/useOrderSource";
 
@@ -40,12 +44,9 @@ const Store = () => {
   }, [slug]);
 
   // Force scroll to top when page loads
-  useLayoutEffect(() => {
+  useEffect(() => {
     window.scrollTo(0, 0);
-    const raf = requestAnimationFrame(() => window.scrollTo(0, 0));
-    return () => cancelAnimationFrame(raf);
   }, [slug]);
-
   const {
     establishment,
     products,
@@ -55,6 +56,9 @@ const Store = () => {
     loading,
     error,
   } = useStoreData(slug);
+
+  // Fetch product kits
+  const { kits } = useProductKits(establishment?.id);
 
   const {
     items,
@@ -68,33 +72,13 @@ const Store = () => {
     getTotalPrice,
   } = useCart();
 
-  // Initialize analytics pixels for this establishment
-  useEffect(() => {
-    if (!establishment?.id) return;
-    const loadPixels = async () => {
-      const { data } = await supabase
-        .from("analytics_pixels")
-        .select("facebook_pixel_id, google_analytics_id, tiktok_pixel_id, is_active")
-        .eq("establishment_id", establishment.id)
-        .eq("is_active", true)
-        .maybeSingle();
-      if (data) {
-        initAnalytics({
-          facebookPixelId: data.facebook_pixel_id || undefined,
-          googleAnalyticsId: data.google_analytics_id || undefined,
-          tiktokPixelId: data.tiktok_pixel_id || undefined,
-        });
-        trackPageView(establishment.name);
-      }
-    };
-    loadPixels();
-  }, [establishment?.id]);
-
   const [activeTab, setActiveTab] = useState("loja");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<StoreProduct | null>(null);
+  const [serviceProduct, setServiceProduct] = useState<StoreProduct | null>(null);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isStoriesOpen, setIsStoriesOpen] = useState(false);
 
   // Abrir produto via query param
   useEffect(() => {
@@ -109,25 +93,57 @@ const Store = () => {
     }
   }, [searchParams, products, slug, navigate]);
 
-  // Fetch stories for this establishment
+  // Fetch stories for this establishment - filter by display_in_store with full data
   const { data: stories } = useQuery({
-    queryKey: ["store-stories", establishment?.id],
-    queryFn: async () => {
+    queryKey: ["store-vilatok", establishment?.id],
+    queryFn: async (): Promise<StoreVideo[]> => {
       if (!establishment?.id) return [];
       const { data, error } = await supabase
         .from("establishment_videos")
-        .select("id, video_url, thumbnail_url, description, duration")
+        .select(`
+          id, 
+          video_url, 
+          thumbnail_url, 
+          music_url,
+          title,
+          description, 
+          duration,
+          likes_count,
+          shares_count,
+          comments_count,
+          product_id,
+          products:product_id (
+            id,
+            name,
+            price,
+            promotional_price,
+            image_url
+          )
+        `)
         .eq("establishment_id", establishment.id)
         .eq("is_active", true)
+        .eq("display_in_store", true)
         .order("sort_order", { ascending: true });
       
       if (error) throw error;
       return (data || []).map(s => ({
         id: s.id,
-        videoUrl: s.video_url,
-        thumbnailUrl: s.thumbnail_url || s.video_url,
-        description: s.description || undefined,
-        duration: s.duration || 15
+        video_url: s.video_url,
+        thumbnail_url: s.thumbnail_url,
+        music_url: s.music_url,
+        title: s.title,
+        description: s.description,
+        duration: s.duration,
+        likes_count: s.likes_count || 0,
+        shares_count: s.shares_count || 0,
+        comments_count: s.comments_count || 0,
+        product: s.products ? {
+          id: (s.products as any).id,
+          name: (s.products as any).name,
+          price: (s.products as any).price,
+          promotional_price: (s.products as any).promotional_price,
+          image_url: (s.products as any).image_url,
+        } : null
       }));
     },
     enabled: !!establishment?.id,
@@ -143,6 +159,8 @@ const Store = () => {
         min_order_value: establishment.min_order_value || 0,
         accepts_pickup: establishment.accepts_pickup ?? true,
         accepts_delivery: establishment.accepts_delivery ?? true,
+        is_open: establishment.is_open ?? false,
+        operating_hours: establishment.operating_hours as EstablishmentInfo['operating_hours'],
       }
     : null;
 
@@ -213,6 +231,8 @@ const Store = () => {
       promotional_price: product.promotional_price,
       image_url: product.image_url,
       establishment_id: product.establishment_id,
+      product_type: product.product_type || undefined,
+      temperature_options: product.temperature_options || undefined,
     };
 
     const success = await addToCart(cartProduct, currentEstablishmentInfo, quantity, observation);
@@ -285,32 +305,66 @@ const Store = () => {
     );
   }
 
+  // Build SEO data
+  const seoTitle = establishment.meta_title || `${establishment.name} | VilaFood`;
+  const seoDescription = establishment.meta_description || establishment.description || `Cardápio digital de ${establishment.name}. Faça seu pedido online!`;
+  const seoImage = establishment.meta_image || establishment.banner_url || establishment.logo_url || '/og-image.png';
+  const seoUrl = `https://vilafood.delivery/loja/${establishment.slug}`;
+
   return (
     <div className="min-h-screen bg-background pb-20">
+      {/* Dynamic SEO Meta Tags */}
+      <Helmet>
+        <title>{seoTitle}</title>
+        <meta name="description" content={seoDescription} />
+        
+        {/* Open Graph / Facebook */}
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content={seoUrl} />
+        <meta property="og:title" content={seoTitle} />
+        <meta property="og:description" content={seoDescription} />
+        <meta property="og:image" content={seoImage} />
+        <meta property="og:site_name" content="VilaFood" />
+        <meta property="og:locale" content="pt_BR" />
+        
+        {/* Twitter */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:url" content={seoUrl} />
+        <meta name="twitter:title" content={seoTitle} />
+        <meta name="twitter:description" content={seoDescription} />
+        <meta name="twitter:image" content={seoImage} />
+        
+        {/* Canonical */}
+        <link rel="canonical" href={seoUrl} />
+      </Helmet>
       {activeTab === "info" ? (
         <StoreInfoTab establishment={establishment} />
       ) : activeTab === "conta" ? (
         <StoreAccountTab establishmentSlug={establishment.slug} />
       ) : (
         <>
-          {/* Hero Section */}
-          <StoreHero
-            establishment={establishment}
-            cashbackPercentage={5}
+          {/* Hero Section - Logo with story ring opens stories viewer */}
+          <StoreHero 
+            establishment={establishment} 
+            
             hasStories={stories && stories.length > 0}
             storiesCount={stories?.length || 0}
+            onStoriesClick={() => setIsStoriesOpen(true)}
           />
 
-          {/* Stories */}
+          {/* Stories Viewer (fullscreen VilaTok) - triggered from StoreHero */}
           {stories && stories.length > 0 && (
-            <div className="px-4 pt-2">
-              <StoreStories
-                stories={stories}
-                establishmentName={establishment.name}
-                establishmentLogo={establishment.logo_url || undefined}
-                primaryColor={establishment.primary_color || undefined}
-              />
-            </div>
+            <StoreVilaTok
+              videos={stories}
+              establishment={{
+                id: establishment.id,
+                name: establishment.name,
+                slug: establishment.slug,
+                logo_url: establishment.logo_url,
+              }}
+              isOpen={isStoriesOpen}
+              onClose={() => setIsStoriesOpen(false)}
+            />
           )}
 
           {/* Promotional Banners */}
@@ -348,6 +402,15 @@ const Store = () => {
             featuredCount={featuredProducts.length}
           />
 
+          {/* Product Kits Section */}
+          {kits.length > 0 && currentEstablishmentInfo && (
+            <StoreKitsSection
+              kits={kits}
+              establishmentSlug={establishment.slug}
+              establishmentInfo={currentEstablishmentInfo}
+            />
+          )}
+
           {/* Products */}
           {products.length === 0 ? (
             <div className="text-center py-12 px-4">
@@ -378,6 +441,14 @@ const Store = () => {
                 )
             )
           )}
+
+          {/* Reviews Section */}
+          {establishment && products.length > 0 && (
+            <StoreReviewsSection
+              establishmentId={establishment.id}
+              establishmentName={establishment.name}
+            />
+          )}
         </>
       )}
 
@@ -407,6 +478,28 @@ const Store = () => {
           handleAddToCart(product, quantity, observation);
           setSelectedProduct(null);
         }}
+        onRequestService={(product) => {
+          setSelectedProduct(null);
+          setServiceProduct(product);
+        }}
+      />
+
+      {/* Service Request Modal */}
+      <ServiceRequestModal
+        product={serviceProduct ? {
+          id: serviceProduct.id,
+          name: serviceProduct.name,
+          description: serviceProduct.description,
+          price: serviceProduct.price,
+          promotional_price: serviceProduct.promotional_price,
+          image_url: serviceProduct.image_url,
+          service_duration: (serviceProduct as any).service_duration,
+          service_location: (serviceProduct as any).service_location,
+          requires_booking: (serviceProduct as any).requires_booking,
+          booking_advance_days: (serviceProduct as any).booking_advance_days,
+        } : null}
+        establishmentWhatsapp={establishment?.whatsapp || undefined}
+        onClose={() => setServiceProduct(null)}
       />
 
       {/* Cart Sheet */}

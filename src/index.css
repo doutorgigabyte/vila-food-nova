@@ -513,3 +513,37 @@
   background-size: 200% 200%;
   animation: gradient 2s ease infinite;
 }
+
+/* GPU-accelerated smooth scroll */
+.smooth-scroll-x {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  will-change: scroll-position;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* Optimized drag scroll container */
+.drag-scroll-optimized {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  transform: translate3d(0, 0, 0);
+  will-change: transform, scroll-position;
+}
+
+/* Prevent momentum scroll stutter */
+.no-momentum-stutter {
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* Smooth card transitions during scroll */
+.scroll-card-smooth {
+  transform: translate3d(0, 0, 0);
+  will-change: transform;
+  transition: transform 0.1s ease-out;
+}

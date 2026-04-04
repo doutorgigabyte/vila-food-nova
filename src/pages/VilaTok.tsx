@@ -1,4 +1,4 @@
-import { useCallback, useState, useRef } from 'react';
+import { useCallback, useState, useRef, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Flame } from 'lucide-react';
 import { Swiper, SwiperSlide } from 'swiper/react';
@@ -15,8 +15,11 @@ import { VilaTokOverlay } from '@/components/vilatok/VilaTokOverlay';
 import { VilaTokNavigation } from '@/components/vilatok/VilaTokNavigation';
 import { VilaTokProgressBars } from '@/components/vilatok/VilaTokProgressBars';
 import { VilaTokComments } from '@/components/vilatok/VilaTokComments';
+import { VilaTokTutorial } from '@/components/vilatok/VilaTokTutorial';
 import { useCart } from '@/hooks/useCart';
 import { toast } from 'sonner';
+
+const TUTORIAL_STORAGE_KEY = 'vilatok_tutorial_completed';
 
 export default function VilaTok() {
   const navigate = useNavigate();
@@ -41,6 +44,14 @@ export default function VilaTok() {
   const [activeEstablishmentIndex, setActiveEstablishmentIndex] = useState(0);
   const [activeVideoIndices, setActiveVideoIndices] = useState<Map<number, number>>(new Map());
   const [showComments, setShowComments] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(() => {
+    return !localStorage.getItem(TUTORIAL_STORAGE_KEY);
+  });
+
+  const handleTutorialComplete = useCallback(() => {
+    localStorage.setItem(TUTORIAL_STORAGE_KEY, 'true');
+    setShowTutorial(false);
+  }, []);
 
   const getActiveVideoIndex = (estIndex: number) => activeVideoIndices.get(estIndex) || 0;
 
@@ -136,17 +147,20 @@ export default function VilaTok() {
         accepts_delivery: true,
       }
     );
-    toast.success(`${video.product.name} adicionado!`);
   }, [activeEstablishmentIndex, establishments, addToCart]);
 
   const handleGoToStore = useCallback(() => {
     const est = establishments[activeEstablishmentIndex];
-    const video = est?.videos[getActiveVideoIndex(activeEstablishmentIndex)];
-    if (est && video?.product) {
-      // Navegar para a loja com o produto selecionado
-      navigate(`/loja/${est.establishment.slug}?product=${video.product.id}`);
-    } else if (est) {
+    if (est) {
       navigate(`/loja/${est.establishment.slug}`);
+    }
+  }, [activeEstablishmentIndex, establishments, navigate]);
+
+  const handleBuyProduct = useCallback(() => {
+    const est = establishments[activeEstablishmentIndex];
+    const video = est?.videos[getActiveVideoIndex(activeEstablishmentIndex)];
+    if (video?.product) {
+      navigate(`/produto/${video.product.id}`);
     }
   }, [activeEstablishmentIndex, establishments, navigate]);
 
@@ -233,6 +247,8 @@ export default function VilaTok() {
             touchRatio={1}
             longSwipesRatio={0.2}
             resistanceRatio={0.8}
+            preventClicks={false}
+            preventClicksPropagation={false}
             className="w-full h-full"
             onSwiper={(swiper) => { verticalSwiperRef.current = swiper; }}
             onSlideChange={handleVerticalSlideChange}
@@ -247,6 +263,8 @@ export default function VilaTok() {
               threshold={10}
               touchRatio={1}
               resistanceRatio={0.8}
+              preventClicks={false}
+              preventClicksPropagation={false}
               nested
               className="w-full h-full"
               onSwiper={(swiper) => { horizontalSwipersRef.current.set(estIndex, swiper); }}
@@ -265,6 +283,8 @@ export default function VilaTok() {
                           thumbnailUrl={video.thumbnail_url}
                           musicUrl={video.music_url}
                           isActive={isActive}
+                          isLastVideo={vidIndex === est.videos.length - 1}
+                          establishmentSlug={est.establishment.slug}
                           onViewCountIncrement={() => incrementViews(video.id)}
                           onVideoEnd={() => {}}
                           onAutoAdvance={handleAutoAdvance}
@@ -323,17 +343,8 @@ export default function VilaTok() {
                           console.log('Share button clicked');
                           handleShare();
                         }}
-                        onProduct={handleAddToCart}
-                        onStore={() => {
-                          const est = establishments[activeEstablishmentIndex];
-                          const video = est?.videos[getActiveVideoIndex(activeEstablishmentIndex)];
-                          if (est && video?.product) {
-                            // Navegar para a loja com o produto selecionado
-                            navigate(`/loja/${est.establishment.slug}?product=${video.product.id}`);
-                          } else if (est) {
-                            navigate(`/loja/${est.establishment.slug}`);
-                          }
-                        }}
+                        onBuy={handleBuyProduct}
+                        onStore={handleGoToStore}
                       />
                     </div>
                   </SwiperSlide>
@@ -364,6 +375,9 @@ export default function VilaTok() {
           // Update comments count if needed
         }}
       />
+
+      {/* Tutorial - mostrado no primeiro acesso */}
+      {showTutorial && <VilaTokTutorial onComplete={handleTutorialComplete} />}
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Play, Eye } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -136,12 +137,36 @@ export default function VilaTokProfile() {
 
       {/* Profile Section */}
       <div className="flex flex-col items-center gap-4 py-8 px-4">
-        <Avatar className="h-24 w-24 ring-2 ring-primary ring-offset-2 ring-offset-black">
-          <AvatarImage src={establishment.logo_url || ''} alt={establishment.name} />
-          <AvatarFallback className="bg-primary text-primary-foreground text-2xl">
-            {establishment.name.charAt(0)}
-          </AvatarFallback>
-        </Avatar>
+        {/* Avatar with animated gradient ring if has videos */}
+        <button 
+          onClick={() => videos.length > 0 && navigate(`/vilatok?establishment=${establishment.slug}`)}
+          className="relative group cursor-pointer"
+        >
+          {/* Animated gradient ring - separate from avatar */}
+          {videos.length > 0 && (
+            <div 
+              className="absolute inset-0 rounded-full bg-gradient-to-br from-pink-500 via-red-500 to-yellow-500 animate-[spin_3s_linear_infinite] p-0.5"
+              style={{ animationDuration: '4s' }}
+            >
+              <div className="w-full h-full rounded-full bg-black" />
+            </div>
+          )}
+          {/* Static avatar container */}
+          <div className={`relative w-24 h-24 rounded-full ${videos.length > 0 ? 'p-0.5' : ''}`}>
+            <Avatar className="h-full w-full ring-2 ring-black">
+              <AvatarImage src={establishment.logo_url || ''} alt={establishment.name} className="object-cover" />
+              <AvatarFallback className="bg-primary text-primary-foreground text-2xl">
+                {establishment.name.charAt(0)}
+              </AvatarFallback>
+            </Avatar>
+          </div>
+          {/* Play indicator on hover */}
+          {videos.length > 0 && (
+            <div className="absolute inset-0 rounded-full bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+              <Play className="w-8 h-8 text-white fill-white" />
+            </div>
+          )}
+        </button>
 
         <div className="text-center">
           <h1 className="text-xl font-bold">{establishment.name}</h1>

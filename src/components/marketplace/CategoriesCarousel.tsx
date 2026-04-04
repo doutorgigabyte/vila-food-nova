@@ -72,7 +72,7 @@ interface CategoriesCarouselProps {
 }
 
 const CategoriesCarousel = ({ mainCategory, selectedCategory, onCategoryClick }: CategoriesCarouselProps) => {
-  const { scrollRef, isDragging, handlers, scroll, wasClick } = useDragScroll();
+  const { scrollRef, isDragging, handlers, scroll, wasClick, scrollStyles } = useDragScroll();
   const { segments, loading } = useSegments();
 
   // Filter segments by main category if provided
@@ -145,11 +145,10 @@ const CategoriesCarousel = ({ mainCategory, selectedCategory, onCategoryClick }:
             {...handlers}
             className={cn(
               "flex gap-3 md:gap-4 overflow-x-auto scrollbar-hide pb-2 select-none",
-              "touch-pan-y will-change-scroll overscroll-x-contain",
               isDragging ? "cursor-grabbing" : "cursor-grab"
             )}
             style={{
-              WebkitOverflowScrolling: 'touch',
+              ...scrollStyles,
               scrollSnapType: isDragging ? 'none' : 'x proximity',
             }}
           >

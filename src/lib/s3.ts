@@ -135,12 +135,12 @@ export function validateFile(
 export function validateVideoFile(
   file: File,
   options: {
-    maxSize?: number;
+    maxSize?: number; // default 100MB
     maxDuration?: number; // in seconds
   } = {}
 ): { valid: boolean; error?: string } {
   const {
-    maxSize = 50 * 1024 * 1024, // 50MB default for videos
+    maxSize = 100 * 1024 * 1024, // 100MB default for videos
   } = options;
 
   const allowedTypes = ['video/mp4', 'video/webm', 'video/quicktime'];

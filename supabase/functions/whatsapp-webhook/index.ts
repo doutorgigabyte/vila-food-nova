@@ -24,11 +24,23 @@ interface EvolutionMessage {
   messageTimestamp?: number;
 }
 
+// Evolution API v2 webhook payload types
 interface WebhookPayload {
-  event: string;
+  event: 'QRCODE_UPDATED' | 'CONNECTION_UPDATE' | 'MESSAGES_UPSERT' | 'MESSAGES_UPDATE' | string;
   instance: string;
-  data: EvolutionMessage;
+  data: any;
   apikey?: string;
+}
+
+interface ConnectionUpdateData {
+  state: 'open' | 'close' | 'connecting';
+}
+
+interface QRCodeUpdateData {
+  qrcode: {
+    base64: string;
+    pairingCode?: string;
+  };
 }
 
 interface KeywordData {
@@ -107,19 +119,23 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    const payload: WebhookPayload = await req.json();
+    const payload = await req.json();
     console.log('Webhook received:', JSON.stringify(payload, null, 2));
 
-    const { event, instance, data } = payload;
-
-    // Only process incoming messages
-    if (event !== 'messages.upsert' || !data || data.key?.fromMe) {
-      return new Response(JSON.stringify({ status: 'ignored', event }), {
+    // Handle test/health check requests
+    if (payload.test === true || !payload.instance) {
+      console.log('Test request or missing instance, returning OK');
+      return new Response(JSON.stringify({ 
+        status: 'ok', 
+        message: 'Webhook is working. Send Evolution API events with instance name.' 
+      }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Find establishment by instance name
+    const { event, instance, data } = payload as WebhookPayload;
+
+    // Find WhatsApp instance by name
     const { data: whatsappInstance, error: instanceError } = await supabase
       .from('whatsapp_instances')
       .select('*, establishments(*)')
@@ -128,184 +144,266 @@ serve(async (req) => {
 
     if (instanceError || !whatsappInstance) {
       console.error('Instance not found:', instance);
-      return new Response(JSON.stringify({ error: 'Instance not found' }), {
+      return new Response(JSON.stringify({ error: 'Instance not found', instance }), {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
     const establishmentId = whatsappInstance.establishment_id;
-    const establishment = whatsappInstance.establishments;
-    const customerPhone = data.key.remoteJid.replace('@s.whatsapp.net', '');
-    const customerName = data.pushName || 'Cliente';
-    const whatsappLevel = whatsappInstance.whatsapp_level || 1;
 
-    // Extract message content
-    let messageContent = '';
-    let messageType = 'text';
-
-    if (data.message?.conversation) {
-      messageContent = data.message.conversation;
-    } else if (data.message?.extendedTextMessage?.text) {
-      messageContent = data.message.extendedTextMessage.text;
-    } else if (data.message?.imageMessage) {
-      messageContent = data.message.imageMessage.caption || '[Imagem]';
-      messageType = 'image';
-    } else if (data.message?.audioMessage) {
-      messageContent = '[Áudio]';
-      messageType = 'audio';
-    } else if (data.message?.documentMessage) {
-      messageContent = '[Documento]';
-      messageType = 'document';
-    }
-
-    // Find or create session
-    let { data: session } = await supabase
-      .from('whatsapp_sessions')
-      .select('*')
-      .eq('establishment_id', establishmentId)
-      .eq('customer_phone', customerPhone)
-      .eq('status', 'active')
-      .single();
-
-    const isNewSession = !session;
-
-    if (!session) {
-      const { data: newSession, error: sessionError } = await supabase
-        .from('whatsapp_sessions')
-        .insert({
-          establishment_id: establishmentId,
-          customer_phone: customerPhone,
-          customer_name: customerName,
-          status: 'active',
-          context: {},
-          cart: [],
-        })
-        .select()
-        .single();
-
-      if (sessionError) {
-        console.error('Error creating session:', sessionError);
-        throw sessionError;
-      }
-      session = newSession;
-    }
-
-    // Save incoming message
-    await supabase.from('whatsapp_messages').insert({
-      session_id: session.id,
-      sender: customerPhone,
-      content: messageContent,
-      message_type: messageType,
-      is_from_bot: false,
-    });
-
-    // Log analytics event
-    await supabase.from('whatsapp_analytics').insert({
-      establishment_id: establishmentId,
-      session_id: session.id,
-      event_type: 'message_received',
-      event_data: {
-        message_type: messageType,
-        customer_phone: customerPhone,
-        content_length: messageContent.length,
-      },
-    });
-
-    // Update session last_message_at
-    await supabase
-      .from('whatsapp_sessions')
-      .update({ 
-        last_message_at: new Date().toISOString(),
-        customer_name: customerName 
-      })
-      .eq('id', session.id);
-
-    let autoResponse: string | null = null;
-    let shouldEscalateToAI = false;
-
-    // TIER 1: Keyword-based responses (if keywords_enabled)
-    if (whatsappInstance.keywords_enabled !== false) {
-      // Check for welcome message on new session
-      if (isNewSession && whatsappInstance.welcome_message) {
-        autoResponse = whatsappInstance.welcome_message;
-      } else {
-        // Check keyword match
-        const keywordMatch = await checkKeywordMatch(establishmentId, messageContent, supabase);
+    // Handle different event types
+    switch (event) {
+      case 'QRCODE_UPDATED': {
+        // Update QR code in database for real-time display
+        const qrData = data as QRCodeUpdateData;
+        console.log('QR Code updated for:', instance);
         
-        if (keywordMatch?.matched) {
-          autoResponse = keywordMatch.response;
-          
-          // Add menu link if configured
-          if (keywordMatch.includeMenuLink && establishment?.slug) {
-            const menuUrl = `${Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '')}.lovable.app/${establishment.slug}`;
-            autoResponse += `\n\n🔗 ${menuUrl}`;
-          }
-        }
-      }
-    }
+        await supabase
+          .from('whatsapp_instances')
+          .update({ 
+            qr_code: qrData.qrcode?.base64 || null,
+            status: 'connecting',
+          })
+          .eq('id', whatsappInstance.id);
 
-    // TIER 2: AI Agent (if level 2 and no keyword match or escalation needed)
-    if (whatsappLevel === 2 && !autoResponse && whatsappInstance.ai_enabled) {
-      shouldEscalateToAI = true;
-    }
-
-    // Send auto-response if we have one
-    if (autoResponse && whatsappInstance.evolution_api_url && whatsappInstance.evolution_api_key) {
-      const sent = await sendWhatsAppMessage(
-        whatsappInstance.evolution_api_url,
-        whatsappInstance.evolution_api_key,
-        instance,
-        customerPhone,
-        autoResponse
-      );
-
-      if (sent) {
-        // Save bot response
-        await supabase.from('whatsapp_messages').insert({
-          session_id: session.id,
-          sender: 'bot',
-          content: autoResponse,
-          message_type: 'text',
-          is_from_bot: true,
+        return new Response(JSON.stringify({ status: 'qr_updated' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
+      }
+
+      case 'CONNECTION_UPDATE': {
+        // Update connection status
+        const connectionData = data as ConnectionUpdateData;
+        console.log('Connection update for:', instance, connectionData.state);
+        
+        let status = 'disconnected';
+        if (connectionData.state === 'open') {
+          status = 'connected';
+        } else if (connectionData.state === 'connecting') {
+          status = 'connecting';
+        }
+
+        await supabase
+          .from('whatsapp_instances')
+          .update({ 
+            status,
+            qr_code: connectionData.state === 'open' ? null : whatsappInstance.qr_code,
+          })
+          .eq('id', whatsappInstance.id);
 
         // Log analytics
         await supabase.from('whatsapp_analytics').insert({
           establishment_id: establishmentId,
-          session_id: session.id,
-          event_type: 'auto_response_sent',
-          event_data: {
-            response_type: isNewSession ? 'welcome' : 'keyword',
-            response: autoResponse,
-          },
+          event_type: 'connection_status',
+          event_data: { status, previous_status: whatsappInstance.status },
+        });
+
+        return new Response(JSON.stringify({ status: 'connection_updated', state: status }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
-    }
 
-    // Return data for further processing (N8N or AI)
-    return new Response(JSON.stringify({
-      success: true,
-      session_id: session.id,
-      establishment_id: establishmentId,
-      customer_phone: customerPhone,
-      customer_name: customerName,
-      message: {
-        content: messageContent,
-        type: messageType,
-      },
-      whatsapp_level: whatsappLevel,
-      auto_response_sent: !!autoResponse,
-      should_escalate_to_ai: shouldEscalateToAI,
-      ai_enabled: whatsappInstance.ai_enabled,
-      ai_prompt: whatsappInstance.ai_prompt,
-      ai_model: whatsappInstance.ai_model || 'google/gemini-2.5-flash',
-      establishment: establishment,
-      cart: session.cart || [],
-      context: session.context || {},
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+      case 'MESSAGES_UPDATE': {
+        // Message status update (read, delivered, etc.)
+        console.log('Message status update:', data);
+        return new Response(JSON.stringify({ status: 'message_status_logged' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      case 'MESSAGES_UPSERT':
+      case 'messages.upsert': {
+        // Handle incoming messages
+        const messageData = data as EvolutionMessage;
+        
+        // Ignore outgoing messages
+        if (!messageData || messageData.key?.fromMe) {
+          return new Response(JSON.stringify({ status: 'ignored', reason: 'outgoing_message' }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        const establishment = whatsappInstance.establishments;
+        const customerPhone = messageData.key.remoteJid.replace('@s.whatsapp.net', '');
+        const customerName = messageData.pushName || 'Cliente';
+        const whatsappLevel = whatsappInstance.whatsapp_level || 1;
+
+        // Extract message content
+        let messageContent = '';
+        let messageType = 'text';
+
+        if (messageData.message?.conversation) {
+          messageContent = messageData.message.conversation;
+        } else if (messageData.message?.extendedTextMessage?.text) {
+          messageContent = messageData.message.extendedTextMessage.text;
+        } else if (messageData.message?.imageMessage) {
+          messageContent = messageData.message.imageMessage.caption || '[Imagem]';
+          messageType = 'image';
+        } else if (messageData.message?.audioMessage) {
+          messageContent = '[Áudio]';
+          messageType = 'audio';
+        } else if (messageData.message?.documentMessage) {
+          messageContent = '[Documento]';
+          messageType = 'document';
+        }
+
+        // Find or create session
+        let { data: session } = await supabase
+          .from('whatsapp_sessions')
+          .select('*')
+          .eq('establishment_id', establishmentId)
+          .eq('customer_phone', customerPhone)
+          .eq('status', 'active')
+          .single();
+
+        const isNewSession = !session;
+
+        if (!session) {
+          const { data: newSession, error: sessionError } = await supabase
+            .from('whatsapp_sessions')
+            .insert({
+              establishment_id: establishmentId,
+              customer_phone: customerPhone,
+              customer_name: customerName,
+              status: 'active',
+              context: {},
+              cart: [],
+            })
+            .select()
+            .single();
+
+          if (sessionError) {
+            console.error('Error creating session:', sessionError);
+            throw sessionError;
+          }
+          session = newSession;
+        }
+
+        // Save incoming message
+        await supabase.from('whatsapp_messages').insert({
+          session_id: session.id,
+          sender: customerPhone,
+          content: messageContent,
+          message_type: messageType,
+          is_from_bot: false,
+        });
+
+        // Log analytics event
+        await supabase.from('whatsapp_analytics').insert({
+          establishment_id: establishmentId,
+          session_id: session.id,
+          event_type: 'message_received',
+          event_data: {
+            message_type: messageType,
+            customer_phone: customerPhone,
+            content_length: messageContent.length,
+          },
+        });
+
+        // Update session last_message_at
+        await supabase
+          .from('whatsapp_sessions')
+          .update({ 
+            last_message_at: new Date().toISOString(),
+            customer_name: customerName 
+          })
+          .eq('id', session.id);
+
+        let autoResponse: string | null = null;
+        let shouldEscalateToAI = false;
+
+        // TIER 1: Keyword-based responses (if keywords_enabled)
+        if (whatsappInstance.keywords_enabled !== false) {
+          // Check for welcome message on new session
+          if (isNewSession && whatsappInstance.welcome_message) {
+            autoResponse = whatsappInstance.welcome_message;
+          } else {
+            // Check keyword match
+            const keywordMatch = await checkKeywordMatch(establishmentId, messageContent, supabase);
+            
+            if (keywordMatch?.matched) {
+              autoResponse = keywordMatch.response;
+              
+              // Add menu link if configured
+              if (keywordMatch.includeMenuLink && establishment?.slug) {
+                const baseUrl = Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '');
+                const menuUrl = `${baseUrl}.lovable.app/${establishment.slug}`;
+                autoResponse += `\n\n🔗 ${menuUrl}`;
+              }
+            }
+          }
+        }
+
+        // TIER 2: AI Agent (if level 2 and no keyword match or escalation needed)
+        if (whatsappLevel === 2 && !autoResponse && whatsappInstance.ai_enabled) {
+          shouldEscalateToAI = true;
+        }
+
+        // Send auto-response if we have one
+        if (autoResponse && whatsappInstance.evolution_api_url && whatsappInstance.evolution_api_key) {
+          const sent = await sendWhatsAppMessage(
+            whatsappInstance.evolution_api_url,
+            whatsappInstance.evolution_api_key,
+            instance,
+            customerPhone,
+            autoResponse
+          );
+
+          if (sent) {
+            // Save bot response
+            await supabase.from('whatsapp_messages').insert({
+              session_id: session.id,
+              sender: 'bot',
+              content: autoResponse,
+              message_type: 'text',
+              is_from_bot: true,
+            });
+
+            // Log analytics
+            await supabase.from('whatsapp_analytics').insert({
+              establishment_id: establishmentId,
+              session_id: session.id,
+              event_type: 'auto_response_sent',
+              event_data: {
+                response_type: isNewSession ? 'welcome' : 'keyword',
+                response: autoResponse,
+              },
+            });
+          }
+        }
+
+        // Return data for further processing (N8N or AI)
+        return new Response(JSON.stringify({
+          success: true,
+          session_id: session.id,
+          establishment_id: establishmentId,
+          customer_phone: customerPhone,
+          customer_name: customerName,
+          message: {
+            content: messageContent,
+            type: messageType,
+          },
+          whatsapp_level: whatsappLevel,
+          auto_response_sent: !!autoResponse,
+          should_escalate_to_ai: shouldEscalateToAI,
+          ai_enabled: whatsappInstance.ai_enabled,
+          ai_prompt: whatsappInstance.ai_prompt,
+          ai_model: whatsappInstance.ai_model || 'google/gemini-2.5-flash',
+          establishment: establishment,
+          cart: session.cart || [],
+          context: session.context || {},
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      default:
+        console.log('Unhandled event type:', event);
+        return new Response(JSON.stringify({ status: 'unhandled_event', event }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+    }
 
   } catch (error) {
     console.error('Webhook error:', error);

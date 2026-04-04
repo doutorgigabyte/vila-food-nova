@@ -1,5 +1,8 @@
 project_id = "gyagfsjbdaacgmmofqip"
 
+[functions.geocode-and-calculate-delivery]
+verify_jwt = false
+
 [functions.product-feeds]
 verify_jwt = false
 
@@ -21,29 +24,57 @@ verify_jwt = false
 [functions.whatsapp-order-notifications]
 verify_jwt = false
 
-[functions.mercadopago-pix]
-verify_jwt = false
-
-[functions.mercadopago-oauth]
-verify_jwt = false
-
-[functions.mercadopago-subscription]
-verify_jwt = false
-
-[functions.mercadopago-sale]
-verify_jwt = false
-
-[functions.mercadopago-webhook]
-verify_jwt = false
-
-[functions.mercadopago-affiliate-payout]
-verify_jwt = false
-
-[functions.mercadopago-multi-split]
+[functions.whatsapp-send-media]
 verify_jwt = false
 
 [functions.whatsapp-notification]
 verify_jwt = false
+
+[functions.generate-menu-json]
+verify_jwt = false
+
+# Payment functions - PIX/Checkout public (require order_id validation)
+# OAuth and Webhook functions - public (signature validation)
+# Sensitive operations (refund, affiliate-payout) validate JWT internally
+
+[functions.mercadopago-pix]
+verify_jwt = false  # Public - validates order_id internally
+
+[functions.mercadopago-oauth]
+verify_jwt = false  # OAuth flow - no JWT possible
+
+[functions.mercadopago-subscription]
+verify_jwt = true  # Sensitive - requires auth
+
+[functions.mercadopago-sale]
+verify_jwt = false  # Public - validates order_id internally, refund validates JWT
+
+[functions.mercadopago-webhook]
+verify_jwt = false  # Webhook - validates MP signature
+
+[functions.mercadopago-affiliate-payout]
+verify_jwt = true  # Sensitive - requires auth
+
+[functions.mercadopago-multi-split]
+verify_jwt = true  # Sensitive - requires auth
+
+[functions.mercadopago-point]
+verify_jwt = true  # Sensitive - requires auth
+
+[functions.mercadopago-checkout-pro]
+verify_jwt = false  # Public - validates order_id internally
+
+[functions.pagseguro-oauth]
+verify_jwt = false  # OAuth flow - no JWT possible
+
+[functions.pagseguro-pix]
+verify_jwt = false  # Public - validates order_id internally
+
+[functions.pagseguro-webhook]
+verify_jwt = false  # Webhook - validates signature
+
+[functions.pagseguro-card]
+verify_jwt = true  # Sensitive - card operations require auth
 
 [functions.s3-upload]
 verify_jwt = false
@@ -60,32 +91,82 @@ verify_jwt = true
 [functions.migrate-external-data]
 verify_jwt = true
 
+# AI functions - require auth to prevent abuse
 [functions.ai-recommendations]
-verify_jwt = false
+verify_jwt = true  # Requires auth
 
 [functions.generate-image]
-verify_jwt = false
+verify_jwt = true  # Requires auth - costly operation
 
 [functions.analyze-establishment]
-verify_jwt = false
+verify_jwt = true  # Requires auth
 
 [functions.enhance-product-photo]
-verify_jwt = false
+verify_jwt = true  # Requires auth - costly operation
 
 [functions.apply-ai-improvements]
-verify_jwt = false
+verify_jwt = true  # Requires auth
 
 [functions.ai-health-check]
-verify_jwt = false
+verify_jwt = true  # Requires auth
 
-[functions.mercadopago-point]
-verify_jwt = false
-
-[functions.driver-payment-split]
-verify_jwt = false
+[functions.ai-product-assistant]
+verify_jwt = true  # Requires auth
 
 [functions.fix-broken-images]
+verify_jwt = true  # Requires auth - admin operation
+
+[functions.evolution-api]
 verify_jwt = false
 
-[functions.sync-localiza]
+[functions.security-anomaly-alert]
+verify_jwt = true  # Sensitive - requires auth
+
+[functions.whatsapp-human-takeover]
+verify_jwt = false
+
+[functions.process-recurring-orders]
+verify_jwt = false
+
+[functions.system-broadcast]
 verify_jwt = true
+
+[functions.whatsapp-auth-code]
+verify_jwt = false
+
+[functions.verify-auth-code]
+verify_jwt = false
+
+[functions.notify-merchant-order]
+verify_jwt = false
+
+[functions.transcribe-audio]
+verify_jwt = false
+
+[functions.analyze-image]
+verify_jwt = false
+
+[functions.register-customer]
+verify_jwt = false
+
+[functions.extract-customer-data]
+verify_jwt = false
+
+[functions.reset-test-passwords]
+verify_jwt = true  # Sensitive - admin operation
+
+[functions.whatsapp-auth-session]
+verify_jwt = false  # Public - validates code internally
+
+# iFood Integration functions
+[functions.ifood-oauth]
+verify_jwt = true  # Requires auth - establishment owner only
+
+[functions.ifood-import-catalog]
+verify_jwt = true  # Requires auth - establishment owner only
+
+[functions.send-password-reset]
+verify_jwt = false  # Public - password recovery flow
+
+[functions.store-seo]
+verify_jwt = false  # Public - bot prerendering for SEO

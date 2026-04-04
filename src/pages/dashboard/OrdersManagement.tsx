@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import { useUserEstablishment } from "@/hooks/useDashboardData";
+import { usePayments } from "@/hooks/usePayments";
+import { useAuditLog } from "@/hooks/useAuditLog";
 import { 
   Search,
   Bell,
@@ -22,6 +24,9 @@ import {
   Truck,
   Package,
   RefreshCw,
+  History,
+  Ban,
+  RotateCcw,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -41,7 +46,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 
-type OrderStatus = 'pending' | 'confirmed' | 'preparing' | 'ready' | 'delivering' | 'delivered' | 'cancelled';
+type OrderStatus = 'pending' | 'pending_payment' | 'confirmed' | 'preparing' | 'ready' | 'delivering' | 'delivered' | 'cancelled';
 
 interface Order {
   id: string;
@@ -61,10 +66,13 @@ interface Order {
   created_at: string;
   estimated_time: number | null;
   table_number: string | null;
+  customer_name: string | null;
+  customer_phone: string | null;
 }
 
 const statusConfig: Record<OrderStatus, { label: string; color: string; icon: any }> = {
   pending: { label: "Pendente", color: "bg-yellow-500", icon: Clock },
+  pending_payment: { label: "Aguardando Pagamento", color: "bg-amber-500", icon: Clock },
   confirmed: { label: "Confirmado", color: "bg-blue-500", icon: CheckCircle },
   preparing: { label: "Preparando", color: "bg-orange-500", icon: ChefHat },
   ready: { label: "Pronto", color: "bg-green-500", icon: Package },
@@ -76,6 +84,8 @@ const statusConfig: Record<OrderStatus, { label: string; color: string; icon: an
 const OrdersManagement = () => {
   const { slug } = useParams();
   const { establishmentId, establishment, loading: estLoading } = useUserEstablishment();
+  const { processRefund, loading: refundLoading } = usePayments({ establishmentId: establishmentId || undefined, autoFetch: false });
+  const { logAction } = useAuditLog();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("pending");
@@ -83,8 +93,11 @@ const OrdersManagement = () => {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
+  const [showRefundModal, setShowRefundModal] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [orderHistory, setOrderHistory] = useState<Array<{action: string; created_at: string; old_data: any; new_data: any}>>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
 
   const baseUrl = slug ? `/painel/${slug}` : '/painel';
 
@@ -157,6 +170,10 @@ const OrdersManagement = () => {
 
   const updateOrderStatus = async (orderId: string, newStatus: OrderStatus, reason?: string) => {
     try {
+      // Get old status before updating
+      const order = orders.find(o => o.id === orderId);
+      const oldStatus = order?.status;
+
       const updateData: any = { status: newStatus };
       if (reason) {
         updateData.cancellation_reason = reason;
@@ -172,6 +189,80 @@ const OrdersManagement = () => {
         .eq('id', orderId);
 
       if (error) throw error;
+
+      // Log status change to audit_logs
+      await logAction({
+        action: 'status_change',
+        entityType: 'order',
+        entityId: orderId,
+        oldData: { status: oldStatus },
+        newData: { status: newStatus },
+        metadata: reason ? { cancellation_reason: reason } : {}
+      });
+      
+      // Quando aceita o pedido (pending → preparing), pula o "confirmed" e vai direto para cozinha
+      if (newStatus === 'confirmed' && establishmentId) {
+        // Na verdade, vamos mudar para preparing direto
+        await supabase.from('orders').update({ status: 'preparing' }).eq('id', orderId);
+        
+        // Log the additional status change
+        await logAction({
+          action: 'status_change',
+          entityType: 'order',
+          entityId: orderId,
+          oldData: { status: 'confirmed' },
+          newData: { status: 'preparing' }
+        });
+        
+        await supabase.from('notifications').insert({
+          establishment_id: establishmentId,
+          type: 'order_confirmed',
+          priority: 'high',
+          title: `Pedido #${order?.order_number || ''} em preparo!`,
+          message: 'Novo pedido enviado para a cozinha',
+          target_roles: ['manager', 'kitchen'],
+          data: { order_id: orderId, order_number: order?.order_number }
+        });
+        
+        toast.success(`Pedido #${order?.order_number} enviado para cozinha!`);
+        setShowOrderModal(false);
+        fetchOrders();
+        return;
+      }
+
+      // Criar notificação quando status muda para ready
+      if (newStatus === 'ready' && establishmentId && order) {
+        // Criar notificação interna
+        await supabase.from('notifications').insert({
+          establishment_id: establishmentId,
+          type: 'order_ready',
+          priority: 'high',
+          title: `Pedido #${order?.order_number || ''} pronto!`,
+          message: 'Pedido pronto para entrega/retirada',
+          target_roles: ['manager', 'cashier', 'waiter', 'delivery'],
+          data: { order_id: orderId, order_number: order?.order_number }
+        });
+
+        // Se for delivery, criar solicitação de entrega para motoristas
+        if (order.delivery_type === 'delivery') {
+          const expiresAt = new Date();
+          expiresAt.setMinutes(expiresAt.getMinutes() + 5); // 5 min para aceitar
+
+          await supabase.from('delivery_requests').insert({
+            order_id: orderId,
+            establishment_id: establishmentId,
+            status: 'pending',
+            calculated_fee: order.delivery_fee || 0,
+            driver_earnings: order.delivery_fee || 0,
+            expires_at: expiresAt.toISOString(),
+            pickup_address: establishment?.address || '',
+            delivery_address: order.delivery_address 
+              ? `${order.delivery_address.street}, ${order.delivery_address.number} - ${order.delivery_address.neighborhood}`
+              : '',
+            customer_name: order.delivery_address?.name || 'Cliente'
+          });
+        }
+      }
       
       toast.success(`Pedido atualizado para: ${statusConfig[newStatus].label}`);
       setShowOrderModal(false);
@@ -183,54 +274,33 @@ const OrdersManagement = () => {
     }
   };
 
-  const printOrder = (order: Order) => {
-    const printContent = `
-      <html>
-        <head>
-          <title>Pedido #${order.order_number}</title>
-          <style>
-            body { font-family: monospace; font-size: 12px; width: 280px; margin: 0; padding: 10px; }
-            .header { text-align: center; border-bottom: 1px dashed #000; padding-bottom: 10px; margin-bottom: 10px; }
-            .item { display: flex; justify-content: space-between; margin: 5px 0; }
-            .total { border-top: 1px dashed #000; padding-top: 10px; margin-top: 10px; font-weight: bold; }
-            .footer { text-align: center; margin-top: 20px; font-size: 10px; }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <h2>PEDIDO #${order.order_number}</h2>
-            <p>${new Date(order.created_at).toLocaleString('pt-BR')}</p>
-            <p>${order.delivery_type === 'delivery' ? 'DELIVERY' : order.delivery_type === 'pickup' ? 'RETIRADA' : 'MESA ' + order.table_number}</p>
-          </div>
-          <div class="items">
-            ${Array.isArray(order.items) ? order.items.map((item: any) => `
-              <div class="item">
-                <span>${item.quantity}x ${item.name}</span>
-                <span>R$ ${(item.price * item.quantity).toFixed(2)}</span>
-              </div>
-            `).join('') : ''}
-          </div>
-          <div class="total">
-            <div class="item"><span>Subtotal:</span><span>R$ ${order.subtotal.toFixed(2)}</span></div>
-            ${order.delivery_fee > 0 ? `<div class="item"><span>Taxa de entrega:</span><span>R$ ${order.delivery_fee.toFixed(2)}</span></div>` : ''}
-            ${order.discount > 0 ? `<div class="item"><span>Desconto:</span><span>-R$ ${order.discount.toFixed(2)}</span></div>` : ''}
-            <div class="item"><span>TOTAL:</span><span>R$ ${order.total.toFixed(2)}</span></div>
-          </div>
-          ${order.observations ? `<p><strong>Obs:</strong> ${order.observations}</p>` : ''}
-          ${order.delivery_address ? `<p><strong>Endereço:</strong> ${typeof order.delivery_address === 'object' ? JSON.stringify(order.delivery_address) : order.delivery_address}</p>` : ''}
-          <div class="footer">
-            <p>Obrigado pela preferência!</p>
-          </div>
-        </body>
-      </html>
-    `;
-
-    const printWindow = window.open('', '_blank');
-    if (printWindow) {
-      printWindow.document.write(printContent);
-      printWindow.document.close();
-      printWindow.print();
-    }
+  const printOrder = async (order: Order) => {
+    // Dynamic import to reduce initial bundle
+    const { printOrderReceipt } = await import('@/components/orders/OrderReceiptPrint');
+    
+    printOrderReceipt({
+      order: {
+        order_number: order.order_number,
+        created_at: order.created_at,
+        delivery_type: order.delivery_type,
+        table_number: order.table_number,
+        items: order.items,
+        subtotal: order.subtotal,
+        delivery_fee: order.delivery_fee,
+        discount: order.discount,
+        total: order.total,
+        payment_method: order.payment_method,
+        observations: order.observations,
+        delivery_address: order.delivery_address,
+      },
+      establishment: {
+        name: establishment?.name || 'Estabelecimento',
+        phone: establishment?.phone,
+        whatsapp: establishment?.whatsapp,
+        address: establishment?.address,
+        logo_url: establishment?.logo_url,
+      },
+    });
   };
 
   const filteredOrders = orders.filter(order => {
@@ -241,6 +311,7 @@ const OrdersManagement = () => {
 
   const orderCounts = {
     pending: orders.filter(o => o.status === 'pending').length,
+    pending_payment: orders.filter(o => o.status === 'pending_payment').length,
     confirmed: orders.filter(o => o.status === 'confirmed').length,
     preparing: orders.filter(o => o.status === 'preparing').length,
     ready: orders.filter(o => o.status === 'ready').length,
@@ -252,6 +323,7 @@ const OrdersManagement = () => {
   const getNextStatus = (currentStatus: OrderStatus): OrderStatus | null => {
     const flow: Record<OrderStatus, OrderStatus | null> = {
       pending: 'confirmed',
+      pending_payment: null, // Aguardando pagamento - não avança manualmente
       confirmed: 'preparing',
       preparing: 'ready',
       ready: 'delivering',
@@ -262,42 +334,103 @@ const OrdersManagement = () => {
     return flow[currentStatus];
   };
 
+  // Helpers para identificar tipo de pagamento
+  const isPaymentOnDelivery = (paymentMethod: string) => {
+    return ['cash', 'card_on_delivery', 'pix_on_delivery'].includes(paymentMethod);
+  };
+
+  const fetchOrderHistory = async (orderId: string) => {
+    setLoadingHistory(true);
+    try {
+      const { data, error } = await supabase
+        .from('audit_logs')
+        .select('action, created_at, old_data, new_data')
+        .eq('entity_type', 'order')
+        .eq('entity_id', orderId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setOrderHistory(data || []);
+    } catch (error) {
+      console.error('Error fetching order history:', error);
+      setOrderHistory([]);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
+  const openOrderModal = (order: Order) => {
+    setSelectedOrder(order);
+    setShowOrderModal(true);
+    fetchOrderHistory(order.id);
+  };
+
+  const openCancelModal = (order: Order) => {
+    setSelectedOrder(order);
+    setShowRejectModal(true);
+    setRejectReason("");
+  };
+
+  const handleRefund = async () => {
+    if (!selectedOrder) return;
+    
+    // Check if order has a payment ID (mp_payment_id in metadata or similar)
+    const paymentId = (selectedOrder as any).mp_payment_id || (selectedOrder as any).metadata?.payment_id;
+    
+    if (!paymentId) {
+      toast.error('Este pedido não possui um pagamento online associado');
+      setShowRefundModal(false);
+      return;
+    }
+
+    const result = await processRefund(paymentId);
+    if (result?.success) {
+      setShowRefundModal(false);
+      setShowOrderModal(false);
+      fetchOrders();
+    }
+  };
+
+  const isOnlinePayment = (paymentMethod: string) => {
+    return ['pix', 'credit_card', 'debit_card'].includes(paymentMethod);
+  };
+
+  const canRefund = (order: Order) => {
+    return isOnlinePayment(order.payment_method) && 
+           (order.status === 'delivered' || order.status === 'cancelled');
+  };
+
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background">
+      <div className="min-h-screen flex w-full bg-background overflow-hidden">
         <DashboardSidebar 
           isOpen={sidebarOpen} 
           onClose={() => setSidebarOpen(false)}
           establishment={establishment}
         />
 
-        <div className="flex-1 lg:ml-64">
+        <div className="flex-1 lg:ml-64 overflow-x-hidden">
           {/* Header */}
           <header className="sticky top-0 z-40 bg-card border-b border-border">
             <div className="flex items-center justify-between px-4 py-3">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 min-w-0">
                 <Button 
                   variant="ghost" 
                   size="icon" 
-                  className="lg:hidden"
+                  className="lg:hidden shrink-0"
                   onClick={() => setSidebarOpen(true)}
                 >
                   <Menu className="w-5 h-5" />
                 </Button>
-                <h1 className="text-lg font-semibold">Gestão de Pedidos</h1>
+                <h1 className="text-lg font-semibold truncate">Gestão de Pedidos</h1>
               </div>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={fetchOrders}>
+              <div className="flex items-center gap-2 shrink-0">
+                <Button variant="outline" size="sm" onClick={fetchOrders} className="hidden sm:inline-flex">
                   <RefreshCw className="w-4 h-4 mr-2" />
-                  Atualizar
+                  <span className="hidden md:inline">Atualizar</span>
                 </Button>
-                <Button variant="ghost" size="icon" className="relative">
-                  <Bell className="w-5 h-5" />
-                  {orderCounts.pending > 0 && (
-                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-destructive text-destructive-foreground text-xs rounded-full flex items-center justify-center">
-                      {orderCounts.pending}
-                    </span>
-                  )}
+                <Button variant="outline" size="icon" onClick={fetchOrders} className="sm:hidden">
+                  <RefreshCw className="w-4 h-4" />
                 </Button>
               </div>
             </div>
@@ -323,6 +456,11 @@ const OrdersManagement = () => {
                     <Clock className="w-4 h-4" />
                     Pendentes
                     {orderCounts.pending > 0 && <Badge variant="destructive" className="ml-1">{orderCounts.pending}</Badge>}
+                  </TabsTrigger>
+                  <TabsTrigger value="pending_payment" className="gap-1">
+                    <Clock className="w-4 h-4" />
+                    Aguardando Pgto
+                    {orderCounts.pending_payment > 0 && <Badge variant="secondary" className="ml-1 bg-amber-500 text-white">{orderCounts.pending_payment}</Badge>}
                   </TabsTrigger>
                   <TabsTrigger value="confirmed" className="gap-1">
                     <CheckCircle className="w-4 h-4" />
@@ -429,15 +567,39 @@ const OrdersManagement = () => {
                         </div>
 
                         {/* Payment Method */}
-                        <div className="text-sm text-muted-foreground mb-4">
+                        <div className="text-sm text-muted-foreground mb-2">
                           💳 {order.payment_method === 'cash' ? 'Dinheiro' : 
                               order.payment_method === 'pix' ? 'PIX' : 
                               order.payment_method === 'credit_card' ? 'Cartão de Crédito' : 
-                              order.payment_method === 'debit_card' ? 'Cartão de Débito' : 'Online'}
+                              order.payment_method === 'debit_card' ? 'Cartão de Débito' :
+                              order.payment_method === 'card_on_delivery' ? 'Cartão na Entrega' :
+                              order.payment_method === 'pix_on_delivery' ? 'PIX na Entrega' :
+                              order.payment_method === 'pending' ? 'Pendente' : 'Online'}
                         </div>
 
+                        {/* Payment on Delivery Badge */}
+                        {isPaymentOnDelivery(order.payment_method) && order.status === 'pending' && (
+                          <Badge variant="outline" className="mb-4 bg-amber-100 text-amber-800 border-amber-300">
+                            💵 Pagamento na Entrega/Retirada
+                          </Badge>
+                        )}
+
+                        {/* Pending Payment Badge */}
+                        {order.status === 'pending_payment' && (
+                          <Badge variant="outline" className="mb-4 bg-yellow-100 text-yellow-800 border-yellow-300">
+                            ⏳ Aguardando Confirmação PIX
+                          </Badge>
+                        )}
+
+                        {/* Customer Name if available */}
+                        {order.customer_name && (
+                          <div className="text-sm text-muted-foreground mb-2">
+                            👤 {order.customer_name}
+                          </div>
+                        )}
+
                         {/* Actions */}
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 mt-4">
                           {order.status === 'pending' && (
                             <>
                               <Button 
@@ -460,7 +622,12 @@ const OrdersManagement = () => {
                               </Button>
                             </>
                           )}
-                          {nextStatus && order.status !== 'pending' && (
+                          {order.status === 'pending_payment' && (
+                            <div className="flex-1 text-center text-sm text-muted-foreground">
+                              Aguardando pagamento PIX...
+                            </div>
+                          )}
+                          {nextStatus && order.status !== 'pending' && order.status !== 'pending_payment' && (
                             <Button 
                               size="sm" 
                               className="flex-1"
@@ -472,10 +639,7 @@ const OrdersManagement = () => {
                           <Button 
                             size="sm" 
                             variant="outline"
-                            onClick={() => {
-                              setSelectedOrder(order);
-                              setShowOrderModal(true);
-                            }}
+                            onClick={() => openOrderModal(order)}
                           >
                             <Eye className="w-4 h-4" />
                           </Button>
@@ -486,6 +650,16 @@ const OrdersManagement = () => {
                           >
                             <Printer className="w-4 h-4" />
                           </Button>
+                          {order.status !== 'delivered' && order.status !== 'cancelled' && order.status !== 'pending' && order.status !== 'pending_payment' && (
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                              onClick={() => openCancelModal(order)}
+                            >
+                              <Ban className="w-4 h-4" />
+                            </Button>
+                          )}
                         </div>
                       </CardContent>
                     </Card>
@@ -571,6 +745,37 @@ const OrdersManagement = () => {
                 </div>
               )}
 
+              {/* Order History */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <History className="w-4 h-4" />
+                  <p className="font-medium">Histórico de Alterações</p>
+                </div>
+                {loadingHistory ? (
+                  <div className="text-sm text-muted-foreground">Carregando...</div>
+                ) : orderHistory.length === 0 ? (
+                  <div className="text-sm text-muted-foreground">Nenhuma alteração registrada</div>
+                ) : (
+                  <div className="max-h-32 overflow-y-auto space-y-2">
+                    {orderHistory.map((log, idx) => (
+                      <div key={idx} className="text-xs bg-muted/50 p-2 rounded">
+                        <div className="flex justify-between">
+                          <span className="font-medium capitalize">{log.action}</span>
+                          <span className="text-muted-foreground">
+                            {new Date(log.created_at).toLocaleString('pt-BR')}
+                          </span>
+                        </div>
+                        {log.old_data?.status && log.new_data?.status && (
+                          <div className="text-muted-foreground">
+                            Status: {statusConfig[log.old_data.status as OrderStatus]?.label || log.old_data.status} → {statusConfig[log.new_data.status as OrderStatus]?.label || log.new_data.status}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               <div className="flex gap-2 pt-4">
                 {selectedOrder.status !== 'delivered' && selectedOrder.status !== 'cancelled' && (
                   <Select
@@ -595,6 +800,16 @@ const OrdersManagement = () => {
                   <Printer className="w-4 h-4 mr-2" />
                   Imprimir
                 </Button>
+                {canRefund(selectedOrder) && (
+                  <Button 
+                    variant="outline" 
+                    className="text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20"
+                    onClick={() => setShowRefundModal(true)}
+                  >
+                    <RotateCcw className="w-4 h-4 mr-2" />
+                    Estornar
+                  </Button>
+                )}
               </div>
             </div>
           )}
@@ -628,6 +843,32 @@ const OrdersManagement = () => {
               onClick={() => selectedOrder && updateOrderStatus(selectedOrder.id, 'cancelled', rejectReason)}
             >
               Confirmar Rejeição
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Refund Modal */}
+      <Dialog open={showRefundModal} onOpenChange={setShowRefundModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Estornar Pagamento</DialogTitle>
+            <DialogDescription>
+              Confirma o estorno do pagamento do pedido #{selectedOrder?.order_number}?
+              O valor de R$ {selectedOrder?.total.toFixed(2)} será devolvido ao cliente.
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowRefundModal(false)}>
+              Cancelar
+            </Button>
+            <Button 
+              variant="destructive"
+              onClick={handleRefund}
+              disabled={refundLoading}
+            >
+              {refundLoading ? "Processando..." : "Confirmar Estorno"}
             </Button>
           </DialogFooter>
         </DialogContent>

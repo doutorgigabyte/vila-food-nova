@@ -174,35 +174,40 @@ const CategoriesManagement = () => {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background">
+      <div className="min-h-screen flex w-full bg-background overflow-hidden">
         <DashboardSidebar 
           isOpen={sidebarOpen} 
           onClose={() => setSidebarOpen(false)}
           establishment={establishment}
         />
 
-        <div className="flex-1 lg:ml-64">
+        <div className="flex-1 lg:ml-64 overflow-x-hidden">
           <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b border-border">
             <div className="flex items-center justify-between px-4 py-3">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 min-w-0">
                 <Button 
                   variant="ghost" 
                   size="icon" 
-                  className="lg:hidden"
+                  className="lg:hidden shrink-0"
                   onClick={() => setSidebarOpen(true)}
                 >
                   <Menu className="w-5 h-5" />
                 </Button>
-                <h1 className="text-lg font-semibold">Categorias</h1>
+                <h1 className="text-lg font-semibold truncate">Categorias</h1>
               </div>
-              <Button onClick={() => handleOpenDialog()}>
-                <Plus className="w-4 h-4 mr-2" />
-                Nova Categoria
-              </Button>
+              <div className="flex items-center gap-2 shrink-0">
+                <Button onClick={() => handleOpenDialog()} size="sm" className="hidden sm:inline-flex">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Nova Categoria
+                </Button>
+                <Button onClick={() => handleOpenDialog()} size="icon" className="inline-flex sm:hidden">
+                  <Plus className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
           </header>
 
-          <div className="p-4 md:p-6 space-y-6">
+          <div className="p-4 md:p-6 space-y-6 overflow-x-auto">
             {/* Search */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -309,6 +314,7 @@ const CategoriesManagement = () => {
                 onUpload={(url) => setForm({ ...form, image_url: url })}
                 onRemove={() => setForm({ ...form, image_url: "" })}
                 aspectRatio="banner"
+                establishmentId={establishmentId || undefined}
               />
             )}
 

@@ -85,6 +85,11 @@ export default {
           "0%, 100%": { opacity: "1" },
           "50%": { opacity: "0.5" },
         },
+        wiggle: {
+          "0%, 100%": { transform: "rotate(0deg)" },
+          "25%": { transform: "rotate(-15deg)" },
+          "75%": { transform: "rotate(15deg)" },
+        },
         "rubber-band": {
           "0%": { transform: "scale(0.3)", opacity: "0" },
           "40%": { transform: "scale(1.1)" },
@@ -101,6 +106,44 @@ export default {
           "0%": { opacity: "0", transform: "translateY(10px)" },
           "100%": { opacity: "1", transform: "translateY(0)" },
         },
+        "coin-slide": {
+          "0%": { transform: "translateX(0)", opacity: "1" },
+          "70%": { transform: "translateX(-30px)", opacity: "1" },
+          "85%": { transform: "translateX(-40px)", opacity: "0.5" },
+          "100%": { transform: "translateX(-50px)", opacity: "0" },
+        },
+        "chomp-top": {
+          "0%, 100%": { transform: "rotate(0deg)" },
+          "50%": { transform: "rotate(-25deg)" },
+        },
+        "chomp-bottom": {
+          "0%, 100%": { transform: "rotate(0deg)" },
+          "50%": { transform: "rotate(25deg)" },
+        },
+        "pacman-chomp": {
+          "0%, 100%": { 
+            clipPath: "polygon(100% 50%, 75% 0%, 0% 0%, 0% 100%, 75% 100%)"
+          },
+          "50%": { 
+            clipPath: "polygon(100% 50%, 100% 35%, 0% 0%, 0% 100%, 100% 65%)"
+          },
+        },
+        "cart-bounce": {
+          "0%, 100%": { transform: "scale(1)" },
+          "25%": { transform: "scale(1.2)" },
+          "50%": { transform: "scale(0.95)" },
+          "75%": { transform: "scale(1.1)" },
+        },
+        "cart-pop": {
+          "0%": { transform: "scale(1)", boxShadow: "0 0 0 0 hsl(var(--primary) / 0.7)" },
+          "50%": { transform: "scale(1.15)", boxShadow: "0 0 0 10px hsl(var(--primary) / 0)" },
+          "100%": { transform: "scale(1)", boxShadow: "0 0 0 0 hsl(var(--primary) / 0)" },
+        },
+        "badge-ping": {
+          "0%": { transform: "scale(1)", opacity: "1" },
+          "50%": { transform: "scale(1.5)", opacity: "0.5" },
+          "100%": { transform: "scale(1)", opacity: "1" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -110,6 +153,13 @@ export default {
         "rubber-band": "rubber-band 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards",
         "spring-in": "spring-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards",
         "fade-up": "fade-up 0.3s ease-out forwards",
+        "coin-slide": "coin-slide 2.4s ease-in-out infinite",
+        "chomp-top": "chomp-top 0.3s ease-in-out infinite",
+        "chomp-bottom": "chomp-bottom 0.3s ease-in-out infinite",
+        "pacman-chomp": "pacman-chomp 0.3s ease-in-out infinite",
+        "cart-bounce": "cart-bounce 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)",
+        "cart-pop": "cart-pop 0.6s ease-out",
+        "badge-ping": "badge-ping 0.4s ease-out",
       },
       backgroundImage: {
         "gradient-primary": "var(--gradient-primary)",

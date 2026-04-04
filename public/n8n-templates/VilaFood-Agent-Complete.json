@@ -1,0 +1,966 @@
+{
+  "name": "VilaFood AI Agent - Complete",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "vilafood-webhook",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [200, 600],
+      "id": "webhook-evolution",
+      "name": "Evolution API Webhook",
+      "webhookId": "vilafood-evolution-webhook"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.body?.data?.key?.fromMe }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "notEquals"
+              }
+            },
+            {
+              "leftValue": "={{ $json.body?.event }}",
+              "rightValue": "messages.upsert",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [420, 600],
+      "id": "filter-self-messages",
+      "name": "Filter Self Messages"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://gyagfsjbdaacgmmofqip.supabase.co/rest/v1/rpc/get_establishment_by_instance",
+        "authentication": "none",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5YWdmc2piZGFhY2dtbW9mcWlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4NzIwNjYsImV4cCI6MjA4MDQ0ODA2Nn0.4W0hZwETfoALlpn9_f2NqdKQNJ3DKDRkcs7uC-VbdhE"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"p_instance_name\": \"{{ $json.body.instance }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [640, 600],
+      "id": "get-establishment",
+      "name": "Busca Estabelecimento"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "instance_name",
+              "name": "instance_name",
+              "value": "={{ $('Evolution API Webhook').item.json.body.instance }}",
+              "type": "string"
+            },
+            {
+              "id": "remote_jid",
+              "name": "remote_jid",
+              "value": "={{ $('Evolution API Webhook').item.json.body.data.key.remoteJid }}",
+              "type": "string"
+            },
+            {
+              "id": "phone",
+              "name": "phone",
+              "value": "={{ $('Evolution API Webhook').item.json.body.data.key.remoteJid.replace('@s.whatsapp.net', '') }}",
+              "type": "string"
+            },
+            {
+              "id": "push_name",
+              "name": "push_name",
+              "value": "={{ $('Evolution API Webhook').item.json.body.data.pushName || 'Cliente' }}",
+              "type": "string"
+            },
+            {
+              "id": "message_text",
+              "name": "message_text",
+              "value": "={{ $('Evolution API Webhook').item.json.body.data.message?.conversation || $('Evolution API Webhook').item.json.body.data.message?.extendedTextMessage?.text || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "message_type",
+              "name": "message_type",
+              "value": "={{ $('Evolution API Webhook').item.json.body.data.messageType }}",
+              "type": "string"
+            },
+            {
+              "id": "message_id",
+              "name": "message_id",
+              "value": "={{ $('Evolution API Webhook').item.json.body.data.key.id }}",
+              "type": "string"
+            },
+            {
+              "id": "session_key",
+              "name": "session_key",
+              "value": "={{ $('Evolution API Webhook').item.json.body.instance }}:{{ $('Evolution API Webhook').item.json.body.data.key.remoteJid.replace('@s.whatsapp.net', '') }}",
+              "type": "string"
+            },
+            {
+              "id": "establishment_id",
+              "name": "establishment_id",
+              "value": "={{ $('Busca Estabelecimento').item.json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "establishment_name",
+              "name": "establishment_name",
+              "value": "={{ $('Busca Estabelecimento').item.json.name }}",
+              "type": "string"
+            },
+            {
+              "id": "system_prompt",
+              "name": "system_prompt",
+              "value": "={{ $('Busca Estabelecimento').item.json.system_prompt || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "menu_json",
+              "name": "menu_json",
+              "value": "={{ JSON.stringify($('Busca Estabelecimento').item.json.menu_json || []) }}",
+              "type": "string"
+            },
+            {
+              "id": "mercado_pago_token",
+              "name": "mercado_pago_token",
+              "value": "={{ $('Busca Estabelecimento').item.json.mercado_pago_token || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "pix_key",
+              "name": "pix_key",
+              "value": "={{ $('Busca Estabelecimento').item.json.pix_key || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "evolution_api_token",
+              "name": "evolution_api_token",
+              "value": "={{ $('Busca Estabelecimento').item.json.evolution_api_token || '' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [860, 600],
+      "id": "extract-fields",
+      "name": "Extrai Campos"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.message_type }}",
+                    "rightValue": "imageMessage",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "imagem"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.message_type }}",
+                    "rightValue": "conversation",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "texto"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.message_type }}",
+                    "rightValue": "audioMessage",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "audio"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.message_type }}",
+                    "rightValue": "extendedTextMessage",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "texto"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [1080, 600],
+      "id": "switch-message-type",
+      "name": "Tipo de Mensagem"
+    },
+    {
+      "parameters": {
+        "resource": "chat-api",
+        "operation": "get-media-base64",
+        "instanceName": "={{ $('Extrai Campos').item.json.instance_name }}",
+        "messageId": "={{ $('Extrai Campos').item.json.message_id }}",
+        "convertToMp4": true
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [1300, 400],
+      "id": "get-image-base64",
+      "name": "Busca Imagem Base64",
+      "credentials": {
+        "evolutionApi": {
+          "id": "evolution-api-credentials",
+          "name": "Evolution API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "toBinary",
+        "sourceProperty": "data.base64",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [1520, 400],
+      "id": "convert-image-binary",
+      "name": "Converte Imagem"
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "text": "Analise esta imagem enviada por um cliente. Se for um comprovante de pagamento (PIX, transferência, etc), extraia: valor, data/hora, tipo. Se for foto de produto ou cardápio, descreva o que vê. Se não conseguir identificar, descreva a imagem normalmente.",
+        "inputType": "binary",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [1740, 400],
+      "id": "analyze-image",
+      "name": "Analisa Imagem",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "google-gemini-credentials",
+          "name": "Google Gemini API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "chat-api",
+        "operation": "get-media-base64",
+        "instanceName": "={{ $('Extrai Campos').item.json.instance_name }}",
+        "messageId": "={{ $('Extrai Campos').item.json.message_id }}",
+        "convertToMp4": true
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [1300, 800],
+      "id": "get-audio-base64",
+      "name": "Busca Áudio Base64",
+      "credentials": {
+        "evolutionApi": {
+          "id": "evolution-api-credentials",
+          "name": "Evolution API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "toBinary",
+        "sourceProperty": "data.base64",
+        "options": {
+          "fileName": "audio.mp3",
+          "mimeType": "audio/mpeg"
+        }
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [1520, 800],
+      "id": "convert-audio-binary",
+      "name": "Converte Áudio"
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "inputType": "binary",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [1740, 800],
+      "id": "transcribe-audio",
+      "name": "Transcreve Áudio",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "google-gemini-credentials",
+          "name": "Google Gemini API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "push",
+        "list": "=vilafood:debounce:{{ $('Extrai Campos').item.json.session_key }}",
+        "messageData": "={{ JSON.stringify({ messageId: $('Extrai Campos').item.json.message_id, mensagem: $('Extrai Campos').item.json.message_text }) }}",
+        "tail": true
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [1300, 600],
+      "id": "redis-push-text",
+      "name": "Redis Push Texto",
+      "credentials": {
+        "redis": {
+          "id": "redis-credentials",
+          "name": "Redis"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 3,
+        "unit": "seconds"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [1520, 600],
+      "id": "debounce-wait",
+      "name": "Debounce 3s",
+      "webhookId": "debounce-wait-webhook"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "propertyName": "mensagens",
+        "key": "=vilafood:debounce:{{ $('Extrai Campos').item.json.session_key }}",
+        "keyType": "list",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [1740, 600],
+      "id": "redis-get-messages",
+      "name": "Redis Get Mensagens",
+      "credentials": {
+        "redis": {
+          "id": "redis-credentials",
+          "name": "Redis"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ JSON.parse($json.mensagens?.slice(-1)[0] || '{}')?.messageId }}",
+              "rightValue": "={{ $('Extrai Campos').item.json.message_id }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [1960, 600],
+      "id": "check-last-message",
+      "name": "É Última Mensagem?"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "content",
+              "name": "content",
+              "value": "={{ $json.mensagens ? $json.mensagens.map(m => JSON.parse(m).mensagem).join(' ') : $('Extrai Campos').item.json.message_text }}",
+              "type": "string"
+            },
+            {
+              "id": "session_key",
+              "name": "session_key",
+              "value": "={{ $('Extrai Campos').item.json.session_key }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [2180, 500],
+      "id": "combine-text-messages",
+      "name": "Combina Mensagens Texto"
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "key": "=vilafood:debounce:{{ $('Extrai Campos').item.json.session_key }}"
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [2400, 500],
+      "id": "redis-clear-debounce",
+      "name": "Redis Clear Debounce",
+      "credentials": {
+        "redis": {
+          "id": "redis-credentials",
+          "name": "Redis"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "content",
+              "name": "content",
+              "value": "=[IMAGEM ANALISADA] {{ $json.content || $json.text }}",
+              "type": "string"
+            },
+            {
+              "id": "session_key",
+              "name": "session_key",
+              "value": "={{ $('Extrai Campos').item.json.session_key }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1960, 400],
+      "id": "format-image-result",
+      "name": "Formata Resultado Imagem"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "content",
+              "name": "content",
+              "value": "=[ÁUDIO TRANSCRITO] {{ $json.text }}",
+              "type": "string"
+            },
+            {
+              "id": "session_key",
+              "name": "session_key",
+              "value": "={{ $('Extrai Campos').item.json.session_key }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1960, 800],
+      "id": "format-audio-result",
+      "name": "Formata Resultado Áudio"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [2620, 600],
+      "id": "merge-all-content",
+      "name": "Merge Conteúdo"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "propertyName": "cart_data",
+        "key": "=vilafood:cart:{{ $json.session_key }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [2840, 600],
+      "id": "redis-get-cart",
+      "name": "Busca Carrinho",
+      "credentials": {
+        "redis": {
+          "id": "redis-credentials",
+          "name": "Redis"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://gyagfsjbdaacgmmofqip.supabase.co/rest/v1/rpc/get_customer_by_phone_and_establishment",
+        "authentication": "none",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5YWdmc2piZGFhY2dtbW9mcWlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4NzIwNjYsImV4cCI6MjA4MDQ0ODA2Nn0.4W0hZwETfoALlpn9_f2NqdKQNJ3DKDRkcs7uC-VbdhE"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \"p_phone\": \"{{ $('Extrai Campos').item.json.phone }}\", \"p_establishment_id\": \"{{ $('Busca Estabelecimento').item.json.id }}\" }"
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [3060, 600],
+      "id": "get-customer",
+      "name": "Busca Cliente",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Merge Conteúdo').item.json.content }}",
+        "hasOutputParser": false,
+        "options": {
+          "systemMessage": "=# Você é o assistente virtual da {{ $('Extrai Campos').item.json.establishment_name }}\n\n{{ $('Extrai Campos').item.json.system_prompt }}\n\n## CARDÁPIO DISPONÍVEL:\n{{ $('Extrai Campos').item.json.menu_json }}\n\n## DADOS DO CLIENTE:\n- Nome: {{ $('Extrai Campos').item.json.push_name }}\n- Telefone: {{ $('Extrai Campos').item.json.phone }}\n- Endereço: {{ $('Busca Cliente').item.json.default_address ? JSON.stringify($('Busca Cliente').item.json.default_address) : 'Não cadastrado' }}\n\n## CARRINHO ATUAL:\n{{ $('Busca Carrinho').item.json.cart_data || 'Vazio' }}\n\n## INSTRUÇÕES:\n1. Seja simpático e prestativo\n2. Use as TOOLS disponíveis para ações específicas\n3. Sempre confirme antes de finalizar pedidos\n4. Ofereça produtos complementares quando apropriado\n5. Para mostrar produtos, use send_product_photo\n6. Para pagamento PIX, use create_order_pix\n7. Se receber [ÁUDIO TRANSCRITO], responda como se fosse texto normal\n8. Se receber [IMAGEM ANALISADA], use o contexto da análise\n\n## FORMATO DE RESPOSTA:\n- Respostas curtas e diretas\n- Use emojis moderadamente\n- Sempre pergunte se deseja mais algo antes de fechar"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [3280, 600],
+      "id": "ai-agent",
+      "name": "VilaFood AI Agent"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash",
+        "options": {
+          "temperature": 0.7,
+          "maxOutputTokens": 1024
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [3180, 800],
+      "id": "google-gemini-chat",
+      "name": "Google Gemini Chat",
+      "credentials": {
+        "googleGeminiApi": {
+          "id": "google-gemini-credentials",
+          "name": "Google Gemini API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "=vilafood:memory:{{ $('Extrai Campos').item.json.session_key }}",
+        "contextWindowLength": 20
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryRedisChat",
+      "typeVersion": 1.3,
+      "position": [3380, 800],
+      "id": "redis-chat-memory",
+      "name": "Redis Chat Memory",
+      "credentials": {
+        "redis": {
+          "id": "redis-credentials",
+          "name": "Redis"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "search_menu",
+        "description": "Busca produtos no cardápio do estabelecimento. Use quando o cliente perguntar sobre produtos, preços ou quiser ver opções disponíveis.",
+        "code": "// Tool: search_menu\n// Input: { query: string }\nconst query = $input.item.json.query?.toLowerCase() || '';\nconst menuJson = JSON.parse($('Extrai Campos').item.json.menu_json || '[]');\n\nif (!query) {\n  return { json: { products: menuJson.slice(0, 10), message: 'Mostrando os 10 primeiros produtos' } };\n}\n\nconst results = menuJson.filter(product => \n  product.name?.toLowerCase().includes(query) || \n  product.description?.toLowerCase().includes(query) ||\n  product.category?.toLowerCase().includes(query)\n);\n\nreturn { \n  json: { \n    products: results.slice(0, 5),\n    found: results.length,\n    message: results.length > 0 \n      ? `Encontrei ${results.length} produto(s) para \"${query}\"` \n      : `Nenhum produto encontrado para \"${query}\"`\n  } \n};",
+        "specifyInputSchema": true,
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"query\": {\n      \"type\": \"string\",\n      \"description\": \"Termo de busca (nome do produto, categoria ou descrição)\"\n    }\n  },\n  \"required\": [\"query\"]\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.1,
+      "position": [3080, 920],
+      "id": "tool-search-menu",
+      "name": "search_menu"
+    },
+    {
+      "parameters": {
+        "name": "send_product_photo",
+        "description": "Envia foto do produto para o cliente via WhatsApp com nome, descrição e preço. Use quando o cliente quiser ver a foto de um produto específico.",
+        "code": "// Tool: send_product_photo\n// Input: { product_id: string, product_name: string, product_price: number, image_url: string }\nconst productId = $input.item.json.product_id;\nconst productName = $input.item.json.product_name;\nconst productPrice = $input.item.json.product_price;\nconst imageUrl = $input.item.json.image_url;\n\nconst instanceName = $('Extrai Campos').item.json.instance_name;\nconst remoteJid = $('Extrai Campos').item.json.remote_jid;\nconst evolutionApiUrl = $env.EVOLUTION_API_URL;\nconst evolutionApiKey = $env.EVOLUTION_API_KEY;\n\nif (!imageUrl) {\n  return { json: { success: false, message: 'Produto sem imagem disponível' } };\n}\n\nconst caption = `📦 *${productName}*\\n💰 R$ ${productPrice?.toFixed(2) || '0.00'}\\n\\nDigite o número do produto para adicionar ao carrinho!`;\n\ntry {\n  const response = await fetch(`${evolutionApiUrl}/message/sendMedia/${instanceName}`, {\n    method: 'POST',\n    headers: {\n      'Content-Type': 'application/json',\n      'apikey': evolutionApiKey\n    },\n    body: JSON.stringify({\n      number: remoteJid.replace('@s.whatsapp.net', ''),\n      mediatype: 'image',\n      media: imageUrl,\n      caption: caption\n    })\n  });\n  \n  const result = await response.json();\n  return { json: { success: true, message: `Foto de ${productName} enviada!`, result } };\n} catch (error) {\n  return { json: { success: false, message: `Erro ao enviar foto: ${error.message}` } };\n}",
+        "specifyInputSchema": true,
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"product_id\": {\n      \"type\": \"string\",\n      \"description\": \"ID do produto\"\n    },\n    \"product_name\": {\n      \"type\": \"string\",\n      \"description\": \"Nome do produto\"\n    },\n    \"product_price\": {\n      \"type\": \"number\",\n      \"description\": \"Preço do produto\"\n    },\n    \"image_url\": {\n      \"type\": \"string\",\n      \"description\": \"URL da imagem do produto\"\n    }\n  },\n  \"required\": [\"product_id\", \"product_name\", \"product_price\", \"image_url\"]\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.1,
+      "position": [3180, 920],
+      "id": "tool-send-product-photo",
+      "name": "send_product_photo"
+    },
+    {
+      "parameters": {
+        "name": "add_to_cart",
+        "description": "Adiciona um produto ao carrinho do cliente. Use quando o cliente confirmar que quer adicionar um item ao pedido.",
+        "code": "// Tool: add_to_cart\n// Input: { product_id: string, product_name: string, quantity: number, unit_price: number, observations?: string }\nconst Redis = require('ioredis');\nconst redis = new Redis($env.REDIS_URL);\n\nconst productId = $input.item.json.product_id;\nconst productName = $input.item.json.product_name;\nconst quantity = parseInt($input.item.json.quantity) || 1;\nconst unitPrice = parseFloat($input.item.json.unit_price) || 0;\nconst observations = $input.item.json.observations || '';\nconst sessionKey = $('Extrai Campos').item.json.session_key;\nconst cartKey = `vilafood:cart:${sessionKey}`;\n\ntry {\n  // Busca carrinho atual\n  let cartData = await redis.get(cartKey);\n  let cart = cartData ? JSON.parse(cartData) : { items: [], total: 0 };\n  \n  // Verifica se produto já existe\n  const existingIndex = cart.items.findIndex(item => item.product_id === productId);\n  \n  if (existingIndex >= 0) {\n    cart.items[existingIndex].quantity += quantity;\n    cart.items[existingIndex].subtotal = cart.items[existingIndex].quantity * unitPrice;\n  } else {\n    cart.items.push({\n      product_id: productId,\n      product_name: productName,\n      quantity: quantity,\n      unit_price: unitPrice,\n      subtotal: quantity * unitPrice,\n      observations: observations\n    });\n  }\n  \n  // Recalcula total\n  cart.total = cart.items.reduce((sum, item) => sum + item.subtotal, 0);\n  cart.updated_at = new Date().toISOString();\n  \n  // Salva com TTL de 2 horas\n  await redis.set(cartKey, JSON.stringify(cart), 'EX', 7200);\n  await redis.quit();\n  \n  return { \n    json: { \n      success: true, \n      message: `✅ ${quantity}x ${productName} adicionado ao carrinho!`,\n      cart_items: cart.items.length,\n      cart_total: cart.total.toFixed(2)\n    } \n  };\n} catch (error) {\n  await redis.quit();\n  return { json: { success: false, message: `Erro ao adicionar: ${error.message}` } };\n}",
+        "specifyInputSchema": true,
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"product_id\": {\n      \"type\": \"string\",\n      \"description\": \"ID do produto\"\n    },\n    \"product_name\": {\n      \"type\": \"string\",\n      \"description\": \"Nome do produto\"\n    },\n    \"quantity\": {\n      \"type\": \"number\",\n      \"description\": \"Quantidade\"\n    },\n    \"unit_price\": {\n      \"type\": \"number\",\n      \"description\": \"Preço unitário\"\n    },\n    \"observations\": {\n      \"type\": \"string\",\n      \"description\": \"Observações do item (opcional)\"\n    }\n  },\n  \"required\": [\"product_id\", \"product_name\", \"quantity\", \"unit_price\"]\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.1,
+      "position": [3280, 920],
+      "id": "tool-add-to-cart",
+      "name": "add_to_cart"
+    },
+    {
+      "parameters": {
+        "name": "create_order_pix",
+        "description": "Finaliza o pedido e gera QR Code PIX para pagamento. Use quando o cliente confirmar que quer finalizar o pedido e pagar via PIX.",
+        "code": "// Tool: create_order_pix\n// Input: { delivery_address: string, delivery_type?: string, observations?: string }\nconst Redis = require('ioredis');\nconst redis = new Redis($env.REDIS_URL);\n\nconst deliveryAddress = $input.item.json.delivery_address;\nconst deliveryType = $input.item.json.delivery_type || 'delivery';\nconst observations = $input.item.json.observations || '';\n\nconst sessionKey = $('Extrai Campos').item.json.session_key;\nconst cartKey = `vilafood:cart:${sessionKey}`;\nconst establishmentId = $('Extrai Campos').item.json.establishment_id;\nconst phone = $('Extrai Campos').item.json.phone;\nconst customerName = $('Extrai Campos').item.json.push_name;\nconst mercadoPagoToken = $('Extrai Campos').item.json.mercado_pago_token;\nconst supabaseUrl = $env.SUPABASE_URL;\nconst supabaseKey = $env.SUPABASE_SERVICE_ROLE_KEY;\n\ntry {\n  // Busca carrinho\n  let cartData = await redis.get(cartKey);\n  if (!cartData) {\n    await redis.quit();\n    return { json: { success: false, message: '❌ Carrinho vazio! Adicione produtos primeiro.' } };\n  }\n  \n  const cart = JSON.parse(cartData);\n  if (!cart.items?.length) {\n    await redis.quit();\n    return { json: { success: false, message: '❌ Carrinho vazio!' } };\n  }\n  \n  // Chama Edge Function mercadopago-pix\n  const pixResponse = await fetch(`${supabaseUrl}/functions/v1/mercadopago-pix`, {\n    method: 'POST',\n    headers: {\n      'Content-Type': 'application/json',\n      'Authorization': `Bearer ${supabaseKey}`\n    },\n    body: JSON.stringify({\n      establishment_id: establishmentId,\n      amount: cart.total,\n      customer_name: customerName,\n      customer_phone: phone,\n      items: cart.items,\n      delivery_address: deliveryAddress,\n      delivery_type: deliveryType,\n      observations: observations\n    })\n  });\n  \n  const pixResult = await pixResponse.json();\n  \n  if (pixResult.error) {\n    await redis.quit();\n    return { json: { success: false, message: `❌ Erro no PIX: ${pixResult.error}` } };\n  }\n  \n  // Limpa carrinho após criar pedido\n  await redis.del(cartKey);\n  await redis.quit();\n  \n  return { \n    json: { \n      success: true, \n      message: `✅ Pedido #${pixResult.order_id?.slice(0, 8)} criado!\\n\\n💰 Total: R$ ${cart.total.toFixed(2)}\\n\\n📱 Use o código PIX abaixo para pagar:\\n\\n${pixResult.pix_code}\\n\\nOu escaneie o QR Code que enviarei em seguida.`,\n      order_id: pixResult.order_id,\n      pix_code: pixResult.pix_code,\n      qr_code_base64: pixResult.qr_code_base64,\n      total: cart.total\n    } \n  };\n} catch (error) {\n  await redis.quit();\n  return { json: { success: false, message: `❌ Erro ao criar pedido: ${error.message}` } };\n}",
+        "specifyInputSchema": true,
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"delivery_address\": {\n      \"type\": \"string\",\n      \"description\": \"Endereço completo de entrega\"\n    },\n    \"delivery_type\": {\n      \"type\": \"string\",\n      \"description\": \"Tipo: delivery, pickup ou table\"\n    },\n    \"observations\": {\n      \"type\": \"string\",\n      \"description\": \"Observações gerais do pedido\"\n    }\n  },\n  \"required\": [\"delivery_address\"]\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.1,
+      "position": [3380, 920],
+      "id": "tool-create-order-pix",
+      "name": "create_order_pix"
+    },
+    {
+      "parameters": {
+        "name": "save_customer",
+        "description": "Salva ou atualiza os dados do cliente (nome, endereço, bairro). Use quando o cliente fornecer seu endereço ou informações de contato.",
+        "code": "// Tool: save_customer\n// Input: { name?: string, address?: string, neighborhood?: string, city?: string, zip_code?: string }\nconst customerName = $input.item.json.name || $('Extrai Campos').item.json.push_name;\nconst address = $input.item.json.address;\nconst neighborhood = $input.item.json.neighborhood;\nconst city = $input.item.json.city;\nconst zipCode = $input.item.json.zip_code;\n\nconst phone = $('Extrai Campos').item.json.phone;\nconst establishmentId = $('Extrai Campos').item.json.establishment_id;\nconst supabaseUrl = $env.SUPABASE_URL;\nconst supabaseKey = $env.SUPABASE_SERVICE_ROLE_KEY;\n\ntry {\n  const addressData = {\n    street: address,\n    neighborhood: neighborhood,\n    city: city,\n    zip_code: zipCode\n  };\n  \n  // Upsert no Supabase\n  const response = await fetch(`${supabaseUrl}/rest/v1/customers?phone=eq.${phone}&establishment_id=eq.${establishmentId}`, {\n    method: 'GET',\n    headers: {\n      'Content-Type': 'application/json',\n      'Authorization': `Bearer ${supabaseKey}`,\n      'apikey': supabaseKey\n    }\n  });\n  \n  const existing = await response.json();\n  \n  let result;\n  if (existing && existing.length > 0) {\n    // Update\n    result = await fetch(`${supabaseUrl}/rest/v1/customers?id=eq.${existing[0].id}`, {\n      method: 'PATCH',\n      headers: {\n        'Content-Type': 'application/json',\n        'Authorization': `Bearer ${supabaseKey}`,\n        'apikey': supabaseKey,\n        'Prefer': 'return=representation'\n      },\n      body: JSON.stringify({\n        name: customerName,\n        default_address: addressData,\n        updated_at: new Date().toISOString()\n      })\n    });\n  } else {\n    // Insert\n    result = await fetch(`${supabaseUrl}/rest/v1/customers`, {\n      method: 'POST',\n      headers: {\n        'Content-Type': 'application/json',\n        'Authorization': `Bearer ${supabaseKey}`,\n        'apikey': supabaseKey,\n        'Prefer': 'return=representation'\n      },\n      body: JSON.stringify({\n        phone: phone,\n        name: customerName,\n        establishment_id: establishmentId,\n        default_address: addressData\n      })\n    });\n  }\n  \n  return { \n    json: { \n      success: true, \n      message: `✅ Dados salvos! ${customerName}, ${address}${neighborhood ? ', ' + neighborhood : ''}` \n    } \n  };\n} catch (error) {\n  return { json: { success: false, message: `Erro ao salvar: ${error.message}` } };\n}",
+        "specifyInputSchema": true,
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"name\": {\n      \"type\": \"string\",\n      \"description\": \"Nome do cliente\"\n    },\n    \"address\": {\n      \"type\": \"string\",\n      \"description\": \"Rua e número\"\n    },\n    \"neighborhood\": {\n      \"type\": \"string\",\n      \"description\": \"Bairro\"\n    },\n    \"city\": {\n      \"type\": \"string\",\n      \"description\": \"Cidade\"\n    },\n    \"zip_code\": {\n      \"type\": \"string\",\n      \"description\": \"CEP\"\n    }\n  },\n  \"required\": [\"address\"]\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.1,
+      "position": [3480, 920],
+      "id": "tool-save-customer",
+      "name": "save_customer"
+    },
+    {
+      "parameters": {
+        "name": "view_cart",
+        "description": "Mostra o carrinho atual do cliente. Use quando o cliente quiser ver o que tem no carrinho ou revisar o pedido.",
+        "code": "// Tool: view_cart\nconst Redis = require('ioredis');\nconst redis = new Redis($env.REDIS_URL);\n\nconst sessionKey = $('Extrai Campos').item.json.session_key;\nconst cartKey = `vilafood:cart:${sessionKey}`;\n\ntry {\n  let cartData = await redis.get(cartKey);\n  await redis.quit();\n  \n  if (!cartData) {\n    return { json: { success: true, message: '🛒 Carrinho vazio!', items: [], total: 0 } };\n  }\n  \n  const cart = JSON.parse(cartData);\n  \n  if (!cart.items?.length) {\n    return { json: { success: true, message: '🛒 Carrinho vazio!', items: [], total: 0 } };\n  }\n  \n  let itemsList = cart.items.map((item, idx) => \n    `${idx + 1}. ${item.quantity}x ${item.product_name} - R$ ${item.subtotal.toFixed(2)}`\n  ).join('\\n');\n  \n  return { \n    json: { \n      success: true, \n      message: `🛒 *Seu Carrinho:*\\n\\n${itemsList}\\n\\n💰 *Total: R$ ${cart.total.toFixed(2)}*`,\n      items: cart.items,\n      total: cart.total\n    } \n  };\n} catch (error) {\n  await redis.quit();\n  return { json: { success: false, message: `Erro: ${error.message}` } };\n}",
+        "specifyInputSchema": true,
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {},\n  \"required\": []\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.1,
+      "position": [3580, 920],
+      "id": "tool-view-cart",
+      "name": "view_cart"
+    },
+    {
+      "parameters": {
+        "name": "clear_cart",
+        "description": "Limpa todos os itens do carrinho. Use quando o cliente quiser cancelar ou recomeçar o pedido.",
+        "code": "// Tool: clear_cart\nconst Redis = require('ioredis');\nconst redis = new Redis($env.REDIS_URL);\n\nconst sessionKey = $('Extrai Campos').item.json.session_key;\nconst cartKey = `vilafood:cart:${sessionKey}`;\n\ntry {\n  await redis.del(cartKey);\n  await redis.quit();\n  \n  return { json: { success: true, message: '🗑️ Carrinho limpo! Você pode começar um novo pedido.' } };\n} catch (error) {\n  await redis.quit();\n  return { json: { success: false, message: `Erro: ${error.message}` } };\n}",
+        "specifyInputSchema": true,
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {},\n  \"required\": []\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.1,
+      "position": [3680, 920],
+      "id": "tool-clear-cart",
+      "name": "clear_cart"
+    },
+    {
+      "parameters": {
+        "resource": "messages-api",
+        "instanceName": "={{ $('Extrai Campos').item.json.instance_name }}",
+        "remoteJid": "={{ $('Extrai Campos').item.json.remote_jid }}",
+        "messageText": "={{ $json.output }}",
+        "options_message": {}
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [3540, 600],
+      "id": "send-response",
+      "name": "Envia Resposta",
+      "credentials": {
+        "evolutionApi": {
+          "id": "evolution-api-credentials",
+          "name": "Evolution API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "tableId": "whatsapp_messages",
+        "fieldsToSend": {
+          "fieldValues": [
+            { "fieldName": "session_id", "fieldValue": "={{ $('Busca Sessao').item.json.id || null }}" },
+            { "fieldName": "sender", "fieldValue": "bot" },
+            { "fieldName": "content", "fieldValue": "={{ $('VilaFood AI Agent').item.json.output }}" },
+            { "fieldName": "message_type", "fieldValue": "text" },
+            { "fieldName": "is_from_bot", "fieldValue": true },
+            { "fieldName": "agent_type", "fieldValue": "ai_agent" }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [3760, 600],
+      "id": "log-response",
+      "name": "Salva Log Resposta",
+      "credentials": {
+        "supabaseApi": {
+          "id": "supabase-credentials",
+          "name": "Supabase VilaFood"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [2180, 700],
+      "id": "no-op-not-last",
+      "name": "Não é última (ignora)"
+    }
+  ],
+  "connections": {
+    "Evolution API Webhook": {
+      "main": [[{ "node": "Filter Self Messages", "type": "main", "index": 0 }]]
+    },
+    "Filter Self Messages": {
+      "main": [[{ "node": "Busca Estabelecimento", "type": "main", "index": 0 }]]
+    },
+    "Busca Estabelecimento": {
+      "main": [[{ "node": "Extrai Campos", "type": "main", "index": 0 }]]
+    },
+    "Extrai Campos": {
+      "main": [[{ "node": "Tipo de Mensagem", "type": "main", "index": 0 }]]
+    },
+    "Tipo de Mensagem": {
+      "main": [
+        [{ "node": "Busca Imagem Base64", "type": "main", "index": 0 }],
+        [{ "node": "Redis Push Texto", "type": "main", "index": 0 }],
+        [{ "node": "Busca Áudio Base64", "type": "main", "index": 0 }],
+        [{ "node": "Redis Push Texto", "type": "main", "index": 0 }]
+      ]
+    },
+    "Busca Imagem Base64": {
+      "main": [[{ "node": "Converte Imagem", "type": "main", "index": 0 }]]
+    },
+    "Converte Imagem": {
+      "main": [[{ "node": "Analisa Imagem", "type": "main", "index": 0 }]]
+    },
+    "Analisa Imagem": {
+      "main": [[{ "node": "Formata Resultado Imagem", "type": "main", "index": 0 }]]
+    },
+    "Formata Resultado Imagem": {
+      "main": [[{ "node": "Merge Conteúdo", "type": "main", "index": 0 }]]
+    },
+    "Busca Áudio Base64": {
+      "main": [[{ "node": "Converte Áudio", "type": "main", "index": 0 }]]
+    },
+    "Converte Áudio": {
+      "main": [[{ "node": "Transcreve Áudio", "type": "main", "index": 0 }]]
+    },
+    "Transcreve Áudio": {
+      "main": [[{ "node": "Formata Resultado Áudio", "type": "main", "index": 0 }]]
+    },
+    "Formata Resultado Áudio": {
+      "main": [[{ "node": "Merge Conteúdo", "type": "main", "index": 0 }]]
+    },
+    "Redis Push Texto": {
+      "main": [[{ "node": "Debounce 3s", "type": "main", "index": 0 }]]
+    },
+    "Debounce 3s": {
+      "main": [[{ "node": "Redis Get Mensagens", "type": "main", "index": 0 }]]
+    },
+    "Redis Get Mensagens": {
+      "main": [[{ "node": "É Última Mensagem?", "type": "main", "index": 0 }]]
+    },
+    "É Última Mensagem?": {
+      "main": [
+        [{ "node": "Combina Mensagens Texto", "type": "main", "index": 0 }],
+        [{ "node": "Não é última (ignora)", "type": "main", "index": 0 }]
+      ]
+    },
+    "Combina Mensagens Texto": {
+      "main": [[{ "node": "Redis Clear Debounce", "type": "main", "index": 0 }]]
+    },
+    "Redis Clear Debounce": {
+      "main": [[{ "node": "Merge Conteúdo", "type": "main", "index": 0 }]]
+    },
+    "Merge Conteúdo": {
+      "main": [[{ "node": "Busca Carrinho", "type": "main", "index": 0 }]]
+    },
+    "Busca Carrinho": {
+      "main": [[{ "node": "Busca Cliente", "type": "main", "index": 0 }]]
+    },
+    "Busca Cliente": {
+      "main": [[{ "node": "VilaFood AI Agent", "type": "main", "index": 0 }]]
+    },
+    "Google Gemini Chat": {
+      "ai_languageModel": [[{ "node": "VilaFood AI Agent", "type": "ai_languageModel", "index": 0 }]]
+    },
+    "Redis Chat Memory": {
+      "ai_memory": [[{ "node": "VilaFood AI Agent", "type": "ai_memory", "index": 0 }]]
+    },
+    "search_menu": {
+      "ai_tool": [[{ "node": "VilaFood AI Agent", "type": "ai_tool", "index": 0 }]]
+    },
+    "send_product_photo": {
+      "ai_tool": [[{ "node": "VilaFood AI Agent", "type": "ai_tool", "index": 0 }]]
+    },
+    "add_to_cart": {
+      "ai_tool": [[{ "node": "VilaFood AI Agent", "type": "ai_tool", "index": 0 }]]
+    },
+    "create_order_pix": {
+      "ai_tool": [[{ "node": "VilaFood AI Agent", "type": "ai_tool", "index": 0 }]]
+    },
+    "save_customer": {
+      "ai_tool": [[{ "node": "VilaFood AI Agent", "type": "ai_tool", "index": 0 }]]
+    },
+    "view_cart": {
+      "ai_tool": [[{ "node": "VilaFood AI Agent", "type": "ai_tool", "index": 0 }]]
+    },
+    "clear_cart": {
+      "ai_tool": [[{ "node": "VilaFood AI Agent", "type": "ai_tool", "index": 0 }]]
+    },
+    "VilaFood AI Agent": {
+      "main": [[{ "node": "Envia Resposta", "type": "main", "index": 0 }]]
+    },
+    "Envia Resposta": {
+      "main": [[{ "node": "Salva Log Resposta", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": { "executionOrder": "v1" },
+  "meta": { "templateCredsSetupCompleted": true },
+  "tags": [
+    { "name": "VilaFood" },
+    { "name": "WhatsApp" },
+    { "name": "AI Agent" },
+    { "name": "Audio" },
+    { "name": "Image" }
+  ]
+}

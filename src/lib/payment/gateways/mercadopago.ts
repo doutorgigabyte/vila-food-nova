@@ -22,9 +22,16 @@ export class MercadoPagoGateway {
     orderId: string,
     amount: number,
     description: string,
-    payer?: { email?: string; name?: string }
+    payer?: { email?: string; name?: string; cpf?: string }
   ): Promise<CreatePaymentResponse> {
     try {
+      console.log('[MercadoPagoGateway] Creating PIX payment (Checkout Transparente):', {
+        establishment_id: this.establishmentId,
+        order_id: orderId,
+        amount,
+        description,
+      });
+
       const { data, error } = await supabase.functions.invoke('mercadopago-pix', {
         body: {
           establishment_id: this.establishmentId,
@@ -33,13 +40,30 @@ export class MercadoPagoGateway {
           description,
           payer_email: payer?.email,
           payer_name: payer?.name,
+          payer_cpf: payer?.cpf,
           external_reference: orderId,
         },
       });
 
-      if (error) throw error;
+      console.log('[MercadoPagoGateway] Edge function response:', {
+        has_data: !!data,
+        has_error: !!error,
+        error_message: error?.message,
+        data_type: data?.type,
+        data_success: data?.success,
+        has_qr_code: !!data?.qr_code,
+        has_qr_code_base64: !!data?.qr_code_base64,
+        mp_error: data?.mp_error,
+      });
 
+      if (error) {
+        console.error('[MercadoPagoGateway] Edge function error:', error);
+        throw new Error(error.message || 'Erro ao comunicar com o servidor');
+      }
+
+      // Handle static PIX fallback
       if (data.type === 'static_pix') {
+        console.log('[MercadoPagoGateway] Using static PIX key');
         return {
           success: true,
           payment_id: `static_${orderId}`,
@@ -47,22 +71,25 @@ export class MercadoPagoGateway {
           gateway: 'mercadopago',
           pix_qr_code: data.pix_key,
           pix_copy_paste: data.pix_key,
+          error: data.mp_error, // Include MP error for debugging
         };
       }
 
+      // Handle dynamic PIX
       return {
         success: data.success,
-        payment_id: data.payment_id,
-        status: data.status as PaymentStatus,
+        payment_id: data.payment_id?.toString(),
+        status: (data.status || 'pending') as PaymentStatus,
         gateway: 'mercadopago',
         pix_qr_code: data.qr_code,
-        pix_qr_code_base64: data.qr_code_base64,
+        pix_qr_code_base64: data.qr_code_base64 || data.qr_code_url,
         pix_copy_paste: data.qr_code,
         pix_expiration: data.expiration,
+        checkout_url: data.ticket_url,
         error: data.error,
       };
     } catch (error) {
-      console.error('MercadoPago PIX error:', error);
+      console.error('[MercadoPagoGateway] PIX error:', error);
       return {
         success: false,
         payment_id: '',
