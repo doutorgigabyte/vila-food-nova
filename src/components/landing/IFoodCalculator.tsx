@@ -146,15 +146,15 @@ const IFoodCalculator = () => {
             <span className="text-xs md:text-sm font-medium text-destructive">Calculadora de Perdas</span>
           </div>
           <h2 className="text-2xl md:text-4xl lg:text-5xl font-bold text-white mb-3 md:mb-4">
-            <span className="block">Quanto o iFood está</span>
+            <span className="block">Quanto você paga</span>
             <span className="flex items-center justify-center gap-1">
-              <span className="text-destructive">mordendo</span>
+              <span className="text-destructive">em taxas</span>
               <CoinEaterAnimation />
             </span>
             <span className="block">do seu faturamento?</span>
           </h2>
           <p className="text-sm md:text-lg text-white/60 max-w-2xl mx-auto">
-            Descubra em segundos quanto você está perdendo em taxas e comissões
+            Descubra em segundos quanto fica com o marketplace em taxas e comissões
           </p>
         </div>
 

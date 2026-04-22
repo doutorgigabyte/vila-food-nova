@@ -1,6 +1,7 @@
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/lib/logger';
 
 interface AuthContextType {
   user: User | null;
@@ -66,12 +67,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.id);
-        
+        logger.debug('Auth state changed:', event, session?.user?.id);
+
         // CRITICAL: Only clear storage on EXPLICIT SIGNED_OUT event
         // Do NOT clear on !session as this can happen during page transitions
         if (event === 'SIGNED_OUT') {
-          console.log('Explicit SIGNED_OUT event - clearing storage');
+          logger.debug('Explicit SIGNED_OUT event - clearing storage');
           setSession(null);
           setUser(null);
           // Clear all storage on explicit sign out only

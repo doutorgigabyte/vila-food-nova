@@ -158,12 +158,27 @@ export const RelatedProducts = ({
               >
                 <div className="relative w-full aspect-square rounded-lg overflow-hidden bg-muted mb-2">
                   {product.image_url ? (
-                    <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <ShoppingBag className="w-6 h-6 text-muted-foreground" />
-                    </div>
-                  )}
+                    <img
+                      src={product.image_url}
+                      alt={product.name}
+                      loading="lazy"
+                      decoding="async"
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        const img = e.currentTarget;
+                        img.style.display = "none";
+                        img.parentElement
+                          ?.querySelector("[data-fallback]")
+                          ?.classList.remove("hidden");
+                      }}
+                    />
+                  ) : null}
+                  <div
+                    data-fallback
+                    className={`${product.image_url ? "hidden" : ""} absolute inset-0 w-full h-full flex items-center justify-center`}
+                  >
+                    <ShoppingBag className="w-6 h-6 text-muted-foreground" />
+                  </div>
                 </div>
                 <h4 className="text-xs font-medium line-clamp-2 mb-1 h-8">{product.name}</h4>
                 <Price value={price} size="xs" />

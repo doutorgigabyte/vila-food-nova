@@ -103,17 +103,17 @@ export const CouponInput = ({
 
   if (appliedCoupon) {
     return (
-      <Card className="bg-green-500/5 border-green-500/20">
+      <Card className="bg-primary/5 border-primary/20">
         <CardContent className="p-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="p-1.5 bg-green-500/20 rounded-full">
-              <Check className="w-4 h-4 text-green-600" />
+            <div className="p-1.5 bg-primary/20 rounded-full">
+              <Check className="w-4 h-4 text-primary" />
             </div>
             <div>
-              <p className="text-sm font-medium text-green-700 dark:text-green-400">
+              <p className="text-sm font-medium text-primary">
                 Cupom aplicado
               </p>
-              <Badge variant="secondary" className="mt-1 bg-green-500/10 text-green-600 border-0">
+              <Badge variant="secondary" className="mt-1 bg-primary/10 text-primary border-0">
                 {appliedCoupon.code}
               </Badge>
             </div>
@@ -122,6 +122,7 @@ export const CouponInput = ({
             variant="ghost"
             size="sm"
             onClick={handleRemoveCoupon}
+            aria-label="Remover cupom"
             className="text-muted-foreground hover:text-destructive"
           >
             <X className="w-4 h-4" />

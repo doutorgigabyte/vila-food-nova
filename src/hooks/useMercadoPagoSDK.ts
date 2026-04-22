@@ -150,6 +150,35 @@ export interface UseMercadoPagoSDKReturn {
 }
 
 const MP_PUBLIC_KEY = 'APP_USR-34f84b02-a8f4-478c-a9eb-9bd32e6f85d3'; // Production public key
+const MP_SDK_URL = 'https://sdk.mercadopago.com/js/v2';
+
+let mpSdkLoadPromise: Promise<void> | null = null;
+
+function loadMercadoPagoSDK(): Promise<void> {
+  if (typeof window === 'undefined') return Promise.resolve();
+  if (window.MercadoPago) return Promise.resolve();
+  if (mpSdkLoadPromise) return mpSdkLoadPromise;
+
+  mpSdkLoadPromise = new Promise((resolve, reject) => {
+    const existing = document.querySelector(`script[src="${MP_SDK_URL}"]`) as HTMLScriptElement | null;
+    if (existing) {
+      existing.addEventListener('load', () => resolve());
+      existing.addEventListener('error', () => reject(new Error('Failed to load Mercado Pago SDK')));
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = MP_SDK_URL;
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = () => {
+      mpSdkLoadPromise = null;
+      reject(new Error('Failed to load Mercado Pago SDK'));
+    };
+    document.body.appendChild(script);
+  });
+
+  return mpSdkLoadPromise;
+}
 
 export function useMercadoPagoSDK(publicKey?: string): UseMercadoPagoSDKReturn {
   const [mp, setMp] = useState<MercadoPagoInstance | null>(null);
@@ -159,11 +188,12 @@ export function useMercadoPagoSDK(publicKey?: string): UseMercadoPagoSDKReturn {
   const [deviceId, setDeviceId] = useState<string | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
+
     const initSDK = () => {
       try {
         if (typeof window.MercadoPago === 'undefined') {
-          console.warn('[MercadoPago SDK] SDK not loaded yet, waiting...');
-          setTimeout(initSDK, 500);
+          setTimeout(initSDK, 300);
           return;
         }
 
@@ -191,8 +221,6 @@ export function useMercadoPagoSDK(publicKey?: string): UseMercadoPagoSDKReturn {
         };
         
         captureDeviceId();
-
-        console.log('[MercadoPago SDK] Initialized successfully');
       } catch (err) {
         console.error('[MercadoPago SDK] Initialization error:', err);
         setError(err instanceof Error ? err.message : 'Erro ao inicializar SDK');
@@ -200,7 +228,20 @@ export function useMercadoPagoSDK(publicKey?: string): UseMercadoPagoSDKReturn {
       }
     };
 
-    initSDK();
+    loadMercadoPagoSDK()
+      .then(() => {
+        if (!cancelled) initSDK();
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        console.error('[MercadoPago SDK] Load error:', err);
+        setError('Erro ao carregar SDK de pagamento');
+        setIsLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [publicKey]);
 
   const getIdentificationTypes = useCallback(async (): Promise<IdentificationType[]> => {

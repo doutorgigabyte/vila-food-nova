@@ -42,12 +42,14 @@ export const StoreProductGrid = ({
           <div className="hidden md:flex gap-1">
             <button
               onClick={() => scroll("left")}
+              aria-label="Rolar para a esquerda"
               className="w-8 h-8 bg-muted rounded-full flex items-center justify-center hover:bg-muted/80 transition-colors"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
             <button
               onClick={() => scroll("right")}
+              aria-label="Rolar para a direita"
               className="w-8 h-8 bg-muted rounded-full flex items-center justify-center hover:bg-muted/80 transition-colors"
             >
               <ChevronRight className="w-4 h-4" />

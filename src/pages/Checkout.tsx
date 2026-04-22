@@ -509,19 +509,18 @@ const Checkout = () => {
   }
 
   const handleSubmitDelivery = () => {
-    if (deliveryType === "delivery") {
+    const requiresAddress = deliveryType === "delivery" || deliveryType === "turbo";
+    if (requiresAddress) {
       if (!addressData.address || !addressData.number || !addressData.neighborhood) {
         toast.error("Preencha todos os campos obrigatórios do endereço");
         return;
       }
-      
-      // Validate delivery area
+
       if (deliveryValidation.checked && !deliveryValidation.canDeliver) {
         toast.error("Endereço fora da área de entrega. Escolha retirada no local ou altere o endereço.");
         return;
       }
-      
-      // Check if address has coordinates for validation
+
       if (!addressData.lat || !addressData.lng) {
         toast.error("Confirme o endereço no mapa para validar a entrega");
         return;
@@ -1014,6 +1013,7 @@ const Checkout = () => {
                 else if (step === "delivery") setStep("cart");
                 else navigate(-1);
               }}
+              aria-label="Voltar"
               className="p-2 hover:bg-muted rounded-full transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
@@ -1043,23 +1043,43 @@ const Checkout = () => {
         )}
 
         {/* Progress Steps */}
-        <div className="flex items-center justify-center gap-1 mb-8">
-          {["cart", "delivery", "payment"].map((s, idx) => {
-            const isActive = step === s;
-            const isPast = ["cart", "delivery", "payment"].indexOf(step) > idx;
-            
+        <div className="flex items-center justify-center gap-2 mb-8">
+          {([
+            { key: "cart", label: "Carrinho" },
+            { key: "delivery", label: "Entrega" },
+            { key: "payment", label: "Pagamento" },
+          ] as const).map(({ key, label }, idx) => {
+            const order = ["cart", "delivery", "payment"];
+            const isActive = step === key;
+            const isPast = order.indexOf(step) > idx;
+
             return (
-              <div key={s} className="flex items-center">
-                <div className={`
-                  w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all
-                  ${isActive ? "bg-primary text-primary-foreground" : ""}
-                  ${isPast ? "bg-green-500 text-white" : ""}
-                  ${!isActive && !isPast ? "bg-muted text-muted-foreground" : ""}
-                `}>
-                  {isPast ? "✓" : idx + 1}
+              <div key={key} className="flex items-center">
+                <div className="flex flex-col items-center gap-1">
+                  <div
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all
+                      ${isActive ? "bg-primary text-primary-foreground" : ""}
+                      ${isPast ? "bg-primary/80 text-primary-foreground" : ""}
+                      ${!isActive && !isPast ? "bg-muted text-muted-foreground" : ""}
+                    `}
+                    aria-current={isActive ? "step" : undefined}
+                  >
+                    {isPast ? "✓" : idx + 1}
+                  </div>
+                  <span
+                    className={`text-[10px] md:text-xs font-medium whitespace-nowrap transition-colors
+                      ${isActive ? "text-foreground" : "text-muted-foreground"}
+                    `}
+                  >
+                    {label}
+                  </span>
                 </div>
                 {idx < 2 && (
-                  <div className={`w-8 h-1 rounded mx-1 ${isPast ? "bg-green-500" : "bg-muted"}`} />
+                  <div
+                    className={`w-6 md:w-10 h-1 rounded mx-1 self-start mt-4 ${
+                      isPast ? "bg-primary/80" : "bg-muted"
+                    }`}
+                  />
                 )}
               </div>
             );
@@ -1080,17 +1100,6 @@ const Checkout = () => {
               freeDeliveryThreshold={50}
               acceptsDelivery={firstEstablishment?.accepts_delivery !== false}
             />
-            
-            {/* Coupon in cart step */}
-            {firstEstablishment && (
-              <CouponInput
-                establishmentId={firstEstablishment.id}
-                subtotal={subtotal}
-                onCouponApplied={setAppliedCoupon}
-                onCouponRemoved={() => setAppliedCoupon(null)}
-                appliedCoupon={appliedCoupon}
-              />
-            )}
           </div>
         )}
 
@@ -1268,21 +1277,15 @@ const Checkout = () => {
               </Card>
             )}
 
-            {/* Coupon in delivery step */}
-            {firstEstablishment && (
-              <CouponInput
-                establishmentId={firstEstablishment.id}
-                subtotal={subtotal}
-                onCouponApplied={setAppliedCoupon}
-                onCouponRemoved={() => setAppliedCoupon(null)}
-                appliedCoupon={appliedCoupon}
-              />
-            )}
-
-            <Button 
-              onClick={handleSubmitDelivery} 
+            <Button
+              onClick={handleSubmitDelivery}
               className="w-full h-12 text-base font-semibold"
-              disabled={validatingDelivery || (deliveryType === "delivery" && deliveryValidation.checked && !deliveryValidation.canDeliver)}
+              disabled={
+                validatingDelivery ||
+                ((deliveryType === "delivery" || deliveryType === "turbo") &&
+                  (!addressData.address || !addressData.number || !addressData.neighborhood ||
+                    (deliveryValidation.checked && !deliveryValidation.canDeliver)))
+              }
             >
               {validatingDelivery ? "Validando endereço..." : "Continuar para pagamento"}
               <ChevronRight className="w-5 h-5 ml-2" />

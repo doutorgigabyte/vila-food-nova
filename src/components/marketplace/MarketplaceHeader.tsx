@@ -174,8 +174,8 @@ const MarketplaceHeader = ({ searchTerm, onSearchChange, onSearchClick }: Market
               {user && <NotificationCenter />}
               
               {/* Cart - Hidden on mobile (exists in bottom nav) */}
-              <Link to="/checkout" className="hidden md:block">
-                <Button variant="ghost" size="icon" className="relative">
+              <Link to="/checkout" className="hidden md:block" aria-label="Ir para o carrinho">
+                <Button variant="ghost" size="icon" className="relative" aria-label="Carrinho">
                   <ShoppingCart className="w-5 h-5" />
                   {cartCount > 0 && (
                     <span className="absolute -top-1 -right-1 w-5 h-5 bg-primary text-primary-foreground text-xs rounded-full flex items-center justify-center font-semibold">
@@ -188,7 +188,7 @@ const MarketplaceHeader = ({ searchTerm, onSearchChange, onSearchClick }: Market
               {/* Mobile Menu - Hidden on mobile (exists in bottom nav) */}
               <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
                 <SheetTrigger asChild>
-                  <Button variant="ghost" size="icon" className="hidden lg:hidden md:flex">
+                  <Button variant="ghost" size="icon" aria-label="Abrir menu" className="hidden lg:hidden md:flex">
                     <Menu className="w-5 h-5" />
                   </Button>
                 </SheetTrigger>
