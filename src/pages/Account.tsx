@@ -7,18 +7,21 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { 
-  ArrowLeft, 
-  User, 
-  Mail, 
-  Phone, 
-  Save, 
+import {
+  ArrowLeft,
+  User,
+  Mail,
+  Phone,
+  Save,
   MapPin,
   CreditCard,
   Calendar,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  ShieldCheck,
+  ChevronRight
 } from "lucide-react";
+import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -515,6 +518,28 @@ const Account = () => {
             )}
           </Button>
         </div>
+
+        {/* LGPD: Privacidade & meus dados (item 3.2/6.5) */}
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <ShieldCheck className="w-4 h-4" />
+              Privacidade & meus dados
+            </CardTitle>
+            <CardDescription>
+              Direitos garantidos pela LGPD: exportar seus dados ou solicitar exclusão da conta.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Link
+              to="/membro/privacidade"
+              className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted transition-colors"
+            >
+              <span className="text-sm font-medium">Acessar central de privacidade</span>
+              <ChevronRight className="w-4 h-4 text-muted-foreground" />
+            </Link>
+          </CardContent>
+        </Card>
       </main>
 
       <Footer />

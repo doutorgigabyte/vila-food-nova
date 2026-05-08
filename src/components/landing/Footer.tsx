@@ -1,9 +1,17 @@
 import { Link } from "react-router-dom";
-import { MapPin, Mail, Phone, Instagram, Facebook, Store } from "lucide-react";
+import { useState, useEffect } from "react";
+import { MapPin, Mail, Phone, Instagram, Facebook, Store, Cookie } from "lucide-react";
 import logoHorizontalWhite from "@/assets/logo-horizontal-white.png";
+import { readConsent, revokeConsent, type ConsentRecord } from "@/components/CookieConsentBanner";
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
+  const [consent, setConsent] = useState<ConsentRecord | null>(null);
+
+  // Re-checa consent quando o footer renderiza (ex: voltar pra home apos aceitar)
+  useEffect(() => {
+    setConsent(readConsent());
+  }, []);
 
   const links = {
     product: [
@@ -17,10 +25,12 @@ const Footer = () => {
     support: [
       { label: "Contato", href: "/conheca#contact" },
       { label: "WhatsApp", href: "https://wa.me/5581983655465", external: true },
+      { label: "Status do sistema", href: "/saude" },
     ],
     legal: [
       { label: "Termos de Uso", href: "/termos" },
-      { label: "Privacidade", href: "/privacidade" },
+      { label: "Política de privacidade", href: "/privacidade" },
+      { label: "Privacidade & meus dados", href: "/membro/privacidade" },
     ],
   };
 
@@ -93,6 +103,17 @@ const Footer = () => {
                     </Link>
                   </li>
                 ))}
+                {consent && (
+                  <li>
+                    <button
+                      onClick={revokeConsent}
+                      className="text-card-foreground/70 hover:text-foreground transition-colors inline-flex items-center gap-1"
+                      title={`Aceito em ${new Date(consent.accepted_at).toLocaleDateString('pt-BR')} · nível "${consent.level === 'all' ? 'todos' : 'essenciais'}"`}
+                    >
+                      <Cookie size={12} /> Revogar consentimento
+                    </button>
+                  </li>
+                )}
               </ul>
             </div>
           </div>
@@ -212,6 +233,17 @@ const Footer = () => {
                     </Link>
                   </li>
                 ))}
+                {consent && (
+                  <li>
+                    <button
+                      onClick={revokeConsent}
+                      className="text-card-foreground/70 hover:text-foreground transition-colors inline-flex items-center gap-1.5"
+                      title={`Aceito em ${new Date(consent.accepted_at).toLocaleDateString('pt-BR')} · nível "${consent.level === 'all' ? 'todos' : 'essenciais'}"`}
+                    >
+                      <Cookie size={14} /> Revogar consentimento
+                    </button>
+                  </li>
+                )}
               </ul>
             </div>
           </div>
