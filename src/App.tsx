@@ -11,6 +11,7 @@ import { AdminAccessProvider } from "./contexts/AdminAccessContext";
 import { CartProvider } from "./hooks/useCart";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
 import PWAInstallPrompt from "./components/PWAInstallPrompt";
+import CookieConsentBanner from "./components/CookieConsentBanner";
 import { OrderSourceProvider } from "./hooks/useOrderSource";
 import { NotificationProvider } from "./components/notifications/NotificationProvider";
 import PageSkeleton from "./components/ui/PageSkeleton";
@@ -421,6 +422,7 @@ const App = () => {
                       <Toaster />
                       <Sonner />
                       <PWAInstallPrompt />
+                      <CookieConsentBanner />
                       <BrowserRouter>
                         <NotificationProvider>
                           <AppRoutes />
