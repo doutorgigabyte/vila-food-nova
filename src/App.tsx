@@ -141,6 +141,8 @@ const SecurityDocumentation = lazy(() => import("./pages/admin/SecurityDocumenta
 const TestingGuide = lazy(() => import("./pages/admin/TestingGuide"));
 const TermsOfUse = lazy(() => import("./pages/TermsOfUse"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
+const Saude = lazy(() => import("./pages/Saude"));
+const Privacidade = lazy(() => import("./pages/Privacidade"));
 import { LojistaToPanel } from "./components/LegacyRedirects";
 
 const AffiliateReferrals = lazy(() => import("./pages/affiliate/AffiliateReferrals"));
@@ -227,6 +229,8 @@ const AppRoutes = () => {
               <Route path="/auth" element={<Auth />} />
               <Route path="/termos" element={<TermsOfUse />} />
               <Route path="/privacidade" element={<PrivacyPolicy />} />
+              <Route path="/saude" element={<Saude />} />
+              <Route path="/membro/privacidade" element={<Privacidade />} />
               <Route path="/recuperar-senha" element={<RecoverPassword />} />
               <Route path="/recuperar-senha-whatsapp" element={<RecoverPasswordWhatsApp />} />
               <Route path="/loja/:slug" element={<Store />} />
