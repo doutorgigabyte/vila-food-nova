@@ -35,15 +35,34 @@ interface WebhookPayload {
 /**
  * Valida assinatura do webhook usando Web Crypto API
  * O MP envia x-signature no formato: ts=xxx,v1=hash
+ *
+ * Em producao (ENVIRONMENT=production), secret e signature sao OBRIGATORIOS:
+ * sem eles, retorna false e o webhook eh rejeitado com 401.
+ * Em outros ambientes, ausencia eh tolerada com warning para facilitar dev local.
  */
 async function validateSignature(
-  signature: string | null, 
-  requestId: string | null, 
+  signature: string | null,
+  requestId: string | null,
   dataId: string
 ): Promise<boolean> {
-  if (!MP_WEBHOOK_SECRET || !signature) {
-    console.warn('Webhook signature validation skipped - no secret configured');
-    return true; // Em desenvolvimento, permite sem validação
+  const isProduction = Deno.env.get('ENVIRONMENT') === 'production';
+
+  if (!MP_WEBHOOK_SECRET) {
+    if (isProduction) {
+      console.error('CRITICAL: MERCADOPAGO_WEBHOOK_SECRET not configured in production');
+      return false;
+    }
+    console.warn('Webhook signature validation skipped - no secret configured (non-prod)');
+    return true;
+  }
+
+  if (!signature) {
+    if (isProduction) {
+      console.error('CRITICAL: x-signature header missing on production webhook');
+      return false;
+    }
+    console.warn('Webhook signature missing - allowing (non-prod)');
+    return true;
   }
 
   try {
@@ -54,6 +73,20 @@ async function validateSignature(
 
     if (!ts || !v1) {
       console.error('Invalid signature format');
+      return false;
+    }
+
+    // Anti-replay: rejeitar webhooks com ts > 5min de diferença vs agora
+    // (MP envia em segundos epoch; janela de tolerância acomoda clock skew + retry)
+    const tsNum = parseInt(ts, 10);
+    if (Number.isNaN(tsNum)) {
+      console.error('Invalid ts (not a number):', ts);
+      return false;
+    }
+    const nowSec = Math.floor(Date.now() / 1000);
+    const skew = Math.abs(nowSec - tsNum);
+    if (skew > 300) {
+      console.error(`Replay rejected: ts skew ${skew}s exceeds 300s window (ts=${tsNum} now=${nowSec})`);
       return false;
     }
 
@@ -234,6 +267,28 @@ serve(async (req) => {
                 description: `Pedido #${payment.external_reference?.slice(-8) || data.id}`,
                 reference_id: payment.external_reference,
               });
+            }
+
+            // Escrow D+7: mover payment_split_items de 'awaiting_payment' para 'held'.
+            // Disparado quando o payment confirmou e existe um payment_split associado.
+            // Worker release-escrow-payouts vai liberar apos available_at.
+            const { data: split } = await supabase
+              .from('payment_splits')
+              .select('id')
+              .eq('mp_payment_id', data.id.toString())
+              .maybeSingle();
+
+            if (split?.id) {
+              const paidAt = payment.date_approved || new Date().toISOString();
+              const { data: holdResult, error: holdErr } = await supabase.rpc(
+                'escrow_hold_split_items',
+                { p_split_id: split.id, p_paid_at: paidAt, p_window_days: 7 }
+              );
+              if (holdErr) {
+                console.error('Failed to hold split items in escrow:', holdErr);
+              } else {
+                console.log(`Escrow: ${holdResult ?? 0} split items moved to held for split ${split.id}`);
+              }
             }
           }
         }
