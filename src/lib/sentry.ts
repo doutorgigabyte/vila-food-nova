@@ -39,7 +39,10 @@ export async function initSentry(): Promise<void> {
   if (!dsn) return;
 
   try {
-    const Sentry = await import('@sentry/react');
+    // Indireção via variável + @vite-ignore: dependência opcional.
+    // Sem @sentry/react instalado, falha em runtime e fica no-op.
+    const moduleName = '@sentry/react';
+    const Sentry = await import(/* @vite-ignore */ moduleName);
     Sentry.init({
       dsn,
       environment: import.meta.env.MODE,
