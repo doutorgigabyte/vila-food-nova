@@ -423,12 +423,12 @@ const App = () => {
                 <OrderSourceProvider>
                   <CartProvider>
                     <TooltipProvider>
-                      <Toaster />
-                      <Sonner />
-                      <PWAInstallPrompt />
-                      <CookieConsentBanner />
                       <BrowserRouter>
                         <NotificationProvider>
+                          <Toaster />
+                          <Sonner />
+                          <PWAInstallPrompt />
+                          <CookieConsentBanner />
                           <AppRoutes />
                         </NotificationProvider>
                       </BrowserRouter>
