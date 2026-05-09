@@ -17,8 +17,12 @@ const IntegrationsManagement = () => {
   const [copied, setCopied] = useState<string | null>(null);
 
   const getXmlFeedUrl = () => {
-    const projectId = "gyagfsjbdaacgmmofqip";
-    return `https://${projectId}.supabase.co/functions/v1/product-feeds?slug=${slug}`;
+    // Construido a partir de VITE_SUPABASE_URL pra funcionar tanto em Cloud
+    // (<projectid>.supabase.co) quanto em self-hosted (db.vilafood.delivery).
+    // Migrado em 2026-05-09 (item 7.7 do roadmap Rota T) — antes era hardcoded
+    // pro projeto Cloud aposentado gyagfsjbdaacgmmofqip.
+    const baseUrl = import.meta.env.VITE_SUPABASE_URL || "https://db.vilafood.delivery";
+    return `${baseUrl}/functions/v1/product-feeds?slug=${slug}`;
   };
 
   const getStoreUrl = () => {
