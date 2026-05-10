@@ -108,7 +108,7 @@ curl --location --request POST 'https://api.pagseguro.com/orders' \
         }
     ],
     "notification_urls": [
-        "https://gyagfsjbdaacgmmofqip.supabase.co/functions/v1/pagseguro-webhook"
+        "https://db.vilafood.delivery/functions/v1/pagseguro-webhook"
     ],
     "charges": [
         {
@@ -242,7 +242,7 @@ curl --location --request POST 'https://api.pagseguro.com/orders' \
         }
     ],
     "notification_urls": [
-        "https://gyagfsjbdaacgmmofqip.supabase.co/functions/v1/pagseguro-webhook"
+        "https://db.vilafood.delivery/functions/v1/pagseguro-webhook"
     ],
     "links": [
         {
@@ -327,7 +327,7 @@ const encryptedCard = card.encryptedCard;
 | Ambiente | URL |
 |----------|-----|
 | Produção | https://vilafood.delivery |
-| Webhook | https://gyagfsjbdaacgmmofqip.supabase.co/functions/v1/pagseguro-webhook |
+| Webhook | https://db.vilafood.delivery/functions/v1/pagseguro-webhook |
 | OAuth Redirect | https://vilafood.delivery/painel/callback/pagseguro |
 
 ---

@@ -21,7 +21,7 @@ App nativo para entregadores do VilaFood, disponível para Android e iOS via Pla
 ## Credenciais Supabase
 
 ```
-URL: https://gyagfsjbdaacgmmofqip.supabase.co
+URL: https://db.vilafood.delivery
 Anon Key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5YWdmc2piZGFhY2dtbW9mcWlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4NzIwNjYsImV4cCI6MjA4MDQ0ODA2Nn0.4W0hZwETfoALlpn9_f2NqdKQNJ3DKDRkcs7uC-VbdhE
 ```
 
