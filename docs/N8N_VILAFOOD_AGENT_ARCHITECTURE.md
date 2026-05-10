@@ -535,7 +535,7 @@ Crie as seguintes credenciais no n8n:
 **Supabase API:**
 ```json
 {
-  "url": "https://gyagfsjbdaacgmmofqip.supabase.co",
+  "url": "https://db.vilafood.delivery",
   "serviceRoleKey": "sua-service-role-key"
 }
 ```
