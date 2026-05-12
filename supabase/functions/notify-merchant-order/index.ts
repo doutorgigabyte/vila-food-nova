@@ -120,10 +120,25 @@ serve(async (req) => {
         message = `📢 *${storeName}*\n\nVocê tem uma nova notificação. Acesse o painel para mais detalhes.`;
     }
 
-    // Use establishment's WhatsApp instance if available, otherwise use system instance
-    const instanceName = whatsappInstance?.instance_name || 'Doutorgigabyte';
+    // Prefer the establishment's own WhatsApp instance. Fall back to a
+    // platform-level instance configured via env, never to a hardcoded name —
+    // a hardcoded fallback would route real merchant notifications to whoever
+    // happens to own that account.
+    const platformInstanceName = Deno.env.get('PLATFORM_WHATSAPP_INSTANCE') || '';
+    const instanceName = whatsappInstance?.instance_name || platformInstanceName;
     const instanceApiKey = whatsappInstance?.api_key || evolutionApiKey;
-    
+
+    if (!instanceName) {
+      console.error('No WhatsApp instance configured (neither establishment nor PLATFORM_WHATSAPP_INSTANCE).');
+      return new Response(
+        JSON.stringify({
+          error: 'No WhatsApp instance configured for this establishment and no platform fallback set.',
+          merchant_notified: false,
+        }),
+        { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const formattedPhone = merchantPhone.replace(/\D/g, '');
     const phoneWithCountry = formattedPhone.startsWith('55') ? formattedPhone : `55${formattedPhone}`;
 
@@ -131,6 +146,10 @@ serve(async (req) => {
 
     let notificationSent = false;
     let notificationError = null;
+
+    // Cap each Evolution API call so a hung instance doesn't block order flow.
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10_000);
 
     try {
       const sendResponse = await fetch(`${evolutionApiUrl}/message/sendText/${instanceName}`, {
@@ -143,6 +162,7 @@ serve(async (req) => {
           number: phoneWithCountry,
           text: message,
         }),
+        signal: controller.signal,
       });
 
       if (!sendResponse.ok) {
@@ -154,8 +174,16 @@ serve(async (req) => {
         console.log(`Merchant notification sent to ${phoneWithCountry} for ${notification_type}`);
       }
     } catch (whatsappError) {
-      console.error('WhatsApp send failed (non-blocking):', whatsappError);
-      notificationError = whatsappError instanceof Error ? whatsappError.message : 'Unknown error';
+      const isAbort = whatsappError instanceof DOMException && whatsappError.name === 'AbortError';
+      console.error(
+        isAbort ? 'WhatsApp send timed out (non-blocking)' : 'WhatsApp send failed (non-blocking):',
+        whatsappError,
+      );
+      notificationError = isAbort
+        ? 'timeout'
+        : whatsappError instanceof Error ? whatsappError.message : 'Unknown error';
+    } finally {
+      clearTimeout(timeoutId);
     }
 
     // Log the notification attempt (success or failure)

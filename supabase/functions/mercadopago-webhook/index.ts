@@ -45,24 +45,26 @@ async function validateSignature(
   requestId: string | null,
   dataId: string
 ): Promise<boolean> {
-  const isProduction = Deno.env.get('ENVIRONMENT') === 'production';
+  // Only ENVIRONMENT=development explicitly opts out of validation (for local
+  // testing). Any other environment — staging, production, unset — must
+  // validate, so a missing/typoed ENVIRONMENT var fails closed instead of
+  // silently accepting unsigned webhooks.
+  const isDevelopment = Deno.env.get('ENVIRONMENT') === 'development';
 
   if (!MP_WEBHOOK_SECRET) {
-    if (isProduction) {
-      console.error('CRITICAL: MERCADOPAGO_WEBHOOK_SECRET not configured in production');
+    if (!isDevelopment) {
+      console.error('CRITICAL: MERCADOPAGO_WEBHOOK_SECRET not configured');
       return false;
     }
-    console.warn('Webhook signature validation skipped - no secret configured (non-prod)');
+    console.warn('Webhook signature validation skipped - no secret configured (development)');
     return true;
   }
 
+  // If a secret IS configured, the signature is required everywhere, even in
+  // development. Configuring the secret signals intent to validate.
   if (!signature) {
-    if (isProduction) {
-      console.error('CRITICAL: x-signature header missing on production webhook');
-      return false;
-    }
-    console.warn('Webhook signature missing - allowing (non-prod)');
-    return true;
+    console.error('CRITICAL: x-signature header missing while MP_WEBHOOK_SECRET is configured');
+    return false;
   }
 
   try {

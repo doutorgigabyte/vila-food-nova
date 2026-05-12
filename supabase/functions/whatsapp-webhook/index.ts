@@ -114,20 +114,56 @@ serve(async (req) => {
   }
 
   try {
+    // Authenticate the Evolution API caller before doing any work.
+    // Evolution sends its API key either in the `apikey` header (Evolution v2)
+    // or inside the payload itself. Compare against EVOLUTION_API_KEY (server
+    // secret). Without this, anyone could POST fake "MESSAGES_UPSERT" events
+    // and inject conversations / trigger AI replies on real merchants.
+    const expectedKey = Deno.env.get('EVOLUTION_API_KEY');
+    const isDevelopment = Deno.env.get('ENVIRONMENT') === 'development';
+
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    const payload = await req.json();
+    const rawBody = await req.text();
+    let payload: any;
+    try {
+      payload = rawBody ? JSON.parse(rawBody) : {};
+    } catch {
+      return new Response(JSON.stringify({ error: 'Invalid JSON' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const presentedKey = req.headers.get('apikey') || payload?.apikey;
+    if (!expectedKey) {
+      if (!isDevelopment) {
+        console.error('CRITICAL: EVOLUTION_API_KEY not configured');
+        return new Response(JSON.stringify({ error: 'Webhook misconfigured' }), {
+          status: 503,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      console.warn('Evolution API auth skipped - no key configured (development)');
+    } else if (presentedKey !== expectedKey) {
+      console.error('Rejecting unauthenticated Evolution webhook call');
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     console.log('Webhook received:', JSON.stringify(payload, null, 2));
 
     // Handle test/health check requests
     if (payload.test === true || !payload.instance) {
       console.log('Test request or missing instance, returning OK');
-      return new Response(JSON.stringify({ 
-        status: 'ok', 
-        message: 'Webhook is working. Send Evolution API events with instance name.' 
+      return new Response(JSON.stringify({
+        status: 'ok',
+        message: 'Webhook is working. Send Evolution API events with instance name.'
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
