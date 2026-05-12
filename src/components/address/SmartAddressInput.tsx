@@ -9,8 +9,7 @@ import {
   Building2, Home, Hash 
 } from "lucide-react";
 import { useActiveRegion } from "@/hooks/useActiveRegion";
-
-const GOOGLE_MAPS_API_KEY = "AIzaSyAIl_jZHOswjHwpXwHpDlnyacOUcRYXVco";
+import { GOOGLE_MAPS_API_KEY } from "@/lib/constants";
 
 export interface AddressData {
   cep: string;
