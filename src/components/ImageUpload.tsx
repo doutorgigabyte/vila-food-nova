@@ -93,27 +93,34 @@ export const ImageUpload = ({
     setUploading(true);
     setPreview(previewUrl);
 
-    try {
-      // Delete old image from S3 if exists and is a CloudFront/S3 URL
-      if (currentImage && (currentImage.includes('cloudfront.net') || currentImage.includes('s3.amazonaws.com'))) {
-        try {
-          await deleteFromS3(currentImage, establishmentId);
-          console.log('Old image deleted from S3');
-        } catch (deleteError) {
-          console.warn('Failed to delete old image, continuing with upload:', deleteError);
-        }
-      }
+    // Capture old URL to delete only AFTER the new upload succeeds, so a
+    // failed upload doesn't leave the user with no image.
+    const oldImageToDelete =
+      currentImage &&
+      (currentImage.includes("cloudfront.net") || currentImage.includes("s3.amazonaws.com"))
+        ? currentImage
+        : null;
 
+    try {
       // Convert Blob to File if needed
-      const fileToUpload = file instanceof File 
-        ? file 
+      const fileToUpload = file instanceof File
+        ? file
         : new File([file], originalFile?.name || 'cropped-image.jpg', { type: 'image/jpeg' });
 
-      // Upload to S3
+      // Upload to S3 FIRST
       const result = await uploadToS3(fileToUpload, bucket, establishmentId);
 
       onUpload(result.url);
       toast.success("Imagem enviada com sucesso!");
+
+      // Best-effort cleanup of the previous image — only after new one is live.
+      if (oldImageToDelete) {
+        try {
+          await deleteFromS3(oldImageToDelete, establishmentId);
+        } catch (deleteError) {
+          console.warn("Failed to delete old image (orphan kept in S3):", deleteError);
+        }
+      }
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
       console.error("Upload error:", errorMessage);

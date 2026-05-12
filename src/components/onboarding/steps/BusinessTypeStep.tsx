@@ -2,14 +2,16 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { 
-  Utensils, 
-  ShoppingBag, 
-  Pill, 
-  ShoppingCart, 
-  Palette, 
+import {
+  Utensils,
+  ShoppingBag,
+  Pill,
+  ShoppingCart,
+  Palette,
   Wrench,
-  ArrowRight
+  ArrowRight,
+  AlertCircle,
+  RefreshCw,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { OnboardingData } from "../OnboardingWizard";
@@ -58,21 +60,28 @@ const categoryDescriptions: Record<string, string> = {
 export const BusinessTypeStep = ({ data, updateData, onNext }: BusinessTypeStepProps) => {
   const [categories, setCategories] = useState<MainCategory[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchCategories = async () => {
+    setLoading(true);
+    setError(null);
+    const { data: cats, error: fetchError } = await supabase
+      .from("main_categories")
+      .select("*")
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true });
+
+    if (fetchError) {
+      setError(fetchError.message || "Não foi possível carregar as categorias");
+    } else if (!cats || cats.length === 0) {
+      setError("Nenhuma categoria de negócio disponível no momento. Tente novamente em instantes.");
+    } else {
+      setCategories(cats);
+    }
+    setLoading(false);
+  };
 
   useEffect(() => {
-    const fetchCategories = async () => {
-      const { data: cats, error } = await supabase
-        .from("main_categories")
-        .select("*")
-        .eq("is_active", true)
-        .order("sort_order", { ascending: true });
-
-      if (!error && cats) {
-        setCategories(cats);
-      }
-      setLoading(false);
-    };
-
     fetchCategories();
   }, []);
 
@@ -103,6 +112,22 @@ export const BusinessTypeStep = ({ data, updateData, onNext }: BusinessTypeStepP
           <div key={i} className="h-32 rounded-xl bg-muted animate-pulse" />
         ))}
       </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card className="p-8 text-center space-y-4 border-destructive/30 bg-destructive/5">
+        <AlertCircle className="w-12 h-12 text-destructive mx-auto" />
+        <div>
+          <h3 className="font-semibold mb-1">Não conseguimos carregar as categorias</h3>
+          <p className="text-sm text-muted-foreground">{error}</p>
+        </div>
+        <Button onClick={fetchCategories} variant="outline">
+          <RefreshCw className="w-4 h-4 mr-2" />
+          Tentar novamente
+        </Button>
+      </Card>
     );
   }
 

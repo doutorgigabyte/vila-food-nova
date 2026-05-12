@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, Sparkles } from "lucide-react";
+import { ArrowLeft, Check, Sparkles } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -165,8 +165,14 @@ export const OnboardingWizard = () => {
 
     setIsSubmitting(true);
 
+    // Track artifacts we create so we can roll them back on failure.
+    // Supabase doesn't expose cross-table transactions client-side, so we
+    // compensate manually instead of leaving orphaned establishments.
+    let createdEstablishmentId: string | null = null;
+    let createdCategoryId: string | null = null;
+
     try {
-      // Create establishment
+      // 1. Create establishment
       const { data: establishment, error: establishmentError } = await supabase
         .from("establishments")
         .insert({
@@ -203,8 +209,9 @@ export const OnboardingWizard = () => {
         .single();
 
       if (establishmentError) throw establishmentError;
+      createdEstablishmentId = establishment.id;
 
-      // Create default category for the establishment
+      // 2. Create default category for the establishment
       const { data: category, error: categoryError } = await supabase
         .from("categories")
         .insert({
@@ -217,8 +224,9 @@ export const OnboardingWizard = () => {
         .single();
 
       if (categoryError) throw categoryError;
+      createdCategoryId = category.id;
 
-      // Create first product if provided
+      // 3. Create first product if provided
       if (data.firstProduct) {
         const { error: productError } = await supabase
           .from("products")
@@ -235,7 +243,7 @@ export const OnboardingWizard = () => {
         if (productError) throw productError;
       }
 
-      // Add user to establishment_users
+      // 4. Add user to establishment_users
       const { error: userError } = await supabase
         .from("establishment_users")
         .insert({
@@ -253,7 +261,17 @@ export const OnboardingWizard = () => {
 
     } catch (error: any) {
       console.error("Error creating establishment:", error);
-      toast.error(error.message || "Erro ao criar estabelecimento");
+
+      // Compensating rollback: delete artifacts in reverse order so the user
+      // can retry from scratch instead of being blocked by partial state.
+      if (createdCategoryId) {
+        await supabase.from("categories").delete().eq("id", createdCategoryId);
+      }
+      if (createdEstablishmentId) {
+        await supabase.from("establishments").delete().eq("id", createdEstablishmentId);
+      }
+
+      toast.error(error.message || "Erro ao criar estabelecimento. Tente novamente.");
     } finally {
       setIsSubmitting(false);
     }
@@ -272,6 +290,15 @@ export const OnboardingWizard = () => {
       </div>
 
       <div className="max-w-2xl mx-auto relative z-10">
+        {/* Back to home */}
+        <Link
+          to="/"
+          className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-4"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Voltar ao início
+        </Link>
+
         {/* Header */}
         <div className="text-center mb-6">
           <motion.div
