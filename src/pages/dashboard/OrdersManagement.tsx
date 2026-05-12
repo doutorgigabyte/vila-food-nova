@@ -174,12 +174,18 @@ const OrdersManagement = () => {
       const order = orders.find(o => o.id === orderId);
       const oldStatus = order?.status;
 
-      const updateData: any = { status: newStatus };
+      // Accepting an order ('confirmed') skips straight to 'preparing'. Do it in a
+      // single UPDATE so we don't write the intermediate state and emit a duplicate
+      // audit log entry.
+      const effectiveStatus: OrderStatus =
+        newStatus === 'confirmed' ? 'preparing' : newStatus;
+
+      const updateData: any = { status: effectiveStatus };
       if (reason) {
         updateData.cancellation_reason = reason;
         updateData.cancelled_at = new Date().toISOString();
       }
-      if (newStatus === 'delivered') {
+      if (effectiveStatus === 'delivered') {
         updateData.delivered_at = new Date().toISOString();
       }
 
@@ -196,24 +202,12 @@ const OrdersManagement = () => {
         entityType: 'order',
         entityId: orderId,
         oldData: { status: oldStatus },
-        newData: { status: newStatus },
+        newData: { status: effectiveStatus },
         metadata: reason ? { cancellation_reason: reason } : {}
       });
-      
-      // Quando aceita o pedido (pending → preparing), pula o "confirmed" e vai direto para cozinha
+
+      // Notification + early return for the "accept order" flow
       if (newStatus === 'confirmed' && establishmentId) {
-        // Na verdade, vamos mudar para preparing direto
-        await supabase.from('orders').update({ status: 'preparing' }).eq('id', orderId);
-        
-        // Log the additional status change
-        await logAction({
-          action: 'status_change',
-          entityType: 'order',
-          entityId: orderId,
-          oldData: { status: 'confirmed' },
-          newData: { status: 'preparing' }
-        });
-        
         await supabase.from('notifications').insert({
           establishment_id: establishmentId,
           type: 'order_confirmed',

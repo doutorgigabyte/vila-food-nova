@@ -341,12 +341,15 @@ const PDV = () => {
   // Card fee based on selected payment method
   const currentCardFee = cardFees[paymentMethod] || 0;
   const cardFeeAmount = (subtotal * currentCardFee) / 100;
-  
-  // Calculate discount based on type
-  const discountAmount = discountType === 'percent' 
-    ? (subtotal * discountValue) / 100 
-    : discountValue;
-  
+
+  // Clamp discount so totals can never go negative — % is capped at 100 and
+  // absolute discounts can't exceed the subtotal.
+  const safeDiscountValue = Math.max(0, discountValue || 0);
+  const discountAmount =
+    discountType === 'percent'
+      ? (subtotal * Math.min(100, safeDiscountValue)) / 100
+      : Math.min(safeDiscountValue, subtotal);
+
   // Calculate total
   const total = subtotal + cardFeeAmount - discountAmount + (orderType === 'delivery' ? deliveryFee : 0) + serviceFee;
 
@@ -434,16 +437,28 @@ const PDV = () => {
             pixInfo = `\n\n💳 *Chave PIX:* ${data.pix_key}`;
           }
         } else {
-          // Fallback to static PIX if dynamic generation fails
+          // Dynamic PIX generation failed — warn the cashier before falling
+          // back to the static key. Cashier needs to know the order won't be
+          // automatically reconciled by the MP webhook.
+          console.warn('[PDV] mercadopago-pix returned no data:', { error, data });
           if (establishment.pix_key) {
             pixInfo = `\n\n💳 *Chave PIX:* ${establishment.pix_key}`;
+            toast.warning(
+              "PIX dinâmico indisponível: usando chave PIX fixa. O pedido não será baixado automaticamente."
+            );
+          } else {
+            toast.error("Não foi possível gerar PIX e a loja não tem chave PIX cadastrada.");
           }
         }
       } catch (error) {
         console.error('Error generating PIX:', error);
-        // Fallback to static PIX
         if (establishment.pix_key) {
           pixInfo = `\n\n💳 *Chave PIX:* ${establishment.pix_key}`;
+          toast.warning(
+            "Erro ao gerar PIX dinâmico: usando chave PIX fixa. O pedido não será baixado automaticamente."
+          );
+        } else {
+          toast.error("Erro ao gerar PIX e a loja não tem chave PIX cadastrada.");
         }
       } finally {
         setGeneratingPix(false);
