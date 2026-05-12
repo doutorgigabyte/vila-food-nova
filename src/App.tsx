@@ -12,6 +12,7 @@ import { CartProvider } from "./hooks/useCart";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
 import PWAInstallPrompt from "./components/PWAInstallPrompt";
 import CookieConsentBanner from "./components/CookieConsentBanner";
+import { DareChatWidget } from "./components/dare/DareChatWidget";
 import { OrderSourceProvider } from "./hooks/useOrderSource";
 import { NotificationProvider } from "./components/notifications/NotificationProvider";
 import PageSkeleton from "./components/ui/PageSkeleton";
@@ -430,6 +431,12 @@ const App = () => {
                           <Sonner />
                           <PWAInstallPrompt />
                           <CookieConsentBanner />
+                          {/* Daré IA chat widget — gated por feature flag.
+                              O componente também faz seu próprio gate por
+                              `isDareConfigured()` (envs presentes). */}
+                          {import.meta.env.VITE_DARE_ENABLED === "true" && (
+                            <DareChatWidget />
+                          )}
                           <AppRoutes />
                         </NotificationProvider>
                       </BrowserRouter>
