@@ -70,17 +70,39 @@ const AdminOrdersManagement = () => {
     }
   });
 
+  // Allowed status transitions. Anything not listed here is rejected — admin
+  // overrides should go through a dedicated "force status" flow, not the same
+  // mutation the merchant UI uses. Backwards moves (delivered → pending) would
+  // wreck the audit trail and financial reconciliation.
+  const allowedTransitions: Record<string, string[]> = {
+    pending: ['confirmed', 'preparing', 'cancelled'],
+    confirmed: ['preparing', 'cancelled'],
+    preparing: ['ready', 'cancelled'],
+    ready: ['out_for_delivery', 'delivered', 'cancelled'],
+    out_for_delivery: ['delivered', 'cancelled'],
+    delivered: [],
+    cancelled: [],
+    pending_payment: ['pending', 'confirmed', 'cancelled'],
+  };
+
   // Update status mutation
   const updateStatusMutation = useMutation({
     mutationFn: async ({ id, status, order }: { id: string; status: string; order?: any }) => {
       const oldStatus = order?.status;
+      const allowed = allowedTransitions[oldStatus] ?? [];
+      if (oldStatus && !allowed.includes(status)) {
+        throw new Error(
+          `Transição não permitida: ${oldStatus} → ${status}. Movimentos válidos a partir de "${oldStatus}": ${allowed.join(', ') || '(nenhum)'}.`,
+        );
+      }
+
       const updateData: any = { status };
       if (status === 'delivered') {
         updateData.delivered_at = new Date().toISOString();
       } else if (status === 'cancelled') {
         updateData.cancelled_at = new Date().toISOString();
       }
-      
+
       const { error } = await supabase
         .from('orders')
         .update(updateData)
@@ -122,6 +144,25 @@ const AdminOrdersManagement = () => {
 
         // Se for delivery, criar solicitação de entrega para motoristas
         if (order.delivery_type === 'delivery') {
+          const pickupAddress = order.establishments?.address;
+          const deliveryAddress = order.delivery_address
+            ? `${order.delivery_address.street}, ${order.delivery_address.number} - ${order.delivery_address.neighborhood}`
+            : '';
+
+          // Guard against creating a delivery request with empty addresses —
+          // drivers would accept a request they can't fulfill, and the
+          // database has no FK to enforce this.
+          if (!pickupAddress || !deliveryAddress) {
+            console.error('Cannot create delivery_request: missing pickup or delivery address', {
+              order_id: id,
+              has_pickup: !!pickupAddress,
+              has_delivery: !!deliveryAddress,
+            });
+            throw new Error(
+              'Pedido marcado como pronto, mas não foi possível criar a solicitação de entrega: endereço de retirada ou entrega ausente.',
+            );
+          }
+
           const expiresAt = new Date();
           expiresAt.setMinutes(expiresAt.getMinutes() + 5);
 
@@ -132,10 +173,8 @@ const AdminOrdersManagement = () => {
             calculated_fee: order.delivery_fee || 0,
             driver_earnings: order.delivery_fee || 0,
             expires_at: expiresAt.toISOString(),
-            pickup_address: order.establishments?.address || '',
-            delivery_address: order.delivery_address 
-              ? `${order.delivery_address.street}, ${order.delivery_address.number} - ${order.delivery_address.neighborhood}`
-              : '',
+            pickup_address: pickupAddress,
+            delivery_address: deliveryAddress,
             customer_name: order.delivery_address?.name || 'Cliente'
           });
         }
@@ -144,7 +183,11 @@ const AdminOrdersManagement = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
       toast.success('Status atualizado!');
-    }
+    },
+    onError: (err: unknown) => {
+      const message = err instanceof Error ? err.message : 'Erro ao atualizar status';
+      toast.error(message);
+    },
   });
 
   const filteredOrders = orders?.filter(order => {
