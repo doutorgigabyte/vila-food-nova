@@ -8,6 +8,7 @@ import { usePlans } from "@/hooks/usePlans";
 
 // Lazy load sections below the fold for performance
 const TrustBadgesSection = lazy(() => import("@/components/landing/TrustBadgesSection"));
+const LiveStatsSection = lazy(() => import("@/components/landing/LiveStatsSection"));
 const AllFeaturesSection = lazy(() => import("@/components/landing/AllFeaturesSection"));
 const VilasConceptSection = lazy(() => import("@/components/landing/VilasConceptSection"));
 const ComparisonSection = lazy(() => import("@/components/landing/ComparisonSection"));
@@ -147,6 +148,10 @@ const Conheca = () => {
 
         <Suspense fallback={<SectionSkeleton />}>
           <TrustBadgesSection />
+        </Suspense>
+
+        <Suspense fallback={<SectionSkeleton />}>
+          <LiveStatsSection />
         </Suspense>
 
         <Suspense fallback={<SectionSkeleton />}>
