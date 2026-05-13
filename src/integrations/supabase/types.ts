@@ -5768,7 +5768,9 @@ export type Database = {
           address: string | null
           city_id: string | null
           created_at: string | null
+          default_entry_point: Json | null
           description: string | null
+          has_wayfinding: boolean
           id: string
           image_url: string | null
           is_active: boolean | null
@@ -5783,7 +5785,9 @@ export type Database = {
           address?: string | null
           city_id?: string | null
           created_at?: string | null
+          default_entry_point?: Json | null
           description?: string | null
+          has_wayfinding?: boolean
           id?: string
           image_url?: string | null
           is_active?: boolean | null
@@ -5798,7 +5802,9 @@ export type Database = {
           address?: string | null
           city_id?: string | null
           created_at?: string | null
+          default_entry_point?: Json | null
           description?: string | null
+          has_wayfinding?: boolean
           id?: string
           image_url?: string | null
           is_active?: boolean | null
