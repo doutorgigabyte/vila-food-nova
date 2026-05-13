@@ -1,6 +1,7 @@
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
+import "./styles/vilatok-tokens.css";
 import { initSentry, captureException } from "./lib/sentry";
 
 // Init Sentry o mais cedo possivel — captura erros desde o primeiro paint.

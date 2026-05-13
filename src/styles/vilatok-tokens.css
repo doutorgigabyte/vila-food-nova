@@ -1,0 +1,206 @@
+/* ============================================================
+ * VilaTok Design System Tokens
+ * ------------------------------------------------------------
+ * Namespace `--vt-*` para todos os tokens especificos do Vilatok
+ * e Vilatok TV. Aditivo aos tokens globais em src/index.css —
+ * NAO sobrescreve nada. Importado uma vez no main.tsx.
+ *
+ * Princípio: separacao por axis/intent (cores, motion, glass,
+ * z-index). Quem consome tokens NAO precisa conhecer a paleta
+ * global — apenas o intent (--vt-surface-glass, --vt-motion-snap).
+ *
+ * Notas:
+ * - Nao usa @layer porque este CSS e importado separadamente do
+ *   src/index.css (que tem @tailwind directives). Especificidade
+ *   das utilities aqui (.vt-*) e baixa o suficiente pra nao
+ *   conflitar com Tailwind utilities por engano.
+ * ============================================================ */
+
+:root {
+  /* --------------------------------------------------------
+   * SURFACES & GLASSMORPHISM
+   * -------------------------------------------------------- */
+  --vt-surface-bg: 0 0% 4%;
+  --vt-surface-overlay: 0 0% 0%;
+  --vt-surface-card: 0 0% 8%;
+
+  --vt-glass-bg: 0 0% 100%;
+  --vt-glass-opacity: 0.08;
+  --vt-glass-border: 0 0% 100%;
+  --vt-glass-border-opacity: 0.18;
+  --vt-glass-blur: 20px;
+  --vt-glass-saturation: 180%;
+
+  --vt-glass-elevated-bg: 0 0% 10%;
+  --vt-glass-elevated-opacity: 0.85;
+  --vt-glass-elevated-blur: 32px;
+
+  /* --------------------------------------------------------
+   * SPACING (touch-first, 4px grid)
+   * -------------------------------------------------------- */
+  --vt-touch-target: 44px;
+  --vt-touch-target-comfortable: 52px;
+  --vt-edge-pull-zone: 16px;
+  --vt-safe-top: env(safe-area-inset-top, 0px);
+  --vt-safe-bottom: env(safe-area-inset-bottom, 0px);
+
+  /* --------------------------------------------------------
+   * GESTURE THRESHOLDS (consumidos pelo useVilaTokGestures)
+   * -------------------------------------------------------- */
+  --vt-tap-max-distance: 8px;
+  --vt-tap-max-duration: 250ms;
+  --vt-pan-deadzone: 12px;
+  --vt-axis-lock-bias: 1.5;
+  --vt-swipe-commit-distance: 80px;
+  --vt-swipe-commit-velocity: 0.5;
+
+  /* --------------------------------------------------------
+   * MOTION
+   * -------------------------------------------------------- */
+  --vt-motion-snap: cubic-bezier(0.32, 0.72, 0, 1);
+  --vt-motion-spring-fast: cubic-bezier(0.16, 1, 0.3, 1);
+  --vt-motion-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  --vt-motion-emphasized: cubic-bezier(0.2, 0, 0, 1);
+
+  --vt-duration-instant: 100ms;
+  --vt-duration-fast: 180ms;
+  --vt-duration-base: 280ms;
+  --vt-duration-slow: 420ms;
+  --vt-duration-stage: 600ms;
+
+  --vt-spring-soft-stiffness: 240;
+  --vt-spring-soft-damping: 28;
+  --vt-spring-snap-stiffness: 480;
+  --vt-spring-snap-damping: 32;
+  --vt-spring-bouncy-stiffness: 320;
+  --vt-spring-bouncy-damping: 18;
+
+  /* --------------------------------------------------------
+   * Z-INDEX SCALE
+   * -------------------------------------------------------- */
+  --vt-z-bg: 0;
+  --vt-z-player: 10;
+  --vt-z-overlay: 20;
+  --vt-z-progress-bars: 30;
+  --vt-z-sidebar: 40;
+  --vt-z-navigation: 45;
+  --vt-z-header: 50;
+  --vt-z-pull-hint: 60;
+  --vt-z-sheet: 100;
+  --vt-z-modal: 200;
+  --vt-z-toast: 300;
+
+  /* --------------------------------------------------------
+   * TYPOGRAPHY
+   * -------------------------------------------------------- */
+  --vt-font-display: "Poppins", system-ui, sans-serif;
+  --vt-font-body: "Inter", system-ui, sans-serif;
+
+  --vt-text-overlay-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+  --vt-text-overlay-shadow-strong: 0 4px 16px rgba(0, 0, 0, 0.85);
+
+  /* --------------------------------------------------------
+   * SHADOWS
+   * -------------------------------------------------------- */
+  --vt-shadow-sheet: 0 -8px 32px rgba(0, 0, 0, 0.4);
+  --vt-shadow-sidebar-button: 0 4px 16px rgba(0, 0, 0, 0.3);
+  --vt-shadow-pop: 0 10px 30px rgba(0, 0, 0, 0.4);
+  --vt-shadow-glow-primary: 0 0 24px hsl(var(--primary) / 0.45);
+}
+
+/* ============================================================
+ * UTILITIES — namespace .vt-*
+ * Consumidas via className diretamente no JSX. Sem @layer porque
+ * este arquivo nao tem @tailwind directives (esta separado do
+ * pipeline base do Tailwind).
+ * ============================================================ */
+
+/* Glass surfaces */
+.vt-glass {
+  background: hsl(var(--vt-glass-bg) / var(--vt-glass-opacity));
+  border: 1px solid hsl(var(--vt-glass-border) / var(--vt-glass-border-opacity));
+  backdrop-filter: blur(var(--vt-glass-blur)) saturate(var(--vt-glass-saturation));
+  -webkit-backdrop-filter: blur(var(--vt-glass-blur)) saturate(var(--vt-glass-saturation));
+}
+
+.vt-glass-elevated {
+  background: hsl(var(--vt-glass-elevated-bg) / var(--vt-glass-elevated-opacity));
+  border: 1px solid hsl(var(--vt-glass-border) / var(--vt-glass-border-opacity));
+  backdrop-filter: blur(var(--vt-glass-elevated-blur)) saturate(var(--vt-glass-saturation));
+  -webkit-backdrop-filter: blur(var(--vt-glass-elevated-blur)) saturate(var(--vt-glass-saturation));
+}
+
+/* Touch targets garantidos */
+.vt-touch {
+  min-width: var(--vt-touch-target);
+  min-height: var(--vt-touch-target);
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* Pan tracks */
+.vt-pan-x {
+  touch-action: pan-x;
+  overscroll-behavior: contain;
+}
+.vt-pan-y {
+  touch-action: pan-y;
+  overscroll-behavior: contain;
+}
+.vt-pan-none {
+  touch-action: none;
+  overscroll-behavior: contain;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Texto sobre midia */
+.vt-text-on-media {
+  text-shadow: var(--vt-text-overlay-shadow);
+}
+.vt-text-on-media-strong {
+  text-shadow: var(--vt-text-overlay-shadow-strong);
+}
+
+/* Skeleton com shimmer */
+.vt-skeleton {
+  position: relative;
+  overflow: hidden;
+  background: hsl(var(--vt-surface-card));
+}
+.vt-skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    hsl(var(--vt-glass-bg) / 0.08) 50%,
+    transparent 100%
+  );
+  animation: vt-skeleton-shimmer 1.8s infinite;
+}
+
+/* GPU-accel para tracks de gesture */
+.vt-gpu {
+  transform: translate3d(0, 0, 0);
+  will-change: transform;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  contain: layout style paint;
+}
+
+@keyframes vt-skeleton-shimmer {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(100%); }
+}
+
+/* Reduce motion accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .vt-gpu,
+  .vt-glass,
+  .vt-glass-elevated {
+    animation: none !important;
+    transition: none !important;
+  }
+}
