@@ -1,4 +1,8 @@
-project_id = "gyagfsjbdaacgmmofqip"
+# project_id removido apos migracao para self-hosted (2026-05-09).
+# Producao roda em db.vilafood.delivery via Coolify. Para `supabase db push`,
+# configure SUPABASE_DB_URL apontando para o self-hosted, ou use psql direto.
+# Migrations sao aplicadas via Supabase Studio do self-hosted ou pgsql CLI.
+# project_id = "gyagfsjbdaacgmmofqip"  # OLD CLOUD - NAO USAR
 
 [functions.geocode-and-calculate-delivery]
 verify_jwt = false
