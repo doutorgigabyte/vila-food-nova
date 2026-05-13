@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { generateUUID } from '@/lib/utils';
 
-interface EstablishmentVideo {
+export interface EstablishmentVideo {
   id: string;
   establishment_id: string;
   product_id: string | null;
@@ -38,7 +38,7 @@ interface EstablishmentVideo {
   } | null;
 }
 
-interface EstablishmentWithVideos {
+export interface EstablishmentWithVideos {
   establishment: {
     id: string;
     name: string;

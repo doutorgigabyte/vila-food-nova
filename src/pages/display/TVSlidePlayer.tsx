@@ -43,6 +43,7 @@ import {
   FreshGreenGradient,
   GlassMorphism,
 } from "@/components/dashboard/vilatok-tv/ThematicPatterns";
+import { TEMPLATE_REGISTRY_V2 } from "@/components/dashboard/vilatok-tv/templates";
 
 interface TVSlide {
   id: string;
@@ -358,6 +359,25 @@ export default function TVSlidePlayer() {
   const TV_SUBTITLE = "text-3xl leading-relaxed";
   const TV_PRICE = "text-7xl font-black";
   const TV_MARGIN = "px-16 py-12";
+
+  // ===== TEMPLATE REGISTRY V2 =====
+  // Novos templates (HeroBanner, ProductShowcase, StoryQuote) — early return
+  // antes do switch legado se o template_type bater.
+  const V2Template = TEMPLATE_REGISTRY_V2[currentSlide.template_type];
+  if (V2Template && establishment) {
+    return (
+      <div className="fixed inset-0 overflow-hidden bg-black">
+        <AnimatePresence mode="wait">
+          <V2Template
+            key={currentSlide.id}
+            slide={currentSlide}
+            establishment={establishment}
+            isActive
+          />
+        </AnimatePresence>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 overflow-hidden" style={{ backgroundColor: secondaryColor }}>
