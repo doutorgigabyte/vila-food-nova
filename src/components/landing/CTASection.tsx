@@ -1,17 +1,27 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Calculator, TrendingDown, Zap, Shield } from "lucide-react";
+import { useLandingAnalytics, useSectionView } from "@/hooks/useLandingAnalytics";
 
 const CTASection = () => {
+  const { trackCTAClick, trackSignupIntent } = useLandingAnalytics();
+  const sectionRef = useSectionView("final_cta");
+
   const scrollToCalculator = () => {
+    trackCTAClick({ ctaText: "Calcular Economia", ctaLocation: "final_cta", destination: "#calculadora" });
     const element = document.getElementById("calculadora");
     if (element) {
       element.scrollIntoView({ behavior: "smooth" });
     }
   };
 
+  const handleCreateStore = () => {
+    trackCTAClick({ ctaText: "Criar Minha Loja Gratis", ctaLocation: "final_cta", destination: "/cadastro-estabelecimento" });
+    trackSignupIntent("final_cta");
+  };
+
   return (
-    <section id="contact" className="py-16 md:py-24 bg-background relative overflow-hidden">
+    <section ref={sectionRef} id="contact" className="py-16 md:py-24 bg-background relative overflow-hidden">
       {/* Background effects */}
       <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 pointer-events-none" />
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/5 rounded-full blur-3xl pointer-events-none" />
@@ -56,7 +66,7 @@ const CTASection = () => {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/cadastro-estabelecimento">
+              <Link to="/cadastro-estabelecimento" onClick={handleCreateStore}>
                 <Button className="btn-yellow text-base md:text-lg px-6 md:px-8 py-5 md:py-6 h-auto w-full sm:w-auto">
                   Criar Minha Loja Grátis
                   <ArrowRight className="ml-2" />

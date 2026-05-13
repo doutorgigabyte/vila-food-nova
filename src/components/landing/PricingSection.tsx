@@ -6,10 +6,13 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { usePlans, type Plan } from "@/hooks/usePlans";
 import { cn } from "@/lib/utils";
+import { useLandingAnalytics, useSectionView } from "@/hooks/useLandingAnalytics";
 
 const PricingSection = () => {
   const [isYearly, setIsYearly] = useState(false);
   const { data: plans, isLoading } = usePlans();
+  const { trackPricingPlanSelected, trackSignupIntent } = useLandingAnalytics();
+  const sectionRef = useSectionView("pricing");
 
   const getPrice = (plan: Plan) => {
     if (plan.price === 0) return "0";
@@ -39,7 +42,7 @@ const PricingSection = () => {
   };
 
   return (
-    <section id="pricing" className="py-16 md:py-24 bg-background relative overflow-hidden">
+    <section ref={sectionRef} id="pricing" className="py-16 md:py-24 bg-background relative overflow-hidden">
       {/* Background decorations */}
       <div className="absolute top-1/2 -left-40 w-80 h-80 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute top-1/2 -right-40 w-80 h-80 bg-accent/5 rounded-full blur-3xl pointer-events-none" />
@@ -169,7 +172,22 @@ const PricingSection = () => {
                   ))}
                 </ul>
 
-                <Link to="/cadastro-estabelecimento">
+                <Link
+                  to="/cadastro-estabelecimento"
+                  onClick={() => {
+                    const price = plan.price === 0
+                      ? 0
+                      : isYearly
+                        ? (plan.price_yearly || plan.price * 12 * 0.8) / 12
+                        : (plan.price_monthly || plan.price);
+                    trackPricingPlanSelected({
+                      planName: plan.name,
+                      billingCycle: isYearly ? "yearly" : "monthly",
+                      price,
+                    });
+                    trackSignupIntent(`pricing_${plan.slug}`);
+                  }}
+                >
                   <Button
                     variant={plan.is_popular ? "hero" : "outline"}
                     className={cn("w-full", !plan.is_popular && "hover:bg-primary hover:text-primary-foreground")}
@@ -189,7 +207,7 @@ const PricingSection = () => {
           </p>
           <p className="text-sm text-muted-foreground">
             Precisa de um plano customizado?{" "}
-            <a href="https://wa.me/5581999999999" className="text-primary font-semibold hover:underline">
+            <a href="https://wa.me/5581983655465" className="text-primary font-semibold hover:underline">
               Fale conosco
             </a>
           </p>

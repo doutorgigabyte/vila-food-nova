@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, Bike, Package, Calculator, TrendingDown, Sparkles, RotateCcw } from "lucide-react";
 import { Link } from "react-router-dom";
 import CoinEaterAnimation from "./CoinEaterAnimation";
+import { useLandingAnalytics, useSectionView } from "@/hooks/useLandingAnalytics";
 type Step = 1 | 2 | 3 | 4;
 type DeliveryType = "own" | "ifood" | null;
 
@@ -39,6 +40,10 @@ const loadingPhrases = [
 ];
 
 const IFoodCalculator = () => {
+  const { trackCalculatorStarted, trackCalculatorCompleted, trackCTAClick, trackSignupIntent } =
+    useLandingAnalytics();
+  const sectionRef = useSectionView("calculator");
+
   const [step, setStep] = useState<Step>(1);
   const [revenue, setRevenue] = useState<string>("");
   const [deliveryType, setDeliveryType] = useState<DeliveryType>(null);
@@ -106,6 +111,13 @@ const IFoodCalculator = () => {
 
   const handleAdvance = () => {
     if (revenueValid) {
+      const bracket =
+        revenueValue < 5000 ? "0-5k"
+          : revenueValue < 15000 ? "5k-15k"
+          : revenueValue < 50000 ? "15k-50k"
+          : revenueValue < 200000 ? "50k-200k"
+          : "200k+";
+      trackCalculatorStarted(bracket);
       setStep(2);
     }
   };
@@ -134,8 +146,16 @@ const IFoodCalculator = () => {
       }, 60);
 
       const timeout = setTimeout(() => {
-        setResult(calculateResult());
+        const computed = calculateResult();
+        setResult(computed);
         setStep(4);
+        if (deliveryType) {
+          trackCalculatorCompleted({
+            revenue: parseRevenue(),
+            deliveryType,
+            estimatedSavings: computed.savings,
+          });
+        }
       }, 3000);
 
       return () => {
@@ -147,7 +167,7 @@ const IFoodCalculator = () => {
   }, [step, calculateResult]);
 
   return (
-    <section className="py-12 md:py-20 relative overflow-hidden" id="calculadora">
+    <section ref={sectionRef} className="py-12 md:py-20 relative overflow-hidden" id="calculadora">
       {/* Dark background */}
       <div className="absolute inset-0 bg-gradient-to-b from-[hsl(220,20%,8%)] via-[hsl(220,20%,10%)] to-[hsl(220,20%,8%)]" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_hsl(var(--primary)_/_0.1)_0%,_transparent_70%)]" />
@@ -313,7 +333,18 @@ const IFoodCalculator = () => {
 
                 {/* CTAs */}
                 <div className="space-y-3">
-                  <Link to="/cadastro-estabelecimento" className="block">
+                  <Link
+                    to="/cadastro-estabelecimento"
+                    className="block"
+                    onClick={() => {
+                      trackCTAClick({
+                        ctaText: "Quero Economizar",
+                        ctaLocation: "calculator_result",
+                        destination: "/cadastro-estabelecimento",
+                      });
+                      trackSignupIntent("calculator_result");
+                    }}
+                  >
                     <Button className="w-full py-5 md:py-6 text-base md:text-lg font-semibold bg-gradient-to-r from-primary to-accent hover:opacity-90 text-primary-foreground rounded-xl md:rounded-2xl">
                       <Sparkles className="mr-2 h-5 w-5" />
                       Quero Economizar
