@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { gatewayChatAsOpenAIResponse, isGatewayEnabled } from "../_shared/gateway.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -39,9 +40,10 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
+    const useGateway = isGatewayEnabled();
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY not configured');
+    if (!useGateway && !LOVABLE_API_KEY) {
+      throw new Error('LOVABLE_API_KEY not configured and gateway unavailable');
     }
 
     const body: AIRequest = await req.json();
@@ -348,25 +350,56 @@ ${JSON.stringify(context || {})}`;
       }
     ];
 
-    // Call Lovable AI Gateway
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: modelToUse,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: message }
-        ],
+    const chatMessages = [
+      { role: 'system' as const, content: systemPrompt },
+      { role: 'user' as const, content: message },
+    ];
+
+    let aiResponse: Response;
+
+    if (useGateway) {
+      aiResponse = await gatewayChatAsOpenAIResponse({
+        messages: chatMessages,
         tools,
-        tool_choice: 'auto',
+        toolChoice: 'auto',
         temperature: 0.7,
-        max_tokens: 1024,
-      }),
-    });
+        maxTokens: 1024,
+      });
+      if (!aiResponse.ok && LOVABLE_API_KEY) {
+        console.warn('[whatsapp-ai-response] Gateway failed, falling back to Lovable');
+        aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: modelToUse,
+            messages: chatMessages,
+            tools,
+            tool_choice: 'auto',
+            temperature: 0.7,
+            max_tokens: 1024,
+          }),
+        });
+      }
+    } else {
+      aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: modelToUse,
+          messages: chatMessages,
+          tools,
+          tool_choice: 'auto',
+          temperature: 0.7,
+          max_tokens: 1024,
+        }),
+      });
+    }
 
     if (!aiResponse.ok) {
       const errorText = await aiResponse.text();

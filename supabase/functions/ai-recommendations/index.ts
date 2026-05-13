@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { gatewayLLMChat, isGatewayEnabled } from "../_shared/gateway.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -43,6 +44,27 @@ async function authenticateRequest(req: Request): Promise<{ userId: string } | n
   }
   
   return { userId: user.id };
+}
+
+// ==================== API Gateway Call ====================
+async function callGatewayText(systemPrompt: string, userPrompt: string): Promise<string> {
+  console.log("[ai-recommendations] Using API Gateway...");
+  const result = await gatewayLLMChat({
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userPrompt },
+    ],
+    temperature: 0.7,
+    maxTokens: 500,
+  });
+
+  if (!result.success) {
+    if (result.statusCode === 429) throw new Error("RATE_LIMIT");
+    if (result.statusCode === 402) throw new Error("PAYMENT_REQUIRED");
+    throw new Error(`Gateway LLM error: ${result.error}`);
+  }
+
+  return result.data?.content ?? "";
 }
 
 // ==================== Gemini Text API Call ====================
@@ -222,20 +244,32 @@ ${JSON.stringify(productsList)}
 Retorne até ${limit} recomendações:
 {"recommendations": [{"product_id": "id", "reason": "justificativa curta"}]}`;
 
-    // Use Lovable AI Gateway (primary) with fallback
+    // Use API Gateway (primary if configured) → Lovable AI → Gemini direct → random fallback
     let content = "";
     let engine = "lovable";
-    
+
+    const tryGateway = isGatewayEnabled();
+
     try {
-      content = await callLovableText(systemPrompt, userPrompt);
-    } catch (lovableError) {
-      console.log("[ai-recommendations] Lovable AI failed, trying Gemini:", lovableError);
-      
-      if (lovableError instanceof Error && (lovableError.message === "RATE_LIMIT" || lovableError.message === "PAYMENT_REQUIRED")) {
-        // Try Gemini as fallback
+      if (tryGateway) {
+        content = await callGatewayText(systemPrompt, userPrompt);
+        engine = "gateway";
+      } else {
+        content = await callLovableText(systemPrompt, userPrompt);
+      }
+    } catch (primaryError) {
+      console.log("[ai-recommendations] Primary engine failed, trying fallbacks:", primaryError);
+
+      if (primaryError instanceof Error && (primaryError.message === "RATE_LIMIT" || primaryError.message === "PAYMENT_REQUIRED")) {
+        // Try Lovable (if we used gateway first) then Gemini as fallback
         try {
-          content = await callGeminiText(systemPrompt, userPrompt);
-          engine = "gemini";
+          if (tryGateway) {
+            content = await callLovableText(systemPrompt, userPrompt);
+            engine = "lovable";
+          } else {
+            content = await callGeminiText(systemPrompt, userPrompt);
+            engine = "gemini";
+          }
         } catch (geminiError) {
           // Ultimate fallback: random products
           console.log("[ai-recommendations] All AI failed, using random fallback");

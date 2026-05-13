@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { gatewayLLMChat, isGatewayEnabled } from "../_shared/gateway.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -92,19 +93,12 @@ interface AIAnalysisResult {
 }
 
 async function callGeminiForAnalysis(
-  establishmentName: string, 
-  description: string | null, 
+  establishmentName: string,
+  description: string | null,
   productNames: string[],
   segmentName?: string
 ): Promise<AIAnalysisResult> {
-  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-  
-  if (!LOVABLE_API_KEY) {
-    console.log("[analyze-establishment] No LOVABLE_API_KEY, skipping AI analysis");
-    return { suggestions: [] };
-  }
-
-  const systemPrompt = `Você é um consultor de marketing especializado em cardápios digitais para restaurantes e lojas de delivery. 
+  const systemPrompt = `Você é um consultor de marketing especializado em cardápios digitais para restaurantes e lojas de delivery.
 Seu objetivo é fornecer análises estratégicas, poéticas e inspiradoras que motivem o lojista a melhorar seu estabelecimento.
 Seja específico, use números quando possível, e escreva de forma envolvente e profissional.`;
 
@@ -119,7 +113,7 @@ Por favor, retorne um JSON com EXATAMENTE esta estrutura:
 {
   "suggestions": [
     "Sugestão prática 1 (máx 80 caracteres)",
-    "Sugestão prática 2 (máx 80 caracteres)", 
+    "Sugestão prática 2 (máx 80 caracteres)",
     "Sugestão prática 3 (máx 80 caracteres)"
   ],
   "improvedDescription": "Uma descrição otimizada e vendedora para o estabelecimento (máx 200 caracteres). Destaque o diferencial, use gatilhos emocionais, seja convidativo.",
@@ -134,42 +128,58 @@ Por favor, retorne um JSON com EXATAMENTE esta estrutura:
   "strategicReport": "Um parágrafo estratégico e inspirador (máx 300 caracteres) que resuma o potencial do estabelecimento e as oportunidades de crescimento. Use linguagem envolvente e motivadora."
 }`;
 
+  let content = "";
   try {
-    const response = await fetch("https://api.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${LOVABLE_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+    if (isGatewayEnabled()) {
+      const result = await gatewayLLMChat({
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt }
+          { role: "user", content: userPrompt },
         ],
         temperature: 0.7,
-        max_tokens: 1000
-      }),
-    });
-
-    if (!response.ok) {
-      console.log("[analyze-establishment] Lovable AI failed:", response.status);
-      return { suggestions: [] };
+        maxTokens: 1000,
+      });
+      if (!result.success) throw new Error(result.error || "gateway llm failed");
+      content = result.data?.content ?? "";
+    } else {
+      const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+      if (!LOVABLE_API_KEY) {
+        console.log("[analyze-establishment] No LOVABLE_API_KEY and gateway disabled");
+        return { suggestions: [] };
+      }
+      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt },
+          ],
+          temperature: 0.7,
+          max_tokens: 1000,
+        }),
+      });
+      if (!response.ok) {
+        console.log("[analyze-establishment] Lovable AI failed:", response.status);
+        return { suggestions: [] };
+      }
+      const data = await response.json();
+      content = data.choices?.[0]?.message?.content || "";
     }
 
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content || "";
-    
-    // Clean and parse JSON
     const cleanContent = content.replace(/```json\n?|\n?```/g, "").trim();
     const parsed = JSON.parse(cleanContent);
-    
+
     return {
       suggestions: parsed.suggestions || [],
       improvedDescription: parsed.improvedDescription,
       bannerSuggestions: parsed.bannerSuggestions || [],
       categoryOrganization: parsed.categoryOrganization || [],
-      strategicReport: parsed.strategicReport
+      strategicReport: parsed.strategicReport,
     };
   } catch (error) {
     console.error("[analyze-establishment] AI analysis failed:", error);

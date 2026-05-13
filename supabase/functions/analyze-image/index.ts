@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { gatewayLLMChat, isGatewayEnabled, type MultimodalContentPart } from "../_shared/gateway.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -48,11 +49,6 @@ serve(async (req) => {
       console.log('Image fetched, size:', imageBuffer.byteLength, 'bytes');
     } else {
       imageData = image_base64!;
-    }
-
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY not configured');
     }
 
     // Build prompt based on analysis type
@@ -126,51 +122,74 @@ Retorne em JSON:
 IMPORTANTE: Retorne APENAS o JSON.`;
     }
 
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'image_url',
-                image_url: {
-                  url: `data:image/jpeg;base64,${imageData}`
-                }
-              },
-              { type: 'text', text: prompt }
-            ]
-          }
-        ]
-      })
-    });
+    const visionContent: MultimodalContentPart[] = [
+      { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${imageData}` } },
+      { type: 'text', text: prompt },
+    ];
 
-    if (!response.ok) {
-      if (response.status === 429) {
-        return new Response(
-          JSON.stringify({ success: false, error: 'Rate limit excedido.' }),
-          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+    let responseText = '';
+
+    if (isGatewayEnabled()) {
+      const result = await gatewayLLMChat({
+        messages: [{ role: 'user', content: visionContent }],
+      });
+      if (!result.success) {
+        if (result.statusCode === 429) {
+          return new Response(
+            JSON.stringify({ success: false, error: 'Rate limit excedido.' }),
+            { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        if (result.statusCode === 402) {
+          return new Response(
+            JSON.stringify({ success: false, error: 'Créditos insuficientes.' }),
+            { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        console.warn('[analyze-image] Gateway failed, falling back to Lovable:', result.error);
+      } else {
+        responseText = result.data?.content ?? '';
       }
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ success: false, error: 'Créditos insuficientes.' }),
-          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      const errorText = await response.text();
-      console.error('Lovable AI error:', errorText);
-      throw new Error(`AI Gateway error: ${response.status}`);
     }
 
-    const data = await response.json();
-    const responseText = data.choices?.[0]?.message?.content || '';
+    if (!responseText) {
+      const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+      if (!LOVABLE_API_KEY) {
+        throw new Error('LOVABLE_API_KEY not configured and gateway unavailable');
+      }
+      const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'google/gemini-2.5-flash',
+          messages: [{ role: 'user', content: visionContent }],
+        }),
+      });
+
+      if (!response.ok) {
+        if (response.status === 429) {
+          return new Response(
+            JSON.stringify({ success: false, error: 'Rate limit excedido.' }),
+            { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        if (response.status === 402) {
+          return new Response(
+            JSON.stringify({ success: false, error: 'Créditos insuficientes.' }),
+            { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        const errorText = await response.text();
+        console.error('Lovable AI error:', errorText);
+        throw new Error(`AI Gateway error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      responseText = data.choices?.[0]?.message?.content || '';
+    }
 
     console.log('AI raw response:', responseText);
 

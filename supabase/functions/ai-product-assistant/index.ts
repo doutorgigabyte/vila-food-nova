@@ -1,9 +1,45 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { gatewayLLMChat, isGatewayEnabled } from "../_shared/gateway.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+interface ChatMsg { role: 'system' | 'user' | 'assistant'; content: string }
+
+async function chat(messages: ChatMsg[], model = 'google/gemini-2.5-flash'): Promise<Response> {
+  if (isGatewayEnabled()) {
+    const result = await gatewayLLMChat({ messages });
+    if (result.success) {
+      return new Response(
+        JSON.stringify({ choices: [{ message: { content: result.data?.content ?? '' } }] }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+    // 402/429 are signalled via statusCode — pass through so caller can react
+    if (result.statusCode === 402 || result.statusCode === 429) {
+      return new Response(JSON.stringify({ error: result.error }), {
+        status: result.statusCode,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+    console.warn('[ai-product-assistant] Gateway failed, falling back to Lovable:', result.error);
+  }
+
+  const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+  if (!LOVABLE_API_KEY) {
+    throw new Error('LOVABLE_API_KEY não configurada e gateway indisponível');
+  }
+  return fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ model, messages }),
+  });
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -11,11 +47,6 @@ serve(async (req) => {
   }
 
   try {
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY não configurada');
-    }
-
     const { action, productName, productType, categories } = await req.json();
 
     if (action === 'suggest') {
@@ -39,20 +70,10 @@ Categorias disponíveis: ${categories?.join(', ') || 'Geral'}
 
 Sugira descrição, categoria e preço para este produto.`;
 
-      const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'google/gemini-2.5-flash',
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: userPrompt },
-          ],
-        }),
-      });
+      const response = await chat([
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ]);
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -114,24 +135,15 @@ Sugira descrição, categoria e preço para este produto.`;
       
       const enriched = await Promise.all(products.map(async (product: any) => {
         if (product.descricao) return product;
-        
+
         try {
-          const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              model: 'google/gemini-2.5-flash-lite',
-              messages: [
-                { 
-                  role: 'user', 
-                  content: `Crie uma descrição comercial curta (máximo 100 caracteres) para: ${product.nome}. Responda APENAS com a descrição, sem aspas.` 
-                },
-              ],
-            }),
-          });
+          const response = await chat(
+            [{
+              role: 'user',
+              content: `Crie uma descrição comercial curta (máximo 100 caracteres) para: ${product.nome}. Responda APENAS com a descrição, sem aspas.`,
+            }],
+            'google/gemini-2.5-flash-lite',
+          );
 
           if (response.ok) {
             const data = await response.json();
@@ -140,7 +152,7 @@ Sugira descrição, categoria e preço para este produto.`;
         } catch (e) {
           console.error('Enrich error:', e);
         }
-        
+
         return product;
       }));
 

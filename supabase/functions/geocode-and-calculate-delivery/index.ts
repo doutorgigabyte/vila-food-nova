@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { gatewayGeocode, isGatewayEnabled } from "../_shared/gateway.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -58,18 +59,29 @@ function isPointInPolygon(point: Coordinates, polygon: Coordinates[]): boolean {
   return inside;
 }
 
-// Geocode address using Google Maps API
+// Geocode address using API Gateway (preferred) or Google Maps direct (fallback)
 async function geocodeAddress(address: string, city: string, state: string): Promise<{ coordinates: Coordinates; formatted_address: string } | null> {
+  const fullAddress = `${address}, ${city}, ${state}, Brasil`;
+  console.log('Geocoding address:', fullAddress);
+
+  if (isGatewayEnabled()) {
+    const result = await gatewayGeocode({ address: fullAddress, language: 'pt-BR' });
+    if (result.success && result.data) {
+      return {
+        coordinates: { lat: result.data.lat, lng: result.data.lng },
+        formatted_address: result.data.formattedAddress,
+      };
+    }
+    console.warn('Gateway geocode failed, falling back to direct Google Maps:', result.error);
+  }
+
   const apiKey = Deno.env.get('GOOGLE_API_KEY');
   if (!apiKey) {
-    console.error('GOOGLE_API_KEY not configured');
+    console.error('GOOGLE_API_KEY not configured and gateway unavailable');
     return null;
   }
 
-  const fullAddress = `${address}, ${city}, ${state}, Brasil`;
   const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(fullAddress)}&key=${apiKey}&language=pt-BR`;
-
-  console.log('Geocoding address:', fullAddress);
 
   try {
     const response = await fetch(url);

@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { gatewayLLMChat, isGatewayEnabled, type MultimodalContentPart } from "../_shared/gateway.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -44,64 +45,80 @@ serve(async (req) => {
       audioData = audio_base64!;
     }
 
-    // Use Lovable AI Gateway
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY not configured');
-    }
-
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'audio',
-                audio: {
-                  data: audioData,
-                  format: mime_type.replace('audio/', '')
-                }
-              },
-              {
-                type: 'text',
-                text: `Transcreva este áudio em português brasileiro. 
+    const audioContent: MultimodalContentPart[] = [
+      { type: 'audio', audio: { data: audioData, format: mime_type.replace('audio/', '') } },
+      {
+        type: 'text',
+        text: `Transcreva este áudio em português brasileiro.
 Retorne APENAS o texto transcrito, sem adicionar comentários, formatação ou explicações.
 Se o áudio estiver vazio ou inaudível, retorne "AUDIO_INAUDIVEL".
-Se houver ruído mas conseguir entender partes, transcreva o que conseguir.`
-              }
-            ]
-          }
-        ]
-      })
-    });
+Se houver ruído mas conseguir entender partes, transcreva o que conseguir.`,
+      },
+    ];
 
-    if (!response.ok) {
-      if (response.status === 429) {
-        return new Response(
-          JSON.stringify({ success: false, error: 'Rate limit excedido, tente novamente em instantes.' }),
-          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+    let transcribedText = '';
+
+    if (isGatewayEnabled()) {
+      const result = await gatewayLLMChat({
+        messages: [{ role: 'user', content: audioContent }],
+      });
+      if (!result.success) {
+        if (result.statusCode === 429) {
+          return new Response(
+            JSON.stringify({ success: false, error: 'Rate limit excedido, tente novamente em instantes.' }),
+            { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        if (result.statusCode === 402) {
+          return new Response(
+            JSON.stringify({ success: false, error: 'Créditos insuficientes.' }),
+            { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        console.warn('[transcribe-audio] Gateway failed, falling back to Lovable:', result.error);
+      } else {
+        transcribedText = result.data?.content ?? '';
       }
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ success: false, error: 'Créditos insuficientes.' }),
-          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      const errorText = await response.text();
-      console.error('Lovable AI error:', errorText);
-      throw new Error(`AI Gateway error: ${response.status}`);
     }
 
-    const data = await response.json();
-    const transcribedText = data.choices?.[0]?.message?.content || '';
+    if (!transcribedText) {
+      const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+      if (!LOVABLE_API_KEY) {
+        throw new Error('LOVABLE_API_KEY not configured and gateway unavailable');
+      }
+      const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'google/gemini-2.5-flash',
+          messages: [{ role: 'user', content: audioContent }],
+        }),
+      });
+
+      if (!response.ok) {
+        if (response.status === 429) {
+          return new Response(
+            JSON.stringify({ success: false, error: 'Rate limit excedido, tente novamente em instantes.' }),
+            { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        if (response.status === 402) {
+          return new Response(
+            JSON.stringify({ success: false, error: 'Créditos insuficientes.' }),
+            { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        const errorText = await response.text();
+        console.error('Lovable AI error:', errorText);
+        throw new Error(`AI Gateway error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      transcribedText = data.choices?.[0]?.message?.content || '';
+    }
 
     console.log('Transcribed text:', transcribedText);
 
