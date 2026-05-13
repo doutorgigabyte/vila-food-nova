@@ -25,6 +25,11 @@ const VILAFOOD_COMMISSION = 0; // Sem taxa de marketplace
 const VILAFOOD_PER_ORDER = 0; // Sem taxa por pedido
 const AVG_ORDER_VALUE = 45;
 
+// Limites para o input do faturamento mensal — protege contra valores absurdos
+// que indicam erro de digitação (ex: usuario coloca 100000 sem virgula).
+const REVENUE_MIN = 100;
+const REVENUE_MAX = 10_000_000;
+
 const loadingPhrases = [
   "Analisando taxas do contrato...",
   "Verificando comissões...",
@@ -90,8 +95,17 @@ const IFoodCalculator = () => {
     setStep(3);
   };
 
+  const revenueValue = parseRevenue();
+  const revenueValid = revenueValue >= REVENUE_MIN && revenueValue <= REVENUE_MAX;
+  const revenueValidationMessage =
+    revenueValue > 0 && revenueValue < REVENUE_MIN
+      ? `Valor mínimo: ${formatCurrency(REVENUE_MIN)}`
+      : revenueValue > REVENUE_MAX
+        ? `Valor máximo: ${formatCurrency(REVENUE_MAX)} (verifique se digitou correto)`
+        : null;
+
   const handleAdvance = () => {
-    if (parseRevenue() > 0) {
+    if (revenueValid) {
       setStep(2);
     }
   };
@@ -168,22 +182,34 @@ const IFoodCalculator = () => {
                 <label className="block text-white/80 text-sm md:text-base mb-4 text-center">
                   Quanto você vendeu no iFood este mês? (Total Bruto)
                 </label>
-                <div className="relative mb-6">
+                <div className="relative mb-2">
                   <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/60 text-lg md:text-xl font-medium">
                     R$
                   </span>
                   <input
                     type="text"
+                    inputMode="numeric"
                     value={revenue}
                     onChange={handleRevenueChange}
+                    onKeyDown={(e) => { if (e.key === 'Enter' && revenueValid) handleAdvance(); }}
                     placeholder="0"
-                    className="w-full bg-white/5 border border-white/20 rounded-xl md:rounded-2xl px-12 py-4 md:py-5 text-2xl md:text-4xl font-bold text-white text-center focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent placeholder:text-white/30 transition-all"
+                    aria-invalid={revenueValue > 0 && !revenueValid}
+                    aria-describedby="revenue-help"
+                    className="w-full bg-white/5 border border-white/20 rounded-xl md:rounded-2xl px-12 py-4 md:py-5 text-2xl md:text-4xl font-bold text-white text-center focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent placeholder:text-white/30 transition-all aria-[invalid=true]:border-destructive aria-[invalid=true]:focus:ring-destructive"
                     autoFocus
                   />
                 </div>
+                <p
+                  id="revenue-help"
+                  className={`text-xs text-center mb-6 min-h-[1rem] ${
+                    revenueValidationMessage ? 'text-destructive' : 'text-white/40'
+                  }`}
+                >
+                  {revenueValidationMessage ?? 'Faturamento mensal bruto (somente vendas)'}
+                </p>
                 <Button
                   onClick={handleAdvance}
-                  disabled={parseRevenue() === 0}
+                  disabled={!revenueValid}
                   className="w-full py-5 md:py-6 text-base md:text-lg font-semibold bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl md:rounded-2xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Avançar
@@ -304,9 +330,12 @@ const IFoodCalculator = () => {
                 </div>
 
                 {/* Disclaimer */}
-                <p className="text-white/40 text-[10px] md:text-xs text-center mt-4">
-                  *Cálculo baseado em taxas públicas do iFood 2024/2025. 
-                  Valor estimado de R${AVG_ORDER_VALUE} por pedido.
+                <p className="text-white/50 text-xs text-center mt-4 leading-relaxed">
+                  *Cálculo baseado em taxas públicas do iFood vigentes em 2026
+                  (comissão {(IFOOD_BASIC_COMMISSION * 100).toFixed(0)}–{(IFOOD_DELIVERY_COMMISSION * 100).toFixed(0)}% +
+                  taxa de pagamento {(IFOOD_PAYMENT_FEE * 100).toFixed(1)}% +
+                  mensalidade R${IFOOD_BASIC_MONTHLY}–R${IFOOD_DELIVERY_MONTHLY} acima de R${IFOOD_MONTHLY_THRESHOLD}).
+                  Ticket médio estimado em R${AVG_ORDER_VALUE}. Valores reais podem variar conforme o contrato.
                 </p>
               </div>
             )}

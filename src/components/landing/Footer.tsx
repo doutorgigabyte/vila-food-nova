@@ -119,14 +119,14 @@ const Footer = () => {
           </div>
 
           {/* CTA compact */}
-          <Link to="/conheca" className="block mb-6">
+          <Link to="/cadastro-estabelecimento" className="block mb-6">
             <div className="p-3 rounded-xl bg-primary/10 border border-primary/20 flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center shrink-0">
                 <Store className="text-white" size={18} />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-sm text-card-foreground">Tem um restaurante?</p>
-                <p className="text-card-foreground/70 text-xs truncate">Comece a vender mais!</p>
+                <p className="text-card-foreground/70 text-xs truncate">Crie sua loja grátis em minutos</p>
               </div>
             </div>
           </Link>
@@ -256,14 +256,21 @@ const Footer = () => {
               </div>
               <div>
                 <h4 className="font-semibold text-card-foreground">Tem um restaurante?</h4>
-                <p className="text-card-foreground/70 text-sm">Conheça nossa plataforma e comece a vender mais!</p>
+                <p className="text-card-foreground/70 text-sm">Crie sua loja em minutos ou fale com nosso time.</p>
               </div>
             </div>
-            <Link to="/conheca" className="shrink-0">
-              <button className="px-6 py-3 bg-accent text-foreground font-semibold rounded-xl hover:bg-accent/90 transition-colors">
-                Conhecer Plataforma
-              </button>
-            </Link>
+            <div className="flex flex-col sm:flex-row gap-3 shrink-0">
+              <Link to="/cadastro-estabelecimento">
+                <button className="px-6 py-3 bg-accent text-foreground font-semibold rounded-xl hover:bg-accent/90 transition-colors w-full sm:w-auto">
+                  Criar Loja Grátis
+                </button>
+              </Link>
+              <a href="https://wa.me/5581983655465" target="_blank" rel="noopener noreferrer">
+                <button className="px-6 py-3 bg-card border border-border text-card-foreground font-semibold rounded-xl hover:bg-muted transition-colors w-full sm:w-auto">
+                  Falar com Vendas
+                </button>
+              </a>
+            </div>
           </div>
 
           {/* Bottom */}
