@@ -4,15 +4,16 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { 
-  ArrowLeft, 
+import {
+  ArrowLeft,
   Rocket,
   Truck,
   Store,
   UtensilsCrossed,
   Clock,
   Loader2,
-  PartyPopper
+  PartyPopper,
+  AlertTriangle,
 } from "lucide-react";
 import { OnboardingData } from "../OnboardingWizard";
 
@@ -54,6 +55,12 @@ export const FinalConfigStep = ({ data, updateData, onComplete, onBack, isSubmit
       }
     });
   };
+
+  const hasOrderType = data.acceptsDelivery || data.acceptsPickup || data.acceptsTable;
+  const invalidHourDays = Object.entries(data.operatingHours)
+    .filter(([, h]) => h.open && h.start >= h.end)
+    .map(([day]) => dayLabels[day] || day);
+  const canSubmit = hasOrderType && invalidHourDays.length === 0;
 
   return (
     <div className="space-y-6">
@@ -172,6 +179,31 @@ export const FinalConfigStep = ({ data, updateData, onComplete, onBack, isSubmit
         </div>
       </Card>
 
+      {/* Validation warnings */}
+      {!hasOrderType && (
+        <Card className="p-4 bg-destructive/5 border-destructive/30">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
+            <p className="text-sm">
+              Habilite pelo menos uma forma de pedido (Delivery, Retirada ou Mesa/Local)
+              para sua loja receber pedidos.
+            </p>
+          </div>
+        </Card>
+      )}
+
+      {invalidHourDays.length > 0 && (
+        <Card className="p-4 bg-destructive/5 border-destructive/30">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
+            <p className="text-sm">
+              Horário inválido em <strong>{invalidHourDays.join(", ")}</strong>: o
+              horário de fechamento precisa ser maior que o de abertura.
+            </p>
+          </div>
+        </Card>
+      )}
+
       {/* Summary */}
       <Card className="p-6 bg-primary/5 border-primary/20">
         <div className="flex items-start gap-3">
@@ -179,7 +211,7 @@ export const FinalConfigStep = ({ data, updateData, onComplete, onBack, isSubmit
           <div>
             <h3 className="font-semibold">Tudo pronto!</h3>
             <p className="text-sm text-muted-foreground mt-1">
-              Clique em "Criar minha loja" para finalizar. Você poderá 
+              Clique em "Criar minha loja" para finalizar. Você poderá
               ajustar todas as configurações depois no painel.
             </p>
           </div>
@@ -191,9 +223,9 @@ export const FinalConfigStep = ({ data, updateData, onComplete, onBack, isSubmit
           <ArrowLeft className="w-4 h-4 mr-2" />
           Voltar
         </Button>
-        <Button 
-          onClick={onComplete} 
-          disabled={isSubmitting}
+        <Button
+          onClick={onComplete}
+          disabled={isSubmitting || !canSubmit}
           className="flex-1 bg-primary hover:bg-primary/90"
           size="lg"
         >

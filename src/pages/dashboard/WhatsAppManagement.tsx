@@ -228,8 +228,24 @@ const WhatsAppManagement = () => {
     // Poll immediately
     pollStatus();
 
-    // Then poll every 5 seconds
-    const interval = setInterval(pollStatus, 5000);
+    // Cap polling at ~5 minutes so a dead instance doesn't leave the tab
+    // making requests forever (memory leak, and an honest user-facing failure
+    // is better than indefinite "connecting...").
+    const POLL_INTERVAL_MS = 5000;
+    const MAX_ATTEMPTS = 60;
+    let attempts = 0;
+    const interval = setInterval(() => {
+      attempts += 1;
+      if (attempts >= MAX_ATTEMPTS) {
+        clearInterval(interval);
+        setPollingActive(false);
+        toast.error(
+          "Tempo esgotado aguardando conexão do WhatsApp. Tente reconectar."
+        );
+        return;
+      }
+      pollStatus();
+    }, POLL_INTERVAL_MS);
 
     return () => {
       clearInterval(interval);

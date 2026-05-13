@@ -396,6 +396,28 @@ const EstablishmentsManagement = () => {
     if (!deletingId) return;
 
     try {
+      // Guard against deleting a store that still has live orders. The DB has
+      // ON DELETE CASCADE on most FKs, so a blind delete would wipe order
+      // history, splits, and audit trail without warning.
+      const { count: activeOrdersCount, error: countError } = await supabase
+        .from('orders')
+        .select('id', { count: 'exact', head: true })
+        .eq('establishment_id', deletingId)
+        .in('status', ['pending', 'confirmed', 'preparing', 'ready', 'out_for_delivery']);
+
+      if (countError) throw countError;
+
+      if ((activeOrdersCount ?? 0) > 0) {
+        toast({
+          title: 'Não é possível excluir',
+          description: `Este estabelecimento tem ${activeOrdersCount} pedido(s) em aberto. Cancele ou conclua antes de excluir.`,
+          variant: 'destructive',
+        });
+        setDeleteDialogOpen(false);
+        setDeletingId(null);
+        return;
+      }
+
       const { error } = await supabase
         .from("establishments")
         .delete()

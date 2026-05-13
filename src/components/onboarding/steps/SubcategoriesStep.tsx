@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, ArrowRight, Check, Plus } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Plus, AlertCircle, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { OnboardingData } from "../OnboardingWizard";
 
@@ -26,25 +26,30 @@ const OTHER_SEGMENT_ID = "other";
 export const SubcategoriesStep = ({ data, updateData, onNext, onBack }: SubcategoriesStepProps) => {
   const [segments, setSegments] = useState<Segment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [showCustomInput, setShowCustomInput] = useState(data.selectedSegments.includes(OTHER_SEGMENT_ID));
 
+  const fetchSegments = async () => {
+    if (!data.mainCategoryId) return;
+    setLoading(true);
+    setFetchError(null);
+
+    const { data: segs, error } = await supabase
+      .from("segments")
+      .select("id, name, icon")
+      .eq("parent_category_id", data.mainCategoryId)
+      .eq("is_active", true)
+      .order("name", { ascending: true });
+
+    if (error) {
+      setFetchError(error.message || "Não foi possível carregar os segmentos");
+    } else {
+      setSegments(segs || []);
+    }
+    setLoading(false);
+  };
+
   useEffect(() => {
-    const fetchSegments = async () => {
-      if (!data.mainCategoryId) return;
-
-      const { data: segs, error } = await supabase
-        .from("segments")
-        .select("id, name, icon")
-        .eq("parent_category_id", data.mainCategoryId)
-        .eq("is_active", true)
-        .order("name", { ascending: true });
-
-      if (!error && segs) {
-        setSegments(segs);
-      }
-      setLoading(false);
-    };
-
     fetchSegments();
   }, [data.mainCategoryId]);
 
@@ -111,6 +116,28 @@ export const SubcategoriesStep = ({ data, updateData, onNext, onBack }: Subcateg
           ))}
         </div>
       </div>
+    );
+  }
+
+  if (fetchError) {
+    return (
+      <Card className="p-8 text-center space-y-4 border-destructive/30 bg-destructive/5">
+        <AlertCircle className="w-12 h-12 text-destructive mx-auto" />
+        <div>
+          <h3 className="font-semibold mb-1">Não conseguimos carregar os segmentos</h3>
+          <p className="text-sm text-muted-foreground">{fetchError}</p>
+        </div>
+        <div className="flex gap-3 justify-center">
+          <Button variant="outline" onClick={onBack}>
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Voltar
+          </Button>
+          <Button onClick={fetchSegments}>
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Tentar novamente
+          </Button>
+        </div>
+      </Card>
     );
   }
 
@@ -196,23 +223,32 @@ export const SubcategoriesStep = ({ data, updateData, onNext, onBack }: Subcateg
           </motion.div>
         )}
 
-        {(data.selectedSegments.length > 0 || data.customSegment) && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mt-4 p-3 rounded-lg bg-primary/5 border border-primary/20"
-          >
-            <p className="text-sm">
-              <span className="font-medium text-primary">
-                {data.selectedSegments.filter(id => id !== OTHER_SEGMENT_ID).length}
-              </span>
-              {" "}categoria{data.selectedSegments.filter(id => id !== OTHER_SEGMENT_ID).length !== 1 ? "s" : ""} selecionada{data.selectedSegments.filter(id => id !== OTHER_SEGMENT_ID).length !== 1 ? "s" : ""}
-              {data.customSegment && (
-                <span className="text-muted-foreground"> + "{data.customSegment}"</span>
+        {(data.selectedSegments.length > 0 || data.customSegment) && (() => {
+          const regularSelected = data.selectedSegments.filter(id => id !== OTHER_SEGMENT_ID);
+          const primaryId = regularSelected[0];
+          const primary = primaryId ? segments.find(s => s.id === primaryId) : null;
+          return (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-4 p-3 rounded-lg bg-primary/5 border border-primary/20 space-y-1"
+            >
+              <p className="text-sm">
+                <span className="font-medium text-primary">{regularSelected.length}</span>
+                {" "}categoria{regularSelected.length !== 1 ? "s" : ""} selecionada{regularSelected.length !== 1 ? "s" : ""}
+                {data.customSegment && (
+                  <span className="text-muted-foreground"> + "{data.customSegment}"</span>
+                )}
+              </p>
+              {primary && (
+                <p className="text-xs text-muted-foreground">
+                  Principal: <span className="font-medium text-foreground">{primary.name}</span>
+                  {regularSelected.length > 1 && " (primeira selecionada — clique em outra para trocar)"}
+                </p>
               )}
-            </p>
-          </motion.div>
-        )}
+            </motion.div>
+          );
+        })()}
       </Card>
 
       <div className="flex gap-3">

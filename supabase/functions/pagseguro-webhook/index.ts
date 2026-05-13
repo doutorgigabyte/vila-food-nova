@@ -47,6 +47,49 @@ function mapPagBankStatus(pagbankStatus: string): string {
   return statusMap[pagbankStatus] || 'pending';
 }
 
+/**
+ * Validate PagBank webhook signature.
+ *
+ * PagBank sends `x-authenticity-token` containing SHA-256(payload + token).
+ * Only ENVIRONMENT=development opts out (for local testing) — any other env
+ * must validate, so an unset ENVIRONMENT fails closed.
+ *
+ * Reference: https://dev.pagbank.uol.com.br/reference/webhooks (Autenticidade)
+ */
+async function validatePagBankSignature(
+  receivedToken: string | null,
+  rawBody: string,
+): Promise<boolean> {
+  const webhookSecret = Deno.env.get('PAGSEGURO_WEBHOOK_SECRET');
+  const isDevelopment = Deno.env.get('ENVIRONMENT') === 'development';
+
+  if (!webhookSecret) {
+    if (!isDevelopment) {
+      console.error('CRITICAL: PAGSEGURO_WEBHOOK_SECRET not configured');
+      return false;
+    }
+    console.warn('PagBank signature validation skipped - no secret (development)');
+    return true;
+  }
+
+  if (!receivedToken) {
+    console.error('CRITICAL: x-authenticity-token header missing while PAGSEGURO_WEBHOOK_SECRET is configured');
+    return false;
+  }
+
+  try {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(rawBody + webhookSecret);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const expected = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+    return expected === receivedToken.toLowerCase();
+  } catch (err) {
+    console.error('Error computing PagBank signature:', err);
+    return false;
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -58,7 +101,18 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    const body = await req.json();
+    // Read raw body once so we can both validate and parse it.
+    const rawBody = await req.text();
+    const receivedToken = req.headers.get('x-authenticity-token');
+    const signatureValid = await validatePagBankSignature(receivedToken, rawBody);
+    if (!signatureValid) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid or missing signature' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const body = JSON.parse(rawBody);
     console.log('PagBank webhook received:', JSON.stringify(body, null, 2));
 
     // PagBank pode enviar o evento diretamente ou dentro de um wrapper

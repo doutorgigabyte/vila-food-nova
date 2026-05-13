@@ -150,10 +150,7 @@ const Vilas = () => {
                       <div className="flex items-center gap-2 text-muted-foreground">
                         <Store className="w-4 h-4" />
                         <span className="text-sm">
-                          {vila.establishmentCount > 0 
-                            ? `${vila.establishmentCount} estabelecimento${vila.establishmentCount > 1 ? 's' : ''}`
-                            : 'Em breve'
-                          }
+                          {vila.establishmentCount > 0 ? 'Conheça a vila' : 'Em breve'}
                         </span>
                       </div>
                       <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />

@@ -240,7 +240,31 @@ const SystemBroadcastCRM = () => {
   };
 
   const sendCampaign = async (campaignId: string) => {
-    if (!confirm('Enviar campanha agora? Esta ação não pode ser desfeita.')) return;
+    // Resolve the actual recipient count first so the admin can't fire a
+    // broadcast to 10k contacts thinking it's a small test.
+    const campaign = campaigns.find((c) => c.id === campaignId);
+    if (!campaign) {
+      toast.error('Campanha não encontrada');
+      return;
+    }
+
+    const recipientCount = campaign.target_all
+      ? activeContacts.length
+      : activeContacts.filter((c) =>
+          (c.tags || []).some((tag) => campaign.target_tags.includes(tag)),
+        ).length;
+
+    if (recipientCount === 0) {
+      toast.error(
+        'Esta campanha não tem destinatários válidos. Revise os filtros de tags ou marque "Enviar para todos".',
+      );
+      return;
+    }
+
+    const label = `Confirmar envio para ${recipientCount} ${
+      recipientCount === 1 ? 'contato' : 'contatos'
+    }?\n\nEsta ação não pode ser desfeita.`;
+    if (!confirm(label)) return;
 
     try {
       // Update campaign status
@@ -256,9 +280,14 @@ const SystemBroadcastCRM = () => {
 
       if (error) throw error;
 
-      toast.success('Campanha iniciada!');
+      toast.success(`Campanha iniciada para ${recipientCount} contatos!`);
       fetchData();
     } catch (error) {
+      // Revert status so the campaign isn't stuck in 'sending' forever.
+      await supabase
+        .from('broadcast_campaigns')
+        .update({ status: 'draft' })
+        .eq('id', campaignId);
       toast.error('Erro ao enviar campanha');
     }
   };

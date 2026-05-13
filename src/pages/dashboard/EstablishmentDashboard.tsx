@@ -85,9 +85,14 @@ const EstablishmentDashboard = () => {
   };
 
   const handleRejectOrder = async (orderId: string) => {
+    const confirmed = window.confirm(
+      "Tem certeza que deseja RECUSAR este pedido? O cliente será notificado e essa ação não pode ser desfeita."
+    );
+    if (!confirmed) return;
+
     const { error } = await supabase
       .from('orders')
-      .update({ 
+      .update({
         status: 'cancelled',
         cancellation_reason: 'Recusado pelo estabelecimento',
         cancelled_at: new Date().toISOString()

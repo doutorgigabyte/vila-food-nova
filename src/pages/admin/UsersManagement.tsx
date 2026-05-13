@@ -282,13 +282,40 @@ const UsersManagement = () => {
     if (!deletingId) return;
 
     try {
-      // Deletar registros relacionados primeiro
-      await supabase.from("user_roles").delete().eq("user_id", deletingId);
-      await supabase.from("establishment_users").delete().eq("user_id", deletingId);
-      
-      // Deletar profile
-      const { error } = await supabase.from("profiles").delete().eq("id", deletingId);
+      // Block deletion if the user still owns establishments. Cascading the
+      // delete here would orphan stores (and their products / orders / FK
+      // chains), and the admin almost never wants that — they want to either
+      // transfer ownership first or block the account instead.
+      const { count: ownedCount, error: ownedErr } = await supabase
+        .from('establishments')
+        .select('id', { count: 'exact', head: true })
+        .eq('owner_id', deletingId);
 
+      if (ownedErr) throw ownedErr;
+
+      if ((ownedCount ?? 0) > 0) {
+        toast({
+          title: 'Não é possível excluir',
+          description: `Este usuário é dono de ${ownedCount} estabelecimento(s). Transfira a propriedade ou exclua as lojas antes.`,
+          variant: 'destructive',
+        });
+        setDeleteDialogOpen(false);
+        setDeletingId(null);
+        return;
+      }
+
+      // Delete dependents in order — Supabase JS doesn't expose multi-table
+      // transactions, but we collect errors so a partial failure surfaces
+      // instead of silently leaving the user in a half-deleted state.
+      const [rolesRes, eUsersRes] = await Promise.all([
+        supabase.from('user_roles').delete().eq('user_id', deletingId),
+        supabase.from('establishment_users').delete().eq('user_id', deletingId),
+      ]);
+
+      if (rolesRes.error) throw rolesRes.error;
+      if (eUsersRes.error) throw eUsersRes.error;
+
+      const { error } = await supabase.from('profiles').delete().eq('id', deletingId);
       if (error) throw error;
 
       await logAction({

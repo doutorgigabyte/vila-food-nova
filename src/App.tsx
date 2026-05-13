@@ -12,6 +12,7 @@ import { CartProvider } from "./hooks/useCart";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
 import PWAInstallPrompt from "./components/PWAInstallPrompt";
 import CookieConsentBanner from "./components/CookieConsentBanner";
+import { DareChatWidget } from "./components/dare/DareChatWidget";
 import { OrderSourceProvider } from "./hooks/useOrderSource";
 import { NotificationProvider } from "./components/notifications/NotificationProvider";
 import PageSkeleton from "./components/ui/PageSkeleton";
@@ -181,7 +182,7 @@ const AppRoutes = () => {
       if (loading) return;
       
       // Skip check for public routes and admin routes (admin has its own auth handling)
-      const publicRoutes = ['/auth', '/', '/marketplace', '/conheca', '/recuperar-senha', '/termos', '/privacidade', '/checkout'];
+      const publicRoutes = ['/auth', '/', '/marketplace', '/conheca', '/cadastro-estabelecimento', '/entregador/cadastro', '/recuperar-senha', '/recuperar-senha-whatsapp', '/termos', '/privacidade', '/saude', '/checkout'];
       const adminRoutes = location.pathname.startsWith('/admin');
       const isPublicRoute = publicRoutes.includes(location.pathname) || 
         location.pathname.startsWith('/loja/') || 
@@ -251,6 +252,7 @@ const AppRoutes = () => {
               <Route path="/favoritos" element={<Favorites />} />
               <Route path="/conta" element={<Account />} />
               <Route path="/enderecos" element={<Addresses />} />
+              <Route path="/produtos" element={<Navigate to="/produtos/destaques" replace />} />
               <Route path="/produtos/:section" element={<ProductsListing />} />
               <Route path="/produto/:id" element={<ProductDetail />} />
               <Route path="/kit/:id" element={<ProductKitDetail />} />
@@ -429,6 +431,12 @@ const App = () => {
                           <Sonner />
                           <PWAInstallPrompt />
                           <CookieConsentBanner />
+                          {/* Daré IA chat widget — gated por feature flag.
+                              O componente também faz seu próprio gate por
+                              `isDareConfigured()` (envs presentes). */}
+                          {import.meta.env.VITE_DARE_ENABLED === "true" && (
+                            <DareChatWidget />
+                          )}
                           <AppRoutes />
                         </NotificationProvider>
                       </BrowserRouter>
