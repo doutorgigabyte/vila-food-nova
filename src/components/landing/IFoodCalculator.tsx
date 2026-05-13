@@ -4,6 +4,7 @@ import { ArrowRight, Bike, Package, Calculator, TrendingDown, Sparkles, RotateCc
 import { Link } from "react-router-dom";
 import CoinEaterAnimation from "./CoinEaterAnimation";
 import { useLandingAnalytics, useSectionView } from "@/hooks/useLandingAnalytics";
+import { useCompetitorFees } from "@/hooks/useCompetitorFees";
 type Step = 1 | 2 | 3 | 4;
 type DeliveryType = "own" | "ifood" | null;
 
@@ -14,13 +15,6 @@ interface CalculationResult {
   savings: number;
   remaining: number;
 }
-
-const IFOOD_BASIC_COMMISSION = 0.12;
-const IFOOD_DELIVERY_COMMISSION = 0.23;
-const IFOOD_PAYMENT_FEE = 0.032;
-const IFOOD_BASIC_MONTHLY = 100;
-const IFOOD_DELIVERY_MONTHLY = 130;
-const IFOOD_MONTHLY_THRESHOLD = 1800;
 
 const VILAFOOD_COMMISSION = 0; // Sem taxa de marketplace
 const VILAFOOD_PER_ORDER = 0; // Sem taxa por pedido
@@ -43,6 +37,12 @@ const IFoodCalculator = () => {
   const { trackCalculatorStarted, trackCalculatorCompleted, trackCTAClick, trackSignupIntent } =
     useLandingAnalytics();
   const sectionRef = useSectionView("calculator");
+
+  // Taxas vindas do DB (com fallback hardcoded). Os 2 planos do iFood
+  // sao identificados pelo plan_slug seedado na migration.
+  const ifoodFees = useCompetitorFees("ifood");
+  const basicPlan = ifoodFees.find((f) => f.plan_slug === "basico-propria") ?? ifoodFees[0];
+  const deliveryPlan = ifoodFees.find((f) => f.plan_slug === "entrega-ifood") ?? ifoodFees[1] ?? ifoodFees[0];
 
   const [step, setStep] = useState<Step>(1);
   const [revenue, setRevenue] = useState<string>("");
@@ -70,22 +70,21 @@ const IFoodCalculator = () => {
 
   const calculateResult = useCallback((): CalculationResult => {
     const revenueValue = parseRevenue();
-    const commission = deliveryType === "own" ? IFOOD_BASIC_COMMISSION : IFOOD_DELIVERY_COMMISSION;
-    const monthlyFee = deliveryType === "own" ? IFOOD_BASIC_MONTHLY : IFOOD_DELIVERY_MONTHLY;
-    
-    // iFood calculation
-    const ifoodCommission = revenueValue * commission;
-    const ifoodPaymentFee = revenueValue * IFOOD_PAYMENT_FEE;
-    const ifoodMonthly = revenueValue > IFOOD_MONTHLY_THRESHOLD ? monthlyFee : 0;
+    const plan = deliveryType === "own" ? basicPlan : deliveryPlan;
+
+    // iFood calculation (taxas vindas do DB ou fallback)
+    const ifoodCommission = revenueValue * plan.commission_percent;
+    const ifoodPaymentFee = revenueValue * plan.payment_fee_percent;
+    const ifoodMonthly = revenueValue > plan.monthly_fee_threshold ? plan.monthly_fee : 0;
     const ifoodTax = ifoodCommission + ifoodPaymentFee + ifoodMonthly;
     const ifoodPercentage = (ifoodTax / revenueValue) * 100;
-    
+
     // VilaFood calculation (0% taxa - cliente paga direto para a loja)
     const vilafoodTax = 0;
-    
+
     const savings = ifoodTax - vilafoodTax;
     const remaining = revenueValue - vilafoodTax;
-    
+
     return {
       ifoodTax,
       ifoodPercentage,
@@ -93,7 +92,7 @@ const IFoodCalculator = () => {
       savings,
       remaining,
     };
-  }, [deliveryType, revenue]);
+  }, [deliveryType, revenue, basicPlan, deliveryPlan]);
 
   const handleDeliverySelect = (type: DeliveryType) => {
     setDeliveryType(type);
@@ -253,7 +252,7 @@ const IFoodCalculator = () => {
                       <Bike className="h-7 w-7 md:h-8 md:w-8 text-green-400" />
                     </div>
                     <span className="text-white font-semibold text-sm md:text-base">Meus Motoboys</span>
-                    <span className="text-white/50 text-xs">Plano Básico (12%)</span>
+                    <span className="text-white/50 text-xs">Plano Básico ({(basicPlan.commission_percent * 100).toFixed(0)}%)</span>
                   </button>
                   <button
                     onClick={() => handleDeliverySelect("ifood")}
@@ -263,7 +262,7 @@ const IFoodCalculator = () => {
                       <Package className="h-7 w-7 md:h-8 md:w-8 text-destructive" />
                     </div>
                     <span className="text-white font-semibold text-sm md:text-base">Parceiro iFood</span>
-                    <span className="text-white/50 text-xs">Plano Entrega (23%)</span>
+                    <span className="text-white/50 text-xs">Plano Entrega ({(deliveryPlan.commission_percent * 100).toFixed(0)}%)</span>
                   </button>
                 </div>
               </div>
@@ -363,10 +362,20 @@ const IFoodCalculator = () => {
                 {/* Disclaimer */}
                 <p className="text-white/50 text-xs text-center mt-4 leading-relaxed">
                   *Cálculo baseado em taxas públicas do iFood vigentes em 2026
-                  (comissão {(IFOOD_BASIC_COMMISSION * 100).toFixed(0)}–{(IFOOD_DELIVERY_COMMISSION * 100).toFixed(0)}% +
-                  taxa de pagamento {(IFOOD_PAYMENT_FEE * 100).toFixed(1)}% +
-                  mensalidade R${IFOOD_BASIC_MONTHLY}–R${IFOOD_DELIVERY_MONTHLY} acima de R${IFOOD_MONTHLY_THRESHOLD}).
-                  Ticket médio estimado em R${AVG_ORDER_VALUE}. Valores reais podem variar conforme o contrato.
+                  (comissão {(basicPlan.commission_percent * 100).toFixed(0)}–{(deliveryPlan.commission_percent * 100).toFixed(0)}% +
+                  taxa de pagamento {(basicPlan.payment_fee_percent * 100).toFixed(1)}% +
+                  mensalidade R${basicPlan.monthly_fee.toFixed(0)}–R${deliveryPlan.monthly_fee.toFixed(0)} acima de R${basicPlan.monthly_fee_threshold.toFixed(0)}).
+                  Ticket médio estimado em R${AVG_ORDER_VALUE}. Valores reais podem variar conforme o contrato.{" "}
+                  {basicPlan.source_url && (
+                    <a
+                      href={basicPlan.source_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-white/70 underline hover:text-white"
+                    >
+                      Fonte oficial
+                    </a>
+                  )}
                 </p>
               </div>
             )}

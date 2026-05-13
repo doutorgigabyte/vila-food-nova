@@ -139,6 +139,8 @@ const PixelsDiagnostic = lazy(() => import("./pages/admin/PixelsDiagnostic"));
 const AdminWhatsAppManagement = lazy(() => import("./pages/admin/AdminWhatsAppManagement"));
 const SystemBroadcastCRM = lazy(() => import("./pages/admin/SystemBroadcastCRM"));
 const TestimonialsManagement = lazy(() => import("./pages/admin/TestimonialsManagement"));
+const FAQManagement = lazy(() => import("./pages/admin/FAQManagement"));
+const CompetitorFeesManagement = lazy(() => import("./pages/admin/CompetitorFeesManagement"));
 const SecurityDocumentation = lazy(() => import("./pages/admin/SecurityDocumentation"));
 const TestingGuide = lazy(() => import("./pages/admin/TestingGuide"));
 const TermsOfUse = lazy(() => import("./pages/TermsOfUse"));
@@ -389,6 +391,8 @@ const AppRoutes = () => {
               <Route path="/admin/whatsapp" element={<ProtectedAdminRoute><AdminWhatsAppManagement /></ProtectedAdminRoute>} />
               <Route path="/admin/crm-disparos" element={<ProtectedAdminRoute><SystemBroadcastCRM /></ProtectedAdminRoute>} />
               <Route path="/admin/depoimentos" element={<ProtectedAdminRoute><TestimonialsManagement /></ProtectedAdminRoute>} />
+              <Route path="/admin/faq" element={<ProtectedAdminRoute><FAQManagement /></ProtectedAdminRoute>} />
+              <Route path="/admin/taxas-concorrentes" element={<ProtectedAdminRoute><CompetitorFeesManagement /></ProtectedAdminRoute>} />
               <Route path="/admin/documentacao-seguranca" element={<ProtectedAdminRoute><SecurityDocumentation /></ProtectedAdminRoute>} />
               <Route path="/admin/guia-testes" element={<ProtectedAdminRoute><TestingGuide /></ProtectedAdminRoute>} />
               {/* Affiliate routes */}

@@ -3,7 +3,7 @@ import { Helmet } from "react-helmet-async";
 import Navbar from "@/components/landing/Navbar";
 import HeroSection from "@/components/landing/HeroSection";
 import IFoodCalculator from "@/components/landing/IFoodCalculator";
-import { faqCategories } from "@/components/landing/faqData";
+import { useFAQItems } from "@/hooks/useFAQItems";
 import { usePlans } from "@/hooks/usePlans";
 
 // Lazy load sections below the fold for performance
@@ -57,6 +57,7 @@ const organizationSchema = {
 
 const Conheca = () => {
   const { data: plans } = usePlans();
+  const faqCategories = useFAQItems();
 
   // Scroll to top on mount
   useEffect(() => {

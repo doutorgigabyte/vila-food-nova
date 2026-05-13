@@ -7,11 +7,12 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { useLandingAnalytics, useSectionView } from "@/hooks/useLandingAnalytics";
-import { faqCategories } from "./faqData";
+import { useFAQItems } from "@/hooks/useFAQItems";
 
 const FAQSection = () => {
   const { trackFAQOpened, trackCTAClick } = useLandingAnalytics();
   const sectionRef = useSectionView("faq");
+  const faqCategories = useFAQItems();
 
   return (
     <section ref={sectionRef} className="py-12 md:py-20 lg:py-32 relative overflow-hidden" id="faq">
