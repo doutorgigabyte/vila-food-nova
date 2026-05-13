@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { gatewayLLMChat, isGatewayEnabled } from "../_shared/gateway.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -28,31 +29,18 @@ serve(async (req) => {
 
     console.log('Extract customer data from text:', text.substring(0, 100));
 
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY not configured');
-    }
-
     const cityContext = establishment_city ? `A cidade padrão é ${establishment_city}${establishment_state ? `, ${establishment_state}` : ''}.` : '';
 
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          {
-            role: 'system',
-            content: `Você é um assistente que extrai dados de cadastro de cliente a partir de texto livre ou transcrição de áudio.
+    const messages = [
+      {
+        role: 'system' as const,
+        content: `Você é um assistente que extrai dados de cadastro de cliente a partir de texto livre ou transcrição de áudio.
 ${cityContext}
-Extraia as informações e retorne APENAS um JSON válido, sem explicações.`
-          },
-          {
-            role: 'user',
-            content: `Extraia os dados do cliente deste texto:
+Extraia as informações e retorne APENAS um JSON válido, sem explicações.`,
+      },
+      {
+        role: 'user' as const,
+        content: `Extraia os dados do cliente deste texto:
 
 "${text}"
 
@@ -73,33 +61,72 @@ Retorne um JSON com esta estrutura:
 }
 
 Se não conseguir extrair dados suficientes, retorne success: false com os campos que conseguiu.
-Campos mínimos necessários: name, street, number, neighborhood.`
-          }
-        ],
-        temperature: 0.1
-      })
-    });
+Campos mínimos necessários: name, street, number, neighborhood.`,
+      },
+    ];
 
-    if (!response.ok) {
-      if (response.status === 429) {
-        return new Response(
-          JSON.stringify({ success: false, error: 'Rate limit excedido.' }),
-          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+    let responseText = '';
+
+    if (isGatewayEnabled()) {
+      const result = await gatewayLLMChat({ messages, temperature: 0.1 });
+      if (!result.success) {
+        if (result.statusCode === 429) {
+          return new Response(
+            JSON.stringify({ success: false, error: 'Rate limit excedido.' }),
+            { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        if (result.statusCode === 402) {
+          return new Response(
+            JSON.stringify({ success: false, error: 'Créditos insuficientes.' }),
+            { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        console.warn('[extract-customer-data] Gateway failed, falling back to Lovable:', result.error);
+      } else {
+        responseText = result.data?.content ?? '';
       }
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ success: false, error: 'Créditos insuficientes.' }),
-          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      const errorText = await response.text();
-      console.error('Lovable AI error:', errorText);
-      throw new Error(`AI Gateway error: ${response.status}`);
     }
 
-    const data = await response.json();
-    const responseText = data.choices?.[0]?.message?.content || '';
+    if (!responseText) {
+      const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+      if (!LOVABLE_API_KEY) {
+        throw new Error('LOVABLE_API_KEY not configured and gateway unavailable');
+      }
+      const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'google/gemini-2.5-flash',
+          messages,
+          temperature: 0.1,
+        }),
+      });
+
+      if (!response.ok) {
+        if (response.status === 429) {
+          return new Response(
+            JSON.stringify({ success: false, error: 'Rate limit excedido.' }),
+            { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        if (response.status === 402) {
+          return new Response(
+            JSON.stringify({ success: false, error: 'Créditos insuficientes.' }),
+            { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        const errorText = await response.text();
+        console.error('Lovable AI error:', errorText);
+        throw new Error(`AI Gateway error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      responseText = data.choices?.[0]?.message?.content || '';
+    }
 
     console.log('AI extracted:', responseText);
 

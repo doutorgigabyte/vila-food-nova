@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { gatewayLLMChat, isGatewayEnabled } from "../_shared/gateway.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -137,12 +138,38 @@ async function checkLovableAI(): Promise<HealthCheckResult> {
 async function checkAWSS3(): Promise<HealthCheckResult> {
   const AWS_ACCESS_KEY_ID = Deno.env.get("AWS_ACCESS_KEY_ID");
   const AWS_BUCKET_NAME = Deno.env.get("AWS_BUCKET_NAME");
-  
+
   if (!AWS_ACCESS_KEY_ID || !AWS_BUCKET_NAME) {
     return { service: "aws_s3", status: "not_configured", message: "AWS credentials not set" };
   }
 
   return { service: "aws_s3", status: "ok", message: `Bucket: ${AWS_BUCKET_NAME}` };
+}
+
+async function checkGateway(): Promise<HealthCheckResult> {
+  if (!isGatewayEnabled()) {
+    return { service: "api_gateway", status: "not_configured", message: "GATEWAY_API_URL/TOKEN not set" };
+  }
+
+  const start = Date.now();
+  const result = await gatewayLLMChat({
+    messages: [{ role: "user", content: "Say 'ok'" }],
+    maxTokens: 10,
+  });
+  const latency = Date.now() - start;
+
+  if (result.success) {
+    return {
+      service: "api_gateway",
+      status: "ok",
+      latency_ms: latency,
+      model: (result.metadata?.model as string) ?? "gateway-default",
+    };
+  }
+
+  if (result.statusCode === 429) return { service: "api_gateway", status: "error", latency_ms: latency, message: "Rate limited" };
+  if (result.statusCode === 402) return { service: "api_gateway", status: "error", latency_ms: latency, message: "Payment required" };
+  return { service: "api_gateway", status: "error", latency_ms: latency, message: result.error ?? `HTTP ${result.statusCode}` };
 }
 
 serve(async (req) => {
@@ -153,15 +180,16 @@ serve(async (req) => {
   console.log("[ai-health-check] Starting health check...");
 
   // Run all checks in parallel
-  const [geminiText, imagen, lovableAI, awsS3] = await Promise.all([
+  const [geminiText, imagen, lovableAI, awsS3, gateway] = await Promise.all([
     checkGeminiText(),
     checkImagen(),
     checkLovableAI(),
     checkAWSS3(),
+    checkGateway(),
   ]);
 
-  const results = [geminiText, imagen, lovableAI, awsS3];
-  
+  const results = [geminiText, imagen, lovableAI, awsS3, gateway];
+
   const allOk = results.every(r => r.status === "ok" || r.status === "not_configured");
   const configured = results.filter(r => r.status !== "not_configured").length;
   const working = results.filter(r => r.status === "ok").length;
@@ -184,6 +212,12 @@ serve(async (req) => {
   }
   if (lovableAI.status === "error" && lovableAI.message === "Rate limited") {
     summary.recommendations.push("Lovable AI is rate limited - consider upgrading plan");
+  }
+  if (gateway.status === "not_configured") {
+    summary.recommendations.push("Configure GATEWAY_API_URL/GATEWAY_API_TOKEN to centralize AI routing");
+  }
+  if (gateway.status === "error") {
+    summary.recommendations.push(`API Gateway unhealthy: ${gateway.message}`);
   }
 
   console.log(`[ai-health-check] Complete: ${working}/${configured} services working`);
