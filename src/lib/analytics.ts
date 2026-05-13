@@ -361,6 +361,38 @@ export const trackSearch = (searchTerm: string) => {
   }
 };
 
+// Track Wayfinding events (Vila "Como chegar")
+export const trackWayfindingOpen = (vilaSlug: string, source: "vila_page" | "store_page" | "share" = "vila_page") => {
+  if (window.gtag) {
+    window.gtag('event', 'wayfinding_open', {
+      event_category: 'wayfinding',
+      vila_slug: vilaSlug,
+      source,
+    });
+  }
+};
+
+export const trackWayfindingRouteCalculated = (vilaSlug: string, destinationId: string, distanceMeters: number) => {
+  if (window.gtag) {
+    window.gtag('event', 'wayfinding_route_calculated', {
+      event_category: 'wayfinding',
+      vila_slug: vilaSlug,
+      destination_id: destinationId,
+      distance_meters: distanceMeters,
+    });
+  }
+};
+
+export const trackWayfindingRouteStarted = (vilaSlug: string, destinationId: string) => {
+  if (window.gtag) {
+    window.gtag('event', 'wayfinding_route_started', {
+      event_category: 'wayfinding',
+      vila_slug: vilaSlug,
+      destination_id: destinationId,
+    });
+  }
+};
+
 // Track Lead (Contact Form, WhatsApp, etc.)
 export const trackLead = (source?: string) => {
   // Facebook

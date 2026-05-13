@@ -1,6 +1,12 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
+export interface VilaEntryPoint {
+  lat: number;
+  lng: number;
+  label?: string;
+}
+
 export interface Vila {
   id: string;
   name: string;
@@ -13,6 +19,8 @@ export interface Vila {
   latitude: number | null;
   longitude: number | null;
   is_active: boolean;
+  has_wayfinding: boolean;
+  default_entry_point: VilaEntryPoint | null;
 }
 
 export const useVilas = () => {
@@ -39,9 +47,25 @@ export const useVilas = () => {
   return { vilas, loading };
 };
 
+export interface VilaEstablishment {
+  id: string;
+  vila_id: string | null;
+  name: string;
+  slug: string;
+  banner_url: string | null;
+  logo_url: string | null;
+  is_open: boolean | null;
+  accepts_pickup: boolean | null;
+  avg_delivery_time: number | null;
+  status: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  address: string | null;
+}
+
 export const useVila = (slug: string) => {
   const [vila, setVila] = useState<Vila | null>(null);
-  const [establishments, setEstablishments] = useState<any[]>([]);
+  const [establishments, setEstablishments] = useState<VilaEstablishment[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -70,7 +94,7 @@ export const useVila = (slug: string) => {
         .eq('status', 'active')
         .order('name');
 
-      setEstablishments(estData || []);
+      setEstablishments((estData || []) as VilaEstablishment[]);
       setLoading(false);
     };
 
