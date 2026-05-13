@@ -3,6 +3,7 @@ import { Helmet } from "react-helmet-async";
 import Navbar from "@/components/landing/Navbar";
 import HeroSection from "@/components/landing/HeroSection";
 import IFoodCalculator from "@/components/landing/IFoodCalculator";
+import StickyCalculatorBar from "@/components/landing/StickyCalculatorBar";
 import { useFAQItems } from "@/hooks/useFAQItems";
 import { usePlans } from "@/hooks/usePlans";
 
@@ -10,6 +11,7 @@ import { usePlans } from "@/hooks/usePlans";
 const TrustBadgesSection = lazy(() => import("@/components/landing/TrustBadgesSection"));
 const LiveStatsSection = lazy(() => import("@/components/landing/LiveStatsSection"));
 const AllFeaturesSection = lazy(() => import("@/components/landing/AllFeaturesSection"));
+const UseCasesSection = lazy(() => import("@/components/landing/UseCasesSection"));
 const VilasConceptSection = lazy(() => import("@/components/landing/VilasConceptSection"));
 const ComparisonSection = lazy(() => import("@/components/landing/ComparisonSection"));
 const HowItWorksSection = lazy(() => import("@/components/landing/HowItWorksSection"));
@@ -160,6 +162,10 @@ const Conheca = () => {
         </Suspense>
 
         <Suspense fallback={<SectionSkeleton />}>
+          <UseCasesSection />
+        </Suspense>
+
+        <Suspense fallback={<SectionSkeleton />}>
           <VilasConceptSection />
         </Suspense>
 
@@ -190,6 +196,8 @@ const Conheca = () => {
         <Suspense fallback={<SectionSkeleton />}>
           <Footer />
         </Suspense>
+
+        <StickyCalculatorBar />
       </main>
     </>
   );
