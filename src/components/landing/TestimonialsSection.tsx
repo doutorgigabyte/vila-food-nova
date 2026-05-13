@@ -1,4 +1,16 @@
 import { Star, Quote } from "lucide-react";
+import mercadoPagoLogo from "@/assets/logos/mercado-pago.jpg";
+import pagBankLogo from "@/assets/logos/pagbank.jpg";
+
+type Partner = { name: string; logo?: string };
+
+const partners: Partner[] = [
+  { name: "Mercado Pago", logo: mercadoPagoLogo },
+  { name: "PagBank", logo: pagBankLogo },
+  { name: "WhatsApp" },
+  { name: "Google" },
+  { name: "GetNet" },
+];
 
 const testimonials = [
   {
@@ -37,7 +49,7 @@ const TestimonialsSection = () => {
             <span className="gradient-text">recomenda</span>
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Mais de 2.500 estabelecimentos confiam no VilaFood para impulsionar suas vendas.
+            Os primeiros estabelecimentos já estão crescendo com o VilaFood. Veja o que eles dizem.
           </p>
         </div>
 
@@ -78,13 +90,21 @@ const TestimonialsSection = () => {
           <p className="text-center text-sm text-muted-foreground mb-8">
             Parceiros e integrações
           </p>
-          <div className="flex flex-wrap justify-center items-center gap-8 md:gap-16 opacity-60">
-            {["Mercado Pago", "PagSeguro", "WhatsApp", "Google", "GetNet"].map((partner) => (
-              <div
-                key={partner}
-                className="text-lg md:text-xl font-semibold text-muted-foreground"
-              >
-                {partner}
+          <div className="flex flex-wrap justify-center items-center gap-6 md:gap-12 opacity-70">
+            {partners.map((partner) => (
+              <div key={partner.name} className="flex items-center justify-center h-8 md:h-10">
+                {partner.logo ? (
+                  <img
+                    src={partner.logo}
+                    alt={`${partner.name} logo`}
+                    className="h-full w-auto object-contain"
+                    loading="lazy"
+                  />
+                ) : (
+                  <span className="text-lg md:text-xl font-semibold text-muted-foreground">
+                    {partner.name}
+                  </span>
+                )}
               </div>
             ))}
           </div>

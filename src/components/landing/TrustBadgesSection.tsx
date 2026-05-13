@@ -1,8 +1,15 @@
 import { motion } from "framer-motion";
-import { Shield, CreditCard, MessageCircle, MapPin, Lock, Award } from "lucide-react";
+import { Shield, MessageCircle, MapPin, Lock, Award } from "lucide-react";
+import mercadoPagoLogo from "@/assets/logos/mercado-pago.jpg";
+import pagBankLogo from "@/assets/logos/pagbank.jpg";
 
-const partners = [
-  { name: "Mercado Pago", icon: CreditCard },
+type Partner =
+  | { name: string; logo: string }
+  | { name: string; icon: React.ComponentType<{ className?: string }> };
+
+const partners: Partner[] = [
+  { name: "Mercado Pago", logo: mercadoPagoLogo },
+  { name: "PagBank", logo: pagBankLogo },
   { name: "WhatsApp Business", icon: MessageCircle },
   { name: "Google Maps", icon: MapPin },
 ];
@@ -40,8 +47,19 @@ const TrustBadgesSection = () => {
                   transition={{ duration: 0.3, delay: index * 0.1 }}
                   className="flex items-center gap-1.5 md:gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-full bg-card/50 border border-border/50 hover:border-primary/30 transition-colors"
                 >
-                  <partner.icon className="h-3 w-3 md:h-4 md:w-4 text-primary" />
-                  <span className="text-xs md:text-sm font-medium text-foreground">{partner.name}</span>
+                  {"logo" in partner ? (
+                    <img
+                      src={partner.logo}
+                      alt={`${partner.name} logo`}
+                      className="h-4 md:h-5 w-auto object-contain"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <>
+                      <partner.icon className="h-3 w-3 md:h-4 md:w-4 text-primary" />
+                      <span className="text-xs md:text-sm font-medium text-foreground">{partner.name}</span>
+                    </>
+                  )}
                 </motion.div>
               ))}
             </div>
