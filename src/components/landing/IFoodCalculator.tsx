@@ -51,6 +51,20 @@ const IFoodCalculator = () => {
   const [loadingPhrase, setLoadingPhrase] = useState(0);
   const [progress, setProgress] = useState(0);
 
+  // Escuta evento do StickyCalculatorBar pra pre-preencher o faturamento
+  // quando usuario clica em "Calcular" na barra fixa.
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ revenue: number }>).detail;
+      if (detail?.revenue && detail.revenue > 0) {
+        setRevenue(detail.revenue.toLocaleString("pt-BR"));
+        setStep(1);
+      }
+    };
+    window.addEventListener("vilafood:calculator-prefill", handler);
+    return () => window.removeEventListener("vilafood:calculator-prefill", handler);
+  }, []);
+
   const formatCurrency = (value: number): string => {
     return new Intl.NumberFormat("pt-BR", {
       style: "currency",
