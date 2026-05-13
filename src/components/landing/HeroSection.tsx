@@ -1,17 +1,27 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Store, Calculator, Zap, TrendingDown, Shield, Smartphone } from "lucide-react";
+import { useLandingAnalytics, useSectionView } from "@/hooks/useLandingAnalytics";
 
 const HeroSection = () => {
+  const { trackCTAClick, trackSignupIntent } = useLandingAnalytics();
+  const sectionRef = useSectionView("hero");
+
   const scrollToCalculator = () => {
+    trackCTAClick({ ctaText: "Calcular Minha Economia", ctaLocation: "hero", destination: "#calculadora" });
     const element = document.getElementById("calculadora");
     if (element) {
       element.scrollIntoView({ behavior: "smooth" });
     }
   };
 
+  const handleCreateStore = () => {
+    trackCTAClick({ ctaText: "Criar Minha Loja Gratis", ctaLocation: "hero", destination: "/cadastro-estabelecimento" });
+    trackSignupIntent("hero");
+  };
+
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-hero-pattern pt-12 md:pt-16">
+    <section ref={sectionRef} className="relative min-h-screen flex items-center justify-center overflow-hidden bg-hero-pattern pt-12 md:pt-16">
       {/* Animated background rays */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[200%] h-full bg-[radial-gradient(ellipse_at_top,_transparent_0%,_hsl(0_0%_0%_/_0.1)_100%)]" />
@@ -48,8 +58,8 @@ const HeroSection = () => {
                 <Calculator className="mr-2 h-5 w-5" />
                 Calcular Minha Economia
               </Button>
-              <Link to="/cadastro-estabelecimento">
-                <Button 
+              <Link to="/cadastro-estabelecimento" onClick={handleCreateStore}>
+                <Button
                   className="btn-yellow text-base md:text-lg px-6 md:px-8 py-5 md:py-6 h-auto group w-full sm:w-auto"
                 >
                   Criar Minha Loja Grátis

@@ -12,3 +12,16 @@ Allow: /
 
 User-agent: *
 Allow: /
+Disallow: /painel/
+Disallow: /admin/
+Disallow: /afiliado/
+Disallow: /entregador
+Disallow: /checkout/
+Disallow: /pedidos/
+Disallow: /conta
+Disallow: /enderecos
+Disallow: /favoritos
+Disallow: /membro/
+Disallow: /display/
+
+Sitemap: https://vilafood.delivery/sitemap.xml
