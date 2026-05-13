@@ -60,35 +60,48 @@ const organizationSchema = {
 const Conheca = () => {
   const { data: plans } = usePlans();
   const faqCategories = useFAQItems();
+  const plansReady = (plans?.length ?? 0) > 0;
 
   // Scroll to top on mount
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
 
+  // react-helmet-async nao remove tags estaticas do index.html que tenham
+  // mesmo `name` — resulta em 2x <meta name="description"> no DOM (a do
+  // index.html + a do Helmet). Dedupar manualmente preservando a do Helmet
+  // (a que tem `data-react-helmet` ou eh adicionada por ultimo).
+  useEffect(() => {
+    const descs = Array.from(document.querySelectorAll('meta[name="description"]'));
+    if (descs.length <= 1) return;
+    // Mantem a ultima (Helmet adiciona apos a estatica)
+    descs.slice(0, -1).forEach((el) => el.remove());
+  }, []);
+
   // SoftwareApplication schema com offers a partir do hook usePlans.
-  // Construido dinamicamente: se planos ainda nao carregaram, omite offers.
-  const softwareSchema = {
-    "@context": "https://schema.org",
-    "@type": "SoftwareApplication",
-    name: "VilaFood",
-    applicationCategory: "BusinessApplication",
-    operatingSystem: "Web, iOS, Android",
-    description: PAGE_DESCRIPTION,
-    url: PAGE_URL,
-    image: `${SITE_URL}/og-image.png`,
-    publisher: { "@type": "Organization", name: "VilaFood" },
-    offers: plans?.length
-      ? plans.map((p) => ({
+  // So renderiza quando plans estao carregados — evita Helmet criar 2
+  // versoes (loading sem offers + loaded com offers) sem conseguir dedupar.
+  const softwareSchema = plansReady
+    ? {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        name: "VilaFood",
+        applicationCategory: "BusinessApplication",
+        operatingSystem: "Web, iOS, Android",
+        description: PAGE_DESCRIPTION,
+        url: PAGE_URL,
+        image: `${SITE_URL}/og-image.png`,
+        publisher: { "@type": "Organization", name: "VilaFood" },
+        offers: plans!.map((p) => ({
           "@type": "Offer",
           name: p.name,
           price: p.price?.toFixed(2) ?? "0.00",
           priceCurrency: "BRL",
           category: p.slug,
           availability: "https://schema.org/InStock",
-        }))
-      : undefined,
-  };
+        })),
+      }
+    : null;
 
   // FAQPage schema a partir das categorias importadas de FAQSection.
   const faqSchema = {
@@ -133,10 +146,14 @@ const Conheca = () => {
           {JSON.stringify(organizationSchema)}
         </script>
 
-        {/* JSON-LD: SoftwareApplication com offers dinamicas */}
-        <script type="application/ld+json">
-          {JSON.stringify(softwareSchema)}
-        </script>
+        {/* JSON-LD: SoftwareApplication com offers dinamicas.
+            So renderiza quando plans carregados pra evitar duplicacao
+            no DOM (Helmet nao dedupa inline scripts com conteudo diferente). */}
+        {softwareSchema && (
+          <script type="application/ld+json">
+            {JSON.stringify(softwareSchema)}
+          </script>
+        )}
 
         {/* JSON-LD: FAQPage */}
         <script type="application/ld+json">
