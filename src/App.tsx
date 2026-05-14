@@ -431,7 +431,12 @@ const App = () => {
                 <OrderSourceProvider>
                   <CartProvider>
                     <TooltipProvider>
-                      <BrowserRouter>
+                      <BrowserRouter
+                        future={{
+                          v7_startTransition: true,
+                          v7_relativeSplatPath: true,
+                        }}
+                      >
                         <NotificationProvider>
                           <Toaster />
                           <Sonner />
