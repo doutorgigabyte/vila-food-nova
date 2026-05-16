@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Upload, X, Loader2, Image as ImageIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { uploadToS3, deleteFromS3, validateFile, UploadType } from "@/lib/s3";
+import { uploadToS3, deleteFromS3, validateFile, isManagedStorageUrl, UploadType } from "@/lib/s3";
 import { ImageCropModal } from "./ImageCropModal";
 
 interface ImageUploadProps {
@@ -95,11 +95,9 @@ export const ImageUpload = ({
 
     // Capture old URL to delete only AFTER the new upload succeeds, so a
     // failed upload doesn't leave the user with no image.
-    const oldImageToDelete =
-      currentImage &&
-      (currentImage.includes("cloudfront.net") || currentImage.includes("s3.amazonaws.com"))
-        ? currentImage
-        : null;
+    const oldImageToDelete = currentImage && isManagedStorageUrl(currentImage)
+      ? currentImage
+      : null;
 
     try {
       // Convert Blob to File if needed
@@ -158,8 +156,9 @@ export const ImageUpload = ({
   };
 
   const handleRemove = async () => {
-    // Delete from S3 if it's a CloudFront/S3 URL
-    if (currentImage && (currentImage.includes('cloudfront.net') || currentImage.includes('s3.amazonaws.com'))) {
+    // Delete from managed storage (Supabase Storage atual; CloudFront/S3 ja
+    // ficam como no-op porque o bucket nao existe mais, mas o helper aceita).
+    if (currentImage && isManagedStorageUrl(currentImage)) {
       setDeleting(true);
       try {
         await deleteFromS3(currentImage, establishmentId);

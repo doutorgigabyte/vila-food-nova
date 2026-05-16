@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import Cropper, { Area } from "react-easy-crop";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
@@ -120,6 +120,9 @@ export const ImageCropModal = ({
       <DialogContent className="max-w-lg sm:max-w-xl md:max-w-2xl p-0 gap-0">
         <DialogHeader className="p-4 pb-2">
           <DialogTitle>Ajustar imagem</DialogTitle>
+          <DialogDescription className="sr-only">
+            Arraste a imagem e use o zoom para escolher o enquadramento. Confirme para salvar.
+          </DialogDescription>
         </DialogHeader>
 
         {/* Crop area */}
