@@ -79,6 +79,47 @@ serve(async (req) => {
           throw new Error('Items and total_amount are required');
         }
 
+        // SECURITY: validar que cada item.amount bate com orders[item.order_id].total
+        // no DB, e que total_amount === soma de item.amount. Sem isso, atacante muda
+        // qualquer um dos valores no devtools e paga 1 centavo por R$100.
+        const orderIds = items.map(i => i.order_id).filter(Boolean);
+        if (orderIds.length !== items.length) {
+          throw new Error('Todos os items precisam de order_id');
+        }
+
+        const { data: orders, error: ordersErr } = await supabase
+          .from('orders')
+          .select('id, total, establishment_id, status')
+          .in('id', orderIds);
+
+        if (ordersErr || !orders || orders.length !== orderIds.length) {
+          console.error('[multi-split] AMOUNT_TAMPERING (orders missing)', { orderIds, found: orders?.length, err: ordersErr });
+          throw new Error('Um ou mais pedidos não foram encontrados');
+        }
+
+        const orderById = new Map(orders.map(o => [o.id, o]));
+        let sumItems = 0;
+        for (const item of items) {
+          const order = orderById.get(item.order_id);
+          if (!order) {
+            throw new Error(`Pedido ${item.order_id} não encontrado`);
+          }
+          if (order.establishment_id !== item.establishment_id) {
+            console.error('[multi-split] AMOUNT_TAMPERING (establishment mismatch)', { item, order });
+            throw new Error('Item não pertence ao estabelecimento informado');
+          }
+          if (Math.abs(Number(item.amount) - Number(order.total)) > 0.01) {
+            console.error('[multi-split] AMOUNT_TAMPERING (item)', { requested: item.amount, db_total: order.total, order_id: item.order_id });
+            throw new Error(`Valor do item ${item.order_id} não corresponde ao total do pedido`);
+          }
+          sumItems += Number(item.amount);
+        }
+
+        if (Math.abs(Number(total_amount) - sumItems) > 0.01) {
+          console.error('[multi-split] AMOUNT_TAMPERING (total)', { total_amount, sumItems });
+          throw new Error('total_amount não corresponde à soma dos items');
+        }
+
         // Calculate platform fee (5% of total)
         const platformFee = total_amount * (PLATFORM_FEE_PERCENT / 100);
         const netAmount = total_amount - platformFee;

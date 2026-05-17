@@ -125,6 +125,53 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    // SECURITY: validar que o pedido existe, pertence ao estabelecimento e
+    // que o valor solicitado bate com o total no DB. Sem isso, atacante muda
+    // o `amount` no devtools e paga 1 centavo por um pedido de R$100.
+    const { data: order, error: orderError } = await supabase
+      .from('orders')
+      .select('id, establishment_id, total, status')
+      .eq('id', order_id)
+      .eq('establishment_id', establishment_id)
+      .single();
+
+    if (orderError || !order) {
+      console.error('[checkout-pro] Order validation failed:', { order_id, establishment_id, error: orderError });
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Pedido não encontrado ou não pertence a este estabelecimento'
+      }), {
+        status: 404,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    if (order.status === 'confirmed' || order.status === 'preparing' || order.status === 'delivered') {
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Este pedido já foi pago'
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    if (Math.abs(Number(amount) - Number(order.total)) > 0.01) {
+      console.error('[checkout-pro] AMOUNT_TAMPERING', {
+        requested: amount,
+        db_total: order.total,
+        order_id,
+        establishment_id,
+      });
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Valor solicitado não corresponde ao total do pedido'
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
     const { data: establishment, error: estError } = await supabase
       .from('establishments')
       .select('mercado_pago_token, mp_public_key, name, segment_id')
