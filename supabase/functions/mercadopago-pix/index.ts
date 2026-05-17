@@ -553,28 +553,52 @@ serve(async (req) => {
     }
 
     // Log transaction with MODELO BLINDADO details
+    // type='sale' (constraint do DB so aceita subscription/sale/payout/refund).
+    // O detalhe de ser PIX fica em metadata.payment_method.
     try {
-      await supabase.from('mp_transactions').insert({
+      const { error: txError } = await supabase.from('mp_transactions').insert({
         establishment_id,
-        type: 'pix',
+        type: 'sale',
         status: paymentData.status,
         mp_payment_id: paymentData.id?.toString(),
+        order_id,
         amount,
+        platform_fee: totalPlatformFee,
+        net_amount: establishmentReceives,
         metadata: {
+          payment_method: 'pix',
           order_id,
           expiration: paymentData.date_of_expiration,
-          platform_fee: totalPlatformFee,
           platform_product_fee: platformProductFee,
           platform_service_fee: platformServiceFee,
           delivery_fee: actualDeliveryFee,
           products_amount: actualProductsAmount,
-          establishment_receives: establishmentReceives,
           use_split: useSplit,
           modelo: 'blindado',
         },
       });
+      if (txError) {
+        console.error('[mercadopago-pix] Transaction log error (non-blocking):', txError);
+      }
     } catch (txError) {
-      console.error('[mercadopago-pix] Transaction log error (non-blocking):', txError);
+      console.error('[mercadopago-pix] Transaction log exception (non-blocking):', txError);
+    }
+
+    // Persistir QR no proprio order pra cliente recuperar caso feche a aba
+    try {
+      const { error: orderUpdateErr } = await supabase
+        .from('orders')
+        .update({
+          pix_code: pixData.qr_code,
+          pix_qr_base64: pixData.qr_code_base64,
+          pix_expires_at: paymentData.date_of_expiration,
+        })
+        .eq('id', order_id);
+      if (orderUpdateErr) {
+        console.error('[mercadopago-pix] Failed to persist PIX QR in order (non-blocking):', orderUpdateErr);
+      }
+    } catch (e) {
+      console.error('[mercadopago-pix] PIX QR persist exception (non-blocking):', e);
     }
 
     // Log analytics

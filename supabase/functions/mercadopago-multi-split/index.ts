@@ -206,8 +206,10 @@ serve(async (req) => {
           .eq('id', splitRecord.id);
 
         // Log transaction
-        await supabase.from('mp_transactions').insert({
-          type: 'multi_split',
+        // type='sale' (constraint do DB so aceita subscription/sale/payout/refund).
+        // multi_split flag fica em metadata.
+        const { error: txError } = await supabase.from('mp_transactions').insert({
+          type: 'sale',
           mp_payment_id: mpData.id?.toString(),
           amount: total_amount,
           platform_fee: platformFee,
@@ -215,8 +217,11 @@ serve(async (req) => {
           status: mpData.status,
           payer_email,
           payer_name,
-          metadata: { checkout_id, items_count: items.length },
+          metadata: { multi_split: true, checkout_id, items_count: items.length },
         });
+        if (txError) {
+          console.error('[multi-split] mp_transactions insert error:', txError);
+        }
 
         return new Response(JSON.stringify({
           success: true,

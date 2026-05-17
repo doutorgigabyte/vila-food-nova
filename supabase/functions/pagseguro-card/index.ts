@@ -317,22 +317,28 @@ serve(async (req) => {
     const paymentStatus = statusMap[chargeStatus] || 'pending';
 
     // Log transaction
+    // type='sale' (constraint do DB so aceita subscription/sale/payout/refund).
+    // Payment method real fica em metadata.
     try {
-      await supabase.from('mp_transactions').insert({
+      const { error: txInsertError } = await supabase.from('mp_transactions').insert({
         establishment_id,
         order_id,
-        type: 'card',
+        type: 'sale',
         status: paymentStatus,
         amount: amountInCents / 100,
         gateway: 'pagseguro',
         gateway_payment_id: orderData.id,
         metadata: {
+          payment_method: 'card',
           charge_id: charge?.id,
           charge_status: chargeStatus,
           installments,
           environment: PAGSEGURO_ENVIRONMENT,
         },
       });
+      if (txInsertError) {
+        console.error('[pagseguro-card] mp_transactions insert error:', txInsertError);
+      }
     } catch (txError) {
       console.error('Error logging transaction:', txError);
     }
