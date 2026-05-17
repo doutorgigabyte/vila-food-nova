@@ -344,7 +344,8 @@ serve(async (req) => {
       external_reference: order_id,
       
       // Webhook de notificação
-      notification_url: `${supabaseUrl}/functions/v1/mercadopago-webhook`,
+      // MP exige URL publica HTTPS. SUPABASE_URL no container e privado.
+      notification_url: `${Deno.env.get('EXTERNAL_SUPABASE_URL') || supabaseUrl}/functions/v1/mercadopago-webhook`,
       
       // Dados do pagador (OBRIGATÓRIO: email)
       payer: payerData,

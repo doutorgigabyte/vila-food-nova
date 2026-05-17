@@ -406,7 +406,10 @@ serve(async (req) => {
       // RECOMENDADO: Nome na fatura
       statement_descriptor: 'VILA FOOD',
       external_reference: external_reference || order_id,
-      notification_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/mercadopago-webhook`,
+      // MP exige URL publica HTTPS. SUPABASE_URL aqui dentro do container vale
+      // http://supabase-kong:8000 (privado). EXTERNAL_SUPABASE_URL deve ser a
+      // URL publica HTTPS do projeto (ex: https://db.vilafood.delivery).
+      notification_url: `${Deno.env.get('EXTERNAL_SUPABASE_URL') || Deno.env.get('SUPABASE_URL')}/functions/v1/mercadopago-webhook`,
       // Metadados
       metadata: {
         order_id,

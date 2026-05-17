@@ -217,7 +217,8 @@ serve(async (req) => {
           external_reference: order_id,
           application_fee: platformFee,
           collector_id: parseInt(establishment.mp_user_id),
-          notification_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/mercadopago-webhook`,
+          // MP exige URL publica HTTPS. SUPABASE_URL no container e privado.
+          notification_url: `${Deno.env.get('EXTERNAL_SUPABASE_URL') || Deno.env.get('SUPABASE_URL')}/functions/v1/mercadopago-webhook`,
         };
 
         if (payment_method_id !== 'pix' && token) {
