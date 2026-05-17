@@ -273,22 +273,28 @@ serve(async (req) => {
     }
 
     // Log transaction
+    // type='sale' (constraint do DB so aceita subscription/sale/payout/refund).
+    // Payment method e gateway ficam em metadata.
     try {
-      await supabase.from('mp_transactions').insert({
+      const { error: txError } = await supabase.from('mp_transactions').insert({
         establishment_id,
         order_id,
-        type: 'pix',
+        type: 'sale',
         status: charge?.status || 'WAITING',
         amount: amountInCents / 100,
         gateway: 'pagseguro',
         gateway_payment_id: orderData.id,
         metadata: {
+          payment_method: 'pix',
           charge_id: charge?.id,
           environment: PAGSEGURO_ENVIRONMENT,
         },
       });
+      if (txError) {
+        console.error('[pagseguro-pix] Error logging transaction:', txError);
+      }
     } catch (txError) {
-      console.error('Error logging transaction:', txError);
+      console.error('[pagseguro-pix] Transaction log exception:', txError);
     }
 
     // Build response
