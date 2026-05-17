@@ -186,9 +186,28 @@ serve(async (req) => {
 
     if (order.status === 'cancelled' || order.status === 'delivered') {
       console.error('[mercadopago-pix] ERROR: Invalid order status:', order.status);
-      return new Response(JSON.stringify({ 
+      return new Response(JSON.stringify({
         success: false,
-        error: 'Pedido não pode receber pagamento neste status' 
+        error: 'Pedido não pode receber pagamento neste status'
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // SECURITY: enforce server-side que o valor solicitado bate com o total
+    // do pedido no DB. Sem isso, um atacante muda o `amount` no devtools e
+    // paga 1 centavo por um pedido de R$100.
+    if (Math.abs(Number(amount) - Number(order.total)) > 0.01) {
+      console.error('[mercadopago-pix] AMOUNT_TAMPERING', {
+        requested: amount,
+        db_total: order.total,
+        order_id,
+        establishment_id,
+      });
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Valor solicitado não corresponde ao total do pedido'
       }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

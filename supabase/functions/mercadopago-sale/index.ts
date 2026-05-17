@@ -174,6 +174,23 @@ serve(async (req) => {
           );
         }
 
+        // SECURITY: enforce que o valor enviado pelo cliente bate com o total
+        // do pedido no DB. Sem isso, atacante muda transaction_amount no devtools
+        // e paga 1 centavo por um pedido de R$100.
+        const requestedAmount = Number(payment_data?.transaction_amount);
+        if (!requestedAmount || Math.abs(requestedAmount - Number(order.total)) > 0.01) {
+          console.error('[mercadopago-sale] AMOUNT_TAMPERING', {
+            requested: requestedAmount,
+            db_total: order.total,
+            order_id,
+            establishment_id,
+          });
+          return new Response(
+            JSON.stringify({ error: 'Valor solicitado não corresponde ao total do pedido', success: false }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
         if (!MP_ACCESS_TOKEN) {
           throw new Error('MERCADOPAGO_ACCESS_TOKEN não configurado');
         }
