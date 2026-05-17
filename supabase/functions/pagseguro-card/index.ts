@@ -189,7 +189,8 @@ serve(async (req) => {
     const amountInCents = Math.round(amount);
 
     // Build order payload for PagBank
-    const WEBHOOK_URL = `${Deno.env.get('SUPABASE_URL')}/functions/v1/pagseguro-webhook`;
+    // PagBank exige URL publica HTTPS. SUPABASE_URL no container e privado.
+    const WEBHOOK_URL = `${Deno.env.get('EXTERNAL_SUPABASE_URL') || Deno.env.get('SUPABASE_URL')}/functions/v1/pagseguro-webhook`;
     
     const orderPayload: any = {
       reference_id: order_id,
