@@ -361,6 +361,63 @@ export const trackSearch = (searchTerm: string) => {
   }
 };
 
+// Track View Item — usuario abriu o ProductModal (descoberta de produto)
+export const trackViewItem = (item: {
+  id: string;
+  name: string;
+  category?: string;
+  price: number;
+  establishmentSlug?: string;
+}) => {
+  if (window.gtag) {
+    window.gtag('event', 'view_item', {
+      currency: 'BRL',
+      value: item.price,
+      items: [{
+        item_id: item.id,
+        item_name: item.name,
+        item_category: item.category || 'produto',
+        price: item.price,
+        quantity: 1,
+      }],
+      // Custom dimension util pra cardapio digital
+      establishment_slug: item.establishmentSlug,
+    });
+  }
+};
+
+// Track Begin Checkout — usuario clicou "Continuar para checkout"
+export const trackBeginCheckout = (cart: {
+  total: number;
+  itemCount: number;
+  items: Array<{ id: string; name: string; price: number; quantity: number; category?: string }>;
+  establishmentSlug?: string;
+}) => {
+  if (window.gtag) {
+    window.gtag('event', 'begin_checkout', {
+      currency: 'BRL',
+      value: cart.total,
+      items: cart.items.map(i => ({
+        item_id: i.id,
+        item_name: i.name,
+        item_category: i.category || 'produto',
+        price: i.price,
+        quantity: i.quantity,
+      })),
+      num_items: cart.itemCount,
+      establishment_slug: cart.establishmentSlug,
+    });
+  }
+  // Facebook InitiateCheckout (paridade com fbq se configurado)
+  if (window.fbq) {
+    window.fbq('track', 'InitiateCheckout', {
+      value: cart.total,
+      currency: 'BRL',
+      num_items: cart.itemCount,
+    });
+  }
+};
+
 // Track Wayfinding events (Vila "Como chegar")
 export const trackWayfindingOpen = (vilaSlug: string, source: "vila_page" | "store_page" | "share" = "vila_page") => {
   if (window.gtag) {

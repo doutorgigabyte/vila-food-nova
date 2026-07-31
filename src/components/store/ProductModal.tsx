@@ -1,15 +1,17 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
-import { Plus, Minus, Package, Clock, ZoomIn, Wrench, Download, Leaf, ThermometerSnowflake, Calendar } from "lucide-react";
+import { Plus, Minus, Clock, ZoomIn, Wrench, Download, Leaf, ThermometerSnowflake, Calendar } from "lucide-react";
 import type { StoreProduct } from "@/hooks/useStoreData";
 import { TouchImageViewer } from "./TouchImageViewer";
 import { ProductNutritionalInfo } from "./ProductNutritionalInfo";
 import { ProductVariationSelector, VariationGroup } from "./ProductVariationSelector";
 import { ProductAdditionalsSelector, AdditionalGroup, SelectedAdditional } from "./ProductAdditionalsSelector";
+import { ProductPlaceholder } from "./ProductPlaceholder";
+import { trackViewItem } from "@/lib/analytics";
 
 interface ProductModalProps {
   product: StoreProduct | null;
@@ -25,6 +27,18 @@ export const ProductModal = ({ product, onClose, onAddToCart, onRequestService }
   const [showImageViewer, setShowImageViewer] = useState(false);
   const [selectedVariations, setSelectedVariations] = useState<Record<string, string>>({});
   const [selectedAdditionals, setSelectedAdditionals] = useState<SelectedAdditional[]>([]);
+
+  // Track GA4 view_item quando o modal abre (descoberta de produto)
+  useEffect(() => {
+    if (!product?.id) return;
+    trackViewItem({
+      id: product.id,
+      name: product.name,
+      category: product.category?.name,
+      price: product.promotional_price || product.price,
+      establishmentSlug: (product as any).establishment_slug,
+    });
+  }, [product?.id, product?.name, product?.price, product?.promotional_price, product?.category?.name]);
 
   // Extended product properties - safe access with fallbacks
   const productCategory = (product as any)?.product_category;
@@ -185,9 +199,11 @@ export const ProductModal = ({ product, onClose, onAddToCart, onRequestService }
                 </div>
               </>
             ) : (
-              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">
-                <Package className="w-16 h-16 text-muted-foreground/30" />
-              </div>
+              <ProductPlaceholder
+                name={product.name}
+                category={product.category?.name || null}
+                size="lg"
+              />
             )}
             {hasPromo && discount > 0 && (
               <Badge variant="destructive" className="absolute top-3 left-3 text-sm px-3 py-1 shadow-lg">
@@ -334,23 +350,26 @@ export const ProductModal = ({ product, onClose, onAddToCart, onRequestService }
             {/* Quantity and Add to Cart */}
             <div className="flex items-center justify-between gap-4 pt-2">
               {!isService && (
-                <div className="flex items-center gap-3 bg-muted rounded-full p-1">
+                <div className="flex items-center gap-3 bg-muted rounded-full p-1" role="group" aria-label="Selecionar quantidade">
                   <Button
                     variant="ghost"
                     size="icon"
                     className="h-10 w-10 rounded-full touch-manipulation"
                     onClick={() => handleQuantityChange(-1)}
+                    disabled={quantity <= 1}
+                    aria-label="Diminuir quantidade"
                   >
-                    <Minus className="w-5 h-5" />
+                    <Minus className="w-5 h-5" aria-hidden="true" />
                   </Button>
-                  <span className="text-lg font-semibold w-8 text-center">{quantity}</span>
+                  <span className="text-lg font-semibold w-8 text-center" aria-live="polite" aria-label={`Quantidade selecionada: ${quantity}`}>{quantity}</span>
                   <Button
                     variant="ghost"
                     size="icon"
                     className="h-10 w-10 rounded-full touch-manipulation"
                     onClick={() => handleQuantityChange(1)}
+                    aria-label="Aumentar quantidade"
                   >
-                    <Plus className="w-5 h-5" />
+                    <Plus className="w-5 h-5" aria-hidden="true" />
                   </Button>
                 </div>
               )}

@@ -7,6 +7,7 @@ import { Plus, Minus, Trash2, ShoppingBag, ArrowRight, Store, AlertTriangle } fr
 import { AIRecommendations } from "./AIRecommendations";
 import { useCart, type CartProduct, type EstablishmentInfo } from "@/hooks/useCart";
 import { Price } from "@/components/ui/price";
+import { trackBeginCheckout } from "@/lib/analytics";
 
 interface CartSheetProps {
   isOpen: boolean;
@@ -75,6 +76,22 @@ export const CartSheet = ({
   };
 
   const handleCheckout = () => {
+    // GA4 begin_checkout — funil de conversao
+    try {
+      trackBeginCheckout({
+        total: totalPrice,
+        itemCount: totalItems,
+        items: items.map(i => ({
+          id: i.product.id,
+          name: i.product.name,
+          price: i.product.promotional_price || i.product.price,
+          quantity: i.quantity,
+        })),
+        establishmentSlug,
+      });
+    } catch (e) {
+      console.error("[Analytics] begin_checkout failed", e);
+    }
     onClose();
     navigate(`/checkout?store=${establishmentSlug}`);
   };
@@ -159,16 +176,17 @@ export const CartSheet = ({
                             )}
                             <Price value={price * item.quantity} size="sm" className="text-primary" />
                           </div>
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1" role="group" aria-label={`Controles de quantidade de ${item.product.name}`}>
                             <Button
                               variant="outline"
                               size="icon"
                               className="h-7 w-7"
                               onClick={() => updateQuantity(item.product.id, -1)}
+                              aria-label={`Diminuir quantidade de ${item.product.name}`}
                             >
-                              <Minus className="w-3 h-3" />
+                              <Minus className="w-3 h-3" aria-hidden="true" />
                             </Button>
-                            <span className="w-6 text-center text-sm font-medium">
+                            <span className="w-6 text-center text-sm font-medium" aria-live="polite" aria-label={`Quantidade: ${item.quantity}`}>
                               {item.quantity}
                             </span>
                             <Button
@@ -176,16 +194,18 @@ export const CartSheet = ({
                               size="icon"
                               className="h-7 w-7"
                               onClick={() => updateQuantity(item.product.id, 1)}
+                              aria-label={`Aumentar quantidade de ${item.product.name}`}
                             >
-                              <Plus className="w-3 h-3" />
+                              <Plus className="w-3 h-3" aria-hidden="true" />
                             </Button>
                             <Button
                               variant="ghost"
                               size="icon"
                               className="h-7 w-7 text-destructive hover:text-destructive"
                               onClick={() => removeFromCart(item.product.id)}
+                              aria-label={`Remover ${item.product.name} do carrinho`}
                             >
-                              <Trash2 className="w-3 h-3" />
+                              <Trash2 className="w-3 h-3" aria-hidden="true" />
                             </Button>
                           </div>
                         </div>

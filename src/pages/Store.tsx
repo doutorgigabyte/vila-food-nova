@@ -26,6 +26,7 @@ import { ServiceRequestModal } from "@/components/products/ServiceRequestModal";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { setOrderSourceDirect, getOrderSourceDirect } from "@/hooks/useOrderSource";
+import { buildStoreJsonLd } from "@/lib/storeJsonLd";
 
 const Store = () => {
   const { slug } = useParams();
@@ -264,27 +265,52 @@ const Store = () => {
     }
   };
 
-  // Loading state
+  // Loading state — skeleton casa com layout real (hero + search + categorias + cards)
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
-        <Skeleton className="h-12 w-full" />
-        <Skeleton className="h-32 w-full" />
-        <div className="p-4 space-y-4">
-          <Skeleton className="h-24 w-full rounded-xl" />
-          <Skeleton className="h-36 w-full rounded-xl" />
-          <div className="flex gap-2">
-            {[1, 2, 3, 4].map((i) => (
-              <Skeleton key={i} className="h-16 w-20 rounded-xl shrink-0" />
-            ))}
+      <div className="min-h-screen bg-background pb-20" aria-busy="true" aria-live="polite">
+        {/* Hero (banner + logo + meta info) */}
+        <Skeleton className="h-40 md:h-56 w-full rounded-none" />
+        <div className="px-4 -mt-10 relative">
+          <div className="flex items-end gap-3">
+            <Skeleton className="w-20 h-20 rounded-2xl border-4 border-background" />
+            <div className="flex-1 mb-2 space-y-2">
+              <Skeleton className="h-5 w-2/3" />
+              <Skeleton className="h-3 w-1/2" />
+            </div>
           </div>
-          <Skeleton className="h-10 w-full rounded-lg" />
-          <div className="flex gap-3">
-            {[1, 2, 3].map((i) => (
-              <Skeleton key={i} className="h-48 w-40 rounded-xl shrink-0" />
-            ))}
+          <div className="flex gap-2 mt-3">
+            <Skeleton className="h-6 w-24 rounded-full" />
+            <Skeleton className="h-6 w-20 rounded-full" />
+            <Skeleton className="h-6 w-28 rounded-full" />
           </div>
         </div>
+        {/* Search bar */}
+        <div className="mx-4 my-4">
+          <Skeleton className="h-12 w-full rounded-xl" />
+        </div>
+        {/* Category tabs */}
+        <div className="px-4 flex gap-2 overflow-hidden">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <Skeleton key={i} className="h-10 w-24 rounded-full shrink-0" />
+          ))}
+        </div>
+        {/* Product cards (matches ProductCard real shape: foto 80x80 + texto + preco) */}
+        <div className="p-4 space-y-3">
+          <Skeleton className="h-5 w-32 mb-1" />
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="flex gap-3 p-3 border rounded-xl">
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-3 w-full" />
+                <Skeleton className="h-3 w-2/3" />
+                <Skeleton className="h-5 w-20 mt-2" />
+              </div>
+              <Skeleton className="w-20 h-20 rounded-lg shrink-0" />
+            </div>
+          ))}
+        </div>
+        <span className="sr-only">Carregando cardapio...</span>
       </div>
     );
   }
@@ -311,6 +337,12 @@ const Store = () => {
   const seoImage = establishment.meta_image || establishment.banner_url || establishment.logo_url || '/og-image.png';
   const seoUrl = `https://vilafood.delivery/loja/${establishment.slug}`;
 
+  // JSON-LD: Restaurant + ItemList(MenuItem). Critical pra SEO long-tail.
+  const jsonLdBlocks = useMemo(
+    () => buildStoreJsonLd(establishment as any, products, { menuItemLimit: 30 }),
+    [establishment, products]
+  );
+
   return (
     <div className="min-h-screen bg-background pb-20">
       {/* Dynamic SEO Meta Tags */}
@@ -336,6 +368,13 @@ const Store = () => {
         
         {/* Canonical */}
         <link rel="canonical" href={seoUrl} />
+
+        {/* JSON-LD Restaurant + MenuItem (SEO long-tail) */}
+        {jsonLdBlocks.map((block, idx) => (
+          <script key={`ld-${idx}`} type="application/ld+json">
+            {JSON.stringify(block)}
+          </script>
+        ))}
       </Helmet>
       {activeTab === "info" ? (
         <StoreInfoTab establishment={establishment} />

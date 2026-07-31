@@ -1,9 +1,10 @@
 import { useState, memo, useMemo, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Package, Wrench, Download, Leaf, Clock } from "lucide-react";
+import { Wrench, Download, Leaf, Clock } from "lucide-react";
 import { PriceWithDiscount } from "@/components/ui/price";
 import type { StoreProduct } from "@/hooks/useStoreData";
+import { ProductPlaceholder } from "./ProductPlaceholder";
 
 interface ProductCardProps {
   product: StoreProduct;
@@ -66,9 +67,13 @@ export const ProductCard = memo(({ product, onClick }: ProductCardProps) => {
   const serviceDuration = (product as any).service_duration;
 
   return (
-    <Card 
-      className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:-translate-y-1 overflow-hidden group"
+    <Card
+      className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:-translate-y-1 overflow-hidden group focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
       onClick={onClick}
+      role="button"
+      tabIndex={0}
+      aria-label={`Ver detalhes de ${product.name}, R$ ${displayPrice.toFixed(2).replace('.', ',')}${hasPromo ? `, ${discount}% de desconto` : ''}`}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } }}
     >
       <CardContent className="p-0">
         <div className="flex gap-3 p-3">
@@ -113,15 +118,17 @@ export const ProductCard = memo(({ product, onClick }: ProductCardProps) => {
             {showImage ? (
               <img
                 src={product.image_url!}
-                alt={product.name}
+                alt={`Foto de ${product.name}`}
                 className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                 loading="lazy"
                 onError={() => setImageError(true)}
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">
-                <Package className="w-8 h-8 text-muted-foreground/50" />
-              </div>
+              <ProductPlaceholder
+                name={product.name}
+                category={(product as any).category_name || (product as any).category || null}
+                size="sm"
+              />
             )}
           </div>
         </div>
